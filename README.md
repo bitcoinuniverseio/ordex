@@ -1,17 +1,24 @@
 # Ordex
 
-Ordex is a decentralized PSBT inventory and routing layer for Bitcoin markets. It indexes independently sourced order artifacts, verifies the relevant UTXOs against Bitcoin Core and inscriptions against `ord`, and uses signed Nostr kind-802 events to make a listing portable across compatible marketplaces.
+**Portable Bitcoin orders, verified before you act.**
 
-The market client can use the operator's Ordex gateway by default or a self-hosted gateway selected by the user. Nostr publication uses the user's NIP-07 signer; Ordex never accepts a wallet or Nostr private key.
+Ordex lets signed PSBT order evidence travel across compatible Bitcoin markets. A listing carries the details needed to understand what is being offered, where it came from, and when its inputs were last checked—without handing custody to Ordex.
 
-## Start here
+## Why Ordex
 
-Open [the documentation home](docs/index.html) in a browser, then follow:
+- **Portable evidence:** discover the same signed order across compatible venues.
+- **Fresh context:** see whether the referenced Bitcoin inputs were available when last checked.
+- **Clear provenance:** review the publisher, asset claim, order terms, and lifecycle together.
+- **User-controlled signing:** Nostr approval stays inside your NIP-07 signer.
+- **Non-custodial by design:** Ordex does not hold funds or settle trades for you.
 
-1. [Operator guide](docs/operator-guide.html) to connect Core and `ord`.
-2. [Market integration guide](docs/market-integration.html) to use the shared inventory and self-hosted gateway option.
-3. [Protocol guide](docs/protocol-guide.html) for order states, Nostr events, and settlement boundaries.
-4. [Quickstart](docs/quickstart.html) for marketplace, operator, and collector paths.
-5. [API reference](docs/api-reference.html) and [troubleshooting](docs/troubleshooting.html) for implementation and operations.
+## Explore
 
-Copy `.env.example` into your deployment configuration. The Core endpoint needs only read methods: `getblockchaininfo`, `gettxout`, and `testmempoolaccept`.
+- [Meet Ordex](docs/index.html)
+- [Start safely](docs/quickstart.html)
+- [How portable orders work](docs/protocol-guide.html)
+- [Get help](docs/troubleshooting.html)
+
+## Stay in control
+
+Ordex is an evidence and discovery layer, not a wallet. Never enter a seed phrase or private key into an Ordex page. Before approving any Bitcoin transaction, review the asset, inputs, outputs, destination, and fee in a wallet you trust. Verification describes a moment in time, so check the order again immediately before settlement. Bitcoin transactions are difficult to reverse once confirmed.
