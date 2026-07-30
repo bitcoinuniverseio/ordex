@@ -3,66 +3,68 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Ordex documentation for portable, verified Bitcoin market inventory.">
-  <title>Ordex documentation</title>
+  <meta name="description" content="Discover portable Bitcoin orders with Ordex and verify the evidence before you act.">
+  <title>Ordex — Portable Bitcoin orders</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <main class="shell">
     <nav class="nav">
-      <a class="brand" href="index.html"><span class="mark"></span>Ordex <small>Docs</small></a>
-      <div class="navlinks"><a href="quickstart.html">Start</a><a href="operator-guide.html">Operators</a><a href="market-integration.html">Markets</a><a href="protocol-guide.html">Protocol</a><a href="api-reference.html">API</a></div>
+      <a class="brand" href="index.html"><span class="mark"></span>Ordex <small>Guide</small></a>
+      <div class="navlinks"><a href="index.html">Home</a><a href="quickstart.html">Start</a><a href="protocol-guide.html">How it works</a><a href="troubleshooting.html">Help</a></div>
     </nav>
+
     <section class="hero">
       <div>
-        <span class="eyebrow">The portable orderbook</span>
-        <h1>Bitcoin market inventory, verified where you choose.</h1>
-        <p class="lead">Ordex turns independently sourced PSBT evidence into a portable inventory that compatible markets can discover, review, and verify. Chain truth comes from a gateway you trust; distribution comes from signed Nostr events.</p>
-        <div class="actions"><a class="button" href="quickstart.html">Choose a starting path</a><a class="button secondary" href="protocol-guide.html">Understand the protocol</a></div>
-        <p class="microcopy">No seed phrases. No custody. No hidden market-maker inventory.</p>
+        <span class="eyebrow">The orderbook that travels</span>
+        <h1>Discover Bitcoin orders with their evidence attached.</h1>
+        <p class="lead">Ordex makes signed PSBT orders portable across compatible markets. Review the publisher, terms, asset claim, and latest availability signal in one place—then decide for yourself.</p>
+        <div class="actions"><a class="button" href="quickstart.html">Explore your first order</a><a class="button secondary" href="protocol-guide.html">See how Ordex works</a></div>
+        <p class="microcopy">No seed phrases. No custody. No automatic settlement.</p>
       </div>
       <aside class="signal">
-        <span class="signal-label">What one order contains</span>
-        <strong>Evidence, not promises.</strong>
-        <p>A portable order joins a PSBT artifact with its verification record, asset metadata, lifecycle state, and optional signed Nostr evidence.</p>
+        <span class="signal-label">What travels with an order</span>
+        <strong>Evidence you can inspect.</strong>
+        <p>Each portable order brings its transaction artifact together with provenance, asset details, lifecycle, and the latest verification signal.</p>
         <div class="metric-grid">
-          <div class="metric"><b>UTXO</b><span>Bitcoin Core checks current availability</span></div>
-          <div class="metric"><b>Asset</b><span><code>ord</code> confirms inscription location</span></div>
-          <div class="metric"><b>PSBT</b><span>Strict parsing and deterministic digest</span></div>
-          <div class="metric"><b>Nostr</b><span>User-signed kind-802 event</span></div>
+          <div class="metric"><b>Terms</b><span>What the order proposes</span></div>
+          <div class="metric"><b>Asset</b><span>What the order claims to move</span></div>
+          <div class="metric"><b>Inputs</b><span>Whether they were recently available</span></div>
+          <div class="metric"><b>Signature</b><span>Who published the evidence</span></div>
         </div>
       </aside>
     </section>
+
     <section class="section" aria-labelledby="paths-title">
-      <div class="section-head"><span class="eyebrow">Start with your role</span><h2 id="paths-title">Three ways into Ordex.</h2><p>Each path arrives at the same decentralized inventory without requiring a central listing authority.</p></div>
+      <div class="section-head"><span class="eyebrow">A clearer way to discover</span><h2 id="paths-title">From finding an order to making your choice.</h2><p>Ordex keeps discovery separate from the wallet action that may settle a trade.</p></div>
       <div class="grid role-grid">
-        <article class="card"><span class="number">MARKETPLACE</span><h3>Make your inventory portable</h3><p>Use your Ordex gateway by default, display independent verification state, and let advanced users switch to their own gateway.</p><a class="text-link" href="market-integration.html">Market integration guide <span>-></span></a></article>
-        <article class="card"><span class="number">OPERATOR</span><h3>Run independent verification</h3><p>Place an Ordex gateway beside a synchronized Core node and an <code>ord</code> index. Expose the gateway, never node RPC.</p><a class="text-link" href="operator-guide.html">Operator guide <span>-></span></a></article>
-        <article class="card"><span class="number">USER / COLLECTOR</span><h3>Use the market you trust</h3><p>Choose a marketplace gateway or enter a self-hosted gateway URL. Configure relays and sign the portable inventory event from a NIP-07 extension.</p><a class="text-link" href="quickstart.html#collector">Collector path <span>-></span></a></article>
+        <article class="card"><span class="number">DISCOVER</span><h3>See portable inventory</h3><p>Browse compatible markets without depending on one venue to be the sole source of an order.</p></article>
+        <article class="card"><span class="number">REVIEW</span><h3>Follow the evidence</h3><p>Compare terms, provenance, asset details, lifecycle, and the time of the latest availability check.</p></article>
+        <article class="card"><span class="number">CHOOSE</span><h3>Keep wallet control</h3><p>Approve any settlement only in a wallet you trust, after reviewing every input, output, destination, and fee.</p></article>
       </div>
     </section>
+
     <section class="section" aria-labelledby="model-title">
-      <div class="section-head"><span class="eyebrow">The verification model</span><h2 id="model-title">Markets coordinate around evidence, not custody.</h2><p>Ordex keeps discovery and verification separate from the wallet action that settles a trade.</p></div>
+      <div class="section-head"><span class="eyebrow">The Ordex journey</span><h2 id="model-title">Portable evidence, independent choice.</h2></div>
       <div class="flow">
-        <article class="step"><span>01 / Observe</span><h3>Ingest an order</h3><p>Index a direct PSBT artifact, an authorized adapter record, or a signed OpenOrdex-compatible event.</p></article>
-        <article class="step"><span>02 / Verify</span><h3>Derive local truth</h3><p>Check active UTXOs with Core and claimed ordinal location with <code>ord</code>.</p></article>
-        <article class="step"><span>03 / Distribute</span><h3>Sign and relay</h3><p>The publisher's Nostr extension signs an event and sends it to relays they select.</p></article>
-        <article class="step"><span>04 / Review</span><h3>Settle by choice</h3><p>A wallet application handles any user-approved funding, signing, and broadcast outside Ordex.</p></article>
+        <article class="step"><span>01 / Find</span><h3>Open an order</h3><p>Choose a listing from a compatible Ordex experience.</p></article>
+        <article class="step"><span>02 / Inspect</span><h3>Read the evidence</h3><p>Review its publisher, terms, asset claim, inputs, and lifecycle.</p></article>
+        <article class="step"><span>03 / Confirm</span><h3>Check freshness</h3><p>Make sure the availability signal is recent before proceeding.</p></article>
+        <article class="step"><span>04 / Decide</span><h3>Use your wallet</h3><p>If you continue, review and approve the transaction in your own wallet.</p></article>
       </div>
     </section>
+
     <section class="section" aria-labelledby="library-title">
-      <div class="section-head"><span class="eyebrow">Documentation library</span><h2 id="library-title">Answers for the moment you need them.</h2></div>
+      <div class="section-head"><span class="eyebrow">Explore Ordex</span><h2 id="library-title">The answer you need, when you need it.</h2></div>
       <div class="doc-library">
-        <a class="library-card" href="quickstart.html"><span class="library-index">01</span><div><h3>Quickstart</h3><p>Pick a path, connect a gateway, publish a first portable order.</p></div><b>-></b></a>
-        <a class="library-card" href="operator-guide.html"><span class="library-index">02</span><div><h3>Operator guide</h3><p>Topology, environment, health, read-only node policy, and operations.</p></div><b>-></b></a>
-        <a class="library-card" href="market-integration.html"><span class="library-index">03</span><div><h3>Market integration</h3><p>Connection modes, inventory contract, relay publishing, and UX obligations.</p></div><b>-></b></a>
-        <a class="library-card" href="protocol-guide.html"><span class="library-index">04</span><div><h3>Protocol guide</h3><p>Event shape, states, verification layers, templates, and limitations.</p></div><b>-></b></a>
-        <a class="library-card" href="api-reference.html"><span class="library-index">05</span><div><h3>API reference</h3><p>Endpoint purpose, filters, lifecycle calls, and integration examples.</p></div><b>-></b></a>
-        <a class="library-card" href="troubleshooting.html"><span class="library-index">06</span><div><h3>Troubleshooting</h3><p>Diagnose node status, assets, relays, verification, and order visibility.</p></div><b>-></b></a>
+        <a class="library-card" href="quickstart.html"><span class="library-index">01</span><div><h3>Start safely</h3><p>Walk through discovery, review, signing, and wallet safety.</p></div><b>→</b></a>
+        <a class="library-card" href="protocol-guide.html"><span class="library-index">02</span><div><h3>How Ordex works</h3><p>Understand portable evidence, lifecycle signals, and trust boundaries.</p></div><b>→</b></a>
+        <a class="library-card" href="troubleshooting.html"><span class="library-index">03</span><div><h3>Get help</h3><p>Make sense of pending, unavailable, withdrawn, or hard-to-find orders.</p></div><b>→</b></a>
       </div>
     </section>
-    <section class="section"><div class="callout"><i></i><div><h3>Inventory withdrawal is not a Bitcoin cancellation.</h3><p>Removing an order from one Ordex gateway removes its local projection. It does not spend a UTXO, revoke a copied PSBT, or erase a signed event from other relays. Consumers should always re-verify before settlement.</p></div></div></section>
-    <footer class="footer"><span>Ordex documentation</span><p>Portable market evidence for non-custodial Bitcoin markets. <a href="quickstart.html">Begin with the quickstart -></a></p></footer>
+
+    <section class="section"><div class="callout"><i></i><div><h3>Withdrawal is not Bitcoin cancellation.</h3><p>An order removed from one Ordex experience may still exist elsewhere. Withdrawal does not spend its inputs, erase copies, or reverse a transaction. Always check the evidence again immediately before settlement.</p></div></div></section>
+    <footer class="footer"><span>Ordex</span><p>Portable Bitcoin order evidence, with custody left where it belongs: with you. <a href="quickstart.html">Start safely →</a></p></footer>
   </main>
 </body>
 </html>
