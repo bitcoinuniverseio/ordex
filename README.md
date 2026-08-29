@@ -2,7 +2,7 @@
 
 **Portable Bitcoin orders, verified before you act.**
 
-Ordex lets signed PSBT order evidence travel across compatible Bitcoin markets. A listing carries the details needed to understand what is being offered, where it came from, and when its inputs were last checked—without handing custody to Ordex.
+Ordex lets signed PSBT order evidence travel across compatible Bitcoin markets. A listing carries the details needed to understand what is being offered, where it came from, and when its inputs were last checked, without handing custody to Ordex.
 
 ## Why Ordex
 
