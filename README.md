@@ -7,10 +7,20 @@ Ordex lets signed PSBT order evidence travel across compatible Bitcoin markets. 
 ## Why Ordex
 
 - **Portable evidence:** discover the same signed order across compatible venues.
-- **Fresh context:** see whether the referenced Bitcoin inputs were available when last checked.
-- **Clear provenance:** review the publisher, asset claim, order terms, and lifecycle together.
+- **Fresh context:** every listing shows when it was last checked, and Ordex checks it again before handing it to your wallet.
+- **Clear provenance:** review the publisher, asset claim, order terms, and lifecycle together, with where a listing was published kept separate from what was proven on chain.
+- **Owner-only management:** only the key that owns the output a listing sells can remove that listing.
 - **User-controlled signing:** Nostr approval stays inside your NIP-07 signer.
-- **Non-custodial by design:** Ordex does not hold funds or settle trades for you.
+- **Non-custodial by design:** Ordex does not hold funds, sign, fund, combine, broadcast, or settle trades for you.
+
+## What Ordex covers
+
+Ordex builds, verifies, and hands over Bitcoin PSBTs. Its markets are Bitcoin PSBT,
+Ordinals, Bitmap, BRC-20, TAP, DMT, UNAT, Names, OP Inscriptions, OP-20, OP Names,
+Taproot OP_DROP, ARC-20, Runes, Alkanes, Mezcal, and DUST20. It has no artifact
+builder, verifier, or source adapter for Dogecoin or Counterparty assets, so those
+markets are not listed and no Bitcoin transaction is ever presented under a
+protocol label Ordex did not verify.
 
 ## Explore
 
