@@ -10,8 +10,8 @@ Ordex lets signed PSBT order evidence travel across compatible Bitcoin markets. 
 - **Fresh context:** every listing shows when it was last checked, and Ordex checks it again before handing it to your wallet.
 - **Clear provenance:** review the publisher, asset claim, order terms, and lifecycle together, with where a listing was published kept separate from what was proven on chain.
 - **Owner-only management:** only the key that owns the output a listing sells can remove that listing.
-- **User-controlled signing:** Nostr approval stays inside your NIP-07 signer.
-- **Non-custodial by design:** Ordex does not hold funds, sign, fund, combine, broadcast, or settle trades for you.
+- **User-controlled signing:** your wallet signs your own inputs, and Nostr approval stays inside your NIP-07 signer.
+- **Non-custodial by design:** Ordex does not hold funds, does not sign, does not contribute funds, and does not broadcast on its own initiative.
 
 ## What Ordex covers
 
@@ -22,12 +22,29 @@ builder, verifier, or source adapter for Dogecoin or Counterparty assets, so tho
 markets are not listed and no Bitcoin transaction is ever presented under a
 protocol label Ordex did not verify.
 
+## Buying is four named steps
+
+Review the purchase, approve it in your wallet, read the node's own verdict,
+then send it. The exact price, fee, change, and receiving address are shown
+before the wallet prompt, and nothing reaches the network until you ask for it.
+
+Copying the raw signed order is still there for a wallet Ordex cannot drive,
+behind a disclosure that says what you take on if you use it.
+
 ## Explore
 
 - [Meet Ordex](docs/index.html)
 - [Start safely](docs/quickstart.html)
 - [How portable orders work](docs/protocol-guide.html)
 - [Get help](docs/troubleshooting.html)
+
+## Build against Ordex
+
+- [Completing a public ask](spec/purchase.md), and the two rules that decide
+  whether the asset reaches the buyer or goes back to the seller
+- [Order lifecycle](spec/lifecycle.md)
+- [The gateway API](spec/api.md)
+- [Security policy](SECURITY.md)
 
 ## Stay in control
 
