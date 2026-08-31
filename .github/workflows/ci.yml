@@ -54,3 +54,30 @@ jobs:
           $ErrorActionPreference = 'Stop'
           git diff --exit-code -- dist
           if ($LASTEXITCODE -ne 0) { throw 'dist/ no longer matches a fresh build' }
+
+      - name: Install locked SDK dependencies
+        working-directory: sdk
+        run: npm ci
+
+      - name: Audit SDK dependencies
+        working-directory: sdk
+        run: npm audit --audit-level=low
+
+      - name: Regenerate SDK types from the contract
+        working-directory: sdk
+        run: npm run generate
+
+      - name: Prove the committed SDK types match the contract
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          git diff --exit-code -- sdk/src/schema.ts
+          if ($LASTEXITCODE -ne 0) { throw 'sdk/src/schema.ts no longer matches the contract' }
+
+      - name: Build the SDK
+        working-directory: sdk
+        run: npm run build
+
+      - name: Test the SDK
+        working-directory: sdk
+        run: npm test
