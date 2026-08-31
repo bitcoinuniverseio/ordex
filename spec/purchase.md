@@ -96,7 +96,14 @@ Before a transaction reaches a node, Ordex refuses it when:
   or value differs from the order's terms;
 - the sat flow invariant above does not hold;
 - the values of the inputs ahead of the offered one cannot be read from the
-  node, so the invariant cannot be evaluated at all.
+  node, so the invariant cannot be evaluated at all;
+- its runestone is a cenotaph and an input carries a rune balance, or an
+  input the rune index has not examined. A cenotaph is a malformed runestone:
+  the transaction confirms normally and destroys every rune its inputs
+  carried, so no fee check, mempool acceptance, or unspent-output check can
+  catch it. Ordex deciphers the runestone exactly as the protocol does on
+  every preflight, and treats "the index has not looked" as unproven rather
+  than empty.
 
 Before composing, Ordex refuses when:
 
