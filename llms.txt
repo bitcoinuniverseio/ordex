@@ -36,4 +36,6 @@ holding the signed artifact, so it is never described as reserved.
 - [Start safely](docs/quickstart.html)
 - [How portable orders work](docs/protocol-guide.html)
 - [Get help](docs/troubleshooting.html)
+- [API reference](docs/api-reference.html): generated from the OpenAPI
+  contract at build time.
 - [Security policy](SECURITY.md)
