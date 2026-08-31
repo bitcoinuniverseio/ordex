@@ -54,6 +54,8 @@ jobs:
           $ErrorActionPreference = 'Stop'
           git diff --exit-code -- dist
           if ($LASTEXITCODE -ne 0) { throw 'dist/ no longer matches a fresh build' }
+          $untracked = git status --porcelain --ignored=matching -- dist
+          if ($untracked) { throw "dist/ holds files the repository does not: $untracked" }
 
       - name: Install locked SDK dependencies
         working-directory: sdk
