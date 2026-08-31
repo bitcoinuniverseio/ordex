@@ -29,6 +29,25 @@ the outputs would not notice until the asset failed to arrive.
 the invariant Ordex checks on every final transaction before a node is asked to
 accept it.
 
+## Threats, and the mechanism that answers each
+
+Every mechanism named below is implemented and tested in the gateway; this
+table is a map of the code, not a wish list.
+
+| Threat | What answers it |
+| --- | --- |
+| A seller PSBT arranged so a valid purchase pays the seller and returns them the asset | The two placement rules and the sat flow invariant in [spec/purchase.md](spec/purchase.md), checked on every final transaction before a node is asked. |
+| A wallet that mutates the transaction after approval | Preflight rebinds the final bytes to the order's exact terms, refuses any mismatch, and answers with the exact bytes it checked so the buyer broadcasts those and no others. |
+| A stale listing raced by another buyer or spent elsewhere | The order is reverified against the chain immediately before quoting and before preflight; a verification past its freshness bound closes the handoff; a public ask is described as raceable, never reserved. |
+| A malformed runestone that burns every rune its inputs carry | The runestone is deciphered exactly as the protocol does on every preflight. A cenotaph spending a rune bearing or unexamined input is refused. |
+| Padding or funding outputs that carry assets | Every output a buyer names is checked against the ord index before composition; an inscription, a rune balance, or an unexamined output is refused. |
+| A request body that lies about values or scripts | Value and script are read from Bitcoin Core, never from the request. |
+| A hidden marketplace output | There is none to hide: the gateway adds no fee and no royalty output, and states both as zero. |
+| A forged or replayed OpenOrdex event | The event id is recomputed from the NIP-01 serialization, the Schnorr signature is verified, and a replay lands on the same artifact digest, where it merges as evidence instead of creating a second order. |
+| A source that repeats a dead or altered listing | Source claims never outrank the node and the ord index; a duplicate artifact cannot change the existing order's terms; named provenance is accepted only from its own verified adapter. |
+| A withdrawal by someone other than the seller | Withdrawal requires a signature from the key owning the output the listing sells, over a challenge bound to the order and a time window. |
+| Bulk artifact harvesting | The signed artifact is released only through its own rate limited route, and only while the order is live. |
+
 ## Boundaries a compatible client should keep
 
 - Sign the buyer's own inputs only. The seller's half arrives signed; signing
