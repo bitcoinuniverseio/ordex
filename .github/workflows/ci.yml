@@ -59,6 +59,16 @@ jobs:
             if (-not (Test-Path $file)) { throw "$file missing from the build output" }
           }
 
+      # GitHub Pages serves docs/ from main, so the generated reference lives
+      # there as a committed file. The build regenerates it; any difference
+      # means someone edited the page by hand or forgot to rebuild.
+      - name: Prove the committed API reference matches the contract
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          git diff --exit-code -- docs/api-reference.html
+          if ($LASTEXITCODE -ne 0) { throw 'docs/api-reference.html no longer matches the contract' }
+
       - name: Install locked SDK dependencies
         working-directory: sdk
         run: npm ci
