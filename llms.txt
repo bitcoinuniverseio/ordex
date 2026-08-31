@@ -20,6 +20,8 @@ holding the signed artifact, so it is never described as reserved.
   invariant that decide whether the asset reaches the buyer.
 - [Order lifecycle](spec/lifecycle.md): every reachable state and what a
   customer may do in each.
+- [Portable orders](spec/interoperability.md): how an order enters and
+  leaves a gateway, and the exact OpenOrdex kind 802 event contract.
 
 ## Conformance
 
