@@ -3,6 +3,13 @@
 Every route below is served under `/api/ordex`. Amounts and protocol quantities
 are atomic integers carried as strings, never as floating point numbers.
 
+The exact request and response shape of every route, field by field, is the
+machine readable contract in [openapi.json](openapi.json). This page explains
+the decisions; the contract states the wire format, and the two are kept in
+step in the same commit.
+
+Reads answer `200`. Every write answers `201`.
+
 ## Reads
 
 | Route | Answers |
@@ -13,6 +20,8 @@ are atomic integers carried as strings, never as floating point numbers.
 | `GET /orders` | One page of the orderbook. |
 | `GET /orders/:id` | One order. |
 | `GET /activity` | The appended lifecycle log, newest first. |
+| `GET /orders/:id/ownership-challenge` | The message a listing owner signs before managing it. |
+| `GET /orders/:id/nostr-envelope` | The unsigned kind 802 event announcing this listing, for the seller's own NIP-07 signer. |
 
 `GET /orders/:id/artifact` is separate on purpose. A browse response carrying
 raw PSBTs would hand every public ask to anything that can read the market, so
@@ -66,6 +75,11 @@ book.
 | `POST /orders/:id/preflight` | Verifies a signed purchase and asks the node whether it would accept it. |
 
 Every write is rate limited.
+
+One further route exists outside the public surface:
+`POST /admin/orders/:id/withdraw` removes a listing as operator moderation. It
+requires the operator's HTTP Basic credentials configured on the gateway, and
+no public route ever requires them.
 
 ## `POST /orders/:id/quote`
 
