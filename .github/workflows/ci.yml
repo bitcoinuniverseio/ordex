@@ -48,14 +48,16 @@ jobs:
       - name: Build the documentation site
         run: npm run build
 
-      - name: Prove the committed dist matches the build
+      # dist/ is a build output and stays untracked. The build itself fails
+      # loudly on an error, so the check here is that everything the deploy
+      # needs actually came out of it.
+      - name: Prove the build produced the site and the worker
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          git diff --exit-code -- dist
-          if ($LASTEXITCODE -ne 0) { throw 'dist/ no longer matches a fresh build' }
-          $untracked = git status --porcelain --ignored=matching -- dist
-          if ($untracked) { throw "dist/ holds files the repository does not: $untracked" }
+          foreach ($file in 'dist/client/index.html', 'dist/client/api-reference.html', 'dist/server/index.js') {
+            if (-not (Test-Path $file)) { throw "$file missing from the build output" }
+          }
 
       - name: Install locked SDK dependencies
         working-directory: sdk
