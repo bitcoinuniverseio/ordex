@@ -4,6 +4,6 @@
   "type": "module",
   "scripts": {
     "build": "node scripts/build.mjs",
-    "test": "node --test verifier/purchase.test.js spec/openapi.test.js scripts/api-reference.test.js"
+    "test": "node --test verifier/purchase.test.js verifier/runes.test.js spec/openapi.test.js scripts/api-reference.test.js"
   }
 }
