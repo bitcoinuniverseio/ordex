@@ -1,0 +1,97 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ordex-ci-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    # This is a public repository on self-hosted runners, so a pull request
+    # from a fork must never reach them. Same-repository events only.
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, universe-ci, linux-ultra]
+    timeout-minutes: 15
+    steps:
+      - name: Check out exact source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install pinned Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+
+      - name: Verify runtime pins
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((node --version).Trim() -ne 'v24.19.0') { throw 'Unexpected Node.js version' }
+
+      # The repository has no dependencies on purpose, so there is nothing to
+      # install and nothing to audit. Each check below is its own step so a
+      # red result cannot be erased by a later green command.
+      - name: Run the reference verifier against the conformance vectors
+        run: npm test
+
+      - name: Build the documentation site
+        run: npm run build
+
+      # dist/ is a build output and stays untracked. The build itself fails
+      # loudly on an error, so the check here is that everything the deploy
+      # needs actually came out of it.
+      - name: Prove the build produced the site and the worker
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          foreach ($file in 'dist/client/index.html', 'dist/client/api-reference.html', 'dist/server/index.js') {
+            if (-not (Test-Path $file)) { throw "$file missing from the build output" }
+          }
+
+      # GitHub Pages serves docs/ from main, so the generated reference lives
+      # there as a committed file. The build regenerates it; any difference
+      # means someone edited the page by hand or forgot to rebuild.
+      - name: Prove the committed API reference matches the contract
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          git diff --exit-code -- docs/api-reference.html
+          if ($LASTEXITCODE -ne 0) { throw 'docs/api-reference.html no longer matches the contract' }
+
+      - name: Install locked SDK dependencies
+        working-directory: sdk
+        run: npm ci
+
+      - name: Audit SDK dependencies
+        working-directory: sdk
+        run: npm audit --audit-level=low
+
+      - name: Regenerate SDK types from the contract
+        working-directory: sdk
+        run: npm run generate
+
+      - name: Prove the committed SDK types match the contract
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          git diff --exit-code -- sdk/src/schema.ts
+          if ($LASTEXITCODE -ne 0) { throw 'sdk/src/schema.ts no longer matches the contract' }
+
+      - name: Build the SDK
+        working-directory: sdk
+        run: npm run build
+
+      - name: Test the SDK
+        working-directory: sdk
+        run: npm test
