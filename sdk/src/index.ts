@@ -18,6 +18,18 @@ export {
   type PurchaseTransaction,
   type PurchaseVerdict,
 } from './purchase.js';
+export {
+  decipherRunestone,
+  parseScriptHex,
+  verifyRuneBurnSafety,
+  type RuneEdict,
+  type RuneId,
+  type RuneInputObservation,
+  type RuneRefusalCode,
+  type RuneSafetyVerdict,
+  type Runestone,
+  type RunestoneFlaw,
+} from './runes.js';
 
 type Schemas = components['schemas'];
 
