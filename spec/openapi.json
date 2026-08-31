@@ -1,0 +1,1134 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Ordex gateway API",
+    "version": "1.0.0",
+    "summary": "Portable Bitcoin orders, verified before you act.",
+    "description": "The HTTP contract an Ordex gateway serves under `/api/ordex`. Amounts and protocol quantities are atomic integers carried as decimal strings, never as floating point numbers. Reads answer 200. Writes answer 201 and are rate limited. Errors use the envelope in `ErrorResponse`. The gateway composes and verifies transactions; it never signs, never holds or contributes funds, and never broadcasts on its own initiative.",
+    "license": {
+      "name": "MIT",
+      "identifier": "MIT"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://bitcoinuniverse.io",
+      "description": "The Bitcoin Universe marketplace gateway."
+    },
+    {
+      "url": "{gateway}",
+      "description": "A self hosted Ordex gateway.",
+      "variables": {
+        "gateway": {
+          "default": "http://127.0.0.1:3001",
+          "description": "The origin of your own deployed gateway."
+        }
+      }
+    }
+  ],
+  "tags": [
+    { "name": "status", "description": "What this gateway is, and whether it can verify a listing right now." },
+    { "name": "orders", "description": "The orderbook, one order, and its signed artifact." },
+    { "name": "activity", "description": "The appended lifecycle log." },
+    { "name": "selling", "description": "Building, publishing, and withdrawing a listing." },
+    { "name": "buying", "description": "Quoting and preflighting a purchase." },
+    { "name": "interoperability", "description": "Importing and exporting portable signed orders." },
+    { "name": "operator", "description": "Separately authenticated moderation." }
+  ],
+  "paths": {
+    "/api/ordex/health": {
+      "get": {
+        "tags": ["status"],
+        "operationId": "getHealth",
+        "summary": "The observed verification verdict, not the configuration",
+        "description": "Reports configuration completeness and, separately, whether a Bitcoin listing can actually be verified right now: storage writable, both nodes answering, and the ord index within its accepted lag of Bitcoin Core.",
+        "responses": {
+          "200": {
+            "description": "The health report.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/HealthReport" } } }
+          },
+          "default": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/api/ordex/protocol": {
+      "get": {
+        "tags": ["status"],
+        "operationId": "getProtocol",
+        "summary": "The protocol contract this gateway speaks",
+        "responses": {
+          "200": {
+            "description": "The protocol contract.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProtocolContract" } } }
+          },
+          "default": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/api/ordex/catalog": {
+      "get": {
+        "tags": ["status"],
+        "operationId": "getCatalog",
+        "summary": "The markets this gateway serves, and what it verifies for each",
+        "description": "Every entry states its verification scope in plain language and its capabilities as booleans. An entry in the catalog never implies a working flow beyond what its capabilities state.",
+        "responses": {
+          "200": {
+            "description": "The protocol catalog.",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/ProtocolTemplate" } }
+              }
+            }
+          },
+          "default": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/api/ordex/orders": {
+      "get": {
+        "tags": ["orders"],
+        "operationId": "listOrders",
+        "summary": "One page of the orderbook",
+        "description": "Paging is keyset, never offset. A request carrying an `offset` parameter is refused with 400, and a malformed cursor is a 400 rather than a silent restart from the first page.",
+        "parameters": [
+          { "name": "protocol", "in": "query", "schema": { "type": "string" }, "description": "One catalog protocol id." },
+          { "name": "protocols", "in": "query", "schema": { "type": "string" }, "description": "Comma separated catalog ids. Applied before sorting and pagination." },
+          { "name": "group", "in": "query", "schema": { "type": "string" }, "description": "A catalog group id, expanded to every protocol it contains." },
+          { "name": "token", "in": "query", "schema": { "type": "string" } },
+          { "name": "source", "in": "query", "schema": { "$ref": "#/components/schemas/Source" } },
+          { "name": "state", "in": "query", "schema": { "type": "string" }, "description": "An order state from `OrderState`." },
+          { "name": "safety", "in": "query", "schema": { "type": "string" }, "description": "A safety class from `PsbtInspection.safety`." },
+          { "name": "orderClass", "in": "query", "schema": { "type": "string" } },
+          { "name": "signature", "in": "query", "schema": { "type": "string" }, "description": "A signature status from `SignatureStatus`." },
+          { "name": "side", "in": "query", "schema": { "type": "string" } },
+          { "name": "seller", "in": "query", "schema": { "type": "string" }, "description": "Restricts the page to the listings one seller script owns." },
+          { "name": "assetInscriptionId", "in": "query", "schema": { "type": "string" }, "description": "Restricts the page to orders claiming one inscription. Resolved through an index of order claims." },
+          { "name": "assetOutpoint", "in": "query", "schema": { "type": "string" }, "description": "Restricts the page to orders claiming an asset at one `txid:vout`." },
+          { "name": "search", "in": "query", "schema": { "type": "string" } },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["newest", "oldest", "price_asc", "price_desc", "token_asc", "protocol_asc", "validation_newest"]
+            },
+            "description": "Every sort ends on the order id, which is unique, so the ordering is total and a cursor resumes exactly. An unpriced order sorts after every priced one in both price directions."
+          },
+          { "name": "includeWithdrawn", "in": "query", "schema": { "type": "string" } },
+          { "name": "limit", "in": "query", "schema": { "type": "string" }, "description": "Page size as a decimal string." },
+          { "name": "cursor", "in": "query", "schema": { "type": "string" }, "description": "The keyset resume point a previous page answered with." }
+        ],
+        "responses": {
+          "200": {
+            "description": "One page of orders.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OrderPage" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "default": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/api/ordex/activity": {
+      "get": {
+        "tags": ["activity"],
+        "operationId": "listActivity",
+        "summary": "The appended lifecycle log, newest first",
+        "description": "Reads the appended transition log, so an entry is something that happened rather than a listing's current state restated after the fact.",
+        "parameters": [
+          { "name": "orderId", "in": "query", "schema": { "type": "string" } },
+          { "name": "limit", "in": "query", "schema": { "type": "string" } },
+          { "name": "cursor", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "One page of lifecycle transitions.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ActivityPage" } } }
+          },
+          "default": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/api/ordex/orders/{id}": {
+      "get": {
+        "tags": ["orders"],
+        "operationId": "getOrder",
+        "summary": "One order",
+        "parameters": [{ "$ref": "#/components/parameters/OrderId" }],
+        "responses": {
+          "200": {
+            "description": "The order, without its signed artifact.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OrderSummary" } } }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "default": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/api/ordex/orders/{id}/artifact": {
+      "get": {
+        "tags": ["orders"],
+        "operationId": "getOrderArtifact",
+        "summary": "The signed artifact for one live listing",
+        "description": "Deliberately its own rate limited request. A browse response carrying raw PSBTs would hand every public ask to anything that can read the market. Only a live listing hands over its artifact; any other state is refused with 400.",
+        "parameters": [{ "$ref": "#/components/parameters/OrderId" }],
+        "responses": {
+          "200": {
+            "description": "The signed artifact and its current verification.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OrderArtifact" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/RateLimited" },
+          "default": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/api/ordex/orders/import": {
+      "post": {
+        "tags": ["interoperability"],
+        "operationId": "importOrder",
+        "summary": "Take a signed artifact and verify it",
+        "description": "A source may supply signed order evidence, but it never overrides what the node and the ord index prove. The claims travel as evidence and the authorities decide the state.",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ImportRequest" } } }
+        },
+        "responses": {
+          "201": {
+            "description": "The imported order after verification.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OrderSummary" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "429": { "$ref": "#/components/responses/RateLimited" },
+          "default": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/api/ordex/orders/openordex-event": {
+      "post": {
+        "tags": ["interoperability"],
+        "operationId": "importOpenOrdexEvent",
+        "summary": "Take a signed OpenOrdex event and verify it",
+        "description": "Accepts a kind 802 Nostr event carrying a signed PSBT, verifies the event signature, then verifies the order exactly as a direct import.",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/NostrEvent" } } }
+        },
+        "responses": {
+          "201": {
+            "description": "The imported order after verification.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OrderSummary" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "429": { "$ref": "#/components/responses/RateLimited" },
+          "default": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/api/ordex/orders/build": {
+      "post": {
+        "tags": ["selling"],
+        "operationId": "buildAsk",
+        "summary": "Build the unsigned seller half",
+        "description": "Composes the one input, one output PSBT a seller signs `SIGHASH_SINGLE | SIGHASH_ANYONECANPAY`. The asset and outpoint are verified against the node and the ord index before anything is composed.",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BuildAskRequest" } } }
+        },
+        "responses": {
+          "201": {
+            "description": "The unsigned seller half and its inspection.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BuildAskResult" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "429": { "$ref": "#/components/responses/RateLimited" },
+          "default": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/api/ordex/orders/publish": {
+      "post": {
+        "tags": ["selling"],
+        "operationId": "publishAsk",
+        "summary": "Take the signed seller half and publish it",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PublishAskRequest" } } }
+        },
+        "responses": {
+          "201": {
+            "description": "The published order after verification.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OrderSummary" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "429": { "$ref": "#/components/responses/RateLimited" },
+          "default": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/api/ordex/orders/{id}/ownership-challenge": {
+      "get": {
+        "tags": ["selling"],
+        "operationId": "getOwnershipChallenge",
+        "summary": "The message a listing owner signs before managing it",
+        "parameters": [{ "$ref": "#/components/parameters/OrderId" }],
+        "responses": {
+          "200": {
+            "description": "The challenge to sign with the key that owns the offered output.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OwnershipChallenge" } } }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "default": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/api/ordex/orders/{id}/withdraw": {
+      "post": {
+        "tags": ["selling"],
+        "operationId": "withdrawOrder",
+        "summary": "Remove a listing, proved by the key owning the output it sells",
+        "description": "Withdrawal is discovery, not cancellation. It stops this gateway publishing the listing; it cannot unpublish a signed artifact already distributed elsewhere. Only spending the offered output makes such an artifact unusable.",
+        "parameters": [{ "$ref": "#/components/parameters/OrderId" }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OwnershipProof" } } }
+        },
+        "responses": {
+          "201": {
+            "description": "The withdrawn order.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OrderSummary" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/RateLimited" },
+          "default": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/api/ordex/admin/orders/{id}/withdraw": {
+      "post": {
+        "tags": ["operator"],
+        "operationId": "adminWithdrawOrder",
+        "summary": "Operator moderation, separately authenticated",
+        "security": [{ "operatorBasic": [] }],
+        "parameters": [{ "$ref": "#/components/parameters/OrderId" }],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": { "reason": { "type": "string" } }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The withdrawn order.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OrderSummary" } } }
+          },
+          "401": {
+            "description": "Operator credentials missing, invalid, or not configured.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "default": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/api/ordex/orders/{id}/nostr-envelope": {
+      "get": {
+        "tags": ["interoperability"],
+        "operationId": "getNostrEnvelope",
+        "summary": "The unsigned kind 802 event announcing this listing",
+        "description": "The gateway never holds Nostr keys. The customer's own NIP-07 signer signs this envelope, the browser publishes it, and the signed event can then be handed back through the OpenOrdex import route.",
+        "parameters": [{ "$ref": "#/components/parameters/OrderId" }],
+        "responses": {
+          "200": {
+            "description": "The unsigned event envelope.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/NostrEnvelope" } } }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "default": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/api/ordex/orders/{id}/revalidate": {
+      "post": {
+        "tags": ["orders"],
+        "operationId": "revalidateOrder",
+        "summary": "Recheck one order against both authorities",
+        "parameters": [{ "$ref": "#/components/parameters/OrderId" }],
+        "responses": {
+          "201": {
+            "description": "The order after a fresh verification.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OrderSummary" } } }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/RateLimited" },
+          "default": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/api/ordex/orders/{id}/quote": {
+      "post": {
+        "tags": ["buying"],
+        "operationId": "quoteOrder",
+        "summary": "Compose the buyer half and state the exact terms",
+        "description": "The caller names its own outputs and nothing else. Value and script are read from Bitcoin Core, never from the request, so a buyer cannot make a purchase look cheaper by describing their own funding wrongly. Each named output is checked against the ord index first: an output holding an asset is not spare change, and an unexamined output is unknown rather than empty.",
+        "parameters": [{ "$ref": "#/components/parameters/OrderId" }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/QuoteRequest" } } }
+        },
+        "responses": {
+          "201": {
+            "description": "The unsigned buyer half and the exact economics. A fee or a royalty of zero is stated as zero rather than omitted.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Quote" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/RateLimited" },
+          "default": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/api/ordex/orders/{id}/preflight": {
+      "post": {
+        "tags": ["buying"],
+        "operationId": "preflightOrder",
+        "summary": "Verify a signed purchase and ask the node whether it would accept it",
+        "description": "Takes either `finalTxHex` or the `signedPsbt` a wallet actually answers with. Given a PSBT it finalises only inputs the buyer already signed: it creates no signature and changes no input, output, or amount, and an unsigned input is an error rather than a guess. It rechecks the order against the chain, binds the transaction to the order, proves the sat flow invariant, then asks the node itself. The gateway does not broadcast; that is the buyer's own deliberate step.",
+        "parameters": [{ "$ref": "#/components/parameters/OrderId" }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PreflightRequest" } } }
+        },
+        "responses": {
+          "201": {
+            "description": "The verdict, with the exact bytes checked so a buyer broadcasts those and no others.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PreflightResult" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/RateLimited" },
+          "default": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "operatorBasic": {
+        "type": "http",
+        "scheme": "basic",
+        "description": "Operator credentials configured on the gateway. Public routes never require them."
+      }
+    },
+    "parameters": {
+      "OrderId": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "string" },
+        "description": "The order id."
+      }
+    },
+    "responses": {
+      "Error": {
+        "description": "The request failed. The envelope states the status, a human readable message, and the request id.",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+      },
+      "BadRequest": {
+        "description": "The request is malformed or refused, with the exact reason in `message`.",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+      },
+      "NotFound": {
+        "description": "No order with this id.",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+      },
+      "RateLimited": {
+        "description": "Rate limited. The envelope carries `code: ORDEX_RATE_LIMITED`.",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+      }
+    },
+    "schemas": {
+      "AtomicSats": {
+        "type": "string",
+        "pattern": "^(0|[1-9][0-9]*)$",
+        "description": "An exact non-negative atomic amount as a decimal string. Never floating point, never grouped, never padded."
+      },
+      "Network": {
+        "type": "string",
+        "enum": ["mainnet", "regtest", "signet"]
+      },
+      "Source": {
+        "type": "string",
+        "enum": ["openordex-nostr802", "ord-offers", "direct-import"],
+        "description": "Where order evidence arrived from. Source is provenance, never proof; the node and the ord index decide the state."
+      },
+      "OrderClass": {
+        "type": "string",
+        "enum": ["ASK_ANYONECANPAY", "BID_FULLY_FUNDED", "UNSUPPORTED"]
+      },
+      "OrderState": {
+        "type": "string",
+        "enum": ["PENDING_NODE", "PENDING_ORD", "LIVE", "MEMPOOL_CONFLICTED", "SPENT", "SETTLED", "REJECTED", "WITHDRAWN"],
+        "description": "Every state is reachable. A mempool conflict can return to LIVE when the conflicting spend is replaced or dropped; a confirmed spend does not come back short of a reorg. SETTLED is narrower than SPENT: the offered output was spent by a transaction observed carrying this order's exact payout."
+      },
+      "Actionability": {
+        "type": "string",
+        "enum": ["REVIEW_ONLY", "HANDOFF_READY", "BLOCKED"],
+        "description": "What a customer may do right now. A LIVE order whose verification has aged past its freshness bound is REVIEW_ONLY, not HANDOFF_READY."
+      },
+      "SignatureStatus": {
+        "type": "string",
+        "enum": ["NONE", "VALID", "INVALID", "UNAVAILABLE"]
+      },
+      "OrderSide": {
+        "type": "string",
+        "enum": ["ASK", "BID"]
+      },
+      "Outpoint": {
+        "type": "object",
+        "required": ["txid", "vout"],
+        "properties": {
+          "txid": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "vout": { "type": "integer", "minimum": 0 }
+        }
+      },
+      "AssetClaim": {
+        "type": "object",
+        "required": ["inscriptionId", "outpoint"],
+        "properties": {
+          "inscriptionId": { "type": "string" },
+          "outpoint": { "$ref": "#/components/schemas/Outpoint" },
+          "inscriptionNumber": {
+            "type": "integer",
+            "description": "Read from the local ord index during verification, never from a claim."
+          }
+        }
+      },
+      "SourceEvidence": {
+        "type": "object",
+        "required": ["source", "sourceId", "observedAt"],
+        "properties": {
+          "source": { "$ref": "#/components/schemas/Source" },
+          "sourceId": { "type": "string" },
+          "observedAt": { "type": "string", "format": "date-time" },
+          "eventId": { "type": "string" },
+          "eventPubkey": { "type": "string" },
+          "signatureVerified": { "type": "boolean" },
+          "claimedPriceSats": { "$ref": "#/components/schemas/AtomicSats" },
+          "claimedAsset": { "$ref": "#/components/schemas/AssetClaim" }
+        }
+      },
+      "PsbtInspection": {
+        "type": "object",
+        "required": [
+          "psbtVersion",
+          "unsignedTxid",
+          "digest",
+          "inputCount",
+          "outputCount",
+          "inputOutpoints",
+          "inputWitnessUtxos",
+          "outputValuesSats",
+          "outputScriptsHex",
+          "hasProprietaryFields",
+          "hasUnknownFields",
+          "signatureStatus",
+          "orderClass",
+          "safety",
+          "reasons"
+        ],
+        "properties": {
+          "psbtVersion": { "type": "integer" },
+          "unsignedTxid": { "type": "string" },
+          "digest": { "type": "string" },
+          "inputCount": { "type": "integer" },
+          "outputCount": { "type": "integer" },
+          "inputOutpoints": { "type": "array", "items": { "$ref": "#/components/schemas/Outpoint" } },
+          "inputWitnessUtxos": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "required": ["scriptHex", "valueSats"],
+                  "properties": {
+                    "scriptHex": { "type": "string" },
+                    "valueSats": { "$ref": "#/components/schemas/AtomicSats" }
+                  }
+                },
+                { "type": "null" }
+              ]
+            }
+          },
+          "outputValuesSats": { "type": "array", "items": { "$ref": "#/components/schemas/AtomicSats" } },
+          "outputScriptsHex": { "type": "array", "items": { "type": "string" } },
+          "hasProprietaryFields": { "type": "boolean" },
+          "hasUnknownFields": { "type": "boolean" },
+          "signatureStatus": { "$ref": "#/components/schemas/SignatureStatus" },
+          "orderClass": { "$ref": "#/components/schemas/OrderClass" },
+          "safety": { "type": "string", "enum": ["PUBLIC_RACEABLE", "TARGETED_REVIEW", "UNSUPPORTED"] },
+          "reasons": { "type": "array", "items": { "type": "string" } }
+        }
+      },
+      "Validation": {
+        "type": "object",
+        "required": ["checkedAt", "nodeStatus", "ordStatus", "reasons"],
+        "properties": {
+          "checkedAt": { "type": "string", "format": "date-time" },
+          "nodeStatus": {
+            "type": "string",
+            "enum": ["UNCONFIGURED", "READY", "UNAVAILABLE", "OUTPOINT_MISSING", "OUTPOINT_SPENT"]
+          },
+          "ordStatus": {
+            "type": "string",
+            "enum": ["NOT_REQUESTED", "UNCONFIGURED", "VERIFIED", "MISMATCH", "UNAVAILABLE"]
+          },
+          "nodeTip": {
+            "type": "object",
+            "required": ["height", "bestBlockHash"],
+            "properties": {
+              "height": { "type": "integer" },
+              "bestBlockHash": { "type": "string" }
+            }
+          },
+          "reasons": { "type": "array", "items": { "type": "string" } }
+        }
+      },
+      "Settlement": {
+        "type": "object",
+        "required": ["txid", "observedAt", "confirmations"],
+        "description": "Chain settlement the gateway actually observed, never an assumption.",
+        "properties": {
+          "txid": { "type": "string" },
+          "observedAt": { "type": "string", "format": "date-time" },
+          "confirmations": { "type": "integer" },
+          "confirmedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "VerificationView": {
+        "type": "object",
+        "required": ["checkedAt", "ageSeconds", "maxAgeSeconds", "stale"],
+        "description": "Read-time freshness of the last verification. Age is published with every order so staleness is visible rather than implied.",
+        "properties": {
+          "checkedAt": { "type": "string", "format": "date-time" },
+          "ageSeconds": { "type": "number" },
+          "maxAgeSeconds": { "type": "number" },
+          "stale": { "type": "boolean" }
+        }
+      },
+      "Withdrawal": {
+        "type": "object",
+        "required": ["withdrawnAt"],
+        "properties": {
+          "withdrawnAt": { "type": "string", "format": "date-time" },
+          "reason": { "type": "string" }
+        }
+      },
+      "OrderSummary": {
+        "type": "object",
+        "description": "What a list or detail response carries. The signed artifact is deliberately absent; it is released only through its own rate limited route while the order is live.",
+        "required": [
+          "id",
+          "network",
+          "inspection",
+          "assets",
+          "sources",
+          "state",
+          "actionability",
+          "validation",
+          "createdAt",
+          "updatedAt",
+          "verification"
+        ],
+        "properties": {
+          "id": { "type": "string" },
+          "network": { "$ref": "#/components/schemas/Network" },
+          "inspection": { "$ref": "#/components/schemas/PsbtInspection" },
+          "assets": { "type": "array", "items": { "$ref": "#/components/schemas/AssetClaim" } },
+          "sources": { "type": "array", "items": { "$ref": "#/components/schemas/SourceEvidence" } },
+          "state": { "$ref": "#/components/schemas/OrderState" },
+          "actionability": { "$ref": "#/components/schemas/Actionability" },
+          "validation": { "$ref": "#/components/schemas/Validation" },
+          "sellerScriptHex": {
+            "type": "string",
+            "description": "The output script of the PSBT input being sold. Only the key behind it can have created this listing, so it is the identity every seller management action is checked against."
+          },
+          "settlement": { "$ref": "#/components/schemas/Settlement" },
+          "protocolId": { "type": "string", "description": "User supplied discovery metadata. It never substitutes for chain verification." },
+          "token": { "type": "string" },
+          "side": { "$ref": "#/components/schemas/OrderSide" },
+          "quotedPriceSats": { "$ref": "#/components/schemas/AtomicSats" },
+          "withdrawal": { "$ref": "#/components/schemas/Withdrawal" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "OrderPage": {
+        "type": "object",
+        "required": ["orders", "total", "limit", "nextCursor", "hasMore"],
+        "properties": {
+          "orders": { "type": "array", "items": { "$ref": "#/components/schemas/OrderSummary" } },
+          "total": { "type": "integer" },
+          "limit": { "type": "integer" },
+          "nextCursor": {
+            "type": "string",
+            "description": "Keyset resume point for the next page. Empty when this page is last."
+          },
+          "hasMore": { "type": "boolean", "description": "Derived from nextCursor, never from a total that concurrent writes can move." }
+        }
+      },
+      "ActivityEntry": {
+        "type": "object",
+        "required": ["id", "orderId", "fromState", "toState", "reason", "actor", "observedAt"],
+        "properties": {
+          "id": { "type": "string" },
+          "orderId": { "type": "string" },
+          "fromState": {
+            "oneOf": [{ "$ref": "#/components/schemas/OrderState" }, { "type": "null" }],
+            "description": "Null for the first transition an order makes."
+          },
+          "toState": { "$ref": "#/components/schemas/OrderState" },
+          "reason": { "type": "string" },
+          "actor": { "type": "string", "description": "Who caused the transition: the reconciler, the seller, an operator, or an import." },
+          "observedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "ActivityPage": {
+        "type": "object",
+        "required": ["entries", "limit", "nextCursor", "hasMore"],
+        "properties": {
+          "entries": { "type": "array", "items": { "$ref": "#/components/schemas/ActivityEntry" } },
+          "limit": { "type": "integer" },
+          "nextCursor": { "type": "string" },
+          "hasMore": { "type": "boolean" }
+        }
+      },
+      "OrderArtifact": {
+        "type": "object",
+        "required": ["orderId", "psbt", "verification", "state", "actionability"],
+        "properties": {
+          "orderId": { "type": "string" },
+          "psbt": { "type": "string", "description": "The signed artifact, base64." },
+          "verification": { "$ref": "#/components/schemas/VerificationView" },
+          "state": { "$ref": "#/components/schemas/OrderState" },
+          "actionability": { "$ref": "#/components/schemas/Actionability" }
+        }
+      },
+      "ImportRequest": {
+        "type": "object",
+        "required": ["psbt"],
+        "properties": {
+          "psbt": { "type": "string" },
+          "source": { "$ref": "#/components/schemas/Source" },
+          "sourceId": { "type": "string" },
+          "asset": { "$ref": "#/components/schemas/AssetClaim" },
+          "claimedPriceSats": { "type": ["string", "number"] },
+          "protocolId": { "type": "string" },
+          "token": { "type": "string" },
+          "side": { "$ref": "#/components/schemas/OrderSide" },
+          "quotedPriceSats": { "type": ["string", "number"] }
+        }
+      },
+      "QuoteRequest": {
+        "type": "object",
+        "description": "What a buyer names when asking the gateway to price a purchase. The buyer names its own outputs and nothing else.",
+        "properties": {
+          "assetReceiveAddress": { "type": "string", "description": "Where the buyer receives the asset. Never the payment address." },
+          "paymentAddress": { "type": "string", "description": "Where the buyer's change and merged padding return." },
+          "paddingUtxos": {
+            "type": "array",
+            "description": "Outputs placed ahead of the offered one, so the asset reaches the buyer.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "txid": { "type": "string" },
+                "vout": { "type": ["string", "integer"] }
+              }
+            }
+          },
+          "fundingUtxos": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "txid": { "type": "string" },
+                "vout": { "type": ["string", "integer"] }
+              }
+            }
+          },
+          "feeRateSatsPerVb": { "type": ["string", "number"] }
+        }
+      },
+      "Quote": {
+        "type": "object",
+        "description": "Everything a buyer needs to decide, and the unsigned half their wallet will be asked to sign. Every amount is atomic sats as a string.",
+        "required": [
+          "orderId",
+          "network",
+          "psbt",
+          "sellerIndex",
+          "asset",
+          "assetReceiveAddress",
+          "paymentAddress",
+          "sellerPaymentScriptHex",
+          "assetValueSats",
+          "sellerProceedsSats",
+          "marketplaceFeeSats",
+          "creatorRoyaltySats",
+          "networkFeeSats",
+          "feeRateSatsPerVb",
+          "estimatedVbytes",
+          "changeSats",
+          "paddingSats",
+          "totalBuyerCostSats",
+          "inputOutpoints",
+          "outputScriptsHex",
+          "outputValuesSats",
+          "checkpoint",
+          "observedAt",
+          "expiresAt"
+        ],
+        "properties": {
+          "orderId": { "type": "string" },
+          "network": { "$ref": "#/components/schemas/Network" },
+          "psbt": { "type": "string" },
+          "sellerIndex": { "type": "integer", "description": "The index the seller's input and payment output share." },
+          "asset": {
+            "oneOf": [{ "$ref": "#/components/schemas/AssetClaim" }, { "type": "null" }]
+          },
+          "assetReceiveAddress": { "type": "string" },
+          "paymentAddress": { "type": "string" },
+          "sellerPaymentScriptHex": { "type": "string" },
+          "assetValueSats": { "$ref": "#/components/schemas/AtomicSats" },
+          "sellerProceedsSats": { "$ref": "#/components/schemas/AtomicSats" },
+          "marketplaceFeeSats": { "$ref": "#/components/schemas/AtomicSats" },
+          "creatorRoyaltySats": { "$ref": "#/components/schemas/AtomicSats" },
+          "networkFeeSats": { "$ref": "#/components/schemas/AtomicSats" },
+          "feeRateSatsPerVb": { "type": "string" },
+          "estimatedVbytes": { "type": "string" },
+          "changeSats": { "$ref": "#/components/schemas/AtomicSats" },
+          "paddingSats": {
+            "allOf": [{ "$ref": "#/components/schemas/AtomicSats" }],
+            "description": "Padding the buyer supplies and receives back, so it is not a cost."
+          },
+          "totalBuyerCostSats": { "$ref": "#/components/schemas/AtomicSats" },
+          "inputOutpoints": { "type": "array", "items": { "$ref": "#/components/schemas/Outpoint" } },
+          "outputScriptsHex": { "type": "array", "items": { "type": "string" } },
+          "outputValuesSats": { "type": "array", "items": { "$ref": "#/components/schemas/AtomicSats" } },
+          "checkpoint": {
+            "type": "object",
+            "required": ["heightAtomic", "blockHash"],
+            "properties": {
+              "heightAtomic": { "$ref": "#/components/schemas/AtomicSats" },
+              "blockHash": { "type": "string" }
+            }
+          },
+          "observedAt": { "type": "string", "format": "date-time" },
+          "expiresAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "PreflightRequest": {
+        "type": "object",
+        "description": "Either the final transaction hex or the signed PSBT a wallet actually answers with.",
+        "properties": {
+          "finalTxHex": { "type": "string" },
+          "signedPsbt": { "type": "string" }
+        }
+      },
+      "PreflightResult": {
+        "type": "object",
+        "required": ["orderId", "allowed", "checkedAt"],
+        "properties": {
+          "finalTxHex": { "type": "string", "description": "The exact bytes checked, so a buyer broadcasts those and no others." },
+          "orderId": { "type": "string" },
+          "allowed": { "type": "boolean" },
+          "rejectReason": { "type": "string" },
+          "txid": { "type": "string" },
+          "vsize": { "type": "integer" },
+          "feesSats": { "$ref": "#/components/schemas/AtomicSats" },
+          "checkedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "BuildAskRequest": {
+        "type": "object",
+        "required": ["protocolId", "token", "quotedPriceSats", "sellerPaymentAddress"],
+        "properties": {
+          "protocolId": { "type": "string" },
+          "token": { "type": "string" },
+          "quotedPriceSats": { "type": ["string", "number"] },
+          "sellerPaymentAddress": { "type": "string" },
+          "asset": { "$ref": "#/components/schemas/AssetClaim" },
+          "outpoint": { "$ref": "#/components/schemas/Outpoint" }
+        }
+      },
+      "BuildAskResult": {
+        "type": "object",
+        "required": ["psbt", "inspection", "outpoint", "nodeTip", "protocolId", "builderProfile"],
+        "properties": {
+          "psbt": { "type": "string" },
+          "inspection": { "$ref": "#/components/schemas/PsbtInspection" },
+          "outpoint": { "$ref": "#/components/schemas/Outpoint" },
+          "nodeTip": {
+            "type": "object",
+            "required": ["height", "bestBlockHash"],
+            "properties": {
+              "height": { "type": "integer" },
+              "bestBlockHash": { "type": "string" }
+            }
+          },
+          "protocolId": { "type": "string" },
+          "builderProfile": { "type": "string", "enum": ["OPEN_ASK", "EXTERNAL_PSBT", "EXTERNAL_SETTLEMENT"] }
+        }
+      },
+      "PublishAskRequest": {
+        "allOf": [{ "$ref": "#/components/schemas/BuildAskRequest" }],
+        "type": "object",
+        "required": ["psbt"],
+        "properties": {
+          "psbt": { "type": "string", "description": "The seller half, now signed by the seller's own wallet." }
+        }
+      },
+      "OwnershipChallenge": {
+        "type": "object",
+        "required": ["orderId", "address", "message", "windowStart", "expiresAt"],
+        "description": "The message a seller signs to prove they own a listing's source UTXO.",
+        "properties": {
+          "orderId": { "type": "string" },
+          "address": { "type": "string" },
+          "message": { "type": "string" },
+          "windowStart": { "type": "string", "format": "date-time" },
+          "expiresAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "OwnershipProof": {
+        "type": "object",
+        "properties": {
+          "address": { "type": "string" },
+          "signature": { "type": "string" },
+          "reason": { "type": "string" }
+        }
+      },
+      "NostrEnvelope": {
+        "type": "object",
+        "required": ["kind", "created_at", "tags", "content", "notice"],
+        "properties": {
+          "kind": { "const": 802 },
+          "created_at": { "type": "integer" },
+          "tags": { "type": "array", "items": { "type": "array", "items": { "type": "string" } } },
+          "content": { "type": "string" },
+          "notice": { "type": "string" }
+        }
+      },
+      "NostrEvent": {
+        "type": "object",
+        "required": ["id", "pubkey", "created_at", "kind", "tags", "content", "sig"],
+        "properties": {
+          "id": { "type": "string" },
+          "pubkey": { "type": "string" },
+          "created_at": { "type": "integer" },
+          "kind": { "type": "integer" },
+          "tags": { "type": "array", "items": { "type": "array", "items": { "type": "string" } } },
+          "content": { "type": "string" },
+          "sig": { "type": "string" }
+        }
+      },
+      "ProtocolCapabilities": {
+        "type": "object",
+        "description": "What a protocol can truthfully do today. An entry in the catalog never implies a working flow beyond these booleans.",
+        "required": [
+          "browse",
+          "createListing",
+          "verifyAssetSemantics",
+          "reviewOnlyHandoff",
+          "externalSettlement",
+          "sourceIngestion",
+          "mediaResolution"
+        ],
+        "properties": {
+          "browse": { "type": "boolean" },
+          "createListing": { "type": "boolean" },
+          "verifyAssetSemantics": {
+            "type": "boolean",
+            "description": "True when the local ord index proves the asset's current location, not only that its UTXO is unspent."
+          },
+          "reviewOnlyHandoff": { "type": "boolean" },
+          "externalSettlement": { "type": "boolean" },
+          "sourceIngestion": { "type": "boolean" },
+          "mediaResolution": { "type": "boolean" }
+        }
+      },
+      "ProtocolTemplate": {
+        "type": "object",
+        "required": [
+          "id",
+          "label",
+          "route",
+          "family",
+          "capability",
+          "builderProfile",
+          "assetRequirement",
+          "templateLabel",
+          "templateGuidance",
+          "verificationScope",
+          "capabilities",
+          "groupId",
+          "groupLabel",
+          "groupOrder",
+          "displayOrder"
+        ],
+        "properties": {
+          "id": { "type": "string" },
+          "label": { "type": "string" },
+          "route": { "type": "string" },
+          "family": { "type": "string", "enum": ["bitcoin", "dogecoin", "counterparty"] },
+          "capability": { "type": "string", "enum": ["PSBT_HANDOFF", "EXTERNAL_SETTLEMENT"] },
+          "builderProfile": { "type": "string", "enum": ["OPEN_ASK", "EXTERNAL_PSBT", "EXTERNAL_SETTLEMENT"] },
+          "assetRequirement": { "type": "string", "enum": ["INSCRIPTION", "OUTPOINT", "NONE"] },
+          "templateLabel": { "type": "string" },
+          "templateGuidance": { "type": "string" },
+          "verificationScope": {
+            "type": "string",
+            "description": "Plain language scope of what verification proves for this protocol. Never softened to look more capable."
+          },
+          "capabilities": { "$ref": "#/components/schemas/ProtocolCapabilities" },
+          "groupId": { "type": "string" },
+          "groupLabel": { "type": "string" },
+          "groupOrder": { "type": "integer" },
+          "displayOrder": { "type": "integer" },
+          "aliasOf": {
+            "type": "string",
+            "description": "Set when this id is a catalog alias of another protocol. Aliases stay filterable but are not offered as a separate market leaf."
+          }
+        }
+      },
+      "ListingReadiness": {
+        "type": "object",
+        "required": ["ready", "reason", "coreHeight", "ordHeight", "lagBlocks", "maxLagBlocks", "storageWritable", "checkedAt"],
+        "description": "Whether a Bitcoin listing can actually be verified right now. Observed, never inferred from the presence of a URL.",
+        "properties": {
+          "ready": { "type": "boolean" },
+          "reason": {
+            "oneOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "not_configured",
+                  "storage_unavailable",
+                  "core_unavailable_or_syncing",
+                  "ord_unreachable",
+                  "ord_index_behind",
+                  "observation_timed_out"
+                ]
+              },
+              { "type": "null" }
+            ]
+          },
+          "coreHeight": { "type": ["integer", "null"] },
+          "ordHeight": { "type": ["integer", "null"] },
+          "lagBlocks": { "type": ["integer", "null"] },
+          "maxLagBlocks": { "type": "integer" },
+          "storageWritable": { "type": "boolean" },
+          "checkedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "HealthReport": {
+        "type": "object",
+        "required": [
+          "ok",
+          "service",
+          "enabled",
+          "defaultEnabled",
+          "network",
+          "status",
+          "featureFlag",
+          "coreConfigured",
+          "ordConfigured",
+          "configurationComplete",
+          "signsOrBroadcasts",
+          "spendsFunds",
+          "supportedSources",
+          "storageWritable",
+          "readyForBitcoinListings",
+          "maxVerificationAgeSeconds",
+          "listingReadiness"
+        ],
+        "properties": {
+          "ok": { "type": "boolean" },
+          "service": { "const": "ordex" },
+          "enabled": { "type": "boolean" },
+          "defaultEnabled": { "type": "boolean" },
+          "network": { "$ref": "#/components/schemas/Network" },
+          "status": { "type": "string", "enum": ["active", "degraded", "disabled"] },
+          "featureFlag": { "const": "ORDEX_ENABLED" },
+          "coreConfigured": { "type": "boolean" },
+          "ordConfigured": { "type": "boolean" },
+          "configurationComplete": { "type": "boolean" },
+          "signsOrBroadcasts": { "const": false },
+          "spendsFunds": { "const": false },
+          "supportedSources": { "type": "array", "items": { "$ref": "#/components/schemas/Source" } },
+          "storageWritable": { "type": "boolean" },
+          "readyForBitcoinListings": { "type": "boolean" },
+          "maxVerificationAgeSeconds": { "type": "number" },
+          "listingReadiness": { "$ref": "#/components/schemas/ListingReadiness" }
+        }
+      },
+      "ProtocolContract": {
+        "type": "object",
+        "required": ["name", "settlement", "sourceOfTruth", "supportedProfiles", "orderTemplates", "safety", "nostr"],
+        "properties": {
+          "name": { "const": "Ordex" },
+          "settlement": { "type": "string" },
+          "sourceOfTruth": { "type": "string" },
+          "supportedProfiles": { "type": "array", "items": { "type": "string" } },
+          "orderTemplates": {
+            "type": "object",
+            "required": ["supportedProtocols", "supportedGroups", "psbtHandoff"],
+            "properties": {
+              "supportedProtocols": { "type": "integer" },
+              "supportedGroups": { "type": "integer" },
+              "psbtHandoff": { "type": "string" }
+            }
+          },
+          "safety": {
+            "type": "object",
+            "required": ["publicAsk", "combinesPsbt", "signsOrBroadcasts"],
+            "properties": {
+              "publicAsk": { "type": "string" },
+              "combinesPsbt": { "const": false },
+              "signsOrBroadcasts": { "const": false }
+            }
+          },
+          "nostr": {
+            "type": "object",
+            "required": ["ingestion", "note"],
+            "properties": {
+              "ingestion": { "const": "publish-only" },
+              "note": { "type": "string" }
+            }
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "required": ["statusCode", "error", "message"],
+        "description": "The error envelope every route answers with. Rate limited requests additionally carry `code: ORDEX_RATE_LIMITED`.",
+        "properties": {
+          "statusCode": { "type": "integer" },
+          "error": { "type": "string" },
+          "message": {
+            "oneOf": [{ "type": "string" }, { "type": "array", "items": { "type": "string" } }]
+          },
+          "requestId": { "type": "string" },
+          "code": { "type": "string" }
+        },
+        "additionalProperties": true
+      }
+    }
+  }
+}
