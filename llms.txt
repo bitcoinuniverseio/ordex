@@ -1,0 +1,41 @@
+# Ordex
+
+> Portable Bitcoin orders, verified before you act. Ordex is a non-custodial
+> evidence and discovery layer for signed PSBT orders: it composes and
+> verifies Bitcoin transactions, and it never signs, never holds or
+> contributes funds, and never broadcasts on its own initiative.
+
+Amounts are atomic integers carried as decimal strings, never floating point.
+Paging is keyset, never offset. A public ask can be completed by anyone
+holding the signed artifact, so it is never described as reserved.
+
+## Contract
+
+- [The gateway API, explained](spec/api.md): every route under /api/ordex and
+  why it is shaped that way.
+- [openapi.json](spec/openapi.json): the OpenAPI 3.1 contract, field by field.
+- [sdk/README.md](sdk/README.md): the typed TypeScript client generated from
+  that contract.
+- [Completing a public ask](spec/purchase.md): the two rules and the sat flow
+  invariant that decide whether the asset reaches the buyer.
+- [Order lifecycle](spec/lifecycle.md): every reachable state and what a
+  customer may do in each.
+- [Portable orders](spec/interoperability.md): how an order enters and
+  leaves a gateway, and the exact OpenOrdex kind 802 event contract.
+
+## Conformance
+
+- [conformance/purchase-vectors.json](conformance/purchase-vectors.json): the
+  verdict a compatible verifier must reach for each named transaction shape.
+- [verifier/purchase.js](verifier/purchase.js): a dependency free reference
+  verifier implementing the purchase rules, run by `npm test`.
+
+## Guides
+
+- [Meet Ordex](docs/index.html)
+- [Start safely](docs/quickstart.html)
+- [How portable orders work](docs/protocol-guide.html)
+- [Get help](docs/troubleshooting.html)
+- [API reference](docs/api-reference.html): generated from the OpenAPI
+  contract at build time.
+- [Security policy](SECURITY.md)

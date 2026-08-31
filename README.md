@@ -43,7 +43,12 @@ behind a disclosure that says what you take on if you use it.
 - [Completing a public ask](spec/purchase.md), and the two rules that decide
   whether the asset reaches the buyer or goes back to the seller
 - [Order lifecycle](spec/lifecycle.md)
-- [The gateway API](spec/api.md)
+- [Portable orders](spec/interoperability.md): import, export, and OpenOrdex
+- [The gateway API](spec/api.md), explained route by route
+- [The OpenAPI 3.1 contract](spec/openapi.json), the same routes field by field
+- [The typed SDK](sdk/README.md), generated from that contract
+- [Conformance vectors](conformance/purchase-vectors.json) and the
+  [reference verifier](verifier/purchase.js) that runs them with `npm test`
 - [Security policy](SECURITY.md)
 
 ## Stay in control
