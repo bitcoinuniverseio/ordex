@@ -9,33 +9,76 @@ Amounts are atomic integers carried as decimal strings, never floating point.
 Paging is keyset, never offset. A public ask can be completed by anyone
 holding the signed artifact, so it is never described as reserved.
 
-## Contract
+The published guide lives at https://bitcoinuniverseio.github.io/ordex/ and
+the implementation lives at https://github.com/bitcoinuniverseio/ordex.
 
-- [The gateway API, explained](spec/api.md): every route under /api/ordex and
-  why it is shaped that way.
-- [openapi.json](spec/openapi.json): the OpenAPI 3.1 contract, field by field.
-- [sdk/README.md](sdk/README.md): the typed TypeScript client generated from
-  that contract.
-- [Completing a public ask](spec/purchase.md): the two rules and the sat flow
-  invariant that decide whether the asset reaches the buyer.
-- [Order lifecycle](spec/lifecycle.md): every reachable state and what a
-  customer may do in each.
-- [Portable orders](spec/interoperability.md): how an order enters and
-  leaves a gateway, and the exact OpenOrdex kind 802 event contract.
+## Availability
 
-## Conformance
-
-- [conformance/purchase-vectors.json](conformance/purchase-vectors.json): the
-  verdict a compatible verifier must reach for each named transaction shape.
-- [verifier/purchase.js](verifier/purchase.js): a dependency free reference
-  verifier implementing the purchase rules, run by `npm test`.
+The Bitcoin Universe capability snapshot records the Ordex marketplace surface
+as feature-gated, in `psbt-routing-only` mode, behind the `ordex` feature gate.
+Its recorded settlement policy is that Ordex never broadcasts or records a
+completed settlement, and its recorded reason for not supporting a buy action
+is that Ordex validates and routes PSBTs but explicitly does not fund, sign, or
+broadcast settlement. Read every page below with that boundary in mind.
 
 ## Guides
 
-- [Meet Ordex](docs/index.html)
-- [Start safely](docs/quickstart.html)
-- [How portable orders work](docs/protocol-guide.html)
-- [Get help](docs/troubleshooting.html)
-- [API reference](docs/api-reference.html): generated from the OpenAPI
+- [Meet Ordex](https://bitcoinuniverseio.github.io/ordex/): what a portable
+  order carries, who the evidence is for, and what Ordex refuses to do.
+- [Start safely](https://bitcoinuniverseio.github.io/ordex/quickstart.html):
+  five steps from discovering an order to completing it in your own wallet,
+  plus the checks to make before you act.
+- [How portable orders work](https://bitcoinuniverseio.github.io/ordex/protocol-guide.html):
+  protocol families, the lifecycle states a listing can hold, the three
+  verification layers, and what a signature does and does not prove.
+- [Architecture](https://bitcoinuniverseio.github.io/ordex/architecture.html):
+  the system map from wallet to gateway to Bitcoin Core, `ord`, Nostr relays,
+  and compatible markets, with the trust boundary for each component.
+- [API reference](https://bitcoinuniverseio.github.io/ordex/api-reference.html):
+  every route, parameter, response, and schema, generated from the OpenAPI
   contract at build time.
-- [Security policy](SECURITY.md)
+- [Get help](https://bitcoinuniverseio.github.io/ordex/troubleshooting.html):
+  what to do when a listing is pending, being spent, gone, not usable,
+  withdrawn, or visible in one market but not another.
+
+## Contract
+
+- [The gateway API, explained](https://github.com/bitcoinuniverseio/ordex/blob/main/spec/api.md):
+  every route under `/api/ordex` and why it is shaped that way.
+- [openapi.json](https://github.com/bitcoinuniverseio/ordex/blob/main/spec/openapi.json):
+  the OpenAPI 3.1 contract, field by field.
+- [Order lifecycle](https://github.com/bitcoinuniverseio/ordex/blob/main/spec/lifecycle.md):
+  every reachable state and what a customer may do in each.
+- [Completing a public ask](https://github.com/bitcoinuniverseio/ordex/blob/main/spec/purchase.md):
+  the two rules and the sat flow invariant that decide whether the asset
+  reaches the buyer.
+- [Not burning the runes a purchase spends](https://github.com/bitcoinuniverseio/ordex/blob/main/spec/runes.md):
+  how the runestone assigns a rune balance, and why a cenotaph destroys runes
+  in a transaction that Bitcoin itself accepts as valid.
+- [Portable orders](https://github.com/bitcoinuniverseio/ordex/blob/main/spec/interoperability.md):
+  how an order enters and leaves a gateway, and the exact OpenOrdex kind 802
+  event contract.
+- [sdk/README.md](https://github.com/bitcoinuniverseio/ordex/blob/main/sdk/README.md):
+  the typed TypeScript client generated from that contract.
+
+## Conformance
+
+- [conformance/purchase-vectors.json](https://github.com/bitcoinuniverseio/ordex/blob/main/conformance/purchase-vectors.json):
+  the verdict a compatible verifier must reach for each named transaction
+  shape.
+- [conformance/rune-burn-vectors.json](https://github.com/bitcoinuniverseio/ordex/blob/main/conformance/rune-burn-vectors.json):
+  the same for the rune burn rule, including the cases that burn.
+- [verifier/purchase.js](https://github.com/bitcoinuniverseio/ordex/blob/main/verifier/purchase.js):
+  a dependency free reference verifier implementing the purchase rules, run by
+  `npm test`.
+- [verifier/runes.js](https://github.com/bitcoinuniverseio/ordex/blob/main/verifier/runes.js):
+  the reference verifier for the rune burn rule, run by the same command.
+
+## Repository
+
+- [README.md](https://github.com/bitcoinuniverseio/ordex/blob/main/README.md):
+  what the repository holds and how to build and test it.
+- [SECURITY.md](https://github.com/bitcoinuniverseio/ordex/blob/main/SECURITY.md):
+  the security policy and how to report a vulnerability.
+- [docs.manifest.json](https://bitcoinuniverseio.github.io/ordex/docs.manifest.json):
+  the machine-readable documentation manifest for this repository.
