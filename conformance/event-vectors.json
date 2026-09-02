@@ -1,0 +1,401 @@
+{
+  "version": 1,
+  "description": "ordex-event/v1 envelope and webhook signature vectors.",
+  "cases": [
+    {
+      "name": "a canonical event envelope is accepted",
+      "kind": "event",
+      "event": {
+        "id": "0f1e2d3c-4b5a-4978-8796-a5b4c3d2e1f0",
+        "type": "ordex.order.published",
+        "schemaVersion": "1",
+        "network": "mainnet",
+        "sequence": 42000,
+        "aggregate": {
+          "type": "order",
+          "id": "01J8ZQ0V2M3N4P5Q6R7S8T9UVW",
+          "version": 1
+        },
+        "observedAt": "2026-09-02T12:00:00Z",
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "status": "canonical",
+        "payload": {
+          "orderId": "01J8ZQ0V2M3N4P5Q6R7S8T9UVW"
+        },
+        "artifactDigests": [
+          "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+        ],
+        "traceId": "trace-1a2b3c4d"
+      },
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "name": "a reverted event naming the event it reverses is accepted",
+      "kind": "event",
+      "event": {
+        "id": "1f1e2d3c-4b5a-4978-8796-a5b4c3d2e1f0",
+        "type": "ordex.order.reorged",
+        "schemaVersion": "1",
+        "network": "mainnet",
+        "sequence": 42000,
+        "aggregate": {
+          "type": "order",
+          "id": "01J8ZQ0V2M3N4P5Q6R7S8T9UVW",
+          "version": 1
+        },
+        "observedAt": "2026-09-02T12:00:00Z",
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "status": "reverted",
+        "payload": {
+          "orderId": "01J8ZQ0V2M3N4P5Q6R7S8T9UVW"
+        },
+        "artifactDigests": [
+          "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+        ],
+        "traceId": "trace-1a2b3c4d",
+        "revertedEventId": "0f1e2d3c-4b5a-4978-8796-a5b4c3d2e1f0"
+      },
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "name": "a reverted event without a reversed id is refused",
+      "kind": "event",
+      "event": {
+        "id": "0f1e2d3c-4b5a-4978-8796-a5b4c3d2e1f0",
+        "type": "ordex.order.published",
+        "schemaVersion": "1",
+        "network": "mainnet",
+        "sequence": 42000,
+        "aggregate": {
+          "type": "order",
+          "id": "01J8ZQ0V2M3N4P5Q6R7S8T9UVW",
+          "version": 1
+        },
+        "observedAt": "2026-09-02T12:00:00Z",
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "status": "reverted",
+        "payload": {
+          "orderId": "01J8ZQ0V2M3N4P5Q6R7S8T9UVW"
+        },
+        "artifactDigests": [
+          "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+        ],
+        "traceId": "trace-1a2b3c4d"
+      },
+      "expected": {
+        "ok": false,
+        "code": "REVERTED_EVENT_REQUIRED"
+      }
+    },
+    {
+      "name": "a canonical event may not name a reversed id",
+      "kind": "event",
+      "event": {
+        "id": "0f1e2d3c-4b5a-4978-8796-a5b4c3d2e1f0",
+        "type": "ordex.order.published",
+        "schemaVersion": "1",
+        "network": "mainnet",
+        "sequence": 42000,
+        "aggregate": {
+          "type": "order",
+          "id": "01J8ZQ0V2M3N4P5Q6R7S8T9UVW",
+          "version": 1
+        },
+        "observedAt": "2026-09-02T12:00:00Z",
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "status": "canonical",
+        "payload": {
+          "orderId": "01J8ZQ0V2M3N4P5Q6R7S8T9UVW"
+        },
+        "artifactDigests": [
+          "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+        ],
+        "traceId": "trace-1a2b3c4d",
+        "revertedEventId": "0f1e2d3c-4b5a-4978-8796-a5b4c3d2e1f0"
+      },
+      "expected": {
+        "ok": false,
+        "code": "STATUS_INVALID"
+      }
+    },
+    {
+      "name": "an unknown event type is refused",
+      "kind": "event",
+      "event": {
+        "id": "0f1e2d3c-4b5a-4978-8796-a5b4c3d2e1f0",
+        "type": "ordex.mystery",
+        "schemaVersion": "1",
+        "network": "mainnet",
+        "sequence": 42000,
+        "aggregate": {
+          "type": "order",
+          "id": "01J8ZQ0V2M3N4P5Q6R7S8T9UVW",
+          "version": 1
+        },
+        "observedAt": "2026-09-02T12:00:00Z",
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "status": "canonical",
+        "payload": {
+          "orderId": "01J8ZQ0V2M3N4P5Q6R7S8T9UVW"
+        },
+        "artifactDigests": [
+          "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+        ],
+        "traceId": "trace-1a2b3c4d"
+      },
+      "expected": {
+        "ok": false,
+        "code": "EVENT_TYPE_INVALID"
+      }
+    },
+    {
+      "name": "a non increasing sequence is refused",
+      "kind": "event",
+      "event": {
+        "id": "0f1e2d3c-4b5a-4978-8796-a5b4c3d2e1f0",
+        "type": "ordex.order.published",
+        "schemaVersion": "1",
+        "network": "mainnet",
+        "sequence": 0,
+        "aggregate": {
+          "type": "order",
+          "id": "01J8ZQ0V2M3N4P5Q6R7S8T9UVW",
+          "version": 1
+        },
+        "observedAt": "2026-09-02T12:00:00Z",
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "status": "canonical",
+        "payload": {
+          "orderId": "01J8ZQ0V2M3N4P5Q6R7S8T9UVW"
+        },
+        "artifactDigests": [
+          "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+        ],
+        "traceId": "trace-1a2b3c4d"
+      },
+      "expected": {
+        "ok": false,
+        "code": "SEQUENCE_INVALID"
+      }
+    },
+    {
+      "name": "an event without a chain checkpoint is refused",
+      "kind": "event",
+      "event": {
+        "id": "0f1e2d3c-4b5a-4978-8796-a5b4c3d2e1f0",
+        "type": "ordex.order.published",
+        "schemaVersion": "1",
+        "network": "mainnet",
+        "sequence": 42000,
+        "aggregate": {
+          "type": "order",
+          "id": "01J8ZQ0V2M3N4P5Q6R7S8T9UVW",
+          "version": 1
+        },
+        "observedAt": "2026-09-02T12:00:00Z",
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "nothex"
+        },
+        "status": "canonical",
+        "payload": {
+          "orderId": "01J8ZQ0V2M3N4P5Q6R7S8T9UVW"
+        },
+        "artifactDigests": [
+          "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+        ],
+        "traceId": "trace-1a2b3c4d"
+      },
+      "expected": {
+        "ok": false,
+        "code": "CHECKPOINT_INVALID"
+      }
+    },
+    {
+      "name": "an array payload is refused",
+      "kind": "event",
+      "event": {
+        "id": "0f1e2d3c-4b5a-4978-8796-a5b4c3d2e1f0",
+        "type": "ordex.order.published",
+        "schemaVersion": "1",
+        "network": "mainnet",
+        "sequence": 42000,
+        "aggregate": {
+          "type": "order",
+          "id": "01J8ZQ0V2M3N4P5Q6R7S8T9UVW",
+          "version": 1
+        },
+        "observedAt": "2026-09-02T12:00:00Z",
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "status": "canonical",
+        "payload": [],
+        "artifactDigests": [
+          "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+        ],
+        "traceId": "trace-1a2b3c4d"
+      },
+      "expected": {
+        "ok": false,
+        "code": "PAYLOAD_INVALID"
+      }
+    },
+    {
+      "name": "a malformed artifact digest is refused",
+      "kind": "event",
+      "event": {
+        "id": "0f1e2d3c-4b5a-4978-8796-a5b4c3d2e1f0",
+        "type": "ordex.order.published",
+        "schemaVersion": "1",
+        "network": "mainnet",
+        "sequence": 42000,
+        "aggregate": {
+          "type": "order",
+          "id": "01J8ZQ0V2M3N4P5Q6R7S8T9UVW",
+          "version": 1
+        },
+        "observedAt": "2026-09-02T12:00:00Z",
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "status": "canonical",
+        "payload": {
+          "orderId": "01J8ZQ0V2M3N4P5Q6R7S8T9UVW"
+        },
+        "artifactDigests": [
+          "XYZ"
+        ],
+        "traceId": "trace-1a2b3c4d"
+      },
+      "expected": {
+        "ok": false,
+        "code": "ARTIFACT_DIGEST_INVALID"
+      }
+    },
+    {
+      "name": "a freshly signed delivery verifies",
+      "kind": "webhook",
+      "signing": {
+        "secret": "whsec_test_secret_0123456789abcdef",
+        "timestamp": 1787400000,
+        "deliveryId": "evt_0001",
+        "body": "{\"ok\":true}"
+      },
+      "verifying": {
+        "secret": "whsec_test_secret_0123456789abcdef",
+        "body": "{\"ok\":true}",
+        "nowSeconds": 1787400100,
+        "toleranceSeconds": 300
+      },
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "name": "a tampered body fails the digest binding",
+      "kind": "webhook",
+      "signing": {
+        "secret": "whsec_test_secret_0123456789abcdef",
+        "timestamp": 1787400000,
+        "deliveryId": "evt_0001",
+        "body": "{\"ok\":true}"
+      },
+      "verifying": {
+        "secret": "whsec_test_secret_0123456789abcdef",
+        "body": "{\"ok\":false}",
+        "nowSeconds": 1787400100,
+        "toleranceSeconds": 300
+      },
+      "expected": {
+        "ok": false,
+        "code": "SIGNATURE_INVALID"
+      }
+    },
+    {
+      "name": "a replayed delivery outside the tolerance is refused",
+      "kind": "webhook",
+      "signing": {
+        "secret": "whsec_test_secret_0123456789abcdef",
+        "timestamp": 1787400000,
+        "deliveryId": "evt_0001",
+        "body": "{\"ok\":true}"
+      },
+      "verifying": {
+        "secret": "whsec_test_secret_0123456789abcdef",
+        "body": "{\"ok\":true}",
+        "nowSeconds": 1787401000,
+        "toleranceSeconds": 300
+      },
+      "expected": {
+        "ok": false,
+        "code": "TIMESTAMP_OUT_OF_TOLERANCE"
+      }
+    },
+    {
+      "name": "a different secret fails",
+      "kind": "webhook",
+      "signing": {
+        "secret": "whsec_test_secret_0123456789abcdef",
+        "timestamp": 1787400000,
+        "deliveryId": "evt_0001",
+        "body": "{\"ok\":true}"
+      },
+      "verifying": {
+        "secret": "whsec_other",
+        "body": "{\"ok\":true}",
+        "nowSeconds": 1787400100,
+        "toleranceSeconds": 300
+      },
+      "expected": {
+        "ok": false,
+        "code": "SIGNATURE_INVALID"
+      }
+    },
+    {
+      "name": "a truncated header is refused",
+      "kind": "webhook",
+      "signing": {
+        "secret": "whsec_test_secret_0123456789abcdef",
+        "timestamp": 1787400000,
+        "deliveryId": "evt_0001",
+        "body": "{\"ok\":true}"
+      },
+      "verifying": {
+        "secret": "whsec_test_secret_0123456789abcdef",
+        "body": "{\"ok\":true}",
+        "nowSeconds": 1787400100,
+        "toleranceSeconds": 300,
+        "headerOverride": "t=1787400000,v1=deadbeef"
+      },
+      "expected": {
+        "ok": false,
+        "code": "HEADER_MALFORMED"
+      }
+    }
+  ]
+}
