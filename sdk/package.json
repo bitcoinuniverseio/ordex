@@ -1,6 +1,6 @@
 {
   "name": "@bitcoinuniverse/ordex-sdk",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Typed client for the Ordex gateway API, generated from the OpenAPI 3.1 contract in this repository.",
   "license": "MIT",
   "type": "module",
@@ -19,7 +19,7 @@
   "scripts": {
     "generate": "openapi-typescript ../spec/openapi.json -o src/schema.ts",
     "build": "tsc -p tsconfig.json",
-    "test": "node --test test/purchase.test.js test/offers.test.js test/client.test.js test/runes.test.js",
+    "test": "node --test test/purchase.test.js test/offers.test.js test/client.test.js test/runes.test.js test/safeops.test.js test/swaps.test.js test/events.test.js test/collection-manifest.test.js test/counterparty.test.js test/offline-signing.test.js",
     "check": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
