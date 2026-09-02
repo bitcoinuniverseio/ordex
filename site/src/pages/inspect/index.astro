@@ -1,0 +1,26 @@
+---
+import { OrdexExperienceShell } from '../../components/experience/OrdexExperienceShell.js';
+import { ArtifactLens } from '../../components/artifact-lens/ArtifactLens.js';
+import '../../styles/design-system.css';
+import '../../styles/experience-tokens.css';
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Artifact Lens | Ordex</title>
+    <meta name="description" content="Bounded read-only binary and semantic inspection workspace for Bitcoin PSBTs, hex payloads, and wallet mutations." />
+    <link rel="icon" type="image/svg+xml" href={`${base}/favicon.svg`} />
+    <link rel="manifest" href={`${base}/manifest.webmanifest`} />
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+    <OrdexExperienceShell client:load currentRoute="/inspect/" pageTitle="Artifact Lens" basePath={base}>
+      <ArtifactLens client:load basePath={base} />
+    </OrdexExperienceShell>
+  </body>
+</html>
