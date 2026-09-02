@@ -2,7 +2,33 @@
 
 **Portable Bitcoin orders, verified before you act.**
 
+[![Documentation](https://img.shields.io/badge/docs-live-brightgreen.svg)](https://bitcoinuniverseio.github.io/ordex/)
+[![GitHub Pages](https://img.shields.io/badge/GitHub%20Pages-active-success)](https://bitcoinuniverseio.github.io/ordex/)
+[![CI](https://github.com/bitcoinuniverseio/ordex/actions/workflows/ci.yml/badge.svg)](https://github.com/bitcoinuniverseio/ordex/actions/workflows/ci.yml)
+
+> 🌐 **Interactive Documentation & Protocol Workspace**: [https://bitcoinuniverseio.github.io/ordex/](https://bitcoinuniverseio.github.io/ordex/)
+
 Ordex lets signed PSBT order evidence travel across compatible Bitcoin markets. A listing carries the details needed to understand what is being offered, where it came from, and when its inputs were last checked, without handing custody to Ordex.
+
+## Interactive Workspace & Tool Links
+
+Every component of Ordex runs client-side with zero custody, zero tracking, and local verification:
+
+| Workspace / Product | Description | Direct Link |
+| :--- | :--- | :--- |
+| 🚀 **Ordex Launchpad** | Platform hub, mission progress, and quick onboarding | [Launchpad](https://bitcoinuniverseio.github.io/ordex/) |
+| 🧭 **Mission Workspace** | 9 end-to-end mission workflows across 8 standard stages | [Mission Workspace](https://bitcoinuniverseio.github.io/ordex/workspace/) |
+| 🧪 **Transaction Sandbox** | 15 deterministic multi-actor protocol scenarios | [Transaction Sandbox](https://bitcoinuniverseio.github.io/ordex/sandbox/) |
+| 🔍 **Artifact Lens** | PSBT parser, byte inspector, and mutation detector | [Artifact Lens](https://bitcoinuniverseio.github.io/ordex/inspect/) |
+| 🛑 **Failure Navigator** | 172-rule diagnostic engine and remediation assistant | [Failure Navigator](https://bitcoinuniverseio.github.io/ordex/diagnose/) |
+| 🤖 **Agent Bridge** | Claude Desktop, Codex, MCP endpoint & integration guides | [Agent Bridge](https://bitcoinuniverseio.github.io/ordex/agents/) |
+| 🎬 **Guided Product Tours** | Step-by-step interactive visual tours | [Product Tours](https://bitcoinuniverseio.github.io/ordex/tour/) |
+| 🔬 **Protocol Lab** | Sat-flow diagrams and live client-side verifiers | [Protocol Lab](https://bitcoinuniverseio.github.io/ordex/lab/) |
+| ⚖️ **Conformance Studio** | 151 deterministic vector test runner & gateway doctor | [Conformance Studio](https://bitcoinuniverseio.github.io/ordex/verify/) |
+| 🗺️ **Visual Protocol Atlas** | Animated sat-flow and cryptographic invariant atlas | [Visual Protocol Atlas](https://bitcoinuniverseio.github.io/ordex/atlas/) |
+| 📡 **API Reference & Playground** | OpenAPI 3.1 interactive runner for all 78 operations | [API Reference](https://bitcoinuniverseio.github.io/ordex/reference/api/) |
+| 🛑 **Refusal Codes Catalog** | 172 error codes, trigger conditions, and remediations | [Refusal Codes](https://bitcoinuniverseio.github.io/ordex/reference/refusal-codes/) |
+| 📦 **Integration Kits** | Pinned Node.js, Browser, and Worker starter generators | [Integration Kits](https://bitcoinuniverseio.github.io/ordex/kits/) |
 
 ## Why Ordex
 
@@ -56,12 +82,14 @@ before the wallet prompt, and nothing reaches the network until you ask for it.
 Copying the raw signed order is still there for a wallet Ordex cannot drive,
 behind a disclosure that says what you take on if you use it.
 
-## Explore
+## Explore the Documentation
 
-- [Meet Ordex](docs/index.html)
-- [Start safely](docs/quickstart.html)
-- [How portable orders work](docs/protocol-guide.html)
-- [Get help](docs/troubleshooting.html)
+- [Getting Started (5-Minute Quickstart)](https://bitcoinuniverseio.github.io/ordex/start)
+- [Protocol Concepts & Trust Model](https://bitcoinuniverseio.github.io/ordex/learn)
+- [Developer Workflows & Recipes](https://bitcoinuniverseio.github.io/ordex/build)
+- [SafeOps & Operations Guide](https://bitcoinuniverseio.github.io/ordex/operate)
+- [Technical Reference Overview](https://bitcoinuniverseio.github.io/ordex/reference)
+- [Release History](https://bitcoinuniverseio.github.io/ordex/releases)
 
 ## Build against Ordex
 
