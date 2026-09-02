@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "build": "node scripts/build.mjs",
-    "test": "node --test verifier/purchase.test.js verifier/offers.test.js verifier/runes.test.js spec/openapi.test.js scripts/api-reference.test.js"
+    "test": "node --test verifier/purchase.test.js verifier/offers.test.js verifier/runes.test.js verifier/safeops.test.js verifier/swaps.test.js verifier/events.test.js verifier/collection-manifest.test.js verifier/counterparty-asset.test.js verifier/offline-signing.test.js spec/openapi.test.js spec/asyncapi.test.js scripts/api-reference.test.js",
+    "vectors": "node scripts/make-vectors.mjs"
   }
 }
