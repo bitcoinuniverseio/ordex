@@ -5,6 +5,7 @@ import refusalsData from '../../data/refusals.json';
 import { SatFlowDiagram } from './SatFlowDiagram.jsx';
 import { TruthLabel } from '../shell/TruthLabel.jsx';
 import { executeVector } from '../../lib/conformance-engine.mjs';
+import { resolveUrl } from '../../lib/base-url.js';
 
 export function ProtocolLab() {
   const [activeTab, setActiveTab] = useState('inspect'); // inspect, compare, export
@@ -246,7 +247,7 @@ export function ProtocolLab() {
                     <div><strong>Refusal Code:</strong> <code>{verdictResult.actual.code}</code></div>
                     <div><strong>Reason:</strong> {verdictResult.actual.reason}</div>
                     <a
-                      href={`/reference/refusal-codes/#${verdictResult.actual.code}`}
+                      href={resolveUrl(`/reference/refusal-codes/#${verdictResult.actual.code}`)}
                       style="display: inline-block; margin-top: 0.5rem; font-weight: 600; color: var(--color-danger);"
                     >
                       View Machine Specification for {verdictResult.actual.code} →

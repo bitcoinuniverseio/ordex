@@ -2,6 +2,7 @@ import { h } from 'preact';
 import { useState, useEffect } from 'preact/hooks';
 import atlasData from '../../data/atlas.json';
 import { TruthLabel } from '../shell/TruthLabel.jsx';
+import { resolveUrl } from '../../lib/base-url.js';
 
 export function VisualProtocolAtlas({ initialDiagramId = null }) {
   const [selectedDiagramId, setSelectedDiagramId] = useState(initialDiagramId || atlasData[0]?.id);
@@ -224,10 +225,10 @@ export function VisualProtocolAtlas({ initialDiagramId = null }) {
               Safety Guarantee: {activeStepObj.safety}
             </p>
             <div style="display: flex; gap: 0.5rem;">
-              <a href="/lab" class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.2rem 0.5rem;">
+              <a href={resolveUrl('/lab')} class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.2rem 0.5rem;">
                 Open in Protocol Lab 🔬
               </a>
-              <a href="/build/playground" class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.2rem 0.5rem;">
+              <a href={resolveUrl('/build/playground')} class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.2rem 0.5rem;">
                 Open Related API 🚀
               </a>
             </div>

@@ -4,6 +4,7 @@ import { ApiPlayground } from '../../components/playground/ApiPlayground.jsx';
 import { TruthLabel } from '../../components/shell/TruthLabel.jsx';
 import { FeedbackWidget } from '../../components/feedback/FeedbackWidget.jsx';
 import operationsData from '../../data/operations.json';
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 ---
 
 <BaseLayout
@@ -50,7 +51,7 @@ import operationsData from '../../data/operations.json';
             </div>
             <div style="display: flex; align-items: center; gap: 0.5rem;">
               <span class="badge badge-observation" style="font-size: 0.7rem;">{op.tag}</span>
-              <a href={`/build/playground?op=${op.operationId}`} class="btn btn-secondary" style="font-size: 0.75rem; min-height: 28px; padding: 0.15rem 0.5rem;">
+              <a href={`${base}/build/playground?op=${op.operationId}`} class="btn btn-secondary" style="font-size: 0.75rem; min-height: 28px; padding: 0.15rem 0.5rem;">
                 Run In Playground 🚀
               </a>
             </div>

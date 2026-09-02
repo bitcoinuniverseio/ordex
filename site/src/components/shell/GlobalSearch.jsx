@@ -5,6 +5,7 @@ import operationsData from '../../data/operations.json';
 import refusalsData from '../../data/refusals.json';
 import specsData from '../../data/specs.json';
 import wizardsData from '../../data/wizards.json';
+import { resolveUrl } from '../../lib/base-url.js';
 
 export function GlobalSearch() {
   const [isOpen, setIsOpen] = useState(false);
@@ -161,9 +162,7 @@ export function GlobalSearch() {
       } catch (e) {}
     }
     setIsOpen(false);
-    const basePath = (typeof window !== 'undefined' && window.location.pathname.startsWith('/ordex')) ? '/ordex' : '';
-    const targetUrl = (url.startsWith('/') && !url.startsWith('/ordex')) ? `${basePath}${url}` : url;
-    window.location.href = targetUrl;
+    window.location.href = resolveUrl(url);
   };
 
   const handleKeyDownInResults = (e) => {
@@ -293,11 +292,11 @@ export function GlobalSearch() {
                       Quick Navigation
                     </div>
                     <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.4rem;">
-                      <li><a href="/build/playground">🚀 API and Real-Time Playground</a></li>
-                      <li><a href="/lab">🔬 Ordex Protocol Lab</a></li>
-                      <li><a href="/verify">⚖️ Conformance Studio and Gateway Doctor</a></li>
-                      <li><a href="/atlas">🗺️ Visual Protocol Atlas</a></li>
-                      <li><a href="/kits">📦 Integration Kit Generator</a></li>
+                      <li><a href={resolveUrl('/build/playground')}>🚀 API and Real-Time Playground</a></li>
+                      <li><a href={resolveUrl('/lab')}>🔬 Ordex Protocol Lab</a></li>
+                      <li><a href={resolveUrl('/verify')}>⚖️ Conformance Studio and Gateway Doctor</a></li>
+                      <li><a href={resolveUrl('/atlas')}>🗺️ Visual Protocol Atlas</a></li>
+                      <li><a href={resolveUrl('/kits')}>📦 Integration Kit Generator</a></li>
                     </ul>
                   </div>
                 </div>

@@ -2,6 +2,7 @@ import { h } from 'preact';
 import { useState, useEffect } from 'preact/hooks';
 import wizardsData from '../../data/wizards.json';
 import { TruthLabel } from '../shell/TruthLabel.jsx';
+import { resolveUrl } from '../../lib/base-url.js';
 
 export function WizardEngine({ initialWizardId = null }) {
   const [activeWizardId, setActiveWizardId] = useState(initialWizardId || wizardsData[0]?.id);
@@ -222,11 +223,11 @@ export function WizardEngine({ initialWizardId = null }) {
                 </a>
               )}
               {wizard.outcome?.verifierFamily && (
-                <a href={`/lab?family=${wizard.outcome.verifierFamily}`} class="btn btn-secondary">
+                <a href={resolveUrl(`/lab?family=${wizard.outcome.verifierFamily}`)} class="btn btn-secondary">
                   Open in Protocol Lab 🔬
                 </a>
               )}
-              <a href="/kits" class="btn btn-primary">
+              <a href={resolveUrl('/kits')} class="btn btn-primary">
                 Generate Integration Kit 📦
               </a>
             </div>

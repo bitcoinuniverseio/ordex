@@ -65,7 +65,7 @@ Grounded in OpenAPI 3.1, AsyncAPI 3.0, and checked-in reference verifiers.
 
 ${corpus.map(c => `## ${c.title} (${c.pointer})
 - Source: ${c.sourcePath}
-- URL: ${c.docUrl || c.canonicalUrl || ''}
+- URL: ${c.docUrl || c.url || ''}
 
 ${c.content}
 `).join('\n---\n\n')}`;
@@ -114,5 +114,8 @@ for (const file of requiredFiles) {
   const content = await readFile(resolve(root, file)).catch(() => null);
   if (!content) throw new Error(`Missing required build deliverable: ${file}`);
 }
+
+console.log('--- Step 9: Audit and validate all links and routes ---');
+execSync('node scripts/check-links.mjs', { cwd: root, stdio: 'inherit' });
 
 console.log('✓ Build completed successfully. All 12 products compiled and verified.');
