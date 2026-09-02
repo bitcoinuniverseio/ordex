@@ -6,6 +6,36 @@
     <priority>1.0</priority>
   </url>
   <url>
+    <loc>https://bitcoinuniverseio.github.io/ordex/workspace/</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://bitcoinuniverseio.github.io/ordex/sandbox/</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://bitcoinuniverseio.github.io/ordex/inspect/</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://bitcoinuniverseio.github.io/ordex/diagnose/</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://bitcoinuniverseio.github.io/ordex/agents/</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://bitcoinuniverseio.github.io/ordex/tour/</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://bitcoinuniverseio.github.io/ordex/start/</loc>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>

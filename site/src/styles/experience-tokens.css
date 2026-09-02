@@ -1,0 +1,209 @@
+/**
+ * Ordex Experience Semantic Design Tokens
+ * 
+ * Provides Bitcoin-native technical identity with light mode as primary,
+ * full dark mode support, restrained Bitcoin orange accent, high contrast,
+ * evidence classes, and responsive layout primitives.
+ */
+
+:root {
+  /* Surface colors (Light Mode Primary) */
+  --ox-surface-bg: #f8f9fa;
+  --ox-surface-panel: #ffffff;
+  --ox-surface-elevated: #ffffff;
+  --ox-surface-subtle: #f1f3f5;
+  --ox-surface-inset: #e9ecef;
+
+  /* Text & Content */
+  --ox-text-primary: #1a1d20;
+  --ox-text-secondary: #495057;
+  --ox-text-muted: #6c757d;
+  --ox-text-inverse: #ffffff;
+
+  /* Borders & Dividers */
+  --ox-border-subtle: #e9ecef;
+  --ox-border-default: #dee2e6;
+  --ox-border-strong: #ced4da;
+  --ox-border-focus: #f7931a;
+
+  /* Bitcoin Brand & Accent */
+  --ox-bitcoin-orange: #f7931a;
+  --ox-bitcoin-hover: #e07f0a;
+  --ox-bitcoin-subtle: #fff4e6;
+  --ox-bitcoin-border: #ffd8a8;
+
+  /* Semantic Outcome & Status States */
+  --ox-status-success-bg: #ebfbee;
+  --ox-status-success-text: #2b8a3e;
+  --ox-status-success-border: #b2f2bb;
+
+  --ox-status-warning-bg: #fff9db;
+  --ox-status-warning-text: #e67700;
+  --ox-status-warning-border: #ffec99;
+
+  --ox-status-refusal-bg: #fff5f5;
+  --ox-status-refusal-text: #c92a2a;
+  --ox-status-refusal-border: #ffc9c9;
+
+  --ox-status-danger-bg: #ffe3e3;
+  --ox-status-danger-text: #a61e4d;
+  --ox-status-danger-border: #ffa8a8;
+
+  --ox-status-unknown-bg: #f8f9fa;
+  --ox-status-unknown-text: #495057;
+  --ox-status-unknown-border: #ced4da;
+
+  /* Evidence Classes */
+  --ox-evidence-chain-proof-bg: #e7f5ff;
+  --ox-evidence-chain-proof-text: #1864ab;
+  --ox-evidence-chain-proof-border: #a5d8ff;
+
+  --ox-evidence-protocol-verify-bg: #ebfbee;
+  --ox-evidence-protocol-verify-text: #2b8a3e;
+  --ox-evidence-protocol-verify-border: #b2f2bb;
+
+  --ox-evidence-gateway-obs-bg: #f3f0ff;
+  --ox-evidence-gateway-obs-text: #5f3dc4;
+  --ox-evidence-gateway-obs-border: #d0bfff;
+
+  --ox-evidence-publisher-claim-bg: #fff4e6;
+  --ox-evidence-publisher-claim-text: #d9480f;
+  --ox-evidence-publisher-claim-border: #ffd8a8;
+
+  --ox-evidence-deterministic-bg: #f1f3f5;
+  --ox-evidence-deterministic-text: #343a40;
+  --ox-evidence-deterministic-border: #ced4da;
+
+  /* Typography */
+  --ox-font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --ox-font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+
+  /* Radii */
+  --ox-radius-sm: 4px;
+  --ox-radius-md: 6px;
+  --ox-radius-lg: 8px;
+  --ox-radius-full: 9999px;
+
+  /* Shadows */
+  --ox-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --ox-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+  --ox-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+
+  /* Focus Ring (WCAG 2.2 Standard) */
+  --ox-focus-ring: 0 0 0 3px rgba(247, 147, 26, 0.35);
+
+  /* Layout dimensions */
+  --ox-nav-width: 260px;
+  --ox-context-rail-width: 320px;
+  --ox-header-height: 56px;
+  --ox-mobile-nav-height: 60px;
+}
+
+/* Dark Mode Tokens */
+[data-theme="dark"],
+.theme-dark {
+  --ox-surface-bg: #0d1117;
+  --ox-surface-panel: #161b22;
+  --ox-surface-elevated: #21262d;
+  --ox-surface-subtle: #1f242c;
+  --ox-surface-inset: #090d12;
+
+  --ox-text-primary: #f0f6fc;
+  --ox-text-secondary: #c9d1d9;
+  --ox-text-muted: #8b949e;
+  --ox-text-inverse: #0d1117;
+
+  --ox-border-subtle: #21262d;
+  --ox-border-default: #30363d;
+  --ox-border-strong: #484f58;
+  --ox-border-focus: #f7931a;
+
+  --ox-bitcoin-orange: #f7931a;
+  --ox-bitcoin-hover: #ffaa33;
+  --ox-bitcoin-subtle: #2d1e08;
+  --ox-bitcoin-border: #66410a;
+
+  --ox-status-success-bg: #0d2818;
+  --ox-status-success-text: #40c057;
+  --ox-status-success-border: #1b4728;
+
+  --ox-status-warning-bg: #2b2106;
+  --ox-status-warning-text: #fcc419;
+  --ox-status-warning-border: #52410a;
+
+  --ox-status-refusal-bg: #2c0b0e;
+  --ox-status-refusal-text: #ff6b6b;
+  --ox-status-refusal-border: #5c181f;
+
+  --ox-status-danger-bg: #380718;
+  --ox-status-danger-text: #f06595;
+  --ox-status-danger-border: #63122e;
+
+  --ox-status-unknown-bg: #161b22;
+  --ox-status-unknown-text: #8b949e;
+  --ox-status-unknown-border: #30363d;
+
+  --ox-evidence-chain-proof-bg: #0c243b;
+  --ox-evidence-chain-proof-text: #74c0fc;
+  --ox-evidence-chain-proof-border: #184674;
+
+  --ox-evidence-protocol-verify-bg: #0d2818;
+  --ox-evidence-protocol-verify-text: #40c057;
+  --ox-evidence-protocol-verify-border: #1b4728;
+
+  --ox-evidence-gateway-obs-bg: #1e133a;
+  --ox-evidence-gateway-obs-text: #b197fc;
+  --ox-evidence-gateway-obs-border: #38246c;
+
+  --ox-evidence-publisher-claim-bg: #2d1808;
+  --ox-evidence-publisher-claim-text: #ff922b;
+  --ox-evidence-publisher-claim-border: #5c3210;
+
+  --ox-evidence-deterministic-bg: #1c2128;
+  --ox-evidence-deterministic-text: #adb5bd;
+  --ox-evidence-deterministic-border: #373e47;
+
+  --ox-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --ox-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+  --ox-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.6), 0 4px 6px -2px rgba(0, 0, 0, 0.4);
+}
+
+/* High Contrast Mode Adjustments */
+@media (forced-colors: active) {
+  :root {
+    --ox-border-default: CanvasText;
+    --ox-border-strong: CanvasText;
+    --ox-surface-bg: Canvas;
+    --ox-surface-panel: Canvas;
+    --ox-text-primary: CanvasText;
+    --ox-text-secondary: CanvasText;
+  }
+}
+
+/* Reduced Motion Preference */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Base Accessibility Helpers */
+.ox-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+.ox-focus-visible:focus-visible {
+  outline: 2px solid var(--ox-bitcoin-orange);
+  outline-offset: 2px;
+}

@@ -1,0 +1,245 @@
+/**
+ * Ordex Context Lens Engine
+ * 
+ * Tracks active route, selected heading, highlighted text or artifact field,
+ * active mission stage, protocol version, and disclosure mode.
+ * Provides source-grounded explanations across Plain English, Builder, and Protocol Proof.
+ */
+
+export interface GlossaryTerm {
+  term: string;
+  category: 'protocol' | 'bitcoin' | 'verification' | 'gateway';
+  plainEnglish: string;
+  builder: string;
+  proof: string;
+  sourceDoc?: string;
+  relatedTerms: string[];
+}
+
+export interface ActiveContext {
+  route: string;
+  title: string;
+  heading?: string;
+  selectedText?: string;
+  selectedField?: string;
+  selectedRefusalCode?: string;
+  selectedOperationId?: string;
+  missionId?: string;
+  stageId?: string;
+  protocolVersion: string;
+  disclosureMode: 'plain' | 'builder' | 'proof';
+  evidenceClass?: 'Chain proof' | 'Protocol verification' | 'Gateway observation' | 'Publisher claim' | 'Deterministic example';
+  sourcePointer?: string;
+}
+
+export const GLOSSARY: Record<string, GlossaryTerm> = {
+  PSBT: {
+    term: 'Partially Signed Bitcoin Transaction (PSBT)',
+    category: 'bitcoin',
+    plainEnglish: 'A standardized format for passing unsigned or partially signed Bitcoin transactions between parties and wallets without revealing private keys.',
+    builder: 'BIP-174 (v0) and BIP-370 (v2) key-value maps holding global fields, inputs (witness UTXO, sighash, redeem script), and outputs (bip32 derivations, taproot trees).',
+    proof: 'Binary structure starting with magic bytes 0x70736274ff, divided into key-value map records ending in separator byte 0x00.',
+    sourceDoc: 'spec/purchase.md',
+    relatedTerms: ['Sighash', 'SINGLE', 'ANYONECANPAY', 'Prevout']
+  },
+  Sighash: {
+    term: 'Signature Hash Type (Sighash)',
+    category: 'bitcoin',
+    plainEnglish: 'A flag attached to a signature that controls which parts of the transaction are committed to and cannot be altered by others.',
+    builder: 'Single byte (or 4-byte Taproot sighash) determining whether outputs and other inputs are locked (SIGHASH_ALL) or flexible.',
+    proof: 'Bitwise combination of sighash base modes (0x01 ALL, 0x02 NONE, 0x03 SINGLE) with modifier 0x80 ANYONECANPAY.',
+    sourceDoc: 'spec/security-model.md',
+    relatedTerms: ['SINGLE', 'ANYONECANPAY', 'PSBT']
+  },
+  SINGLE: {
+    term: 'SIGHASH_SINGLE',
+    category: 'bitcoin',
+    plainEnglish: 'The signature commits only to the payment output at the exact same index as the signed input. Other outputs can be added or modified.',
+    builder: 'Locks input[i] to output[i]. Essential for Ordex public asks where seller commits to output 0 payment while buyer adds subsequent outputs.',
+    proof: 'Sighash byte 0x03. If output index i does not exist at signing time, produces a known consensus bug in legacy script, but safe in SegWit v0/Taproot.',
+    sourceDoc: 'spec/purchase.md',
+    relatedTerms: ['ANYONECANPAY', 'Sighash', 'PSBT']
+  },
+  ANYONECANPAY: {
+    term: 'SIGHASH_ANYONECANPAY',
+    category: 'bitcoin',
+    plainEnglish: 'The signature commits only to this specific input, allowing anyone else to add their own inputs to fund miner fees or total price.',
+    builder: 'Modifier bit 0x80. Prevents the signature from becoming invalid when the buyer adds wallet funding inputs to settle the trade.',
+    proof: 'When set, the sighash preimage excludes all other input outpoints and sequences, allowing multi-party input composition.',
+    sourceDoc: 'spec/purchase.md',
+    relatedTerms: ['SINGLE', 'Sighash', 'PSBT']
+  },
+  Outpoint: {
+    term: 'Outpoint (COutPoint)',
+    category: 'bitcoin',
+    plainEnglish: 'A unique reference pointing to a specific prior transaction and output index, identifying exactly where a coin or digital artifact resides.',
+    builder: 'Pair of 32-byte txid and 4-byte uint32 vout index: txid:vout.',
+    proof: 'Exact consensus location of an unspent transaction output in the UTXO set.',
+    sourceDoc: 'spec/purchase.md',
+    relatedTerms: ['Prevout', 'Sat flow']
+  },
+  Prevout: {
+    term: 'Previous Output (Prevout)',
+    category: 'bitcoin',
+    plainEnglish: 'The actual value and script condition of the coin being spent by an input. Necessary to calculate miner fees and verify ownership.',
+    builder: 'Tuple of (amountSats, scriptPubKey). In SegWit and Taproot, prevouts must be provided for fee calculation and sighash verification.',
+    proof: 'BIP-143 and BIP-341 require all prevouts in the sighash preimage to prevent fee-burning exploits.',
+    sourceDoc: 'spec/purchase.md',
+    relatedTerms: ['Outpoint', 'Sat flow']
+  },
+  'Sat flow': {
+    term: 'Sat-Flow Ordering (First-in, First-out)',
+    category: 'protocol',
+    plainEnglish: 'The rule governing which input satoshis map to which output satoshis based on order, determining where ordinal inscriptions travel.',
+    builder: 'Ordinal theory FIFO rule: input 0 satoshis fill output 0 up to its value, then overflow to output 1. Inscriptions travel with their exact satoshi offset.',
+    proof: 'Enforced strictly by verifier/purchase.js. The buyer asset output must precede payment outputs to prevent accidental asset misdirection.',
+    sourceDoc: 'spec/purchase.md',
+    relatedTerms: ['Outpoint', 'Prevout', 'Cenotaph']
+  },
+  Cenotaph: {
+    term: 'Runes Cenotaph',
+    category: 'protocol',
+    plainEnglish: 'A malformed or unassigned Runestone that causes all Runes in input UTXOs to be permanently destroyed (burned) rather than transferred.',
+    builder: 'A transaction with unrecognized even tags, truncated varints, or out-of-bounds pointers. verifier/runes.js detects and refuses cenotaphs.',
+    proof: 'Runes specification rule: any unrecognized syntax in the OP_RETURN runestone payload marks the transaction as a cenotaph, destroying all input balances.',
+    sourceDoc: 'spec/runes.md',
+    relatedTerms: ['Sat flow', 'Preflight']
+  },
+  Preflight: {
+    term: 'Preflight Invariant Verification',
+    category: 'verification',
+    plainEnglish: 'Checking all transaction parameters, sat flow, outpoint spent states, and fees locally before prompting a user wallet to sign.',
+    builder: 'POST /api/ordex/orders/{id}/preflight endpoint executing reference verifier code in an isolated sandbox.',
+    proof: 'Fail-closed validation returning explicit refusal codes if any invariant fails.',
+    sourceDoc: 'spec/purchase.md',
+    relatedTerms: ['Conformance vector', 'Protocol verification']
+  },
+  'Chain proof': {
+    term: 'Chain Proof Evidence Class',
+    category: 'verification',
+    plainEnglish: 'Information directly proven by Bitcoin consensus rules or cryptographic script execution on-chain.',
+    builder: 'Validated by Bitcoin node UTXO set, block headers, or Taproot script evaluation.',
+    proof: 'Highest trust authority. No intermediary or off-chain indexer assumptions.',
+    sourceDoc: 'spec/security-model.md',
+    relatedTerms: ['Protocol verification', 'Gateway observation']
+  },
+  'Protocol verification': {
+    term: 'Protocol Verification Evidence Class',
+    category: 'verification',
+    plainEnglish: 'Facts validated by running checked-in reference verifiers over deterministic transaction artifacts.',
+    builder: 'Deterministic execution of verifier/*.js inside browser Web Workers or server runtimes.',
+    proof: 'Strict mathematical proof of invariants (e.g. value conservation, signature correctness, leaf scripts).',
+    sourceDoc: 'spec/security-model.md',
+    relatedTerms: ['Chain proof', 'Gateway observation']
+  },
+  'Gateway observation': {
+    term: 'Gateway Observation Evidence Class',
+    category: 'verification',
+    plainEnglish: 'Statements reported by an Ordex gateway catalog, indexer sync, or network health probe.',
+    builder: 'REST/WebSocket responses from gateway. Useful for discovery and quote composition.',
+    proof: 'Untrusted until verified against local reference verifiers and Bitcoin consensus.',
+    sourceDoc: 'spec/security-model.md',
+    relatedTerms: ['Publisher claim', 'Chain proof']
+  },
+  'Publisher claim': {
+    term: 'Publisher Claim Evidence Class',
+    category: 'verification',
+    plainEnglish: 'Unverified order artifacts or metadata posted by an untrusted peer or marketplace seller.',
+    builder: 'Raw order artifacts prior to preflight inspection.',
+    proof: 'Must pass local verifiers before presenting to a user wallet.',
+    sourceDoc: 'spec/security-model.md',
+    relatedTerms: ['Gateway observation', 'Deterministic example']
+  },
+  'Deterministic example': {
+    term: 'Deterministic Example Evidence Class',
+    category: 'verification',
+    plainEnglish: 'Mock fixtures, scenario simulations, or checked-in test vectors with zero real funds at stake.',
+    builder: 'Seeded test data for reproducible developer verification and documentation walkthroughs.',
+    proof: 'Guarantees exact reproducible state transitions across all browsers and platforms.',
+    sourceDoc: 'spec/security-model.md',
+    relatedTerms: ['Conformance vector']
+  },
+  'Cold-sign manifest': {
+    term: 'Cold-Signing Session Manifest',
+    category: 'protocol',
+    plainEnglish: 'A cryptographically bound declaration of an intended transaction shown to an air-gapped signer before signing.',
+    builder: 'JSON manifest listing exact input outpoints, output scripts, values, and approved fee bound.',
+    proof: 'verifier/offline-signing.js verifies that the returned signed PSBT matches the manifest byte-for-byte.',
+    sourceDoc: 'spec/cold-signing.md',
+    relatedTerms: ['PSBT', 'Preflight']
+  },
+  'Collection proof': {
+    term: 'Collection Provenance Merkle Proof',
+    category: 'protocol',
+    plainEnglish: 'A cryptographic proof that an inscription is an authentic member of a creator-signed collection manifest.',
+    builder: 'BIP-322 creator signature over a deterministic Merkle root of sorted inscription IDs.',
+    proof: 'O(log N) hash audit path evaluated by verifier/collection-manifest.js with zero network requests.',
+    sourceDoc: 'spec/provenance.md',
+    relatedTerms: ['Chain proof', 'Protocol verification']
+  },
+  'Attached UTXO asset': {
+    term: 'Attached UTXO Heritage Asset',
+    category: 'protocol',
+    plainEnglish: 'A Bitcoin 2014-era Counterparty digital asset bound to a specific UTXO for modern marketplace trading.',
+    builder: 'UTXO attachment record proving asset balance on the Counterparty ledger.',
+    proof: 'Enforced by verifier/counterparty-asset.js to ensure the asset travels with the sat flow.',
+    sourceDoc: 'spec/heritage.md',
+    relatedTerms: ['Outpoint', 'Sat flow']
+  }
+};
+
+class ContextEngine {
+  private currentContext: ActiveContext = {
+    route: '/',
+    title: 'Ordex Launchpad',
+    protocolVersion: '1.2',
+    disclosureMode: 'plain'
+  };
+
+  private listeners: Array<(ctx: ActiveContext) => void> = [];
+
+  public getContext(): ActiveContext {
+    return { ...this.currentContext };
+  }
+
+  public setContext(partial: Partial<ActiveContext>): void {
+    this.currentContext = {
+      ...this.currentContext,
+      ...partial
+    };
+    this.notify();
+  }
+
+  public subscribe(callback: (ctx: ActiveContext) => void): () => void {
+    this.listeners.push(callback);
+    callback(this.currentContext);
+    return () => {
+      this.listeners = this.listeners.filter(l => l !== callback);
+    };
+  }
+
+  private notify(): void {
+    for (const listener of this.listeners) {
+      try {
+        listener(this.currentContext);
+      } catch {
+        // Suppress listener error
+      }
+    }
+  }
+
+  public explainTerm(termKey: string): GlossaryTerm | undefined {
+    return GLOSSARY[termKey];
+  }
+
+  public findTermInText(text: string): GlossaryTerm | undefined {
+    for (const [key, term] of Object.entries(GLOSSARY)) {
+      if (new RegExp(`\\b${key}\\b`, 'i').test(text)) {
+        return term;
+      }
+    }
+    return undefined;
+  }
+}
+
+export const contextEngine = new ContextEngine();
