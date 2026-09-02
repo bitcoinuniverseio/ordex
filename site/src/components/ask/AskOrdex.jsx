@@ -1,6 +1,15 @@
 import { h } from 'preact';
 import { useState } from 'preact/hooks';
 import corpusData from '../../data/corpus.json';
+
+function resolveUrl(url) {
+  if (!url) return '#';
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  if (typeof window !== 'undefined' && window.location.pathname.startsWith('/ordex')) {
+    if (url.startsWith('/') && !url.startsWith('/ordex')) return `/ordex${url}`;
+  }
+  return url;
+}
 import { TruthLabel } from '../shell/TruthLabel.jsx';
 
 export function AskOrdex({ pageContext = '' }) {
@@ -184,7 +193,7 @@ export function AskOrdex({ pageContext = '' }) {
                 {answerResult.citations.map((c) => (
                   <a
                     key={c.id}
-                    href={c.docUrl || c.url}
+                    href={resolveUrl(c.docUrl || c.url)}
                     style="display: flex; align-items: center; justify-content: space-between; padding: 0.4rem 0.6rem; background: var(--color-bg-surface); border: 1px solid var(--color-border); border-radius: 4px; font-size: 0.8rem; text-decoration: none;"
                   >
                     <div>
