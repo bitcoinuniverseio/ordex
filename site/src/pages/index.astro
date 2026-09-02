@@ -1,0 +1,134 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { RoleChooser } from '../components/shell/RoleChooser.jsx';
+import { TruthLabel } from '../components/shell/TruthLabel.jsx';
+import { FeedbackWidget } from '../components/feedback/FeedbackWidget.jsx';
+---
+
+<BaseLayout
+  title="Ordex: Interactive Bitcoin Marketplace Documentation"
+  description="Authoritative, visual, interactive, and verifiable developer experience for the Ordex Bitcoin protocol."
+>
+  <div style="display: flex; flex-direction: column; gap: 2.5rem;">
+    {/* Hero Section */}
+    <div class="panel" style="padding: 2.5rem 2rem; background: linear-gradient(135deg, var(--color-bg-surface) 0%, var(--color-bg-subtle) 100%); border-left: 6px solid var(--color-brand);">
+      <div style="max-width: 850px;">
+        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
+          <span class="badge badge-verification">Protocol 1.2 Production</span>
+          <TruthLabel level="Protocol verification" />
+        </div>
+        <h1 style="margin: 0 0 1rem 0; font-size: 2.5rem; line-height: 1.15; font-weight: 800; letter-spacing: -0.02em;">
+          The Verifiable Bitcoin Marketplace Protocol
+        </h1>
+        <p style="font-size: 1.15rem; color: var(--color-text-secondary); line-height: 1.5; margin: 0 0 1.5rem 0;">
+          Inspect, simulate, verify, and integrate Ordex public asks, buyer-funded offers, SafeOps execution shields, and atomic swaps. Everything runs locally in your browser with zero private key handling.
+        </p>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 0.75rem;">
+          <a href="/start" class="btn btn-primary" style="font-size: 1rem; padding: 0.6rem 1.25rem;">
+            Get Started (5 Min) →
+          </a>
+          <a href="/build/playground" class="btn btn-secondary" style="font-size: 1rem; padding: 0.6rem 1.25rem;">
+            Open API Playground 🚀
+          </a>
+          <a href="/lab" class="btn btn-outline" style="font-size: 1rem; padding: 0.6rem 1.25rem;">
+            Ordex Protocol Lab 🔬
+          </a>
+          <a href="/verify" class="btn btn-outline" style="font-size: 1rem; padding: 0.6rem 1.25rem;">
+            Run Conformance Vectors (151/151) ⚖️
+          </a>
+        </div>
+      </div>
+    </div>
+
+    {/* Product 1: Role Chooser */}
+    <RoleChooser client:load />
+
+    {/* Quick Access Grid to Documentation Products */}
+    <div>
+      <h2 style="margin: 0 0 1rem 0; font-size: 1.5rem;">Documentation Products & Developer Tooling</h2>
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.25rem;">
+        <a href="/lab" class="panel" style="text-decoration: none; color: inherit; transition: transform 0.15s, border-color 0.15s;">
+          <div style="font-size: 1.75rem; margin-bottom: 0.5rem;">🔬</div>
+          <h3 style="margin: 0 0 0.25rem 0; font-size: 1.1rem; color: var(--color-text-primary);">Ordex Protocol Lab</h3>
+          <p style="margin: 0; font-size: 0.85rem; color: var(--color-text-secondary); line-height: 1.4;">
+            Browser-local workbench for sat-flow diagrams, artifact parsing, and reference verifier execution in Web Workers.
+          </p>
+        </a>
+
+        <a href="/build/playground" class="panel" style="text-decoration: none; color: inherit;">
+          <div style="font-size: 1.75rem; margin-bottom: 0.5rem;">🚀</div>
+          <h3 style="margin: 0 0 0.25rem 0; font-size: 1.1rem; color: var(--color-text-primary);">API & Event Playground</h3>
+          <p style="margin: 0; font-size: 0.85rem; color: var(--color-text-secondary); line-height: 1.4;">
+            Explore all 78 operations and 3 event channels. Switch between Deterministic Mock and live gateway modes.
+          </p>
+        </a>
+
+        <a href="/verify" class="panel" style="text-decoration: none; color: inherit;">
+          <div style="font-size: 1.75rem; margin-bottom: 0.5rem;">⚖️</div>
+          <h3 style="margin: 0 0 0.25rem 0; font-size: 1.1rem; color: var(--color-text-primary);">Conformance Studio & Doctor</h3>
+          <p style="margin: 0; font-size: 0.85rem; color: var(--color-text-secondary); line-height: 1.4;">
+            Execute 151 official conformance vectors or run the automated 17-step compatibility diagnosis on any gateway.
+          </p>
+        </a>
+
+        <a href="/atlas" class="panel" style="text-decoration: none; color: inherit;">
+          <div style="font-size: 1.75rem; margin-bottom: 0.5rem;">🗺️</div>
+          <h3 style="margin: 0 0 0.25rem 0; font-size: 1.1rem; color: var(--color-text-primary);">Visual Protocol Atlas</h3>
+          <p style="margin: 0; font-size: 0.85rem; color: var(--color-text-secondary); line-height: 1.4;">
+            16 interactive sequence diagrams with step-by-step playback, wire format inspector, and SVG export.
+          </p>
+        </a>
+
+        <a href="/kits" class="panel" style="text-decoration: none; color: inherit;">
+          <div style="font-size: 1.75rem; margin-bottom: 0.5rem;">📦</div>
+          <h3 style="margin: 0 0 0.25rem 0; font-size: 1.1rem; color: var(--color-text-primary);">Integration Kit Generator</h3>
+          <p style="margin: 0; font-size: 0.85rem; color: var(--color-text-secondary); line-height: 1.4;">
+            Download ready-to-run starter repositories for Node.js, Browser, or Cloudflare Workers with pinned SDK.
+          </p>
+        </a>
+
+        <a href="/ask" class="panel" style="text-decoration: none; color: inherit;">
+          <div style="font-size: 1.75rem; margin-bottom: 0.5rem;">🤖</div>
+          <h3 style="margin: 0 0 0.25rem 0; font-size: 1.1rem; color: var(--color-text-primary);">Ask Ordex Assistant</h3>
+          <p style="margin: 0; font-size: 0.85rem; color: var(--color-text-secondary); line-height: 1.4;">
+            Query protocol rules and contracts with verified source citations and copyable agent context.
+          </p>
+        </a>
+      </div>
+    </div>
+
+    {/* Truth & Evidence Legend */}
+    <div class="panel" style="background: var(--color-bg-subtle);">
+      <h3 style="margin: 0 0 0.75rem 0; font-size: 1.1rem;">Evidence & Truth System</h3>
+      <p style="margin: 0 0 1rem 0; font-size: 0.85rem; color: var(--color-text-secondary);">
+        Every technical assertion, operation, and diagram in this platform is explicitly categorized by evidence level:
+      </p>
+      <div style="display: flex; flex-wrap: wrap; gap: 1rem;">
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <TruthLabel level="Chain proof" />
+          <span style="font-size: 0.8rem; color: var(--color-text-muted);">Bitcoin consensus / cryptographically verified</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <TruthLabel level="Protocol verification" />
+          <span style="font-size: 0.8rem; color: var(--color-text-muted);">Validated by reference verifiers</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <TruthLabel level="Gateway observation" />
+          <span style="font-size: 0.8rem; color: var(--color-text-muted);">Reported by an active gateway</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <TruthLabel level="Publisher claim" />
+          <span style="font-size: 0.8rem; color: var(--color-text-muted);">Order creator assertion subject to verification</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <TruthLabel level="Deterministic example" />
+          <span style="font-size: 0.8rem; color: var(--color-text-muted);">From checked-in test fixtures</span>
+        </div>
+      </div>
+    </div>
+
+    {/* Reader Feedback Widget */}
+    <FeedbackWidget client:load route="/" heading="Ordex Documentation Home" />
+  </div>
+</BaseLayout>

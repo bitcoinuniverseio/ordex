@@ -1,0 +1,22 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { VisualProtocolAtlas } from '../components/atlas/VisualProtocolAtlas.jsx';
+import { FeedbackWidget } from '../components/feedback/FeedbackWidget.jsx';
+---
+
+<BaseLayout
+  title="Visual Protocol Atlas (/atlas/): 16 Interactive Sequence Diagrams"
+  description="Data-driven sequence diagrams covering all 16 core protocol flows, wire payloads, and verifier safety rules."
+  currentNav="learn"
+>
+  <div style="display: flex; flex-direction: column; gap: 2rem;">
+    <div>
+      <h1 style="margin: 0 0 0.5rem 0; font-size: 2.2rem; font-weight: 800;">Visual Protocol Atlas</h1>
+      <p style="margin: 0; font-size: 1.1rem; color: var(--color-text-secondary);">
+        16 interactive sequence diagrams with step playback, wire format inspection, and SVG export.
+      </p>
+    </div>
+    <VisualProtocolAtlas client:load />
+    <FeedbackWidget client:load route="/atlas" heading="Visual Protocol Atlas" />
+  </div>
+</BaseLayout>

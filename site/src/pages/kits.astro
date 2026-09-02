@@ -1,0 +1,22 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { KitGenerator } from '../components/kits/KitGenerator.jsx';
+import { FeedbackWidget } from '../components/feedback/FeedbackWidget.jsx';
+---
+
+<BaseLayout
+  title="Integration Kit Generator (/kits/): Turnkey Starter Repositories"
+  description="Generate ready-to-run starter repositories for Node.js, Browser, or Cloudflare Workers with pinned SDK, tests, and CI."
+  currentNav="build"
+>
+  <div style="display: flex; flex-direction: column; gap: 2rem;">
+    <div>
+      <h1 style="margin: 0 0 0.5rem 0; font-size: 2.2rem; font-weight: 800;">Integration Kit Generator</h1>
+      <p style="margin: 0; font-size: 1.1rem; color: var(--color-text-secondary);">
+        Generate and download ready-to-run starter repositories with pinned SDK, unit tests, and CI. Zero placeholders.
+      </p>
+    </div>
+    <KitGenerator client:load />
+    <FeedbackWidget client:load route="/kits" heading="Integration Kit Generator" />
+  </div>
+</BaseLayout>

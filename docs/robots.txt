@@ -1,4 +1,3 @@
 User-agent: *
 Allow: /
-
 Sitemap: https://bitcoinuniverseio.github.io/ordex/sitemap.xml

@@ -1,0 +1,16 @@
+{
+  "name": "Ordex Interactive Documentation",
+  "short_name": "Ordex Docs",
+  "description": "Visual, interactive, and verifiable documentation platform for the Ordex Bitcoin protocol.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fafafa",
+  "theme_color": "#ea580c",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

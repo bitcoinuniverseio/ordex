@@ -1,0 +1,45 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { FeedbackWidget } from '../../components/feedback/FeedbackWidget.jsx';
+import specsData from '../../data/specs.json';
+---
+
+<BaseLayout
+  title="Protocol Specifications: Ordex Technical Specs"
+  description="Exhaustive specifications covering orders, offers, safeops, atomic swaps, collection manifests, and cold signing."
+  currentNav="reference"
+>
+  <div style="display: flex; flex-direction: column; gap: 2rem;">
+    <div>
+      <span class="badge badge-verification">13 Specifications</span>
+      <h1 style="margin: 0.25rem 0 0.5rem 0; font-size: 2.2rem; font-weight: 800;">Protocol Specifications</h1>
+      <p style="margin: 0; font-size: 1.1rem; color: var(--color-text-secondary);">
+        Authoritative wire and cryptographic specifications located under <code>spec/</code> in the Ordex repository.
+      </p>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.25rem;">
+      {specsData.map((s) => (
+        <div key={s.id} class="panel">
+          <div style="font-size: 0.75rem; font-family: var(--font-mono); color: var(--color-brand); margin-bottom: 0.25rem;">
+            spec/{s.file}
+          </div>
+          <h3 style="margin: 0 0 0.5rem 0; font-size: 1.1rem;">{s.title}</h3>
+          <div style="font-size: 0.8rem; color: var(--color-text-secondary); margin-bottom: 1rem;">
+            Sections: {s.headings.map((h) => h.title).slice(0, 3).join(', ')}...
+          </div>
+          <div style="display: flex; gap: 0.5rem;">
+            <a href={`https://github.com/bitcoinuniverseio/ordex/blob/main/spec/${s.file}`} target="_blank" rel="noreferrer" class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.2rem 0.5rem;">
+              View Source on GitHub ↗
+            </a>
+            <a href="/lab" class="btn btn-outline" style="font-size: 0.75rem; padding: 0.2rem 0.5rem;">
+              Open in Lab 🔬
+            </a>
+          </div>
+        </div>
+      ))}
+    </div>
+
+    <FeedbackWidget client:load route="/reference/specifications" heading="Protocol Specifications" />
+  </div>
+</BaseLayout>

@@ -1,0 +1,121 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { FeedbackWidget } from '../components/feedback/FeedbackWidget.jsx';
+---
+
+<BaseLayout
+  title="Operate: SafeOps, Swaps, Provenance & Gateway Operations"
+  description="Production operations guide: SafeOps execution shield, atomic swaps, collection provenance, Counterparty heritage, and gateway maintenance."
+  currentNav="operate"
+>
+  <div style="display: flex; flex-direction: column; gap: 2.5rem;">
+    <div>
+      <span class="badge badge-verification">Production Invariants</span>
+      <h1 style="margin: 0.25rem 0 0.5rem 0; font-size: 2.2rem; font-weight: 800;">Protocol Operations & Asset Safety</h1>
+      <p style="margin: 0; font-size: 1.1rem; color: var(--color-text-secondary);">
+        Authoritative guides for critical operational invariants: SafeOps asset protection, atomic swaps, collection provenance, and cold signing.
+      </p>
+    </div>
+
+    {/* Operational Domains Grid */}
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem;">
+      {/* 1. SafeOps */}
+      <div class="panel">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+          <h2 style="margin: 0; font-size: 1.25rem; color: var(--color-brand);">🛡️ SafeOps Execution Shield</h2>
+          <span class="badge badge-verification">Shield Rules</span>
+        </div>
+        <p style="font-size: 0.85rem; color: var(--color-text-secondary); line-height: 1.4;">
+          Guarantees that UTXO consolidations, rune transactions, and batch transfers never accidentally destroy ordinal inscriptions, burn runes via cenotaphs, or leak assets to miner fees.
+        </p>
+        <ul style="font-size: 0.85rem; margin: 0.75rem 0; padding-left: 1.2rem;">
+          <li>Pre-flight examination of all cardinal funding inputs.</li>
+          <li>Deterministic rune allocation and runestone verification.</li>
+          <li>Digest binding: signed result must match the approved plan.</li>
+        </ul>
+        <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+          <a href="/build/wizards#plan-safeops" class="btn btn-secondary" style="font-size: 0.8rem;">
+            Run SafeOps Wizard →
+          </a>
+          <a href="/lab?family=safeops" class="btn btn-outline" style="font-size: 0.8rem;">
+            Test SafeOps in Lab 🔬
+          </a>
+        </div>
+      </div>
+
+      {/* 2. Swaps */}
+      <div class="panel">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+          <h2 style="margin: 0; font-size: 1.25rem; color: var(--color-focus);">⚡ Atomic Swaps Settlement</h2>
+          <span class="badge badge-verification">Atomic Settle</span>
+        </div>
+        <p style="font-size: 0.85rem; color: var(--color-text-secondary); line-height: 1.4;">
+          Peer-to-peer atomic swap intents and acceptances for inscriptions, runes, and BTC without counterparty risk.
+        </p>
+        <ul style="font-size: 0.85rem; margin: 0.75rem 0; padding-left: 1.2rem;">
+          <li>Maker identity proof bound to specific network checkpoint.</li>
+          <li>Public and private (taker-bound) intent schemes.</li>
+          <li>Two-sided closing signatures enforcing atomic execution.</li>
+        </ul>
+        <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+          <a href="/build/wizards#atomic-swap" class="btn btn-secondary" style="font-size: 0.8rem;">
+            Create Swap Intent →
+          </a>
+          <a href="/lab?family=swaps" class="btn btn-outline" style="font-size: 0.8rem;">
+            Test Swaps in Lab 🔬
+          </a>
+        </div>
+      </div>
+
+      {/* 3. Collection Provenance */}
+      <div class="panel">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+          <h2 style="margin: 0; font-size: 1.25rem; color: var(--color-success);">🎨 Collection Provenance</h2>
+          <span class="badge badge-proof">BIP-322 Creator Roots</span>
+        </div>
+        <p style="font-size: 0.85rem; color: var(--color-text-secondary); line-height: 1.4;">
+          Cryptographic collection manifests linking ordinal items to a creator authority using domain-separated Merkle trees.
+        </p>
+        <ul style="font-size: 0.85rem; margin: 0.75rem 0; padding-left: 1.2rem;">
+          <li>BIP-322 signature by creator address over manifest digest.</li>
+          <li>Compact log2(N) Merkle membership proofs per item.</li>
+          <li>On-chain creator-signed revocation support.</li>
+        </ul>
+        <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+          <a href="/build/wizards#collection-manifest" class="btn btn-secondary" style="font-size: 0.8rem;">
+            Create Manifest →
+          </a>
+          <a href="/lab?family=collection-manifest" class="btn btn-outline" style="font-size: 0.8rem;">
+            Test Proofs in Lab 🔬
+          </a>
+        </div>
+      </div>
+
+      {/* 4. Counterparty Heritage & Cold Signing */}
+      <div class="panel">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+          <h2 style="margin: 0; font-size: 1.25rem; color: var(--color-brand);">🔒 Cold Signing & Heritage Assets</h2>
+          <span class="badge badge-verification">Air-Gapped Safety</span>
+        </div>
+        <p style="font-size: 0.85rem; color: var(--color-text-secondary); line-height: 1.4;">
+          Cold signing sessions with human-auditable manifests and Counterparty UTXO asset attachment tracking.
+        </p>
+        <ul style="font-size: 0.85rem; margin: 0.75rem 0; padding-left: 1.2rem;">
+          <li>Strict manifest comparison: refuses modified outputs or fees.</li>
+          <li>Sighash restrictions preventing unintended input signing.</li>
+          <li>Sat-flow preservation for Counterparty attached balances.</li>
+        </ul>
+        <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+          <a href="/build/wizards#cold-signing" class="btn btn-secondary" style="font-size: 0.8rem;">
+            Cold Signing Wizard →
+          </a>
+          <a href="/lab?family=offline-signing" class="btn btn-outline" style="font-size: 0.8rem;">
+            Inspect Manifest 🔬
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <FeedbackWidget client:load route="/operate" heading="Protocol Operations & Asset Safety" />
+  </div>
+</BaseLayout>
