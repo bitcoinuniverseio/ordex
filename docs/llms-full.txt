@@ -1,0 +1,3385 @@
+# Ordex Protocol Full Model-Readable Documentation
+Grounded in OpenAPI 3.1, AsyncAPI 3.0, and checked-in reference verifiers.
+
+## The Ordex gateway API - The Ordex gateway API (heading:The Ordex gateway API)
+- Source: spec/api.md
+- URL: /reference/specifications/api
+
+Every route below is served under `/api/ordex`. Amounts and protocol quantities
+are atomic integers carried as strings, never as floating point numbers.
+
+The exact request and response shape of every route, field by field, is the
+machine readable contract in [openapi.json](openapi.json). This page explains
+the decisions; the contract states the wire format, and the two are kept in
+step in the same commit.
+
+The contract carries a protocol version. Reads answer `200`. Every write
+answers `201`. A client that pins a version gets that version's behavior for
+every operation it names; additive operations such as offers, replacement, and
+batch purchase arrived at `1.1` without changing any `1.0` operation.
+
+---
+
+## The Ordex gateway API - Reads (heading:Reads)
+- Source: spec/api.md
+- URL: /reference/specifications/api
+
+| Route | Answers |
+| --- | --- |
+| `GET /health` | The observed verification verdict, not the configuration. |
+| `GET /protocol` | The protocol contract this gateway speaks. |
+| `GET /catalog` | The markets this gateway serves, and what it verifies for each. |
+| `GET /orders` | One page of the orderbook. |
+| `GET /orders/:id` | One order. |
+| `GET /activity` | The appended lifecycle log, newest first. |
+| `GET /orders/:id/ownership-challenge` | The message a listing owner signs before managing it. |
+| `GET /orders/:id/nostr-envelope` | The unsigned kind 802 event announcing this listing, for the seller's own NIP-07 signer. |
+
+`GET /orders/:id/artifact` is separate on purpose. A browse response carrying
+raw PSBTs would hand every public ask to anything that can read the market, so
+the artifact is its own rate limited request and is released only while the
+order is live.
+
+---
+
+## The Ordex gateway API - Paging is keyset, never offset (heading:Paging is keyset, never offset)
+- Source: spec/api.md
+- URL: /reference/specifications/api
+
+`GET /orders` takes `limit` and `cursor`, and answers with `nextCursor`.
+`nextCursor` is empty when the page is the last one; `hasMore` is derived from
+it rather than from a total that concurrent writes can move.
+
+A cursor names the exact row the previous page ended on: its sort column value
+and its order id. Every sort ends on the order id, which is unique, so the
+ordering is total and the resume point is exact.
+
+This is not decoration. With an offset, a listing sold, withdrawn, repriced, or
+reconciled between two reads shifts every later row, and the next page skips a
+listing or repeats one. A keyset cursor is unaffected by anything that happens
+behind it.
+
+A malformed cursor is a `400`. It is never answered with the first page:
+resuming somewhere the caller did not ask for is how a paging client loops
+forever without noticing.
+
+Sorts: `newest`, `oldest`, `price_asc`, `price_desc`, `token_asc`,
+`protocol_asc`, `validation_newest`. An unpriced order sorts after every priced
+one in both price directions.
+
+---
+
+## The Ordex gateway API - Filters (heading:Filters)
+- Source: spec/api.md
+- URL: /reference/specifications/api
+
+`protocol`, `protocols`, `group`, `token`, `source`, `state`, `safety`,
+`orderClass`, `signature`, `side`, `seller`, `search`, `includeWithdrawn`, and
+the indexed asset filters `assetInscriptionId` and `assetOutpoint`.
+
+The asset filters resolve through an index of each order's claims, so asking
+which orders sell one output reads the few rows that do rather than the whole
+book.
+
+---
+
+## The Ordex gateway API - Writes (heading:Writes)
+- Source: spec/api.md
+- URL: /reference/specifications/api
+
+| Route | Does |
+| --- | --- |
+| `POST /orders/import` | Takes a signed artifact and verifies it. |
+| `POST /orders/openordex-event` | Takes a signed OpenOrdex event and verifies it. |
+| `POST /orders/build` | Builds the unsigned seller half. |
+| `POST /orders/publish` | Takes the signed seller half and publishes it. |
+| `POST /orders/{id}/replace` | Replaces a live ask with a freshly signed one for the same output: the old order leaves the book as `REPLACED` and the new one goes live, in one step. |
+| `POST /orders/:id/revalidate` | Rechecks one order against both authorities. |
+| `POST /orders/:id/withdraw` | Removes a listing, proved by the key owning the output it sells. |
+| `POST /orders/:id/quote` | Composes the buyer half and states the exact terms. |
+| `POST /orders/:id/preflight` | Verifies a signed purchase and asks the node whether it would accept it. |
+| `POST /orders/batch-purchase` | Composes several live asks into one transaction when every seller half can coexist. See [batch-purchase.md](batch-purchase.md). |
+| `POST /orders/batch-preflight` | Verifies a signed batch and asks the node about the exact composed bytes. |
+| `POST /offers` | Takes funded-out
+
+---
+
+## The Ordex gateway API - `POST /orders/:id/quote` (heading:`POST /orders/:id/quote`)
+- Source: spec/api.md
+- URL: /reference/specifications/api
+
+The caller names its own outputs and nothing else:
+
+```json
+{
+  "assetReceiveAddress": "...",
+  "paymentAddress": "...",
+  "paddingUtxos": [{ "txid": "...", "vout": 0 }, { "txid": "...", "vout": 1 }],
+  "fundingUtxos": [{ "txid": "...", "vout": 2 }],
+  "feeRateSatsPerVb": 4
+}
+```
+
+Value and script are read from Bitcoin Core, never taken from the request, so a
+buyer cannot make a purchase look cheaper by describing their own funding
+wrongly. Each named output is checked against the ord index first.
+
+The answer carries the unsigned buyer half, the index the seller's input and
+payment share, and the exact economics: `sellerProceedsSats`,
+`marketplaceFeeSats`, `creatorRoyaltySats`, `networkFeeSats`, `changeSats`,
+`paddingSats`, `totalBuyerCostSats`, both addresses, the checkpoint, and an
+expiry. A fee or a royalty of zero is stated as zero rather than omitted.
+
+See [purchase.md](purchase.md) for the arrangement and why it is the only safe
+one.
+
+---
+
+## The Ordex gateway API - `POST /orders/:id/preflight` (heading:`POST /orders/:id/preflight`)
+- Source: spec/api.md
+- URL: /reference/specifications/api
+
+Takes either `finalTxHex` or the `signedPsbt` a wallet actually answers with.
+Given a PSBT it finalises only inputs the buyer already signed: it creates no
+signature and changes no input, output, or amount, and an unsigned input is an
+error rather than a guess.
+
+It rechecks the order against the chain, binds the transaction to the order,
+proves the sat flow invariant, then asks the node itself whether it would
+accept the result. It answers with the exact bytes it checked, so a buyer
+broadcasts those and no others.
+
+Ordex does not broadcast. That is the buyer's own step, taken deliberately
+after they have seen the node's verdict.
+
+---
+
+## Buying several asks in one transaction - Buying several asks in one transaction (heading:Buying several asks in one transaction)
+- Source: spec/batch-purchase.md
+- URL: /reference/specifications/batch-purchase
+
+A sweep is one transaction that settles several live asks at once. It is
+offered only when every seller half can coexist in a single transaction with
+every invariant intact, and it is refused with per-order reasons when they
+cannot, so a client can fall back to separate purchases without guessing.
+
+This document is the exact composition Ordex v1.1 builds and the exact
+reasons each part exists. Read [purchase.md](purchase.md) first: a sweep is
+that arrangement repeated, and the two rules that decide who receives the
+asset apply to every ask in the batch.
+
+---
+
+## Buying several asks in one transaction - The arrangement (heading:The arrangement)
+- Source: spec/batch-purchase.md
+- URL: /reference/specifications/batch-purchase
+
+Each ask contributes one seller input, signed
+`SIGHASH_SINGLE | SIGHASH_ANYONECANPAY`, and one seller payment output at the
+same index. `ANYONECANPAY` is what makes a batch possible at all: each seller
+signed one input and one output and committed to neither neighbor, so many
+signed halves can sit side by side in one transaction none of them foresaw.
+
+For up to eight asks, Ordex composes:
+
+```
+inputs                                  outputs
+0..2T-1  buyer padding inputs           0..      one padding merge and one buyer
+                                                  asset output per ask, each block
+                                                  ahead of its ask's payment
+j_1..    seller input, ask one          k_1      seller payment, ask one
+j_2..    seller input, ask two          k_2      seller payment, ask two
+...                                     ...      ...
+last buyer funding inputs              last     buyer change, when above dust
+```
+
+where each ask is laid out as the block [two padding inputs, seller input]
+with the matching outputs [padding merge, buyer asset output] placed so that
+the buyer asset output for ask `i` sits before the seller i
+
+---
+
+## Buying several asks in one transaction - What Ordex refuses before composing (heading:What Ordex refuses before composing)
+- Source: spec/batch-purchase.md
+- URL: /reference/specifications/batch-purchase
+
+- any ask that is not live, not fresh, or not actionable;
+- the same ask twice, or an ask whose seller input another ask in the batch
+  already claims;
+- a batch larger than eight asks, or zero asks;
+- a named padding or funding output that is spent, unknown to the node, or
+  carries an inscription or a rune balance, or that the ord index has not
+  examined;
+- funding that does not cover every price and the fee at the requested rate.
+
+---
+
+## Buying several asks in one transaction - What Ordex refuses before handing the result over (heading:What Ordex refuses before handing the result over)
+- Source: spec/batch-purchase.md
+- URL: /reference/specifications/batch-purchase
+
+Each completed batch is checked ask by ask with the same rules a single
+purchase checks: the offered outpoint appears exactly once, the seller
+payment sits at the shared index with the exact script and price, and the
+outputs ahead of that payment absorb the whole range the offered output
+occupies. A batch is also refused when:
+
+- two asks would need the same output index for different purposes;
+- the composed transaction exceeds the gateway's size and weight bounds;
+- the fee actually paid exceeds the fee the buyer approved.
+
+---
+
+## Buying several asks in one transaction - No partial result (heading:No partial result)
+- Source: spec/batch-purchase.md
+- URL: /reference/specifications/batch-purchase
+
+A sweep that cannot prove every ask proves nothing. There is no version that
+settles some asks and quietly drops the rest, because a buyer reviewing one
+transaction has approved one set of movements, not a subset of them. When
+composition or verification fails, the answer names every refused order with
+its refusal code, and the buyer either fixes the batch or buys the survivors
+one at a time through the ordinary routes.
+
+---
+
+## Cold signing and watch-only mode v1 - Cold signing and watch-only mode v1 (heading:Cold signing and watch-only mode v1)
+- Source: spec/cold-signing.md
+- URL: /reference/specifications/cold-signing
+
+Status: active at protocol 1.2. Artifacts: `ordex.expected-transaction-manifest/v1`, `ordex.offline-signing-session/v1`. Reference verifier: `verifier/offline-signing.js`. Vectors: `conformance/offline-signing-vectors.json`.
+
+Cold signing is a signing mode, not a product silo: every transaction surface in Ordex, buys, listings, withdrawals, replacements, batch purchases, SafeOps, swaps, and heritage, can be completed through a connected wallet, a hardware wallet through its existing provider API, a PSBT file, base64 copy and paste, animated QR (crypto-psbt UR), or a static QR when the payload fits safely. Watch-only profiles can browse, plan, and export, and never imply they can sign.
+
+---
+
+## Cold signing and watch-only mode v1 - The SignerAdapter contract (heading:The SignerAdapter contract)
+- Source: spec/cold-signing.md
+- URL: /reference/specifications/cold-signing
+
+One adapter interface with capability detection covers: connected-wallet signing (existing adapters), PSBT binary export and import, base64 copy and paste, animated QR through an established interoperable UR encoding, static QR fallback, hardware signing through audited wallet-provider APIs, and watch-only with no signing capability. No raw device key management exists anywhere in this codebase: keys and recovery material never pass through gateway, browser storage, or SDK.
+
+PSBT v0 and v2 are supported where wallets require them. Conversion preserves the unsigned transaction, UTXO data, scripts, sighash policy, derivation metadata, and proprietary asset-protection fields, and refuses lossy conversions.
+
+---
+
+## Cold signing and watch-only mode v1 - The expected transaction manifest (heading:The expected transaction manifest)
+- Source: spec/cold-signing.md
+- URL: /reference/specifications/cold-signing
+
+Before any signing request, the flow builds a manifest: the network, one line stating the purpose, whether a watch-only profile prepared it, every input with its exact value and script, whether the user controls it, its sighash type, and one line on why it is spent, every output with its exact script, value, role, recipient, expected assets, and one line on who receives it, the fee and its permitted maximum, and the digest. The digest is SHA-256 over the sorted-key JSON of the network, the inputs (outpoint, value, script), the outputs (script, value), and the sighash policy. Presentation fields deliberately sit outside the digest; the unsigned transaction is the identity.
+
+---
+
+## Cold signing and watch-only mode v1 - The nine refusals (heading:The nine refusals)
+- Source: spec/cold-signing.md
+- URL: /reference/specifications/cold-signing
+
+After a signed PSBT comes back, from any signer, the normalized result is compared against the manifest. The comparison refuses with a stable code when:
+
+1. The signed result was not produced from this manifest (`MANIFEST_DIGEST_MISMATCH`).
+2. The fee left its approved bound (`FEE_OUT_OF_BOUNDS`).
+3. An input was added, removed, or reordered (`INPUT_SET_CHANGED`, `INPUT_REORDERED`).
+4. An output was added, removed, or changed in script or value (`OUTPUT_SET_CHANGED`, `SCRIPT_CHANGED`, `VALUE_CHANGED`).
+5. A protected asset moved somewhere other than its expected output, or moves at all when none were expected (`PROTECTED_ASSET_MISPLACED`).
+6. A required user input is still unsigned (`REQUIRED_SIGNATURE_MISSING`).
+7. A signature appeared with a sighash the manifest did not approve (`SIGHASH_UNEXPECTED`).
+8. A signature covers an input the user does not control (`SIGNATURE_ON_FOREIGN_INPUT`).
+9. An unknown critical field appeared (`UNKNOWN_CRITICAL_FIELDS`).
+
+Any difference between what was presented and what came back is a refusal, never an adaptation. The signing stepper surfaces the exact field and the human explanation, and preserves the stable code in the technical d
+
+---
+
+## Cold signing and watch-only mode v1 - The stepper (heading:The stepper)
+- Source: spec/cold-signing.md
+- URL: /reference/specifications/cold-signing
+
+Build, verify, export or connect signer, sign offline, import, verify the signed result, refresh chain state, run node preflight, request the explicit broadcast, monitor settlement. Each step is resumable, the export carries the manifest digest, and the import step re-runs the full comparison before anything else happens.
+
+---
+
+## Cold signing and watch-only mode v1 - Watch-only profiles (heading:Watch-only profiles)
+- Source: spec/cold-signing.md
+- URL: /reference/specifications/cold-signing
+
+A watch-only profile is a standard output descriptor or xpub, stored locally by default. Nothing uploads an xpub or a full address derivation set without an explicit privacy warning and an explicit opt-in. An optional synchronized profile is encrypted client side under a key the server never sees. Watch-only surfaces show holdings, build plans, and export PSBTs; signing controls render as unavailable, not hidden.
+
+---
+
+## Cold signing and watch-only mode v1 - Blind signing is prohibited (heading:Blind signing is prohibited)
+- Source: spec/cold-signing.md
+- URL: /reference/specifications/cold-signing
+
+A signer is never asked to sign a transaction whose manifest was not shown and verifiable. Hardware wallets that display their own interpretation must agree with the manifest on network, recipients, and amounts; a disagreement is a blocked signing session, and the disagreement is displayed.
+
+---
+
+## Collection provenance registry v1 - Collection provenance registry v1 (heading:Collection provenance registry v1)
+- Source: spec/collection-manifest.md
+- URL: /reference/specifications/collection-manifest
+
+Status: active at protocol 1.2. Artifacts: `ordex.collection-manifest/v1`, `ordex.collection-manifest-revocation/v1`. Reference verifier: `verifier/collection-manifest.js`. Vectors: `conformance/collection-manifest-vectors.json`.
+
+The registry establishes cryptographic facts about who created a collection and who belongs to it. It does not turn moderation or curation into protocol truth. Claims stay separate: what the creator signed, what is anchored on chain, what the gateway curates, what third parties list, and what the community reports. No badge ever hides which claim was proven.
+
+---
+
+## Collection provenance registry v1 - The manifest (heading:The manifest)
+- Source: spec/collection-manifest.md
+- URL: /reference/specifications/collection-manifest
+
+A manifest carries: network, protocol family (`ordinals`, `runes`, `stamps`, `counterparty`, `multi`), a stable collection id, display name and description, creator address, the member identity type (`inscriptionId`, `output`, `assetId`, `satpoint`), the member list, the membership Merkle root, metadata and trait schema hashes, media digests, a supply statement, an optional parent collection, an optional rights declaration, optional royalty metadata, creation height, version, the previous manifest digest when superseding, an optional on-chain anchor, the status, the creator BIP-322 signature, and the digest.
+
+The rights field is a creator-signed declaration, displayed as such. It is never interpreted as a legal guarantee and never enforced by custody.
+
+Rules the verifier enforces:
+
+1. The member list is stored sorted with no duplicates (`MEMBERS_UNSORTED`, `MEMBERS_DUPLICATED`).
+2. The membership root recomputes from the member list exactly (`MEMBERSHIP_ROOT_MISMATCH`).
+3. A FIXED supply declares exactly the member count (`SUPPLY_MISMATCH`).
+4. Version 2 and later name the manifest they supersede; version 1 cannot (`PREVIOUS_DIGEST_REQUIRED`, `PREVIOUS_DIGEST_FORBIDDEN`).
+
+---
+
+## Collection provenance registry v1 - Membership proofs (heading:Membership proofs)
+- Source: spec/collection-manifest.md
+- URL: /reference/specifications/collection-manifest
+
+Leaves are `SHA-256(sorted-key JSON of { domain: "ordex.collection-member/v1", collectionId, memberIdentity })`. Interior nodes combine child digests in ascending byte order inside `{ domain: "ordex.collection-node/v1", left, right }`. Domain separation means a member leaf can never be replayed as an interior node or as any other artifact's leaf.
+
+`buildMembershipProof` walks the sorted tree and returns the sibling path. `verifyMembershipProof` needs only the manifest, the member identity, and the proof: no network call, no gateway. A stranger's identity, a tampered sibling, and a member removed in a newer version all refuse with `MEMBER_NOT_PROVEN`.
+
+---
+
+## Collection provenance registry v1 - Publication, versioning, revocation (heading:Publication, versioning, revocation)
+- Source: spec/collection-manifest.md
+- URL: /reference/specifications/collection-manifest
+
+A manifest is drafted, validated locally, signed by the creator, and then published. Publication is immutable. Corrections are a new version whose digest names the previous one. Supersession and revocation are creator-signed documents; a revocation (`ordex.collection-manifest-revocation/v1`) binds the exact manifest digest, states a reason, and is refused when signed by any address other than the creator. History is never deleted: superseded and revoked versions remain visible with their statuses.
+
+Optional anchoring writes the manifest digest into an inscription or transaction through the existing Universe infrastructure. Anchor state is separate from signature state: `ANCHOR_PENDING`, `ANCHORED`, `ANCHOR_CONFLICTED`, and `REORGED` never change the fact that the creator signed.
+
+---
+
+## Collection provenance registry v1 - Verification states (heading:Verification states)
+- Source: spec/collection-manifest.md
+- URL: /reference/specifications/collection-manifest
+
+DRAFT, CREATOR_SIGNED, ANCHOR_PENDING, ANCHORED, SUPERSEDED, REVOKED, SIGNATURE_INVALID, MEMBERSHIP_INVALID, ANCHOR_CONFLICTED, REORGED.
+
+---
+
+## Collection provenance registry v1 - Compatibility (heading:Compatibility)
+- Source: spec/collection-manifest.md
+- URL: /reference/specifications/collection-manifest
+
+Existing 1.1 collection roots (the offers Merkle root) remain readable. A deterministic adapter maps a 1.1 root and its member leaves into a 1.1-shaped offer verification without claiming manifest-level properties the 1.1 root never carried.
+
+---
+
+## Collection provenance registry v1 - Gates (heading:Gates)
+- Source: spec/collection-manifest.md
+- URL: /reference/specifications/collection-manifest
+
+Every displayed proof badge must be reproducible by the SDK and the reference verifier. An invalid signature never displays as creator-signed. A missing member never passes a proof. A changed metadata digest changes the manifest digest. No central administrator can silently rewrite a creator-signed manifest: the gateway stores and serves documents, the signatures decide what is true.
+
+---
+
+## Counterparty heritage assets v1 - Counterparty heritage assets v1 (heading:Counterparty heritage assets v1)
+- Source: spec/counterparty-utxo-asset.md
+- URL: /reference/specifications/counterparty-utxo-asset
+
+Status: active at protocol 1.2. Artifacts: `ordex.counterparty-utxo-asset/v1`. Reference verifier: `verifier/counterparty-asset.js`. Vectors: `conformance/counterparty-asset-vectors.json`.
+
+The heritage market brings legacy and current Counterparty assets, including named assets, numeric assets, subassets, and long names, into the non-custodial Ordex model: UTXO-attached assets, exact PSBT settlement, one transaction, no escrow. Stamps and SRC-20 keep their existing surfaces; nothing here duplicates them.
+
+---
+
+## Counterparty heritage assets v1 - Identity (heading:Identity)
+- Source: spec/counterparty-utxo-asset.md
+- URL: /reference/specifications/counterparty-utxo-asset
+
+Asset identity is the authoritative numeric Counterparty asset id plus current ledger state. A ticker or name alone is never an identity (`ASSET_ID_REQUIRED`). Records carry the name, the numeric id, divisibility, and the exact atomic quantity as a decimal string.
+
+---
+
+## Counterparty heritage assets v1 - The authority (heading:The authority)
+- Source: spec/counterparty-utxo-asset.md
+- URL: /reference/specifications/counterparty-utxo-asset
+
+One self-hosted Counterparty Core deployment is the only production authority. A record may be produced only while it reports ready, matches the intended network, reaches the accepted Bitcoin Core height, and carries stable ledger, transaction-list, and message hashes (`AUTHORITY_NOT_READY`). Every record binds the block height, block hash, and ledger hash it was read at, so any consumer can judge freshness. There is no public API fallback in production, ever. A lagging node fails the market closed rather than opening it on stale truth.
+
+---
+
+## Counterparty heritage assets v1 - The attachment record (heading:The attachment record)
+- Source: spec/counterparty-utxo-asset.md
+- URL: /reference/specifications/counterparty-utxo-asset
+
+A record states that an exact quantity of one asset is attached to one outpoint right now, controlled by one address, with the co-traveling assets on the same outpoint declared. An undeclared co-traveling asset is how unrelated assets get burned, so the declaration is part of the record and part of every verification that moves the outpoint.
+
+---
+
+## Counterparty heritage assets v1 - Attachment follows the spend (heading:Attachment follows the spend)
+- Source: spec/counterparty-utxo-asset.md
+- URL: /reference/specifications/counterparty-utxo-asset
+
+When a UTXO carrying an attachment is spent, the asset follows the input range. The destination is the first output whose accumulated value passes the sat range start of the attached outpoint: the same first-sat rule that decides inscription delivery. `verifyAttachmentFollows` re-derives the destination from the spending transaction alone and refuses when:
+
+1. No input spends the recorded outpoint (`OUTPOINT_NOT_SPENT`) or it appears twice (`OUTPOINT_DUPLICATED`).
+2. The spent value differs from the record, so the range cannot be traced (`SOURCE_VALUE_MISMATCH`).
+3. A readable value is missing anywhere the trace needs one (`INPUT_VALUE_UNKNOWN`, `OUTPUT_VALUE_UNKNOWN`).
+4. No output absorbs the range start, meaning the attachment fell into the fee region (`SAT_FLOW_SHORTFALL`).
+5. The trace lands on a different output than the plan promised (`DESTINATION_MISMATCH`).
+
+---
+
+## Counterparty heritage assets v1 - Attach and detach (heading:Attach and detach)
+- Source: spec/counterparty-utxo-asset.md
+- URL: /reference/specifications/counterparty-utxo-asset
+
+Attachment and detachment are composed for the user, never for the service: the composition returns an unsigned PSBT, the exact XCP gas, the exact miner fee, the resulting outpoint, the consequences, and any unrelated assets that would also move. The user signs with their own wallet. The server never holds XCP, BTC, or the attached asset. Composed transactions pass Bitcoin Core preflight before signature, and the expected Counterparty event is confirmed after confirmation; reorgs reverse the marketplace state through explicit reversed events.
+
+---
+
+## Counterparty heritage assets v1 - Protection everywhere (heading:Protection everywhere)
+- Source: spec/counterparty-utxo-asset.md
+- URL: /reference/specifications/counterparty-utxo-asset
+
+Counterparty-attached outputs are never cardinal. SafeOps inventories, wallet selection, marketplace funding, swaps, and consolidations all read the same attachment registry, and an operation that would move an attached outpoint without preserving its complete declared inventory fails closed.
+
+---
+
+## Counterparty heritage assets v1 - Trading path (heading:Trading path)
+- Source: spec/counterparty-utxo-asset.md
+- URL: /reference/specifications/counterparty-utxo-asset
+
+Listings are Ordex asks over the attached outpoint: the seller's signed input commits the outpoint, the buyer's payment output sits at the same index, and the sat-flow invariant guarantees the attachment lands in the buyer's output. Legacy dispensers and order history may be displayed read-only with clear labeling. Nothing in the product sends BTC to a legacy dispenser address or encourages it.
+
+---
+
+## Counterparty heritage assets v1 - Readiness gates (heading:Readiness gates)
+- Source: spec/counterparty-utxo-asset.md
+- URL: /reference/specifications/counterparty-utxo-asset
+
+The heritage surface answers `GET /api/ordex/heritage/readiness` with server readiness, network, checkpoint, ledger hash, and lag. Listing, buying, attach, detach, and swap surfaces are actionable only while readiness holds, and every response names the authority it proved against.
+
+---
+
+## Realtime events and signed webhooks v1 - Realtime events and signed webhooks v1 (heading:Realtime events and signed webhooks v1)
+- Source: spec/events.md
+- URL: /reference/specifications/events
+
+Status: active at protocol 1.2. Artifacts: `ordex-event/v1`, `ordex.webhook-subscription/v1`, `ordex.webhook-delivery/v1`. Reference verifier: `verifier/events.js`. Vectors: `conformance/event-vectors.json`. Streaming contract: `spec/asyncapi.json`.
+
+Every public state change in an Ordex gateway becomes one immutable event envelope, produced by the transactional outbox at the exact database commit that changed the aggregate. Streaming workers consume the outbox. Nothing reconstructs authoritative history from websocket or in-memory activity.
+
+---
+
+## Realtime events and signed webhooks v1 - The envelope (heading:The envelope)
+- Source: spec/events.md
+- URL: /reference/specifications/events
+
+An envelope carries: a globally unique id (uuid), the event type (`ordex.<family>.<name>`), schema version `1`, network, a monotonic per-network sequence, the aggregate type, id, and version, the observation time, the chain checkpoint (height and block hash) it was observed at, a status of `current` or `reverted`, the id of the reversed event when status is `reverted`, the public payload, artifact digests, and a trace id that reveals no private user information.
+
+Rules the verifier enforces:
+
+1. A reverted event must name the event it reverses, and an event cannot reverse itself (`REVERTED_EVENT_REQUIRED`).
+2. Only a reverted event may carry a reversed id (`STATUS_INVALID`).
+3. The sequence is a positive integer that never decreases (`SEQUENCE_INVALID`).
+4. The checkpoint is present and well formed (`CHECKPOINT_INVALID`).
+
+Replay order is the sort key `network:sequence:id`. It is deterministic, and consumers resume from it. There is no offset pagination anywhere in the event surface.
+
+---
+
+## Realtime events and signed webhooks v1 - Event families (heading:Event families)
+- Source: spec/events.md
+- URL: /reference/specifications/events
+
+Orders: published, replaced, withdrawn, stale, conflicted, settled, reorged. Swaps: published, matched, signed, conflicted, settled, expired, reorged. SafeOps: broadcast, replaced, confirmed, dropped, reorged. Counterparty: attachment, detachment, UTXO move, listing, sale, reversal. Provenance: manifest published, superseded, revoked, anchored. Chain: checkpoint advanced and reverted. Authority: readiness changed.
+
+No private wallet data, no xpub, no address the policy does not allow, and no private swap terms appear in a public event or its logs.
+
+---
+
+## Realtime events and signed webhooks v1 - Streaming (heading:Streaming)
+- Source: spec/events.md
+- URL: /reference/specifications/events
+
+Two transports carry the same envelopes:
+
+- Server-sent events at `GET /api/ordex/events/stream`, for resilient browser and server consumption, with `Last-Event-ID` resumption and heartbeats.
+- WebSocket at the streaming gateway, for multiplexed, high-volume consumers: one connection, many filters, cursor resumption.
+
+Required behavior, both transports: filter by network, protocol, collection, event type, and aggregate; deterministic replay from the acknowledged cursor; bounded buffers; slow-consumer disconnection with a resumable cursor; at-least-once delivery with event-id deduplication; seven-day minimum retention; no silent gaps.
+
+Publication latency target: p95 under two seconds from the authoritative database commit. No event loss during worker restart: an at-least-once consumer that deduplicates by id observes exactly-once effect.
+
+---
+
+## Realtime events and signed webhooks v1 - Signed webhooks (heading:Signed webhooks)
+- Source: spec/events.md
+- URL: /reference/specifications/events
+
+A subscription registers an HTTPS endpoint and the event families it wants. Creation returns the signing secret exactly once; storage keeps only a hash, and later reads show a hint. The endpoint answers a challenge before activation.
+
+Each delivery POSTs one envelope with the header `X-Ordex-Signature: t=<unix>,d=<deliveryId>,v1=<hex>`, where `v1` is HMAC-SHA256 over `<timestamp>.<deliveryId>.<sha256(body)>` under the subscription secret. Verification is constant time and enforces a timestamp tolerance of five minutes by default. `verifier/events.js` and the SDK expose the same signer and verifier.
+
+Delivery is at least once with exponential backoff, bounded retries, dead-letter state, per-attempt history, manual replay, idempotency ids, endpoint health, and secret rotation with a bounded verification overlap. The delivery worker is isolated from internal infrastructure and protected against SSRF, DNS rebinding, private-address destinations, unbounded redirects, oversized responses, and endpoint-induced resource exhaustion. Secrets are encrypted at rest.
+
+---
+
+## Realtime events and signed webhooks v1 - Historical APIs (heading:Historical APIs)
+- Source: spec/events.md
+- URL: /reference/specifications/events
+
+Event history, current orders, order history, public swaps, manifests, Counterparty assets, activity, checkpoints, reorg events, asset-state proofs, market snapshots, and bounded NDJSON or compressed CSV exports are keyset paginated. Every response names its network, checkpoint, freshness, authority, and proof digest. No unqualified number is ever returned where current authoritative state could be assumed.
+
+---
+
+## Portable orders: import, export, and OpenOrdex - Portable orders: import, export, and OpenOrdex (heading:Portable orders: import, export, and OpenOrdex)
+- Source: spec/interoperability.md
+- URL: /reference/specifications/interoperability
+
+A signed PSBT is the whole order. Everything around it, where it was seen,
+what price it claims, what asset it names, is evidence that travels with it,
+and evidence never outranks what the node and the ord index prove. This page
+states exactly how an order enters an Ordex gateway, how it leaves, and what
+a compatible OpenOrdex event must look like.
+
+---
+
+## Portable orders: import, export, and OpenOrdex - Identity is the artifact, not the venue (heading:Identity is the artifact, not the venue)
+- Source: spec/interoperability.md
+- URL: /reference/specifications/interoperability
+
+An order's identity is the digest of its artifact. Import the same signed
+PSBT twice, from two venues or two clients, and the gateway holds one order
+with two pieces of source evidence, not two orders. The digest is published
+on every order as `inspection.digest`.
+
+Two consequences follow:
+
+- A duplicate import cannot change the existing order's terms. The same
+  artifact arriving with a different claimed protocol, token, side, or price
+  is refused, because one signature cannot mean two different offers.
+- New evidence merges. A source not yet recorded is appended, a newly named
+  asset claim is appended, and the order's validation is refreshed. A
+  withdrawn order stays withdrawn; new evidence does not resurrect it.
+
+---
+
+## Portable orders: import, export, and OpenOrdex - Import: `POST /api/ordex/orders/import` (heading:Import: `POST /api/ordex/orders/import`)
+- Source: spec/interoperability.md
+- URL: /reference/specifications/interoperability
+
+The request carries the artifact and, optionally, claims: an asset, a price,
+a protocol, a token, a side. The gateway inspects the PSBT, verifies the
+offered output against Bitcoin Core, verifies the asset claim against the
+local ord index, and decides the state itself. A claim can make an order
+easier to find; it cannot make an order more verified.
+
+Provenance is restricted. A direct import is recorded as `direct-import`.
+The named sources `openordex-nostr802` and `ord-offers` are accepted only
+from their own verified source adapters, so a pasted request cannot dress
+itself as evidence from a venue nothing actually read.
+
+---
+
+## Portable orders: import, export, and OpenOrdex - OpenOrdex events: `POST /api/ordex/orders/openordex-event` (heading:OpenOrdex events: `POST /api/ordex/orders/openordex-event`)
+- Source: spec/interoperability.md
+- URL: /reference/specifications/interoperability
+
+The gateway accepts OpenOrdex compatible Nostr events of kind `802` and
+verifies them completely before anything is imported:
+
+1. `pubkey` must be 64 hexadecimal characters, `sig` 128, `id` 64.
+2. `created_at` must be a positive integer.
+3. `id` must equal the SHA-256 of the NIP-01 serialization
+   `[0, pubkey, created_at, kind, tags, content]`.
+4. `sig` must be a valid Schnorr signature by `pubkey` over `id`.
+
+Any failure is a refusal, and an event that passes is recorded as
+`openordex-nostr802` evidence with `signatureVerified: true` and the event
+id as the source id.
+
+The event's content is the artifact. The tags the gateway reads:
+
+| Tag | Carries |
+| --- | --- |
+| `i` | The inscription id the order claims to sell. |
+| `u` | The outpoint the order claims, as `txid:vout`. |
+| `s` | The claimed price in sats. |
+| `protocol` | The catalog protocol id. |
+| `token` | The token label, where the protocol has one. |
+| `t` | The side: `buy` becomes a BID, anything else an ASK. |
+
+The asset claim is used only when both `i` and `u` parse. As everywhere,
+these tags are discovery evidence; the node and the ord index decide what is
+actually true.
+
+---
+
+## Portable orders: import, export, and OpenOrdex - Export: the envelope and the artifact (heading:Export: the envelope and the artifact)
+- Source: spec/interoperability.md
+- URL: /reference/specifications/interoperability
+
+`GET /api/ordex/orders/:id/nostr-envelope` answers the unsigned kind 802
+event announcing a listing, with the tags above plus `n` (network), `d`
+(order id), and `status` (current state). The gateway holds no Nostr keys:
+the customer's own NIP-07 signer adds `pubkey`, `id`, and `sig`, the browser
+publishes to the relays the customer chooses, and the signed event can then
+be handed back through the OpenOrdex import route. A withdrawn order is
+refused an envelope, because removing a listing from discovery and then
+announcing it again is a contradiction.
+
+Publishing is one directional on purpose. The gateway never subscribes to a
+relay, so relay settings change where a listing is announced, never what a
+customer sees while browsing this gateway.
+
+`GET /api/ordex/orders/:id/artifact` releases the signed artifact itself. It
+is its own rate limited request, answered only while the order is live, so a
+browse response can never leak every public ask to a scraper.
+
+---
+
+## Portable orders: import, export, and OpenOrdex - What a source may never do (heading:What a source may never do)
+- Source: spec/interoperability.md
+- URL: /reference/specifications/interoperability
+
+A source supplies signed order evidence. It may never override ownership,
+UTXO state, protocol state, or chain state, and a gateway that lets it has
+stopped being an Ordex gateway. Anyone can stand up a venue that repeats a
+listing; only the chain can say whether the listing is still real.
+
+---
+
+## Order lifecycle - Order lifecycle (heading:Order lifecycle)
+- Source: spec/lifecycle.md
+- URL: /reference/specifications/lifecycle
+
+Every state below is one the implementation can actually enter and leave. A
+state nothing reaches is a lie told to the orderbook, to the market, and to any
+monitoring built on either, so this list stays exactly as wide as the
+transitions the validators and the reconciler make.
+
+---
+
+## Order lifecycle - States (heading:States)
+- Source: spec/lifecycle.md
+- URL: /reference/specifications/lifecycle
+
+| State | What it means |
+| --- | --- |
+| `PENDING_NODE` | The artifact parsed. Bitcoin Core has not confirmed the offered output is unspent. |
+| `PENDING_ORD` | Core confirmed the output. The ord index has not confirmed the asset is where the order claims. |
+| `LIVE` | Both authorities agreed, recently enough to act on. |
+| `MEMPOOL_CONFLICTED` | An unconfirmed transaction spends the offered output. It can still be replaced or dropped. |
+| `SPENT` | The offered output was spent on chain by a transaction Ordex did not observe settling this order. |
+| `SETTLED` | The offered output was spent by a transaction carrying this order's exact payout. |
+| `REJECTED` | The artifact is unusable: malformed, wrong network, or an unsupported order class. |
+| `WITHDRAWN` | The owner of the offered output, or an operator, removed it from discovery. |
+| `REPLACED` | The owner of the offered output published a fresh ask for the same output and this one left the book for it. A replaced order is terminal in the same sense a withdrawn one is: the funds only ever move when the output is spent. |
+
+`MEMPOOL_CONFLICTED` and `SPENT` are deliberately separate. A mempool conflict
+can still be rep
+
+---
+
+## Order lifecycle - Actionability (heading:Actionability)
+- Source: spec/lifecycle.md
+- URL: /reference/specifications/lifecycle
+
+Actionability is what a customer may do right now, and it is not the same
+question as the state.
+
+| Value | What it means |
+| --- | --- |
+| `REVIEW_ONLY` | Readable, not completable. |
+| `HANDOFF_READY` | Checked against both authorities and completable now. |
+| `BLOCKED` | Something about the artifact stops it being completed at all. |
+
+A `LIVE` order whose verification has aged past its freshness bound is
+`REVIEW_ONLY`, not `HANDOFF_READY`. Age is published with every order so the
+distinction is visible rather than implied.
+
+---
+
+## Order lifecycle - Withdrawal is discovery, not cancellation (heading:Withdrawal is discovery, not cancellation)
+- Source: spec/lifecycle.md
+- URL: /reference/specifications/lifecycle
+
+Removing a listing stops Ordex publishing it. It cannot unpublish a signed
+artifact that is already elsewhere. The only way to make an already distributed
+ask unusable is to spend the output it sells. Ordex says this rather than
+describing withdrawal as cancellation.
+
+---
+
+## Order lifecycle - The activity log (heading:The activity log)
+- Source: spec/lifecycle.md
+- URL: /reference/specifications/lifecycle
+
+Every transition is appended, with the state it came from, the state it went
+to, the reason, and who caused it: the reconciler, the seller, an operator, or
+an import. The activity feed reads that log, so an entry is something that
+happened rather than a listing's current state restated after the fact.
+
+---
+
+## Offers v1 - Offers v1 (heading:Offers v1)
+- Source: spec/offers.md
+- URL: /reference/specifications/offers
+
+A listing lets a seller name a price and wait. An offer inverts that: a buyer
+commits funds first, and a seller who holds an eligible Feline can accept.
+This document is the exact contract for the three offer kinds Ordex v1.1
+carries, the funded output that holds a buyer's commitment, the acceptance
+transaction that settles it, and the recovery path that returns the funds when
+no seller ever accepts.
+
+Two sentences describe the trust model honestly, because a customer deciding
+whether to post an offer deserves the second one as much as the first:
+
+- A valid acceptance requires two independent policy signers, and after the
+  expiry height the buyer can recover alone.
+- Before expiry, the two policy signers together could spend the funded
+  output outside these rules, so an offer is not trustless, and nothing here
+  may describe it as trustless.
+
+Ordex never holds a customer's private key. The policy signers are operated by
+the collection deployment that runs a gateway; the protocol only fixes what
+they may sign and what every verifier can recheck for itself.
+
+---
+
+## Offers v1 - The three offer kinds (heading:The three offer kinds)
+- Source: spec/offers.md
+- URL: /reference/specifications/offers
+
+| Kind | Scope | An eligible Feline is one that |
+| --- | --- | --- |
+| `ITEM` | one exact inscription | has exactly the named inscription ID. |
+| `COLLECTION` | a whole collection | is included in the manifest the named collection root commits to. |
+| `TRAIT` | one trait value | is included in that root and carries exactly the named trait name and value. |
+
+A collection or trait offer binds to one confirmed collection root. The root is
+part of the terms, so acceptance is provable against a fixed manifest instead
+of against "whatever the collection is this week". When the collection
+publishes a new root, existing offers keep binding the root they were posted
+with, and a buyer who wants the new root posts new offers.
+
+---
+
+## Offers v1 - Offer terms (heading:Offer terms)
+- Source: spec/offers.md
+- URL: /reference/specifications/offers
+
+The terms are an object with schema `ordex.offer-terms/v1`:
+
+| Field | Type | Present | Meaning |
+| --- | --- | --- | --- |
+| `schema` | string | always | The literal `ordex.offer-terms/v1`. |
+| `protocolVersion` | string | always | The gateway protocol version the terms were written for, `1.1` or later. |
+| `network` | string | always | `mainnet`, `testnet`, `signet`, or `regtest`. |
+| `offerKind` | string | always | `ITEM`, `COLLECTION`, or `TRAIT`. |
+| `collectionId` | string | always | The collection the scope names. |
+| `collectionRoot` | string | always | Lowercase hex SHA-256 collection Merkle root the scope binds to. |
+| `itemInscriptionId` | string | `ITEM` only | The exact inscription the offer buys. |
+| `traitName` | string | `TRAIT` only | The exact trait name. |
+| `traitValue` | string | `TRAIT` only | The exact trait value. |
+| `criteriaHash` | string | always | SHA-256 over the exact serialized scope criteria the buyer accepted, so a verifier can recheck scope membership without trusting a description of it. |
+| `buyerReceiveScript` | string | always | Lowercase hex script the bought Feline must land in. |
+| `priceSats` | string | always | Exact price 
+
+---
+
+## Offers v1 - The funded offer output (heading:The funded offer output)
+- Source: spec/offers.md
+- URL: /reference/specifications/offers
+
+A posted offer is one Taproot output the buyer funded and signed. Its address
+commits to exactly two script leaves, so the output cannot be spent in a way
+its address does not describe.
+
+### Acceptance leaf
+
+```
+<offerTermsHash 32 bytes> OP_DROP
+<policyKeyA> OP_CHECKSIG
+<policyKeyB> OP_CHECKSIGADD
+OP_2 OP_EQUAL
+```
+
+Both policy signatures are required. `CHECKSIGADD` accumulates, so the leaf
+evaluates to true only when each independent key signed this exact script, and
+the script embeds the terms hash, so the leaf itself, the tree, the Merkle
+root, the tweak, and the output address all change if one term changes. No
+single policy key can spend the output. The two signatures commit to the
+acceptance transaction through the tapscript sighash, so a signer approves one
+transaction, not a policy.
+
+### Recovery leaf
+
+```
+<expiryHeight> OP_CHECKLOCKTIMEVERIFY OP_DROP
+<buyerRecoveryKey> OP_CHECKSIG
+```
+
+After the expiry height has been reached, the buyer signs this leaf alone and
+takes the whole output back. Before expiry the leaf is unusable, which is what
+makes the commitment real for the seller during the window they can accept.
+
+### The policy signers
+
+
+
+---
+
+## Offers v1 - Acceptance (heading:Acceptance)
+- Source: spec/offers.md
+- URL: /reference/specifications/offers
+
+Acceptance is one transaction. The arrangement below is the exact one a
+compatible client must build, and every rule after it exists because getting
+it wrong produces a valid transaction that pays the wrong party rather than
+an invalid one a node rejects:
+
+```
+inputs                                outputs
+0..k-1  buyer padding inputs          0        merged padding, buyer payment script
+k       seller's Feline input         1        buyer asset script, = Feline postage
+k+1     the offer output              2..k-1   seller preserves, one per other
+                                               asset in the Feline output's sat
+                                               range, in sat order
+                                      k        seller payment script, = priceSats
+                                      last     buyer change, when above dust
+```
+
+The seller's input sits at index `k` and signs
+`SIGHASH_SINGLE | SIGHASH_ANYONECANPAY` against the seller payment output,
+which sits at the same index `k`. That is the same half a public ask uses, so
+an ask and an offer acceptance are one arrangement a wallet already
+understands. The offer output is spent by the a
+
+---
+
+## Offers v1 - Recovery (heading:Recovery)
+- Source: spec/offers.md
+- URL: /reference/specifications/offers
+
+Recovery is one transaction: the offer output spent by the recovery leaf, with
+`nLockTime` at or after `expiryHeight`, paying the entire output value minus
+the fee to `buyerReceiveScript`. Anyone may broadcast it; only the buyer's key
+can sign it. A recovery attempt before expiry is invalid by consensus, because
+`CHECKLOCKTIMEVERIFY` refuses to evaluate before its height, so no one has to
+trust a gateway to enforce the calendar.
+
+After a recovery confirms, the offer is `RECOVERED`, and every surface reads
+it as closed. After an acceptance confirms, the offer is `ACCEPTED`, and the
+orderbook records which order the acceptance settled.
+
+---
+
+## Offers v1 - Offer lifecycle (heading:Offer lifecycle)
+- Source: spec/offers.md
+- URL: /reference/specifications/offers
+
+| State | What it means |
+| --- | --- |
+| `PENDING_CONFIRMATION` | The funded output is in the mempool or otherwise unconfirmed. The offer is not live. |
+| `LIVE` | The funded output is confirmed and unspent, and both authorities currently agree the terms are satisfiable. |
+| `ACCEPTED` | A transaction carrying this offer's exact acceptance confirmed. |
+| `RECOVERED` | A transaction spending the output by the recovery leaf confirmed. |
+| `MEMPOOL_CONFLICTED` | An unconfirmed transaction spends the funded output. It can still be replaced or dropped. |
+| `SPENT` | The funded output was spent on chain by a transaction that was neither its acceptance nor its recovery. |
+| `EXPIRED` | The current height passed `expiryHeight` with the output unspent. Recovery is now the only path. |
+| `WITHDRAWN` | The buyer proved ownership of the recovery key before expiry and removed the offer from discovery. Withdrawal is discovery, not cancellation; only a spend settles the funds. |
+| `REJECTED` | The posted evidence was unusable: malformed terms, wrong network, or a root that does not exist. |
+
+An offer that ages past its freshness bound is presented as stale and cannot
+be accepted thr
+
+---
+
+## Offers v1 - What Ordex never does (heading:What Ordex never does)
+- Source: spec/offers.md
+- URL: /reference/specifications/offers
+
+Ordex composes, verifies, and records. It does not hold a policy key, does not
+sign, does not custody the funded output, and does not broadcast on its own
+initiative. The buyer funds and posts, two independent signers approve one
+acceptance each, the seller signs one input, and every broadcast is a
+deliberate act by the party who owns the money that moves.
+
+---
+
+## Completing a public ask - Completing a public ask (heading:Completing a public ask)
+- Source: spec/purchase.md
+- URL: /reference/specifications/purchase
+
+This is the exact arrangement a compatible client must build, and the exact
+reason each part of it exists. Getting it wrong does not produce an invalid
+transaction that a node rejects. It produces a valid transaction that pays the
+seller and gives them their asset back.
+
+---
+
+## Completing a public ask - The seller half (heading:The seller half)
+- Source: spec/purchase.md
+- URL: /reference/specifications/purchase
+
+An Ordex public ask is one PSBT with one input and one output.
+
+- The input spends the output being sold. It is signed
+  `SIGHASH_SINGLE | SIGHASH_ANYONECANPAY`.
+- The output pays the seller the asking price.
+
+`ANYONECANPAY` means the signature commits to that one input and to no other,
+so a buyer may add their own inputs freely. `SINGLE` means the signature
+commits to the output at the same index as the signed input, and to no other,
+so a buyer may add their own outputs freely.
+
+---
+
+## Completing a public ask - Rule one: the indexes must match (heading:Rule one: the indexes must match)
+- Source: spec/purchase.md
+- URL: /reference/specifications/purchase
+
+The seller signed while their input sat at index 0, so the signature commits to
+whatever output ends up at the index the input ends up at.
+
+**A buyer must place the seller's payment output at the same index as the
+seller's input.** Any other placement is an invalid signature.
+
+Ordex verifies this by locating the index the two share rather than by
+requiring a fixed one. A transaction that carries the offered outpoint at more
+than one index is refused: one signature would then answer for two positions.
+
+---
+
+## Completing a public ask - Rule two: that index cannot be zero (heading:Rule two: that index cannot be zero)
+- Source: spec/purchase.md
+- URL: /reference/specifications/purchase
+
+Sats leave a transaction in input order. The offered output occupies the range
+that begins after the total value of every earlier input, and each output is
+paid from that stream in order.
+
+Put the offered input first and the seller's payment output is the first
+destination its sats reach. For a 546 sat inscription output against a 250,000
+sat price, the inscription, its exact sat position, and its postage are all
+inside the payment going back to the seller. The transaction is valid, the
+seller is paid, and the buyer receives nothing.
+
+**A buyer must place inputs ahead of the offered one, and outputs ahead of the
+seller's payment that cover the whole range the offered output occupies.**
+
+Stated as an invariant Ordex checks on every final transaction, where `n` is
+the index the seller's input and payment output share:
+
+```
+sum(output_value[0 .. n-1]) >= sum(input_value[0 .. n-1]) + input_value[n]
+```
+
+The left side is what the outputs ahead of the payment absorb. The right side
+is the last sat of the offered output's range. When the left side is the
+larger, every sat of the offered output has already been paid out before the
+seller's payment begins.
+
+This hol
+
+---
+
+## Completing a public ask - The arrangement Ordex builds (heading:The arrangement Ordex builds)
+- Source: spec/purchase.md
+- URL: /reference/specifications/purchase
+
+```
+inputs                                outputs
+0  buyer padding output               0  buyer payment address, = padding total
+1  buyer padding output               1  buyer asset address, = offered value
+2  the offered output (seller)        2  seller payment (seller)
+3+ buyer funding outputs              3  buyer change, when above dust
+```
+
+Reading it against the two rules:
+
+- The seller's input and the seller's payment are both at index 2.
+- Outputs 0 and 1 absorb `padding + offered`, which is exactly
+  `input_value[0] + input_value[1] + input_value[2]`, so the invariant holds
+  with equality and the offered output's sats land whole in output 1.
+
+Padding is two outputs between 600 and 10,000 sats. Two, because that is the
+number that places the seller's input at index 2 with room for the merged
+padding and the asset ahead of the payment. Small, because output 0 returns the
+padding to the buyer: a large output spent there would send the buyer's own
+money to their asset address instead of leaving it as change.
+
+Change below 546 sats is paid as fee rather than created, because an output
+below dust is one nothing can ever spend.
+
+---
+
+## Completing a public ask - What Ordex refuses (heading:What Ordex refuses)
+- Source: spec/purchase.md
+- URL: /reference/specifications/purchase
+
+Before a transaction reaches a node, Ordex refuses it when:
+
+- the offered outpoint appears at no index, or at more than one;
+- the seller's payment output is not at the seller input's index, or its script
+  or value differs from the order's terms;
+- the sat flow invariant above does not hold;
+- the values of the inputs ahead of the offered one cannot be read from the
+  node, so the invariant cannot be evaluated at all;
+- its runestone is a cenotaph and an input carries a rune balance, or an
+  input the rune index has not examined. A cenotaph is a malformed runestone:
+  the transaction confirms normally and destroys every rune its inputs
+  carried, so no fee check, mempool acceptance, or unspent-output check can
+  catch it. Ordex deciphers the runestone exactly as the protocol does on
+  every preflight, and treats "the index has not looked" as unproven rather
+  than empty.
+
+Before composing, Ordex refuses when:
+
+- a named padding or funding output is spent, or unknown to the node;
+- a named output carries an inscription or a rune balance, because an output
+  holding an asset is not spare change;
+- the ord index has not examined a named output, because "not exam
+
+---
+
+## Completing a public ask - What Ordex never does (heading:What Ordex never does)
+- Source: spec/purchase.md
+- URL: /reference/specifications/purchase
+
+Ordex composes and verifies. It does not sign, does not hold or contribute
+funds, and does not broadcast on its own initiative. A buyer's wallet signs the
+buyer's own inputs, the seller's half arrives already signed and is never
+touched, and the transaction reaches the network only after the buyer asks for
+it. Ordex never asks for a seed phrase or a private key.
+
+---
+
+## Completing a public ask - A public ask can be raced (heading:A public ask can be raced)
+- Source: spec/purchase.md
+- URL: /reference/specifications/purchase
+
+Anyone holding the signed artifact can complete it. A successful check
+describes the moment it ran, not the next block. Two buyers can build valid
+transactions from the same ask, and only one of them can confirm. Ordex says so
+at the point of decision rather than describing an ask as reserved.
+
+---
+
+## Not burning the runes a purchase spends - Not burning the runes a purchase spends (heading:Not burning the runes a purchase spends)
+- Source: spec/runes.md
+- URL: /reference/specifications/runes
+
+This is the one rule that decides whether a rune balance survives a
+transaction. Getting it wrong does not produce an invalid transaction that a
+node rejects. It produces a valid transaction that confirms normally and
+destroys every rune it spent.
+
+---
+
+## Not burning the runes a purchase spends - Where a rune balance lives (heading:Where a rune balance lives)
+- Source: spec/runes.md
+- URL: /reference/specifications/runes
+
+A rune balance is not held by an address. It is held by an output, and it is
+moved by the **runestone**: the first output in the transaction whose script
+begins `OP_RETURN OP_13`.
+
+A transaction with no runestone does not destroy anything. Runes that no edict
+assigns go to the first non-`OP_RETURN` output. That is a transfer, and it is
+safe.
+
+---
+
+## Not burning the runes a purchase spends - The cenotaph (heading:The cenotaph)
+- Source: spec/runes.md
+- URL: /reference/specifications/runes
+
+A runestone the protocol cannot read is a **cenotaph**. Every rune carried by
+every input of that transaction is destroyed.
+
+Nothing else in a purchase pipeline sees this coming:
+
+- The transaction is well formed, so a node accepts it.
+- Its fees are ordinary, so a fee check passes.
+- Its inputs are unspent, so an output check passes.
+- Its sat flow can be perfectly correct, so an inscription safety check passes.
+
+The transaction is valid Bitcoin. Only reading the runestone the way the
+protocol reads it reveals the loss, which is why a compatible client must read
+it before asking anyone to sign.
+
+---
+
+## Not burning the runes a purchase spends - Reading the runestone (heading:Reading the runestone)
+- Source: spec/runes.md
+- URL: /reference/specifications/runes
+
+Take the first output whose script starts `OP_RETURN OP_13`. Concatenate its
+remaining data pushes into one payload. Read the payload as a sequence of
+base-128 varints, then as `(tag, value)` pairs until tag `0`, the body, after
+which the remaining integers are edicts in groups of four.
+
+Walk the script directly. A general purpose script decompiler is free to
+rewrite a data push into its minimal opcode form, and that rewrite is lossy
+here: a one byte payload comes back as an opcode and is read as a cenotaph it
+is not.
+
+`OP_0` is an empty push, not an opcode.
+
+---
+
+## Not burning the runes a purchase spends - What makes it a cenotaph (heading:What makes it a cenotaph)
+- Source: spec/runes.md
+- URL: /reference/specifications/runes
+
+| Flaw | Condition |
+| --- | --- |
+| `INVALID_SCRIPT` | a push claims more bytes than the script carries |
+| `OPCODE` | any true opcode appears after the magic number |
+| `VARINT` | a varint is unterminated, longer than 19 groups, or overflows a u128 |
+| `TRUNCATED_FIELD` | a tag has no value after it |
+| `TRAILING_INTEGERS` | the body ends with fewer than four integers left |
+| `EDICT_RUNE_ID` | a delta carries the rune id past a u64 block or u32 tx, or names block 0 with a nonzero tx |
+| `EDICT_OUTPUT` | an edict addresses an output beyond the output count |
+| `UNRECOGNIZED_FLAG` | tag 2 carries a bit outside Etching, Terms and Turbo, or Terms or Turbo without Etching |
+| `UNRECOGNIZED_EVEN_TAG` | an unrecognized **even** tag remains after the known tags are consumed |
+
+An unrecognized **odd** tag is ignorable. That asymmetry is what lets the
+format grow without turning every future field into a burn for older readers.
+
+Two details are easy to miss and both destroy balances:
+
+- An edict may address the output **count** itself, one past the last index.
+  That means split across every non-`OP_RETURN` output, and it is valid.
+- A pointer, tag 22, that addresses no
+
+---
+
+## Not burning the runes a purchase spends - The rule a client must apply (heading:The rule a client must apply)
+- Source: spec/runes.md
+- URL: /reference/specifications/runes
+
+Before a wallet is asked to sign, and again before the final transaction is
+released:
+
+1. Decipher the runestone of the exact final transaction.
+2. If it is not a cenotaph, the purchase is safe with respect to runes.
+3. If it is a cenotaph, ask the rune index what each input being spent carries.
+4. Refuse if any input holds a rune balance. Confirming would destroy it.
+5. Refuse if the index has not examined any input. Not having looked is not the
+   same fact as having found nothing, and an unreachable index proves nothing
+   either, so a failed lookup counts as unexamined.
+6. A cenotaph whose every input is examined and rune free destroys nothing and
+   may proceed.
+
+Step 5 is the one clients get wrong. An unproven output treated as empty is how
+a balance gets spent as change.
+
+Deciphering is pure computation over output scripts, so it costs nothing and
+belongs on every purchase. The index only needs to be asked once the answer is
+already a cenotaph, which keeps a rare safety case off the normal path.
+
+---
+
+## Not burning the runes a purchase spends - Conformance (heading:Conformance)
+- Source: spec/runes.md
+- URL: /reference/specifications/runes
+
+`verifier/runes.js` restates this document as executable checks, and
+`sdk/src/runes.ts` is the same verifier typed for SDK consumers. Both run
+against `conformance/rune-burn-vectors.json`, so neither can drift from this
+document or from the other without a test failing.
+
+The vector file carries 25 cases: 8 that must be accepted and 17 that must be
+refused, covering every flaw above, both refusal codes, and the adversarial
+varint encodings.
+
+---
+
+## SafeOps v1 - SafeOps v1 (heading:SafeOps v1)
+- Source: spec/safeops.md
+- URL: /reference/specifications/safeops
+
+Status: active at protocol 1.2. Artifacts: `ordex.safeops-plan/v1`, `ordex.safeops-signed-result/v1`. Reference verifier: `verifier/safeops.js`. Vectors: `conformance/safeops-vectors.json`.
+
+SafeOps turns planning into one executable, protocol aware operations desk: cardinal batch sends, ordinal and rune batch transfers, cardinal consolidations, split and postage preparation, recovery of unused padding, RBF replacement, CPFP children, inspection, and post broadcast monitoring. One plan describes one logical operation. One signature flow covers it.
+
+---
+
+## SafeOps v1 - Who does what (heading:Who does what)
+- Source: spec/safeops.md
+- URL: /reference/specifications/safeops
+
+The gateway composes plans and verifies signed results. The user signs every input with their own wallet or offline signer. The gateway never signs, never contributes funds, and never broadcasts on its own initiative: relaying a signed transaction happens only after an explicit user broadcast action.
+
+---
+
+## SafeOps v1 - Inventory resolution (heading:Inventory resolution)
+- Source: spec/safeops.md
+- URL: /reference/specifications/safeops
+
+Before a plan exists, every candidate outpoint is resolved against the authorities into one inventory: Bitcoin Core amount and script, confirmation state, inscription ids and satpoints, rare sat ranges, rune allocations, Counterparty attachments, and any claim the desk does not recognize. The rules:
+
+1. An outpoint whose inventory was never examined is refused (`INVENTORY_UNEXAMINED`). It is never assumed cardinal.
+2. An unrecognized claim fails the plan closed (`UNKNOWN_CLAIM_FAILS_CLOSED`). Resolve the claim first.
+3. Cardinal only operations refuse inputs that carry any tracked asset (`ASSET_IN_CARDINAL_OPERATION`).
+4. A rune transfer refuses inputs without a rune allocation (`RUNE_INPUT_MISSING_ALLOCATION`).
+5. Authorities that disagree, stale data, or an indexer behind its accepted checkpoint fail the resolution closed.
+
+---
+
+## SafeOps v1 - The plan (heading:The plan)
+- Source: spec/safeops.md
+- URL: /reference/specifications/safeops
+
+A plan carries: schema and protocol version, network, operation kind, the chain checkpoint it was built against, an expiry height after that checkpoint, every selected input with its complete resolved inventory, the deterministic output map with recipient, change, and preserve roles, one asset transition per tracked asset naming its exact destination output, the fee with a permitted maximum, the signing policy with required indexes and the sighash type, human readable findings, and the digest.
+
+The digest is SHA-256 over the sorted-key JSON of everything except the findings and the digest itself. A consumer can recompute it and must.
+
+---
+
+## SafeOps v1 - Asset safety rules (heading:Asset safety rules)
+- Source: spec/safeops.md
+- URL: /reference/specifications/safeops
+
+1. Value conservation: inputs equal outputs plus the declared fee, exactly, in BigInt. No other total is accepted (`VALUE_NOT_CONSERVED`).
+2. Every tracked asset has exactly one transition to an existing output (`TRACKED_ASSET_UNASSIGNED`, `TRANSITION_OUTPUT_MISSING`).
+3. The transition destination must be the output that receives the input's first sat: the first output whose accumulated value passes the input range start (`TRANSITION_SAT_FLOW_MISMATCH`). This is the same rule that decides inscription delivery everywhere else in Ordex, so no plan can send an asset to the fee region, to unrelated change, or to the wrong recipient.
+4. Outputs respect the 546 sat dust floor (`DUST_OUTPUT`).
+5. Nothing outside the selected inputs can move. A plan names its inputs exactly; a signed result spending anything else is refused.
+
+---
+
+## SafeOps v1 - Partitioning at scale (heading:Partitioning at scale)
+- Source: spec/safeops.md
+- URL: /reference/specifications/safeops
+
+One logical operation may carry up to 500 asset transfers or 1,000 cardinal recipients. When a single transaction would exceed weight, input, output, ancestor, descendant, or node policy limits, the desk partitions the operation into deterministic standard transactions before the first signature. Every generated transaction, dependency, fee, and recipient is shown first. An operation is never silently split after signatures have begun.
+
+---
+
+## SafeOps v1 - The execution shield (heading:The execution shield)
+- Source: spec/safeops.md
+- URL: /reference/specifications/safeops
+
+Immediately before every signature and again before broadcast, the desk refreshes every input from Bitcoin Core, refreshes protocol ownership and satpoints, checks mempool spends and replacements, and refreshes fee estimates. If anything changed, the previous signing session is invalidated instead of silently adapted, the exact change is displayed, and the plan is rebuilt with a new digest. A marketplace purchase that would sign over a conflicting spend is blocked with a precise reason before the wallet opens.
+
+---
+
+## SafeOps v1 - Signed results (heading:Signed results)
+- Source: spec/safeops.md
+- URL: /reference/specifications/safeops
+
+A signed result carries the plan digest and the normalized transaction: inputs with signature presence and sighash type, outputs with script and value. The verifier refuses when:
+
+1. The plan digest does not match (`PLAN_DIGEST_MISMATCH`).
+2. The inputs or outputs differ from the plan in identity, order, script, or value (`INPUT_SET_CHANGED`, `INPUT_ORDER_CHANGED`, `INPUT_VALUE_CHANGED`, `OUTPUT_SET_CHANGED`, `SCRIPT_CHANGED`, `VALUE_CHANGED`).
+3. The recomputed fee differs from the plan (`FEE_CHANGED`).
+4. A required index is unsigned (`SIGNATURE_MISSING`), an index outside the policy carries a signature (`UNEXPECTED_SIGNATURE`), or a sighash differs from the approved type (`SIGHASH_CHANGED`).
+
+Every signed PSBT is reverified after the wallet returns. Verification disagreement between browser, backend, SDK, and reference implementation is a release blocker.
+
+---
+
+## SafeOps v1 - RBF and CPFP (heading:RBF and CPFP)
+- Source: spec/safeops.md
+- URL: /reference/specifications/safeops
+
+RBF is offered only when node policy accepts the replacement and the user controls every input it requires. The replacement preserves every asset-bearing output, every third-party payment, every seller output, and every amount that may not legally change. The incremental fee comes only from verified user-owned cardinal change or newly added user-owned cardinal inputs. The user sees old fee, new fee, incremental fee, old and new effective fee rate, and every changed input or output.
+
+CPFP is offered only when the user controls a spendable output whose spending moves no tracked asset. The child fee is computed from the combined parent-and-child package fee rate under Bitcoin Core package, ancestor, descendant, dust, and standardness policy. An asset-bearing output may fund a child only when the child provably preserves the complete asset inventory.
+
+---
+
+## SafeOps v1 - Monitoring (heading:Monitoring)
+- Source: spec/safeops.md
+- URL: /reference/specifications/safeops
+
+After the explicit broadcast, the operation is monitored for mempool admission, conflicts, replacement, confirmation, drop, and reorg. Each transition appends an `ordex-event/v1` envelope. A reorg produces an explicit reverted event naming the event it reverses, and the operation state returns to a recoverable terminal, never to an ambiguity.
+
+---
+
+## Atomic swap links and the OTC desk v1 - Atomic swap links and the OTC desk v1 (heading:Atomic swap links and the OTC desk v1)
+- Source: spec/swaps.md
+- URL: /reference/specifications/swaps
+
+Status: active at protocol 1.2. Artifacts: `ordex.swap-intent/v1`, `ordex.swap-acceptance-plan/v1`. Reference verifier: `verifier/swaps.js`. Vectors: `conformance/swap-vectors.json`.
+
+A swap is a non-custodial, asset-for-asset exchange settled in exactly one Bitcoin transaction: either both sides move exactly as agreed or nothing moves. There is no prefunded output, no escrow, no policy signer, no server signature, and no counterparty risk beyond the usual mempool economics. This is not the 1.1 funded offer system and does not share its runtime.
+
+---
+
+## Atomic swap links and the OTC desk v1 - The two stage model (heading:The two stage model)
+- Source: spec/swaps.md
+- URL: /reference/specifications/swaps
+
+1. The maker signs a `swap-intent/v1`: what they give (exact outpoints), what they require (exact criteria), where they receive, their fee budget, and an expiry.
+2. When a taker selects exact eligible inputs, the gateway builds one deterministic acceptance plan: a single transaction spending the maker's committed outpoints and the taker's selected outpoints, paying exact consideration to the maker receive script and delivering exact assets to the taker. Each participant signs only their own inputs. The transaction is relayed only after every required signature exists, the complete transaction passes node preflight, and the user takes the explicit broadcast action.
+
+The maker never pre-signs a transaction before the taker's inputs exist. Non-interactive sighash constructions may only be introduced through new conformance vectors that prove the maker's assets, requested consideration, destination, and fee cannot change; until then the interactive two-party flow is the only path.
+
+---
+
+## Atomic swap links and the OTC desk v1 - The intent (heading:The intent)
+- Source: spec/swaps.md
+- URL: /reference/specifications/swaps
+
+An intent carries: maker identity proof (BIP-322 over the intent digest, verified by the gateway before publication), network, visibility (`PUBLIC` or `PRIVATE`), the maker receive script, exact gives (asset type, outpoint, exact quantity), exact requires (asset type, asset id or inscription id, minimum quantity), the maximum maker fee contribution, expiry height after the signed checkpoint, a nonce, the protocol adapter versions, an optional taker binding, and the digest. The digest is SHA-256 over the sorted-key JSON of everything except the identity proof and the digest itself.
+
+Public intents may be indexed and streamed. Private intents are never listed, never logged in plaintext, and never exposed in events.
+
+---
+
+## Atomic swap links and the OTC desk v1 - Private encrypted links (heading:Private encrypted links)
+- Source: spec/swaps.md
+- URL: /reference/specifications/swaps
+
+A private link is created client side: a random 256-bit key encrypts the intent with an authenticated cipher, only the ciphertext and routing metadata reach the server, and the key travels in the URL fragment, which browsers never send. Sharing is by link or QR. Links expire and can be destroyed. The server cannot read the terms, and logs never contain the fragment, the key, or decrypted payloads. Optionally the intent binds to a taker BIP-322 identity so the link alone is insufficient.
+
+---
+
+## Atomic swap links and the OTC desk v1 - The acceptance plan (heading:The acceptance plan)
+- Source: spec/swaps.md
+- URL: /reference/specifications/swaps
+
+The builder revalidates every maker outpoint, resolves the taker's selection, orders inputs for sat-flow safety, and produces one immutable unsigned-transaction digest. The verifier proves:
+
+1. Both parties contribute inputs and outputs; a one-sided transaction cannot settle (`ATOMICITY_IMPOSSIBLE`).
+2. Every input commits to every output with SIGHASH_ALL (`UNCLOSED_SIGHASH`). With that closure, a transaction carrying only one party's signatures cannot confirm, so refusing the final signature can stall a swap but can never take the other party's asset.
+3. Every maker-committed outpoint is spent exactly once, by the maker side (`MAKER_OUTPOINT_MISSING`, `MAKER_OUTPOINT_REASSIGNED`, `INPUT_DUPLICATED`), and no uncommitted maker input appears (`UNEXPECTED_MAKER_INPUT`).
+4. Every required criterion is paid to the maker receive script at no less than its minimum (`CONSIDERATION_SHORTFALL`).
+5. Fee conservation holds, the maker and taker contributions sum to it, and the maker share stays inside the intent budget (`FEE_CHANGED`, `FEE_SPLIT_INVALID`, `FEE_BUDGET_EXCEEDED`).
+6. Every given asset and every taker asset is delivered through an explicit transition to the output that rece
+
+---
+
+## Atomic swap links and the OTC desk v1 - Lifecycle (heading:Lifecycle)
+- Source: spec/swaps.md
+- URL: /reference/specifications/swaps
+
+DRAFT, LIVE, PRIVATE, MATCHING, AWAITING_MAKER_SIGNATURE, AWAITING_TAKER_SIGNATURE, READY_FOR_PREFLIGHT, READY_FOR_BROADCAST, MEMPOOL, CONFIRMED, EXPIRED, WITHDRAWN, CONFLICTED, INVALIDATED, REORGED. A swap becomes unavailable immediately when a committed outpoint is spent, ownership changes, an authority goes stale, or the intent expires. Every transition appends an event; a reorg appends an explicit reverted event.
+
+---
+
+## Atomic swap links and the OTC desk v1 - Settlement cohort (heading:Settlement cohort)
+- Source: spec/swaps.md
+- URL: /reference/specifications/swaps
+
+Production settlement ships for BTC to Ordinal, Ordinal to BTC, Ordinal to Ordinal, BTC to Rare Sat, Rare Sat to BTC, Rune to BTC, BTC to Rune, Rune to Rune, and Counterparty UTXO-attached assets through the heritage adapter. A protocol joins only when an exact ownership resolver, transaction builder, signed-transaction verifier, settlement reconciler, and reorg handler all exist for it. A portfolio reader alone never qualifies a protocol.
+
+---
+
+## Atomic swap links and the OTC desk v1 - Adversarial coverage (heading:Adversarial coverage)
+- Source: spec/swaps.md
+- URL: /reference/specifications/swaps
+
+The vectors and production tests cover counterfeit asset claims, spent maker and taker inputs, wrong network, changed recipients, output reordering, fee theft, hidden extra outputs, asset-bearing change, unexpected OP_RETURN, rune cenotaphs, partial signatures, wrong sighash, replayed and expired intents, ciphertext tampering, taker identity substitution, mempool conflict, reorg, and one party refusing the final signature.
+
+---
+
+## GET /api/ordex/health (getHealth) (/paths~1api~1ordex~1health/get)
+- Source: spec/openapi.json
+- URL: /reference/api/#getHealth
+
+GET /api/ordex/health (getHealth): The observed verification verdict, not the configuration. Reports configuration completeness and, separately, whether a Bitcoin listing can actually be verified right now: storage writable, both nodes answering, and the ord index within its accepted lag of Bitcoin Core.. Evidence level: Gateway observation. Tag: status.
+
+---
+
+## GET /api/ordex/protocol (getProtocol) (/paths~1api~1ordex~1protocol/get)
+- Source: spec/openapi.json
+- URL: /reference/api/#getProtocol
+
+GET /api/ordex/protocol (getProtocol): The protocol contract this gateway speaks. . Evidence level: Gateway observation. Tag: status.
+
+---
+
+## GET /api/ordex/catalog (getCatalog) (/paths~1api~1ordex~1catalog/get)
+- Source: spec/openapi.json
+- URL: /reference/api/#getCatalog
+
+GET /api/ordex/catalog (getCatalog): The markets this gateway serves, and what it verifies for each. Every entry states its verification scope in plain language and its capabilities as booleans. An entry in the catalog never implies a working flow beyond what its capabilities state.. Evidence level: Gateway observation. Tag: status.
+
+---
+
+## GET /api/ordex/orders (listOrders) (/paths~1api~1ordex~1orders/get)
+- Source: spec/openapi.json
+- URL: /reference/api/#listOrders
+
+GET /api/ordex/orders (listOrders): One page of the orderbook. Paging is keyset, never offset. A request carrying an `offset` parameter is refused with 400, and a malformed cursor is a 400 rather than a silent restart from the first page.. Evidence level: Deterministic example. Tag: orders.
+
+---
+
+## GET /api/ordex/activity (listActivity) (/paths~1api~1ordex~1activity/get)
+- Source: spec/openapi.json
+- URL: /reference/api/#listActivity
+
+GET /api/ordex/activity (listActivity): The appended lifecycle log, newest first. Reads the appended transition log, so an entry is something that happened rather than a listing's current state restated after the fact.. Evidence level: Deterministic example. Tag: activity.
+
+---
+
+## GET /api/ordex/orders/{id} (getOrder) (/paths~1api~1ordex~1orders~1{id}/get)
+- Source: spec/openapi.json
+- URL: /reference/api/#getOrder
+
+GET /api/ordex/orders/{id} (getOrder): One order. . Evidence level: Deterministic example. Tag: orders.
+
+---
+
+## GET /api/ordex/orders/{id}/artifact (getOrderArtifact) (/paths~1api~1ordex~1orders~1{id}~1artifact/get)
+- Source: spec/openapi.json
+- URL: /reference/api/#getOrderArtifact
+
+GET /api/ordex/orders/{id}/artifact (getOrderArtifact): The signed artifact for one live listing. Deliberately its own rate limited request. A browse response carrying raw PSBTs would hand every public ask to anything that can read the market. Only a live listing hands over its artifact; any other state is refused with 400.. Evidence level: Publisher claim. Tag: orders.
+
+---
+
+## POST /api/ordex/orders/import (importOrder) (/paths~1api~1ordex~1orders~1import/post)
+- Source: spec/openapi.json
+- URL: /reference/api/#importOrder
+
+POST /api/ordex/orders/import (importOrder): Take a signed artifact and verify it. A source may supply signed order evidence, but it never overrides what the node and the ord index prove. The claims travel as evidence and the authorities decide the state.. Evidence level: Deterministic example. Tag: interoperability.
+
+---
+
+## POST /api/ordex/orders/openordex-event (importOpenOrdexEvent) (/paths~1api~1ordex~1orders~1openordex-event/post)
+- Source: spec/openapi.json
+- URL: /reference/api/#importOpenOrdexEvent
+
+POST /api/ordex/orders/openordex-event (importOpenOrdexEvent): Take a signed OpenOrdex event and verify it. Accepts a kind 802 Nostr event carrying a signed PSBT, verifies the event signature, then verifies the order exactly as a direct import.. Evidence level: Deterministic example. Tag: interoperability.
+
+---
+
+## POST /api/ordex/orders/build (buildAsk) (/paths~1api~1ordex~1orders~1build/post)
+- Source: spec/openapi.json
+- URL: /reference/api/#buildAsk
+
+POST /api/ordex/orders/build (buildAsk): Build the unsigned seller half. Composes the one input, one output PSBT a seller signs `SIGHASH_SINGLE | SIGHASH_ANYONECANPAY`. The asset and outpoint are verified against the node and the ord index before anything is composed.. Evidence level: Deterministic example. Tag: selling.
+
+---
+
+## POST /api/ordex/orders/publish (publishAsk) (/paths~1api~1ordex~1orders~1publish/post)
+- Source: spec/openapi.json
+- URL: /reference/api/#publishAsk
+
+POST /api/ordex/orders/publish (publishAsk): Take the signed seller half and publish it. . Evidence level: Deterministic example. Tag: selling.
+
+---
+
+## GET /api/ordex/orders/{id}/ownership-challenge (getOwnershipChallenge) (/paths~1api~1ordex~1orders~1{id}~1ownership-challenge/get)
+- Source: spec/openapi.json
+- URL: /reference/api/#getOwnershipChallenge
+
+GET /api/ordex/orders/{id}/ownership-challenge (getOwnershipChallenge): The message a listing owner signs before managing it. . Evidence level: Publisher claim. Tag: selling.
+
+---
+
+## POST /api/ordex/orders/{id}/withdraw (withdrawOrder) (/paths~1api~1ordex~1orders~1{id}~1withdraw/post)
+- Source: spec/openapi.json
+- URL: /reference/api/#withdrawOrder
+
+POST /api/ordex/orders/{id}/withdraw (withdrawOrder): Remove a listing, proved by the key owning the output it sells. Withdrawal is discovery, not cancellation. It stops this gateway publishing the listing; it cannot unpublish a signed artifact already distributed elsewhere. Only spending the offered output makes such an artifact unusable.. Evidence level: Deterministic example. Tag: selling.
+
+---
+
+## POST /api/ordex/admin/orders/{id}/withdraw (adminWithdrawOrder) (/paths~1api~1ordex~1admin~1orders~1{id}~1withdraw/post)
+- Source: spec/openapi.json
+- URL: /reference/api/#adminWithdrawOrder
+
+POST /api/ordex/admin/orders/{id}/withdraw (adminWithdrawOrder): Operator moderation, separately authenticated. . Evidence level: Deterministic example. Tag: operator.
+
+---
+
+## GET /api/ordex/orders/{id}/nostr-envelope (getNostrEnvelope) (/paths~1api~1ordex~1orders~1{id}~1nostr-envelope/get)
+- Source: spec/openapi.json
+- URL: /reference/api/#getNostrEnvelope
+
+GET /api/ordex/orders/{id}/nostr-envelope (getNostrEnvelope): The unsigned kind 802 event announcing this listing. The gateway never holds Nostr keys. The customer's own NIP-07 signer signs this envelope, the browser publishes it, and the signed event can then be handed back through the OpenOrdex import route.. Evidence level: Deterministic example. Tag: interoperability.
+
+---
+
+## POST /api/ordex/orders/{id}/revalidate (revalidateOrder) (/paths~1api~1ordex~1orders~1{id}~1revalidate/post)
+- Source: spec/openapi.json
+- URL: /reference/api/#revalidateOrder
+
+POST /api/ordex/orders/{id}/revalidate (revalidateOrder): Recheck one order against both authorities. . Evidence level: Deterministic example. Tag: orders.
+
+---
+
+## POST /api/ordex/orders/{id}/quote (quoteOrder) (/paths~1api~1ordex~1orders~1{id}~1quote/post)
+- Source: spec/openapi.json
+- URL: /reference/api/#quoteOrder
+
+POST /api/ordex/orders/{id}/quote (quoteOrder): Compose the buyer half and state the exact terms. The caller names its own outputs and nothing else. Value and script are read from Bitcoin Core, never from the request, so a buyer cannot make a purchase look cheaper by describing their own funding wrongly. Each named output is checked against the ord index first: an output holding an asset is not spare change, and an unexamined output is unknown rather than empty.. Evidence level: Protocol verification. Tag: buying.
+
+---
+
+## POST /api/ordex/orders/{id}/preflight (preflightOrder) (/paths~1api~1ordex~1orders~1{id}~1preflight/post)
+- Source: spec/openapi.json
+- URL: /reference/api/#preflightOrder
+
+POST /api/ordex/orders/{id}/preflight (preflightOrder): Verify a signed purchase and ask the node whether it would accept it. Takes either `finalTxHex` or the `signedPsbt` a wallet actually answers with. Given a PSBT it finalises only inputs the buyer already signed: it creates no signature and changes no input, output, or amount, and an unsigned input is an error rather than a guess. It rechecks the order against the chain, binds the transaction to the order, proves the sat flow invariant, then asks the node itself. The gateway does not broadcast; that is the buyer's own deliberate step.. Evidence level: Protocol verification. Tag: buying.
+
+---
+
+## POST /api/ordex/orders/{id}/replace (replaceOrder) (/paths~1api~1ordex~1orders~1{id}~1replace/post)
+- Source: spec/openapi.json
+- URL: /reference/api/#replaceOrder
+
+POST /api/ordex/orders/{id}/replace (replaceOrder): Replace a live ask with a freshly signed one for the same output. Repricing is a protocol operation, not a database edit. The old order must be live, the owner proof must match the offered output, and the new artifact must be signed against the same outpoint. The old order leaves the book as REPLACED and the new one goes live in one step, and two live asks for one output and seller cannot exist.. Evidence level: Deterministic example. Tag: selling.
+
+---
+
+## POST /api/ordex/orders/batch-purchase (composeBatchPurchase) (/paths~1api~1ordex~1orders~1batch-purchase/post)
+- Source: spec/openapi.json
+- URL: /reference/api/#composeBatchPurchase
+
+POST /api/ordex/orders/batch-purchase (composeBatchPurchase): Compose several live asks into one transaction. Up to eight asks, one funding plan, one transaction, composed only when every seller signature and every sat flow invariant can coexist. There is no partial composition: when any ask cannot be proved the answer names every refusal and settles nothing.. Evidence level: Deterministic example. Tag: buying.
+
+---
+
+## POST /api/ordex/orders/batch-preflight (preflightBatchPurchase) (/paths~1api~1ordex~1orders~1batch-preflight/post)
+- Source: spec/openapi.json
+- URL: /reference/api/#preflightBatchPurchase
+
+POST /api/ordex/orders/batch-preflight (preflightBatchPurchase): Verify a signed batch and ask the node about the exact bytes. Rechecks every placement against both authorities, proves the sat flow invariant for every ask, then asks the node whether it would accept the composed transaction. The answer carries the exact bytes checked.. Evidence level: Deterministic example. Tag: buying.
+
+---
+
+## GET /api/ordex/offers (listOffers) (/paths~1api~1ordex~1offers/get)
+- Source: spec/openapi.json
+- URL: /reference/api/#listOffers
+
+GET /api/ordex/offers (listOffers): One page of the offer book. Keyset paged exactly like the orders: limit and cursor in, nextCursor out, empty on the last page. A malformed cursor is a 400, never a silent first page.. Evidence level: Deterministic example. Tag: offers.
+
+---
+
+## POST /api/ordex/offers (publishOffer) (/paths~1api~1ordex~1offers/post)
+- Source: spec/openapi.json
+- URL: /reference/api/#publishOffer
+
+POST /api/ordex/offers (publishOffer): Publish a funded offer. Takes exact offer terms and funded-output evidence. The gateway recomputes the terms hash, recomputes the Taproot tree and tweak from the two leaves, requires the funded script to commit to both, asks Bitcoin Core whether the output exists and is unspent, and refuses everything else. The offer goes live once the funding confirms.. Evidence level: Deterministic example. Tag: offers.
+
+---
+
+## GET /api/ordex/offers/{id} (getOffer) (/paths~1api~1ordex~1offers~1{id}/get)
+- Source: spec/openapi.json
+- URL: /reference/api/#getOffer
+
+GET /api/ordex/offers/{id} (getOffer): One offer with its lifecycle state and freshness. . Evidence level: Deterministic example. Tag: offers.
+
+---
+
+## POST /api/ordex/offers/{id}/revalidate (revalidateOffer) (/paths~1api~1ordex~1offers~1{id}~1revalidate/post)
+- Source: spec/openapi.json
+- URL: /reference/api/#revalidateOffer
+
+POST /api/ordex/offers/{id}/revalidate (revalidateOffer): Recheck one offer against both authorities. . Evidence level: Deterministic example. Tag: offers.
+
+---
+
+## POST /api/ordex/offers/{id}/withdraw (withdrawOffer) (/paths~1api~1ordex~1offers~1{id}~1withdraw/post)
+- Source: spec/openapi.json
+- URL: /reference/api/#withdrawOffer
+
+POST /api/ordex/offers/{id}/withdraw (withdrawOffer): Remove an offer from discovery, proved by the recovery key. Discovery, not cancellation: the funded output stays spendable by the acceptance path until it is spent, and by the recovery path after expiry. A BIP 322 signature by the recovery key proves who may stop publishing the offer.. Evidence level: Deterministic example. Tag: offers.
+
+---
+
+## POST /api/ordex/offers/{id}/acceptance-plan (planOfferAcceptance) (/paths~1api~1ordex~1offers~1{id}~1acceptance-plan/post)
+- Source: spec/openapi.json
+- URL: /reference/api/#planOfferAcceptance
+
+POST /api/ordex/offers/{id}/acceptance-plan (planOfferAcceptance): State the exact acceptance arrangement for one live offer. Given the seller outpoint, reads every value from the node and the ord index, lays out padding, buyer asset, every preserve in sat order, the seller payment at the seller input index, and change, and refuses when the Feline is elsewhere, the root no longer holds, or expiry has passed.. Evidence level: Deterministic example. Tag: offers.
+
+---
+
+## POST /api/ordex/offers/{id}/preflight (preflightOfferAcceptance) (/paths~1api~1ordex~1offers~1{id}~1preflight/post)
+- Source: spec/openapi.json
+- URL: /reference/api/#preflightOfferAcceptance
+
+POST /api/ordex/offers/{id}/preflight (preflightOfferAcceptance): Verify a built acceptance and ask the node. Parses the complete acceptance, checks every rule in spec/offers.md including both policy signatures against the committed terms tree, then asks the node whether it would accept the bytes. The answer carries the exact bytes checked.. Evidence level: Protocol verification. Tag: offers.
+
+---
+
+## POST /api/ordex/safeops/plans (createSafeOpsPlan) (/paths~1api~1ordex~1safeops~1plans/post)
+- Source: spec/openapi.json
+- URL: /reference/api/#createSafeOpsPlan
+
+POST /api/ordex/safeops/plans (createSafeOpsPlan): Build a complete SafeOps plan. Resolves every selected outpoint against the protocol authorities, builds the deterministic output map and sat flow, and returns the full plan with its digest before any wallet opens. Unexamined inputs fail closed.. Evidence level: Deterministic example. Tag: safeops.
+
+---
+
+## GET /api/ordex/safeops/plans/{planId} (getSafeOpsPlan) (/paths~1api~1ordex~1safeops~1plans~1{planId}/get)
+- Source: spec/openapi.json
+- URL: /reference/api/#getSafeOpsPlan
+
+GET /api/ordex/safeops/plans/{planId} (getSafeOpsPlan): One stored SafeOps plan. Returns the plan exactly as it was built, with its current actionability against the live chain.. Evidence level: Deterministic example. Tag: safeops.
+
+---
+
+## POST /api/ordex/safeops/plans/{planId}/shield (refreshExecutionShield) (/paths~1api~1ordex~1safeops~1plans~1{planId}~1shield/post)
+- Source: spec/openapi.json
+- URL: /reference/api/#refreshExecutionShield
+
+POST /api/ordex/safeops/plans/{planId}/shield (refreshExecutionShield): Refresh the execution shield for a plan. Re-reads every input, protocol ownership, mempool conflicts, and fee estimates, then either confirms the plan is still fresh or invalidates the signing session and names exactly what changed.. Evidence level: Deterministic example. Tag: safeops.
+
+---
+
+## POST /api/ordex/safeops/broadcast (broadcastSafeOpsTransaction) (/paths~1api~1ordex~1safeops~1broadcast/post)
+- Source: spec/openapi.json
+- URL: /reference/api/#broadcastSafeOpsTransaction
+
+POST /api/ordex/safeops/broadcast (broadcastSafeOpsTransaction): Relay a fully signed transaction after an explicit user broadcast action. Verifies the signed result against its plan or manifest, runs Bitcoin Core preflight, and only then relays. The gateway never composes a signature and never broadcasts on its own initiative.. Evidence level: Deterministic example. Tag: safeops.
+
+---
+
+## GET /api/ordex/safeops/operations/{txid} (getSafeOpsOperation) (/paths~1api~1ordex~1safeops~1operations~1{txid}/get)
+- Source: spec/openapi.json
+- URL: /reference/api/#getSafeOpsOperation
+
+GET /api/ordex/safeops/operations/{txid} (getSafeOpsOperation): Monitor one broadcast operation. Mempool state, conflicts, confirmations, replacement, and reorg reconciliation for one transaction, with the events that recorded every transition.. Evidence level: Deterministic example. Tag: safeops.
+
+---
+
+## POST /api/ordex/safeops/rbf (planSafeOpsRbf) (/paths~1api~1ordex~1safeops~1rbf/post)
+- Source: spec/openapi.json
+- URL: /reference/api/#planSafeOpsRbf
+
+POST /api/ordex/safeops/rbf (planSafeOpsRbf): Plan an RBF replacement of one of your transactions. Offered only when node policy allows the replacement and the user controls every required input. Asset outputs, third party payments, and seller outputs are preserved; the extra fee comes only from user owned cardinal value.. Evidence level: Deterministic example. Tag: safeops.
+
+---
+
+## POST /api/ordex/safeops/cpfp (planSafeOpsCpfp) (/paths~1api~1ordex~1safeops~1cpfp/post)
+- Source: spec/openapi.json
+- URL: /reference/api/#planSafeOpsCpfp
+
+POST /api/ordex/safeops/cpfp (planSafeOpsCpfp): Plan a CPFP child for one of your stuck transactions. Offered only when the user controls a spendable output whose spending moves no tracked asset. The child fee is computed from the combined package fee rate under node package policy.. Evidence level: Deterministic example. Tag: safeops.
+
+---
+
+## POST /api/ordex/swaps/intents (publishSwapIntent) (/paths~1api~1ordex~1swaps~1intents/post)
+- Source: spec/openapi.json
+- URL: /reference/api/#publishSwapIntent
+
+POST /api/ordex/swaps/intents (publishSwapIntent): Publish a signed swap intent. Verifies the BIP-322 maker proof, the intent digest, and the current state of every committed outpoint before the intent goes live. Private intents are never listed publicly.. Evidence level: Deterministic example. Tag: swaps.
+
+---
+
+## GET /api/ordex/swaps/intents (listSwapIntents) (/paths~1api~1ordex~1swaps~1intents/get)
+- Source: spec/openapi.json
+- URL: /reference/api/#listSwapIntents
+
+GET /api/ordex/swaps/intents (listSwapIntents): List live public swap intents. Keyset pagination by creation. Every intent is returned with the gateway independent resolution of its committed outpoints.. Evidence level: Deterministic example. Tag: swaps.
+
+---
+
+## GET /api/ordex/swaps/intents/{intentId} (getSwapIntent) (/paths~1api~1ordex~1swaps~1intents~1{intentId}/get)
+- Source: spec/openapi.json
+- URL: /reference/api/#getSwapIntent
+
+GET /api/ordex/swaps/intents/{intentId} (getSwapIntent): One swap intent with its live outpoint state. The taker view independently resolves every asset claim against the chain authorities instead of repeating the maker text.. Evidence level: Deterministic example. Tag: swaps.
+
+---
+
+## POST /api/ordex/swaps/intents/{intentId}/withdraw (withdrawSwapIntent) (/paths~1api~1ordex~1swaps~1intents~1{intentId}~1withdraw/post)
+- Source: spec/openapi.json
+- URL: /reference/api/#withdrawSwapIntent
+
+POST /api/ordex/swaps/intents/{intentId}/withdraw (withdrawSwapIntent): Withdraw a swap intent. Only the maker may withdraw, proven by a fresh BIP-322 signature over the withdrawal request.. Evidence level: Deterministic example. Tag: swaps.
+
+---
+
+## POST /api/ordex/swaps/intents/{intentId}/acceptance-plan (buildSwapAcceptancePlan) (/paths~1api~1ordex~1swaps~1intents~1{intentId}~1acceptance-plan/post)
+- Source: spec/openapi.json
+- URL: /reference/api/#buildSwapAcceptancePlan
+
+POST /api/ordex/swaps/intents/{intentId}/acceptance-plan (buildSwapAcceptancePlan): Build the one transaction acceptance plan for a taker. Revalidates the maker outpoints, resolves the taker selection, builds exact input order for sat flow safety, assigns fees only to permitted cardinal value, and refuses any combination that cannot settle in one transaction.. Evidence level: Deterministic example. Tag: swaps.
+
+---
+
+## GET /api/ordex/swaps/sessions/{sessionId} (getSwapSession) (/paths~1api~1ordex~1swaps~1sessions~1{sessionId}/get)
+- Source: spec/openapi.json
+- URL: /reference/api/#getSwapSession
+
+GET /api/ordex/swaps/sessions/{sessionId} (getSwapSession): One swap session with its signature progress. Shows which party has signed, the current outpoint and conflict state, and whether the session is ready for preflight or broadcast.. Evidence level: Deterministic example. Tag: swaps.
+
+---
+
+## POST /api/ordex/swaps/sessions/{sessionId}/signatures (submitSwapSignature) (/paths~1api~1ordex~1swaps~1sessions~1{sessionId}~1signatures/post)
+- Source: spec/openapi.json
+- URL: /reference/api/#submitSwapSignature
+
+POST /api/ordex/swaps/sessions/{sessionId}/signatures (submitSwapSignature): Submit one party signed PSBT. The submitted PSBT is compared against the acceptance plan. An input added, removed, reordered, or re signed outside the policy refuses the submission.. Evidence level: Deterministic example. Tag: swaps.
+
+---
+
+## POST /api/ordex/swaps/sessions/{sessionId}/preflight (preflightSwapSession) (/paths~1api~1ordex~1swaps~1sessions~1{sessionId}~1preflight/post)
+- Source: spec/openapi.json
+- URL: /reference/api/#preflightSwapSession
+
+POST /api/ordex/swaps/sessions/{sessionId}/preflight (preflightSwapSession): Run node preflight on the fully signed swap. Only a transaction carrying every required signature reaches this route. Bitcoin Core testmempoolaccept decides.. Evidence level: Protocol verification. Tag: swaps.
+
+---
+
+## POST /api/ordex/swaps/sessions/{sessionId}/broadcast (broadcastSwapSession) (/paths~1api~1ordex~1swaps~1sessions~1{sessionId}~1broadcast/post)
+- Source: spec/openapi.json
+- URL: /reference/api/#broadcastSwapSession
+
+POST /api/ordex/swaps/sessions/{sessionId}/broadcast (broadcastSwapSession): Relay the fully signed swap after the explicit user broadcast action. Both parties assets move in one transaction or not at all. The relay happens only after the user action and a passing preflight.. Evidence level: Deterministic example. Tag: swaps.
+
+---
+
+## POST /api/ordex/swaps/private (storePrivateSwap) (/paths~1api~1ordex~1swaps~1private/post)
+- Source: spec/openapi.json
+- URL: /reference/api/#storePrivateSwap
+
+POST /api/ordex/swaps/private (storePrivateSwap): Store an encrypted private swap link. The payload is encrypted client side. The server stores ciphertext and routing metadata only, never the key, never the terms, never a log of either.. Evidence level: Deterministic example. Tag: swaps.
+
+---
+
+## GET /api/ordex/swaps/private (listPrivateSwaps) (/paths~1api~1ordex~1swaps~1private/get)
+- Source: spec/openapi.json
+- URL: /reference/api/#listPrivateSwaps
+
+GET /api/ordex/swaps/private (listPrivateSwaps): List the caller stored private swap envelopes. Returns ciphertext envelopes only. Decryption happens client side with the key from the URL fragment.. Evidence level: Deterministic example. Tag: swaps.
+
+---
+
+## GET /api/ordex/swaps/private/{privateId} (getPrivateSwap) (/paths~1api~1ordex~1swaps~1private~1{privateId}/get)
+- Source: spec/openapi.json
+- URL: /reference/api/#getPrivateSwap
+
+GET /api/ordex/swaps/private/{privateId} (getPrivateSwap): Fetch one encrypted private swap envelope. Returns the ciphertext. The decryption key lives in the URL fragment and is never sent to the server.. Evidence level: Deterministic example. Tag: swaps.
+
+---
+
+## DELETE /api/ordex/swaps/private/{privateId} (destroyPrivateSwap) (/paths~1api~1ordex~1swaps~1private~1{privateId}/delete)
+- Source: spec/openapi.json
+- URL: /reference/api/#destroyPrivateSwap
+
+DELETE /api/ordex/swaps/private/{privateId} (destroyPrivateSwap): Destroy an encrypted private swap envelope. Client side destruction: the ciphertext is removed and the envelope is marked destroyed.. Evidence level: Deterministic example. Tag: swaps.
+
+---
+
+## GET /api/ordex/events (listOrdexEvents) (/paths~1api~1ordex~1events/get)
+- Source: spec/openapi.json
+- URL: /reference/api/#listOrdexEvents
+
+GET /api/ordex/events (listOrdexEvents): Keyset paginated event history. Replay by cursor. Seven days minimum retention. Reversals appear as reverted events naming the event they reverse.. Evidence level: Deterministic example. Tag: events.
+
+---
+
+## GET /api/ordex/events/stream (streamOrdexEvents) (/paths~1api~1ordex~1events~1stream/get)
+- Source: spec/openapi.json
+- URL: /reference/api/#streamOrdexEvents
+
+GET /api/ordex/events/stream (streamOrdexEvents): Server sent event stream of live events. Filter by network, event type, aggregate, protocol, or collection. Last-Event-ID resumption, heartbeats, bounded buffers, and slow consumer disconnection with a resumable cursor. The same envelopes are available over WebSocket at the streaming gateway.. Evidence level: Deterministic example. Tag: events.
+
+---
+
+## GET /api/ordex/events/checkpoint (getEventStreamCheckpoint) (/paths~1api~1ordex~1events~1checkpoint/get)
+- Source: spec/openapi.json
+- URL: /reference/api/#getEventStreamCheckpoint
+
+GET /api/ordex/events/checkpoint (getEventStreamCheckpoint): The current stream sequence and lag. Lets a consumer decide whether it is behind and from which cursor to resume without gaps.. Evidence level: Chain proof. Tag: events.
+
+---
+
+## POST /api/ordex/webhooks/subscriptions (createWebhookSubscription) (/paths~1api~1ordex~1webhooks~1subscriptions/post)
+- Source: spec/openapi.json
+- URL: /reference/api/#createWebhookSubscription
+
+POST /api/ordex/webhooks/subscriptions (createWebhookSubscription): Create a webhook subscription. Returns the signing secret exactly once. The endpoint stays PENDING_VERIFICATION until it answers the challenge.. Evidence level: Deterministic example. Tag: webhooks.
+
+---
+
+## GET /api/ordex/webhooks/subscriptions (listWebhookSubscriptions) (/paths~1api~1ordex~1webhooks~1subscriptions/get)
+- Source: spec/openapi.json
+- URL: /reference/api/#listWebhookSubscriptions
+
+GET /api/ordex/webhooks/subscriptions (listWebhookSubscriptions): List your webhook subscriptions. Bound to the authenticated developer key.. Evidence level: Deterministic example. Tag: webhooks.
+
+---
+
+## GET /api/ordex/webhooks/subscriptions/{subscriptionId} (getWebhookSubscription) (/paths~1api~1ordex~1webhooks~1subscriptions~1{subscriptionId}/get)
+- Source: spec/openapi.json
+- URL: /reference/api/#getWebhookSubscription
+
+GET /api/ordex/webhooks/subscriptions/{subscriptionId} (getWebhookSubscription): One webhook subscription. Never returns the signing secret.. Evidence level: Deterministic example. Tag: webhooks.
+
+---
+
+## PATCH /api/ordex/webhooks/subscriptions/{subscriptionId} (updateWebhookSubscription) (/paths~1api~1ordex~1webhooks~1subscriptions~1{subscriptionId}/patch)
+- Source: spec/openapi.json
+- URL: /reference/api/#updateWebhookSubscription
+
+PATCH /api/ordex/webhooks/subscriptions/{subscriptionId} (updateWebhookSubscription): Update, pause, or resume a subscription. URL changes re-enter verification.. Evidence level: Deterministic example. Tag: webhooks.
+
+---
+
+## DELETE /api/ordex/webhooks/subscriptions/{subscriptionId} (deleteWebhookSubscription) (/paths~1api~1ordex~1webhooks~1subscriptions~1{subscriptionId}/delete)
+- Source: spec/openapi.json
+- URL: /reference/api/#deleteWebhookSubscription
+
+DELETE /api/ordex/webhooks/subscriptions/{subscriptionId} (deleteWebhookSubscription): Delete a webhook subscription. Pending deliveries drain before removal.. Evidence level: Deterministic example. Tag: webhooks.
+
+---
+
+## POST /api/ordex/webhooks/subscriptions/{subscriptionId}/rotate-secret (rotateWebhookSecret) (/paths~1api~1ordex~1webhooks~1subscriptions~1{subscriptionId}~1rotate-secret/post)
+- Source: spec/openapi.json
+- URL: /reference/api/#rotateWebhookSecret
+
+POST /api/ordex/webhooks/subscriptions/{subscriptionId}/rotate-secret (rotateWebhookSecret): Rotate the signing secret. The old secret keeps verifying during a bounded overlap window so rotation never drops a delivery.. Evidence level: Deterministic example. Tag: webhooks.
+
+---
+
+## POST /api/ordex/webhooks/subscriptions/{subscriptionId}/verify (verifyWebhookEndpoint) (/paths~1api~1ordex~1webhooks~1subscriptions~1{subscriptionId}~1verify/post)
+- Source: spec/openapi.json
+- URL: /reference/api/#verifyWebhookEndpoint
+
+POST /api/ordex/webhooks/subscriptions/{subscriptionId}/verify (verifyWebhookEndpoint): Answer the endpoint challenge. The endpoint must echo the challenge value delivered to it before the subscription activates.. Evidence level: Protocol verification. Tag: webhooks.
+
+---
+
+## POST /api/ordex/webhooks/subscriptions/{subscriptionId}/test (testWebhookSubscription) (/paths~1api~1ordex~1webhooks~1subscriptions~1{subscriptionId}~1test/post)
+- Source: spec/openapi.json
+- URL: /reference/api/#testWebhookSubscription
+
+POST /api/ordex/webhooks/subscriptions/{subscriptionId}/test (testWebhookSubscription): Send a signed test delivery. A ping envelope signed exactly like a real delivery.. Evidence level: Deterministic example. Tag: webhooks.
+
+---
+
+## GET /api/ordex/webhooks/deliveries (listWebhookDeliveries) (/paths~1api~1ordex~1webhooks~1deliveries/get)
+- Source: spec/openapi.json
+- URL: /reference/api/#listWebhookDeliveries
+
+GET /api/ordex/webhooks/deliveries (listWebhookDeliveries): Delivery history with attempt detail. Keyset paginated, filterable by subscription and state.. Evidence level: Deterministic example. Tag: webhooks.
+
+---
+
+## POST /api/ordex/webhooks/deliveries/{deliveryId}/replay (replayWebhookDelivery) (/paths~1api~1ordex~1webhooks~1deliveries~1{deliveryId}~1replay/post)
+- Source: spec/openapi.json
+- URL: /reference/api/#replayWebhookDelivery
+
+POST /api/ordex/webhooks/deliveries/{deliveryId}/replay (replayWebhookDelivery): Replay one delivery. Re-signs the original body and re-enters the retry schedule.. Evidence level: Deterministic example. Tag: webhooks.
+
+---
+
+## POST /api/ordex/collections/manifests (publishCollectionManifest) (/paths~1api~1ordex~1collections~1manifests/post)
+- Source: spec/openapi.json
+- URL: /reference/api/#publishCollectionManifest
+
+POST /api/ordex/collections/manifests (publishCollectionManifest): Publish a creator signed collection manifest. The manifest is verified structurally, the creator signature address is bound, and the membership root is recomputed before publication. A published manifest is immutable; corrections are new versions.. Evidence level: Deterministic example. Tag: provenance.
+
+---
+
+## GET /api/ordex/collections/manifests (listCollectionManifests) (/paths~1api~1ordex~1collections~1manifests/get)
+- Source: spec/openapi.json
+- URL: /reference/api/#listCollectionManifests
+
+GET /api/ordex/collections/manifests (listCollectionManifests): List published manifests. Keyset paginated, filterable by collection id, network, and status.. Evidence level: Deterministic example. Tag: provenance.
+
+---
+
+## GET /api/ordex/collections/manifests/{manifestId} (getCollectionManifest) (/paths~1api~1ordex~1collections~1manifests~1{manifestId}/get)
+- Source: spec/openapi.json
+- URL: /reference/api/#getCollectionManifest
+
+GET /api/ordex/collections/manifests/{manifestId} (getCollectionManifest): One collection manifest. Superseded and revoked versions stay visible; history is never deleted.. Evidence level: Deterministic example. Tag: provenance.
+
+---
+
+## GET /api/ordex/collections/manifests/{manifestId}/proofs/{memberIdentity} (getCollectionMembershipProof) (/paths~1api~1ordex~1collections~1manifests~1{manifestId}~1proofs~1{memberIdentity}/get)
+- Source: spec/openapi.json
+- URL: /reference/api/#getCollectionMembershipProof
+
+GET /api/ordex/collections/manifests/{manifestId}/proofs/{memberIdentity} (getCollectionMembershipProof): A membership proof for one member. The SDK verifies the proof offline with nothing but this response.. Evidence level: Deterministic example. Tag: provenance.
+
+---
+
+## POST /api/ordex/collections/manifests/{manifestId}/revisions (reviseCollectionManifest) (/paths~1api~1ordex~1collections~1manifests~1{manifestId}~1revisions/post)
+- Source: spec/openapi.json
+- URL: /reference/api/#reviseCollectionManifest
+
+POST /api/ordex/collections/manifests/{manifestId}/revisions (reviseCollectionManifest): Supersede or revoke a manifest. Both moves are creator signed. A revocation does not delete history.. Evidence level: Deterministic example. Tag: provenance.
+
+---
+
+## GET /api/ordex/collections/{collectionId}/provenance (getCollectionProvenance) (/paths~1api~1ordex~1collections~1{collectionId}~1provenance/get)
+- Source: spec/openapi.json
+- URL: /reference/api/#getCollectionProvenance
+
+GET /api/ordex/collections/{collectionId}/provenance (getCollectionProvenance): The full provenance record of a collection. Separate labels for the cryptographic claim, the on chain anchor, Universe curation, third party curation, and community reports.. Evidence level: Chain proof. Tag: provenance.
+
+---
+
+## GET /api/ordex/heritage/readiness (getHeritageReadiness) (/paths~1api~1ordex~1heritage~1readiness/get)
+- Source: spec/openapi.json
+- URL: /reference/api/#getHeritageReadiness
+
+GET /api/ordex/heritage/readiness (getHeritageReadiness): Whether the Counterparty authority currently proves ownership. The heritage market fails closed unless the self hosted Counterparty Core is ready, fresh, and on the intended network. There is no public API fallback in production.. Evidence level: Deterministic example. Tag: heritage.
+
+---
+
+## GET /api/ordex/heritage/assets/{assetId} (getHeritageAsset) (/paths~1api~1ordex~1heritage~1assets~1{assetId}/get)
+- Source: spec/openapi.json
+- URL: /reference/api/#getHeritageAsset
+
+GET /api/ordex/heritage/assets/{assetId} (getHeritageAsset): One Counterparty asset with its live attachment state. Identity is the authoritative numeric asset id plus current ledger state. A ticker or name alone is never an identity.. Evidence level: Deterministic example. Tag: heritage.
+
+---
+
+## GET /api/ordex/heritage/assets/{assetId}/utxos (listHeritageAssetUtxos) (/paths~1api~1ordex~1heritage~1assets~1{assetId}~1utxos/get)
+- Source: spec/openapi.json
+- URL: /reference/api/#listHeritageAssetUtxos
+
+GET /api/ordex/heritage/assets/{assetId}/utxos (listHeritageAssetUtxos): The UTXOs currently carrying an asset. Each record binds quantity, outpoint, and the authority checkpoints it was read at.. Evidence level: Deterministic example. Tag: heritage.
+
+---
+
+## GET /api/ordex/heritage/addresses/{address}/assets (listHeritageAddressAssets) (/paths~1api~1ordex~1heritage~1addresses~1{address}~1assets/get)
+- Source: spec/openapi.json
+- URL: /reference/api/#listHeritageAddressAssets
+
+GET /api/ordex/heritage/addresses/{address}/assets (listHeritageAddressAssets): The Counterparty assets of one address. Address balances and their current attached outpoints.. Evidence level: Deterministic example. Tag: heritage.
+
+---
+
+## POST /api/ordex/heritage/attach (buildHeritageAttach) (/paths~1api~1ordex~1heritage~1attach/post)
+- Source: spec/openapi.json
+- URL: /reference/api/#buildHeritageAttach
+
+POST /api/ordex/heritage/attach (buildHeritageAttach): Compose a user signed attach transaction. Returns the unsigned PSBT, the exact XCP gas and miner fee, and everything that would travel. The user signs with their own wallet; the server never holds the asset, XCP, or BTC.. Evidence level: Deterministic example. Tag: heritage.
+
+---
+
+## POST /api/ordex/heritage/detach (buildHeritageDetach) (/paths~1api~1ordex~1heritage~1detach/post)
+- Source: spec/openapi.json
+- URL: /reference/api/#buildHeritageDetach
+
+POST /api/ordex/heritage/detach (buildHeritageDetach): Compose a user signed detach transaction. The same guarantees as attach, in reverse.. Evidence level: Deterministic example. Tag: heritage.
+
+---
+
+## POST /api/ordex/signing/sessions (openSigningSession) (/paths~1api~1ordex~1signing~1sessions/post)
+- Source: spec/openapi.json
+- URL: /reference/api/#openSigningSession
+
+POST /api/ordex/signing/sessions (openSigningSession): Open an offline signing session. Creates the expected transaction manifest for one prepared transaction and returns it for review, export, or QR animation.. Evidence level: Deterministic example. Tag: signing.
+
+---
+
+## GET /api/ordex/signing/sessions (listSigningSessions) (/paths~1api~1ordex~1signing~1sessions/get)
+- Source: spec/openapi.json
+- URL: /reference/api/#listSigningSessions
+
+GET /api/ordex/signing/sessions (listSigningSessions): List your signing sessions. Sessions of the authenticated account, newest first.. Evidence level: Deterministic example. Tag: signing.
+
+---
+
+## GET /api/ordex/signing/sessions/{sessionId} (getSigningSession) (/paths~1api~1ordex~1signing~1sessions~1{sessionId}/get)
+- Source: spec/openapi.json
+- URL: /reference/api/#getSigningSession
+
+GET /api/ordex/signing/sessions/{sessionId} (getSigningSession): One signing session. Includes the manifest, the imported signed result, and any rejection with its stable code.. Evidence level: Deterministic example. Tag: signing.
+
+---
+
+## POST /api/ordex/signing/sessions/{sessionId}/signed-result (submitSignedResult) (/paths~1api~1ordex~1signing~1sessions~1{sessionId}~1signed-result/post)
+- Source: spec/openapi.json
+- URL: /reference/api/#submitSignedResult
+
+POST /api/ordex/signing/sessions/{sessionId}/signed-result (submitSignedResult): Import a signed result for verification. The signed result is compared against the manifest. Any change to the unsigned transaction, its outputs, the fee bound, or the asset destinations refuses the import with a stable code.. Evidence level: Deterministic example. Tag: signing.
+
+---
+
+## POST /api/ordex/signing/verify (verifySigningArtifacts) (/paths~1api~1ordex~1signing~1verify/post)
+- Source: spec/openapi.json
+- URL: /reference/api/#verifySigningArtifacts
+
+POST /api/ordex/signing/verify (verifySigningArtifacts): Verify a manifest and signed result pair without a session. The same checks the session flow runs, usable directly by SDK consumers and the reference conformance tests.. Evidence level: Protocol verification. Tag: signing.
+
+---
+
+## Refusal: ACCOUNT_INVALID (refusal:ACCOUNT_INVALID)
+- Source: verifier/offline-signing.js
+- URL: /reference/refusal-codes/#ACCOUNT_INVALID
+
+The account may carry only an output descriptor string. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with ACCOUNT_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: ADAPTER_VERSIONS_MISSING (refusal:ADAPTER_VERSIONS_MISSING)
+- Source: verifier/swaps.js
+- URL: /reference/refusal-codes/#ADAPTER_VERSIONS_MISSING
+
+The intent must name the protocol adapter versions it relies on. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with ADAPTER_VERSIONS_MISSING. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: ADDRESS_MISSING (refusal:ADDRESS_MISSING)
+- Source: verifier/counterparty-asset.js
+- URL: /reference/refusal-codes/#ADDRESS_MISSING
+
+The record must name the address that controls the outpoint. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with ADDRESS_MISSING. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: AGGREGATE_INVALID (refusal:AGGREGATE_INVALID)
+- Source: verifier/events.js
+- URL: /reference/refusal-codes/#AGGREGATE_INVALID
+
+The event must name an aggregate type, id, and version. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with AGGREGATE_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: ANCHOR_INVALID (refusal:ANCHOR_INVALID)
+- Source: verifier/collection-manifest.js
+- URL: /reference/refusal-codes/#ANCHOR_INVALID
+
+An anchor must name a lowercase 64 hex transaction id. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with ANCHOR_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: ARTIFACT_DIGEST_INVALID (refusal:ARTIFACT_DIGEST_INVALID)
+- Source: verifier/events.js
+- URL: /reference/refusal-codes/#ARTIFACT_DIGEST_INVALID
+
+Every artifact digest must be 64 lowercase hex characters. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with ARTIFACT_DIGEST_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: ASSET_EXPECTATION_INVALID (refusal:ASSET_EXPECTATION_INVALID)
+- Source: verifier/offline-signing.js
+- URL: /reference/refusal-codes/#ASSET_EXPECTATION_INVALID
+
+Output ${i} carries a malformed asset expectation. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with ASSET_EXPECTATION_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: ASSET_ID_REQUIRED (refusal:ASSET_ID_REQUIRED)
+- Source: verifier/counterparty-asset.js
+- URL: /reference/refusal-codes/#ASSET_ID_REQUIRED
+
+Asset identity is the authoritative numeric Counterparty asset id; a name alone is never an identity. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with ASSET_ID_REQUIRED. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: ASSET_IDENTITY_MISSING (refusal:ASSET_IDENTITY_MISSING)
+- Source: verifier/counterparty-asset.js
+- URL: /reference/refusal-codes/#ASSET_IDENTITY_MISSING
+
+The record must describe the attached asset. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with ASSET_IDENTITY_MISSING. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: ASSET_IN_CARDINAL_OPERATION (refusal:ASSET_IN_CARDINAL_OPERATION)
+- Source: verifier/safeops.js
+- URL: /reference/refusal-codes/#ASSET_IN_CARDINAL_OPERATION
+
+Input ${i} carries ${assets[0].assetType} ${assets[0].assetId}; this operation moves cardinal value only. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with ASSET_IN_CARDINAL_OPERATION. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: ASSET_TRANSITION_DUPLICATED (refusal:ASSET_TRANSITION_DUPLICATED)
+- Source: verifier/safeops.js
+- URL: /reference/refusal-codes/#ASSET_TRANSITION_DUPLICATED
+
+Asset ${key} is assigned to more than one transition. Category: spent. Remediation: Inspect the transaction parameters and ensure compliance with ASSET_TRANSITION_DUPLICATED. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: ATOMICITY_IMPOSSIBLE (refusal:ATOMICITY_IMPOSSIBLE)
+- Source: verifier/swaps.js
+- URL: /reference/refusal-codes/#ATOMICITY_IMPOSSIBLE
+
+A swap settles both sides in one transaction with inputs and outputs from both parties. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with ATOMICITY_IMPOSSIBLE. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: ATTACHMENT_STATE_UNKNOWN (refusal:ATTACHMENT_STATE_UNKNOWN)
+- Source: verifier/counterparty-asset.js
+- URL: /reference/refusal-codes/#ATTACHMENT_STATE_UNKNOWN
+
+The record must state that the attachment currently exists. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with ATTACHMENT_STATE_UNKNOWN. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: AUTHORITY_NOT_READY (refusal:AUTHORITY_NOT_READY)
+- Source: verifier/counterparty-asset.js
+- URL: /reference/refusal-codes/#AUTHORITY_NOT_READY
+
+The record may only be produced while the self hosted Counterparty Core authority reports ready. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with AUTHORITY_NOT_READY. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: BODY_INVALID (refusal:BODY_INVALID)
+- Source: verifier/events.js
+- URL: /reference/refusal-codes/#BODY_INVALID
+
+The body must be the exact string that was received. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with BODY_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: BUYER_ASSET_OUTPUT_MISSING (refusal:BUYER_ASSET_OUTPUT_MISSING)
+- Source: verifier/offers.js
+- URL: /reference/refusal-codes/#BUYER_ASSET_OUTPUT_MISSING
+
+The buyer receive script must appear exactly once ahead of the seller payment. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with BUYER_ASSET_OUTPUT_MISSING. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: CENOTAPH_BURNS_BALANCE (refusal:CENOTAPH_BURNS_BALANCE)
+- Source: verifier/runes.js
+- URL: /reference/refusal-codes/#CENOTAPH_BURNS_BALANCE
+
+Refusal condition triggered for cenotaph burns balance. Category: rune. Remediation: Inspect the transaction parameters and ensure compliance with CENOTAPH_BURNS_BALANCE. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: CENOTAPH_WITH_UNPROVEN_INPUT (refusal:CENOTAPH_WITH_UNPROVEN_INPUT)
+- Source: verifier/runes.js
+- URL: /reference/refusal-codes/#CENOTAPH_WITH_UNPROVEN_INPUT
+
+Refusal condition triggered for cenotaph with unproven input. Category: rune. Remediation: Inspect the transaction parameters and ensure compliance with CENOTAPH_WITH_UNPROVEN_INPUT. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: CHECKPOINT_INVALID (refusal:CHECKPOINT_INVALID)
+- Source: verifier/counterparty-asset.js
+- URL: /reference/refusal-codes/#CHECKPOINT_INVALID
+
+The record must carry the block height, block hash, and Counterparty ledger hash it was read at. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with CHECKPOINT_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: COLLECTION_ID_INVALID (refusal:COLLECTION_ID_INVALID)
+- Source: verifier/collection-manifest.js
+- URL: /reference/refusal-codes/#COLLECTION_ID_INVALID
+
+The manifest must name a collection id of at most 200 characters. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with COLLECTION_ID_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: CONSIDERATION_SHORTFALL (refusal:CONSIDERATION_SHORTFALL)
+- Source: verifier/swaps.js
+- URL: /reference/refusal-codes/#CONSIDERATION_SHORTFALL
+
+No output pays the maker receive script at least ${criterion.minQuantitySats} for ${criterion.assetType}. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with CONSIDERATION_SHORTFALL. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: COTRAVELING_INVALID (refusal:COTRAVELING_INVALID)
+- Source: verifier/counterparty-asset.js
+- URL: /reference/refusal-codes/#COTRAVELING_INVALID
+
+coTravelingAssets must be an array. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with COTRAVELING_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: CREATED_AT_INVALID (refusal:CREATED_AT_INVALID)
+- Source: verifier/collection-manifest.js
+- URL: /reference/refusal-codes/#CREATED_AT_INVALID
+
+createdAtHeight must be a non-negative block height. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with CREATED_AT_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: CREATOR_ADDRESS_INVALID (refusal:CREATOR_ADDRESS_INVALID)
+- Source: verifier/collection-manifest.js
+- URL: /reference/refusal-codes/#CREATOR_ADDRESS_INVALID
+
+The manifest must name the creator signing address. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with CREATOR_ADDRESS_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: CREATOR_SIGNATURE_INVALID (refusal:CREATOR_SIGNATURE_INVALID)
+- Source: verifier/collection-manifest.js
+- URL: /reference/refusal-codes/#CREATOR_SIGNATURE_INVALID
+
+The manifest must carry a bip322 creator signature. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with CREATOR_SIGNATURE_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: DESTINATION_MISMATCH (refusal:DESTINATION_MISMATCH)
+- Source: verifier/counterparty-asset.js
+- URL: /reference/refusal-codes/#DESTINATION_MISMATCH
+
+The sat range lands on output ${carriedToIndex}, not the planned output ${expectedOutputIndex}. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with DESTINATION_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: DESTINATION_MISSING (refusal:DESTINATION_MISSING)
+- Source: verifier/counterparty-asset.js
+- URL: /reference/refusal-codes/#DESTINATION_MISSING
+
+The plan names an output that does not exist. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with DESTINATION_MISSING. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: DIGEST_MISMATCH (refusal:DIGEST_MISMATCH)
+- Source: verifier/collection-manifest.js
+- URL: /reference/refusal-codes/#DIGEST_MISMATCH
+
+The manifest digest does not match its content. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with DIGEST_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: DISPLAY_NAME_INVALID (refusal:DISPLAY_NAME_INVALID)
+- Source: verifier/collection-manifest.js
+- URL: /reference/refusal-codes/#DISPLAY_NAME_INVALID
+
+The manifest must name a display name of at most 200 characters. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with DISPLAY_NAME_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: DUST_OUTPUT (refusal:DUST_OUTPUT)
+- Source: verifier/offline-signing.js
+- URL: /reference/refusal-codes/#DUST_OUTPUT
+
+Output ${i} is below the 546 sat dust floor. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with DUST_OUTPUT. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: EVENT_ID_INVALID (refusal:EVENT_ID_INVALID)
+- Source: verifier/events.js
+- URL: /reference/refusal-codes/#EVENT_ID_INVALID
+
+The event id must be a lowercase uuid. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with EVENT_ID_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: EVENT_TYPE_INVALID (refusal:EVENT_TYPE_INVALID)
+- Source: verifier/events.js
+- URL: /reference/refusal-codes/#EVENT_TYPE_INVALID
+
+The event type must look like ordex.<family>.<name>. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with EVENT_TYPE_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: EXPIRY_INVALID (refusal:EXPIRY_INVALID)
+- Source: verifier/safeops.js
+- URL: /reference/refusal-codes/#EXPIRY_INVALID
+
+The expiry height must be a block after the checkpoint height. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with EXPIRY_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: FEE_BUDGET_EXCEEDED (refusal:FEE_BUDGET_EXCEEDED)
+- Source: verifier/swaps.js
+- URL: /reference/refusal-codes/#FEE_BUDGET_EXCEEDED
+
+The maker contribution exceeds the budget the intent approved. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with FEE_BUDGET_EXCEEDED. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: FEE_BUDGET_INVALID (refusal:FEE_BUDGET_INVALID)
+- Source: verifier/swaps.js
+- URL: /reference/refusal-codes/#FEE_BUDGET_INVALID
+
+maxMakerFeeSats must be an exact non-negative decimal string. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with FEE_BUDGET_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: FEE_CHANGED (refusal:FEE_CHANGED)
+- Source: verifier/safeops.js
+- URL: /reference/refusal-codes/#FEE_CHANGED
+
+The signed transaction fee no longer matches the planned fee. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with FEE_CHANGED. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: FEE_INVALID (refusal:FEE_INVALID)
+- Source: verifier/offline-signing.js
+- URL: /reference/refusal-codes/#FEE_INVALID
+
+feeSats and maxFeeSats must be exact decimal strings and fee <= maxFee. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with FEE_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: FEE_OUT_OF_BOUNDS (refusal:FEE_OUT_OF_BOUNDS)
+- Source: verifier/offline-signing.js
+- URL: /reference/refusal-codes/#FEE_OUT_OF_BOUNDS
+
+The signed transaction fee left the bound the manifest approved. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with FEE_OUT_OF_BOUNDS. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: FEE_OVER_MAXIMUM (refusal:FEE_OVER_MAXIMUM)
+- Source: verifier/offers.js
+- URL: /reference/refusal-codes/#FEE_OVER_MAXIMUM
+
+The fee exceeds the maximum the terms committed to. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with FEE_OVER_MAXIMUM. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: FEE_SPLIT_INVALID (refusal:FEE_SPLIT_INVALID)
+- Source: verifier/swaps.js
+- URL: /reference/refusal-codes/#FEE_SPLIT_INVALID
+
+The maker and taker contributions must equal the declared fee. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with FEE_SPLIT_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: FELINE_OUTPOINT_DUPLICATED (refusal:FELINE_OUTPOINT_DUPLICATED)
+- Source: verifier/offers.js
+- URL: /reference/refusal-codes/#FELINE_OUTPOINT_DUPLICATED
+
+The Feline outpoint appears at more than one index. Category: spent. Remediation: Inspect the transaction parameters and ensure compliance with FELINE_OUTPOINT_DUPLICATED. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: FELINE_OUTPOINT_MISSING (refusal:FELINE_OUTPOINT_MISSING)
+- Source: verifier/offers.js
+- URL: /reference/refusal-codes/#FELINE_OUTPOINT_MISSING
+
+No input spends the seller Feline output. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with FELINE_OUTPOINT_MISSING. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: GIVES_INVALID (refusal:GIVES_INVALID)
+- Source: verifier/swaps.js
+- URL: /reference/refusal-codes/#GIVES_INVALID
+
+The intent must give at least one exact outpoint with an exact quantity. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with GIVES_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: HEADER_MALFORMED (refusal:HEADER_MALFORMED)
+- Source: verifier/events.js
+- URL: /reference/refusal-codes/#HEADER_MALFORMED
+
+The header must look like t=<unix>,d=<id>,v1=<hex>. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with HEADER_MALFORMED. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: HEADER_MISSING (refusal:HEADER_MISSING)
+- Source: verifier/events.js
+- URL: /reference/refusal-codes/#HEADER_MISSING
+
+Expected an X-Ordex-Signature header value. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with HEADER_MISSING. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: IDENTITY_TYPE_UNKNOWN (refusal:IDENTITY_TYPE_UNKNOWN)
+- Source: verifier/collection-manifest.js
+- URL: /reference/refusal-codes/#IDENTITY_TYPE_UNKNOWN
+
+The member identity type is not one this registry names. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with IDENTITY_TYPE_UNKNOWN. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: INPUT_DESCRIPTION_INVALID (refusal:INPUT_DESCRIPTION_INVALID)
+- Source: verifier/offline-signing.js
+- URL: /reference/refusal-codes/#INPUT_DESCRIPTION_INVALID
+
+Input ${i} needs an outpoint, an exact value and script, whether the user controls it, and why it is spent. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with INPUT_DESCRIPTION_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: INPUT_DUPLICATED (refusal:INPUT_DUPLICATED)
+- Source: verifier/swaps.js
+- URL: /reference/refusal-codes/#INPUT_DUPLICATED
+
+Input ${key} appears more than once. Category: spent. Remediation: Inspect the transaction parameters and ensure compliance with INPUT_DUPLICATED. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: INPUT_ORDER_CHANGED (refusal:INPUT_ORDER_CHANGED)
+- Source: verifier/safeops.js
+- URL: /reference/refusal-codes/#INPUT_ORDER_CHANGED
+
+Input ${i} was reordered or substituted after the plan was agreed. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with INPUT_ORDER_CHANGED. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: INPUT_OUTPOINT_INVALID (refusal:INPUT_OUTPOINT_INVALID)
+- Source: verifier/safeops.js
+- URL: /reference/refusal-codes/#INPUT_OUTPOINT_INVALID
+
+Input ${i} does not carry a lowercase txid and vout. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with INPUT_OUTPOINT_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: INPUT_PARTY_INVALID (refusal:INPUT_PARTY_INVALID)
+- Source: verifier/swaps.js
+- URL: /reference/refusal-codes/#INPUT_PARTY_INVALID
+
+Input ${i} must name the maker or the taker. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with INPUT_PARTY_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: INPUT_REORDERED (refusal:INPUT_REORDERED)
+- Source: verifier/offline-signing.js
+- URL: /reference/refusal-codes/#INPUT_REORDERED
+
+Input ${i} was reordered or substituted. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with INPUT_REORDERED. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: INPUT_SET_CHANGED (refusal:INPUT_SET_CHANGED)
+- Source: verifier/offline-signing.js
+- URL: /reference/refusal-codes/#INPUT_SET_CHANGED
+
+The signed transaction spends a different set of inputs than the manifest presented. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with INPUT_SET_CHANGED. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: INPUT_VALUE_CHANGED (refusal:INPUT_VALUE_CHANGED)
+- Source: verifier/safeops.js
+- URL: /reference/refusal-codes/#INPUT_VALUE_CHANGED
+
+Input ${i} no longer carries its planned value. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with INPUT_VALUE_CHANGED. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: INPUT_VALUE_INVALID (refusal:INPUT_VALUE_INVALID)
+- Source: verifier/safeops.js
+- URL: /reference/refusal-codes/#INPUT_VALUE_INVALID
+
+Input ${i} does not carry an exact decimal value. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with INPUT_VALUE_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: INPUT_VALUE_UNKNOWN (refusal:INPUT_VALUE_UNKNOWN)
+- Source: verifier/counterparty-asset.js
+- URL: /reference/refusal-codes/#INPUT_VALUE_UNKNOWN
+
+Input ${i} has no readable value, so the sat range cannot be traced. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with INPUT_VALUE_UNKNOWN. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: INPUTS_EMPTY (refusal:INPUTS_EMPTY)
+- Source: verifier/safeops.js
+- URL: /reference/refusal-codes/#INPUTS_EMPTY
+
+A plan must select at least one input. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with INPUTS_EMPTY. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: INTENT_DIGEST_MISMATCH (refusal:INTENT_DIGEST_MISMATCH)
+- Source: verifier/swaps.js
+- URL: /reference/refusal-codes/#INTENT_DIGEST_MISMATCH
+
+The acceptance plan was not built from this intent. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with INTENT_DIGEST_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: INVENTORY_UNEXAMINED (refusal:INVENTORY_UNEXAMINED)
+- Source: verifier/safeops.js
+- URL: /reference/refusal-codes/#INVENTORY_UNEXAMINED
+
+Input ${i} was never examined against the protocol authorities. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with INVENTORY_UNEXAMINED. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: MAKER_OUTPOINT_MISSING (refusal:MAKER_OUTPOINT_MISSING)
+- Source: verifier/swaps.js
+- URL: /reference/refusal-codes/#MAKER_OUTPOINT_MISSING
+
+The committed outpoint ${key} is not spent by the acceptance plan. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with MAKER_OUTPOINT_MISSING. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: MAKER_OUTPOINT_REASSIGNED (refusal:MAKER_OUTPOINT_REASSIGNED)
+- Source: verifier/swaps.js
+- URL: /reference/refusal-codes/#MAKER_OUTPOINT_REASSIGNED
+
+The committed outpoint ${key} is claimed by the taker. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with MAKER_OUTPOINT_REASSIGNED. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: MAKER_PROOF_INVALID (refusal:MAKER_PROOF_INVALID)
+- Source: verifier/swaps.js
+- URL: /reference/refusal-codes/#MAKER_PROOF_INVALID
+
+The intent must carry a bip322 maker identity proof with an address. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with MAKER_PROOF_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: MALFORMED_ACCEPTANCE (refusal:MALFORMED_ACCEPTANCE)
+- Source: verifier/offers.js
+- URL: /reference/refusal-codes/#MALFORMED_ACCEPTANCE
+
+Expected inputs, outputs, and a policy signature count. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with MALFORMED_ACCEPTANCE. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: MALFORMED_EVENT (refusal:MALFORMED_EVENT)
+- Source: verifier/events.js
+- URL: /reference/refusal-codes/#MALFORMED_EVENT
+
+Expected an event object. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with MALFORMED_EVENT. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: MALFORMED_INTENT (refusal:MALFORMED_INTENT)
+- Source: verifier/swaps.js
+- URL: /reference/refusal-codes/#MALFORMED_INTENT
+
+Expected an intent object. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with MALFORMED_INTENT. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: MALFORMED_MANIFEST (refusal:MALFORMED_MANIFEST)
+- Source: verifier/collection-manifest.js
+- URL: /reference/refusal-codes/#MALFORMED_MANIFEST
+
+Expected a manifest object. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with MALFORMED_MANIFEST. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: MALFORMED_OFFER (refusal:MALFORMED_OFFER)
+- Source: verifier/offers.js
+- URL: /reference/refusal-codes/#MALFORMED_OFFER
+
+Expected both outpoints and the terms hash. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with MALFORMED_OFFER. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: MALFORMED_ORDER (refusal:MALFORMED_ORDER)
+- Source: verifier/purchase.js
+- URL: /reference/refusal-codes/#MALFORMED_ORDER
+
+Expected an offered outpoint with txid and vout. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with MALFORMED_ORDER. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: MALFORMED_PLAN (refusal:MALFORMED_PLAN)
+- Source: verifier/safeops.js
+- URL: /reference/refusal-codes/#MALFORMED_PLAN
+
+Expected a plan object. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with MALFORMED_PLAN. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: MALFORMED_RECORD (refusal:MALFORMED_RECORD)
+- Source: verifier/counterparty-asset.js
+- URL: /reference/refusal-codes/#MALFORMED_RECORD
+
+Expected an attachment record object. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with MALFORMED_RECORD. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: MALFORMED_RECOVERY (refusal:MALFORMED_RECOVERY)
+- Source: verifier/offers.js
+- URL: /reference/refusal-codes/#MALFORMED_RECOVERY
+
+Expected inputs and outputs arrays. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with MALFORMED_RECOVERY. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: MALFORMED_REVOCATION (refusal:MALFORMED_REVOCATION)
+- Source: verifier/collection-manifest.js
+- URL: /reference/refusal-codes/#MALFORMED_REVOCATION
+
+Expected a revocation object. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with MALFORMED_REVOCATION. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: MALFORMED_SIGNED_RESULT (refusal:MALFORMED_SIGNED_RESULT)
+- Source: verifier/offline-signing.js
+- URL: /reference/refusal-codes/#MALFORMED_SIGNED_RESULT
+
+Expected a signed result object. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with MALFORMED_SIGNED_RESULT. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: MALFORMED_TERMS (refusal:MALFORMED_TERMS)
+- Source: verifier/offers.js
+- URL: /reference/refusal-codes/#MALFORMED_TERMS
+
+Expected a terms object. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with MALFORMED_TERMS. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: MALFORMED_TRANSACTION (refusal:MALFORMED_TRANSACTION)
+- Source: verifier/counterparty-asset.js
+- URL: /reference/refusal-codes/#MALFORMED_TRANSACTION
+
+Expected inputs and outputs arrays. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with MALFORMED_TRANSACTION. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: MANIFEST_DIGEST_INVALID (refusal:MANIFEST_DIGEST_INVALID)
+- Source: verifier/collection-manifest.js
+- URL: /reference/refusal-codes/#MANIFEST_DIGEST_INVALID
+
+The revocation must name the manifest digest it revokes. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with MANIFEST_DIGEST_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: MANIFEST_DIGEST_MISMATCH (refusal:MANIFEST_DIGEST_MISMATCH)
+- Source: verifier/collection-manifest.js
+- URL: /reference/refusal-codes/#MANIFEST_DIGEST_MISMATCH
+
+The revocation names a different manifest than the one supplied. Category: provenance. Remediation: Inspect the transaction parameters and ensure compliance with MANIFEST_DIGEST_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: MEMBER_NOT_PROVEN (refusal:MEMBER_NOT_PROVEN)
+- Source: verifier/collection-manifest.js
+- URL: /reference/refusal-codes/#MEMBER_NOT_PROVEN
+
+The proof does not resolve to the membership root, so this identity is not a member. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with MEMBER_NOT_PROVEN. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: MEMBERS_DUPLICATED (refusal:MEMBERS_DUPLICATED)
+- Source: verifier/collection-manifest.js
+- URL: /reference/refusal-codes/#MEMBERS_DUPLICATED
+
+The member ${sortedMembers[i]} appears more than once. Category: spent. Remediation: Inspect the transaction parameters and ensure compliance with MEMBERS_DUPLICATED. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: MEMBERS_EMPTY (refusal:MEMBERS_EMPTY)
+- Source: verifier/collection-manifest.js
+- URL: /reference/refusal-codes/#MEMBERS_EMPTY
+
+A manifest must list at least one member identity. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with MEMBERS_EMPTY. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: MEMBERS_INVALID (refusal:MEMBERS_INVALID)
+- Source: verifier/collection-manifest.js
+- URL: /reference/refusal-codes/#MEMBERS_INVALID
+
+Every member identity must be a string of at most 256 characters. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with MEMBERS_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: MEMBERS_UNSORTED (refusal:MEMBERS_UNSORTED)
+- Source: verifier/collection-manifest.js
+- URL: /reference/refusal-codes/#MEMBERS_UNSORTED
+
+The member list must be stored in ascending sorted order. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with MEMBERS_UNSORTED. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: MEMBERSHIP_ROOT_MISMATCH (refusal:MEMBERSHIP_ROOT_MISMATCH)
+- Source: verifier/collection-manifest.js
+- URL: /reference/refusal-codes/#MEMBERSHIP_ROOT_MISMATCH
+
+The membership root does not match the member list. Category: provenance. Remediation: Inspect the transaction parameters and ensure compliance with MEMBERSHIP_ROOT_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: NETWORK_MISMATCH (refusal:NETWORK_MISMATCH)
+- Source: verifier/swaps.js
+- URL: /reference/refusal-codes/#NETWORK_MISMATCH
+
+The acceptance plan was built for a different network. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with NETWORK_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: NETWORK_UNKNOWN (refusal:NETWORK_UNKNOWN)
+- Source: verifier/collection-manifest.js
+- URL: /reference/refusal-codes/#NETWORK_UNKNOWN
+
+The network is not one this protocol names. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with NETWORK_UNKNOWN. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: NONCE_INVALID (refusal:NONCE_INVALID)
+- Source: verifier/swaps.js
+- URL: /reference/refusal-codes/#NONCE_INVALID
+
+The intent must carry a nonce of 8 to 128 characters. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with NONCE_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: OBSERVED_AT_INVALID (refusal:OBSERVED_AT_INVALID)
+- Source: verifier/events.js
+- URL: /reference/refusal-codes/#OBSERVED_AT_INVALID
+
+observedAt must be an ISO-8601 timestamp ending in Z. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with OBSERVED_AT_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: OFFER_EXPIRED (refusal:OFFER_EXPIRED)
+- Source: verifier/offers.js
+- URL: /reference/refusal-codes/#OFFER_EXPIRED
+
+The expiry height has passed; recovery is the only remaining path. Category: stale. Remediation: Inspect the transaction parameters and ensure compliance with OFFER_EXPIRED. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: OFFER_OUTPOINT_DUPLICATED (refusal:OFFER_OUTPOINT_DUPLICATED)
+- Source: verifier/offers.js
+- URL: /reference/refusal-codes/#OFFER_OUTPOINT_DUPLICATED
+
+The funded output appears at more than one index. Category: spent. Remediation: Inspect the transaction parameters and ensure compliance with OFFER_OUTPOINT_DUPLICATED. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: OFFER_OUTPOINT_MISSING (refusal:OFFER_OUTPOINT_MISSING)
+- Source: verifier/offers.js
+- URL: /reference/refusal-codes/#OFFER_OUTPOINT_MISSING
+
+No input spends the funded offer output. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with OFFER_OUTPOINT_MISSING. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: OFFERED_OUTPOINT_DUPLICATED (refusal:OFFERED_OUTPOINT_DUPLICATED)
+- Source: verifier/purchase.js
+- URL: /reference/refusal-codes/#OFFERED_OUTPOINT_DUPLICATED
+
+The offered outpoint appears at more than one index, so one signature would answer for two positions. Category: spent. Remediation: Inspect the transaction parameters and ensure compliance with OFFERED_OUTPOINT_DUPLICATED. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: OFFERED_OUTPOINT_MISSING (refusal:OFFERED_OUTPOINT_MISSING)
+- Source: verifier/purchase.js
+- URL: /reference/refusal-codes/#OFFERED_OUTPOINT_MISSING
+
+No input spends the offered output. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with OFFERED_OUTPOINT_MISSING. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: OPERATION_KIND_UNKNOWN (refusal:OPERATION_KIND_UNKNOWN)
+- Source: verifier/safeops.js
+- URL: /reference/refusal-codes/#OPERATION_KIND_UNKNOWN
+
+The operation kind is not one this protocol names. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with OPERATION_KIND_UNKNOWN. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: OUTPOINT_DUPLICATED (refusal:OUTPOINT_DUPLICATED)
+- Source: verifier/counterparty-asset.js
+- URL: /reference/refusal-codes/#OUTPOINT_DUPLICATED
+
+The attached outpoint appears at more than one index. Category: spent. Remediation: Inspect the transaction parameters and ensure compliance with OUTPOINT_DUPLICATED. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: OUTPOINT_INVALID (refusal:OUTPOINT_INVALID)
+- Source: verifier/counterparty-asset.js
+- URL: /reference/refusal-codes/#OUTPOINT_INVALID
+
+The record must name a lowercase txid and vout. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with OUTPOINT_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: OUTPOINT_NOT_SPENT (refusal:OUTPOINT_NOT_SPENT)
+- Source: verifier/counterparty-asset.js
+- URL: /reference/refusal-codes/#OUTPOINT_NOT_SPENT
+
+No input spends the attached outpoint. Category: spent. Remediation: Inspect the transaction parameters and ensure compliance with OUTPOINT_NOT_SPENT. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: OUTPUT_DESCRIPTION_INVALID (refusal:OUTPUT_DESCRIPTION_INVALID)
+- Source: verifier/offline-signing.js
+- URL: /reference/refusal-codes/#OUTPUT_DESCRIPTION_INVALID
+
+Output ${i} needs an exact script and value, a role, and who receives it. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with OUTPUT_DESCRIPTION_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: OUTPUT_ROLE_UNKNOWN (refusal:OUTPUT_ROLE_UNKNOWN)
+- Source: verifier/safeops.js
+- URL: /reference/refusal-codes/#OUTPUT_ROLE_UNKNOWN
+
+Output ${i} does not name a recipient, change, or preserve role. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with OUTPUT_ROLE_UNKNOWN. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: OUTPUT_SCRIPT_INVALID (refusal:OUTPUT_SCRIPT_INVALID)
+- Source: verifier/safeops.js
+- URL: /reference/refusal-codes/#OUTPUT_SCRIPT_INVALID
+
+Output ${i} does not carry lowercase hex script bytes. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with OUTPUT_SCRIPT_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: OUTPUT_SET_CHANGED (refusal:OUTPUT_SET_CHANGED)
+- Source: verifier/offline-signing.js
+- URL: /reference/refusal-codes/#OUTPUT_SET_CHANGED
+
+The signed transaction carries a different set of outputs than the manifest presented. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with OUTPUT_SET_CHANGED. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: OUTPUT_VALUE_INVALID (refusal:OUTPUT_VALUE_INVALID)
+- Source: verifier/safeops.js
+- URL: /reference/refusal-codes/#OUTPUT_VALUE_INVALID
+
+Output ${i} does not carry an exact decimal value. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with OUTPUT_VALUE_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: OUTPUT_VALUE_UNKNOWN (refusal:OUTPUT_VALUE_UNKNOWN)
+- Source: verifier/counterparty-asset.js
+- URL: /reference/refusal-codes/#OUTPUT_VALUE_UNKNOWN
+
+Output ${i} has no readable value, so the sat range cannot be traced. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with OUTPUT_VALUE_UNKNOWN. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: PAYLOAD_INVALID (refusal:PAYLOAD_INVALID)
+- Source: verifier/events.js
+- URL: /reference/refusal-codes/#PAYLOAD_INVALID
+
+The payload must be an object. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with PAYLOAD_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: PLAN_DIGEST_MISMATCH (refusal:PLAN_DIGEST_MISMATCH)
+- Source: verifier/safeops.js
+- URL: /reference/refusal-codes/#PLAN_DIGEST_MISMATCH
+
+The signed result was not produced from this plan. Refresh the plan and sign again. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with PLAN_DIGEST_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: POLICY_SIGNATURES_MISSING (refusal:POLICY_SIGNATURES_MISSING)
+- Source: verifier/offers.js
+- URL: /reference/refusal-codes/#POLICY_SIGNATURES_MISSING
+
+A valid acceptance carries exactly one signature from each independent policy signer. Category: signature. Remediation: Inspect the transaction parameters and ensure compliance with POLICY_SIGNATURES_MISSING. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: PREVIOUS_DIGEST_FORBIDDEN (refusal:PREVIOUS_DIGEST_FORBIDDEN)
+- Source: verifier/collection-manifest.js
+- URL: /reference/refusal-codes/#PREVIOUS_DIGEST_FORBIDDEN
+
+Version 1 cannot name a previous manifest. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with PREVIOUS_DIGEST_FORBIDDEN. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: PREVIOUS_DIGEST_REQUIRED (refusal:PREVIOUS_DIGEST_REQUIRED)
+- Source: verifier/collection-manifest.js
+- URL: /reference/refusal-codes/#PREVIOUS_DIGEST_REQUIRED
+
+A manifest after version 1 must name the manifest it supersedes. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with PREVIOUS_DIGEST_REQUIRED. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: PROOF_MALFORMED (refusal:PROOF_MALFORMED)
+- Source: verifier/collection-manifest.js
+- URL: /reference/refusal-codes/#PROOF_MALFORMED
+
+Every proof step needs a sibling digest and a position. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with PROOF_MALFORMED. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: PROTECTED_ASSET_MISPLACED (refusal:PROTECTED_ASSET_MISPLACED)
+- Source: verifier/offline-signing.js
+- URL: /reference/refusal-codes/#PROTECTED_ASSET_MISPLACED
+
+Asset ${key} was not part of the presented plan at all. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with PROTECTED_ASSET_MISPLACED. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: PROTOCOL_FAMILY_UNKNOWN (refusal:PROTOCOL_FAMILY_UNKNOWN)
+- Source: verifier/collection-manifest.js
+- URL: /reference/refusal-codes/#PROTOCOL_FAMILY_UNKNOWN
+
+The protocol family is not one this registry names. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with PROTOCOL_FAMILY_UNKNOWN. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: PROTOCOL_UNSUPPORTED (refusal:PROTOCOL_UNSUPPORTED)
+- Source: verifier/collection-manifest.js
+- URL: /reference/refusal-codes/#PROTOCOL_UNSUPPORTED
+
+The manifest protocol version must be 1.2 or a later 1.x. Category: capability. Remediation: Inspect the transaction parameters and ensure compliance with PROTOCOL_UNSUPPORTED. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: PURPOSE_MISSING (refusal:PURPOSE_MISSING)
+- Source: verifier/offline-signing.js
+- URL: /reference/refusal-codes/#PURPOSE_MISSING
+
+The manifest must state in one line what the transaction is for. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with PURPOSE_MISSING. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: QUANTITY_INVALID (refusal:QUANTITY_INVALID)
+- Source: verifier/counterparty-asset.js
+- URL: /reference/refusal-codes/#QUANTITY_INVALID
+
+quantitySats must be an exact decimal string of atomic units. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with QUANTITY_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: REASON_REQUIRED (refusal:REASON_REQUIRED)
+- Source: verifier/collection-manifest.js
+- URL: /reference/refusal-codes/#REASON_REQUIRED
+
+The revocation must state a reason of at most 500 characters. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with REASON_REQUIRED. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: RECEIVE_SCRIPT_INVALID (refusal:RECEIVE_SCRIPT_INVALID)
+- Source: verifier/swaps.js
+- URL: /reference/refusal-codes/#RECEIVE_SCRIPT_INVALID
+
+The maker receive script must be lowercase hex bytes. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with RECEIVE_SCRIPT_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: RECOVERY_BEFORE_EXPIRY (refusal:RECOVERY_BEFORE_EXPIRY)
+- Source: verifier/offers.js
+- URL: /reference/refusal-codes/#RECOVERY_BEFORE_EXPIRY
+
+The locktime is below the expiry height. Category: stale. Remediation: Inspect the transaction parameters and ensure compliance with RECOVERY_BEFORE_EXPIRY. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: RECOVERY_LEAF_MISMATCH (refusal:RECOVERY_LEAF_MISMATCH)
+- Source: verifier/offers.js
+- URL: /reference/refusal-codes/#RECOVERY_LEAF_MISMATCH
+
+The recovery leaf must be lowercase hex bytes. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with RECOVERY_LEAF_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: RECOVERY_OUTPUT_WRONG (refusal:RECOVERY_OUTPUT_WRONG)
+- Source: verifier/offers.js
+- URL: /reference/refusal-codes/#RECOVERY_OUTPUT_WRONG
+
+A recovery pays one output, the buyer receive script. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with RECOVERY_OUTPUT_WRONG. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: REQUIRED_SIGNATURE_MISSING (refusal:REQUIRED_SIGNATURE_MISSING)
+- Source: verifier/offline-signing.js
+- URL: /reference/refusal-codes/#REQUIRED_SIGNATURE_MISSING
+
+Input ${i} is still unsigned; the result is incomplete. Category: signature. Remediation: Inspect the transaction parameters and ensure compliance with REQUIRED_SIGNATURE_MISSING. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: REQUIRES_INVALID (refusal:REQUIRES_INVALID)
+- Source: verifier/swaps.js
+- URL: /reference/refusal-codes/#REQUIRES_INVALID
+
+The intent must require at least one exact asset with a minimum quantity. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with REQUIRES_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: REVERTED_EVENT_REQUIRED (refusal:REVERTED_EVENT_REQUIRED)
+- Source: verifier/events.js
+- URL: /reference/refusal-codes/#REVERTED_EVENT_REQUIRED
+
+A reverted event must name the event id it reverses. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with REVERTED_EVENT_REQUIRED. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: RUNE_INPUT_MISSING_ALLOCATION (refusal:RUNE_INPUT_MISSING_ALLOCATION)
+- Source: verifier/safeops.js
+- URL: /reference/refusal-codes/#RUNE_INPUT_MISSING_ALLOCATION
+
+Input ${i} carries no rune allocation. Category: rune. Remediation: Inspect the transaction parameters and ensure compliance with RUNE_INPUT_MISSING_ALLOCATION. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: SAT_FLOW_SHORTFALL (refusal:SAT_FLOW_SHORTFALL)
+- Source: verifier/counterparty-asset.js
+- URL: /reference/refusal-codes/#SAT_FLOW_SHORTFALL
+
+No output absorbs the start of the attached outpoint range; the attachment would be lost. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with SAT_FLOW_SHORTFALL. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: SCHEMA_UNSUPPORTED (refusal:SCHEMA_UNSUPPORTED)
+- Source: verifier/collection-manifest.js
+- URL: /reference/refusal-codes/#SCHEMA_UNSUPPORTED
+
+The manifest schema is not ordex.collection-manifest/v1. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with SCHEMA_UNSUPPORTED. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: SCRIPT_CHANGED (refusal:SCRIPT_CHANGED)
+- Source: verifier/offline-signing.js
+- URL: /reference/refusal-codes/#SCRIPT_CHANGED
+
+Output ${i} no longer pays its presented script. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with SCRIPT_CHANGED. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: SECRET_INVALID (refusal:SECRET_INVALID)
+- Source: verifier/events.js
+- URL: /reference/refusal-codes/#SECRET_INVALID
+
+The subscription secret must be a nonempty string. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with SECRET_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: SELLER_OUTPUT_MISSING (refusal:SELLER_OUTPUT_MISSING)
+- Source: verifier/offers.js
+- URL: /reference/refusal-codes/#SELLER_OUTPUT_MISSING
+
+No output exists at index ${n}, the index the seller signed. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with SELLER_OUTPUT_MISSING. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: SELLER_SCRIPT_MISMATCH (refusal:SELLER_SCRIPT_MISMATCH)
+- Source: verifier/offers.js
+- URL: /reference/refusal-codes/#SELLER_SCRIPT_MISMATCH
+
+The output at the seller index does not pay the signed script. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with SELLER_SCRIPT_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: SELLER_VALUE_MISMATCH (refusal:SELLER_VALUE_MISMATCH)
+- Source: verifier/offers.js
+- URL: /reference/refusal-codes/#SELLER_VALUE_MISMATCH
+
+The seller payment is not the exact offer price. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with SELLER_VALUE_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: SEQUENCE_INVALID (refusal:SEQUENCE_INVALID)
+- Source: verifier/events.js
+- URL: /reference/refusal-codes/#SEQUENCE_INVALID
+
+The sequence must be a positive integer that never decreases. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with SEQUENCE_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: SEQUENCE_NOT_REPLACEABLE (refusal:SEQUENCE_NOT_REPLACEABLE)
+- Source: verifier/offers.js
+- URL: /reference/refusal-codes/#SEQUENCE_NOT_REPLACEABLE
+
+A final sequence disables the locktime the recovery relies on. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with SEQUENCE_NOT_REPLACEABLE. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: SIGHASH_CHANGED (refusal:SIGHASH_CHANGED)
+- Source: verifier/safeops.js
+- URL: /reference/refusal-codes/#SIGHASH_CHANGED
+
+Input ${i} was signed with a different sighash than the plan approved. Category: signature. Remediation: Inspect the transaction parameters and ensure compliance with SIGHASH_CHANGED. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: SIGHASH_UNEXPECTED (refusal:SIGHASH_UNEXPECTED)
+- Source: verifier/offline-signing.js
+- URL: /reference/refusal-codes/#SIGHASH_UNEXPECTED
+
+Input ${i} was signed with a sighash the manifest did not approve. Category: signature. Remediation: Inspect the transaction parameters and ensure compliance with SIGHASH_UNEXPECTED. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: SIGHASH_UNKNOWN (refusal:SIGHASH_UNKNOWN)
+- Source: verifier/offline-signing.js
+- URL: /reference/refusal-codes/#SIGHASH_UNKNOWN
+
+Input ${i} names a sighash this protocol does not define. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with SIGHASH_UNKNOWN. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: SIGNATURE_INVALID (refusal:SIGNATURE_INVALID)
+- Source: verifier/events.js
+- URL: /reference/refusal-codes/#SIGNATURE_INVALID
+
+The signature does not match this secret, delivery id, and body. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with SIGNATURE_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: SIGNATURE_MISSING (refusal:SIGNATURE_MISSING)
+- Source: verifier/safeops.js
+- URL: /reference/refusal-codes/#SIGNATURE_MISSING
+
+Input ${i} is required to sign and is still unsigned. Category: signature. Remediation: Inspect the transaction parameters and ensure compliance with SIGNATURE_MISSING. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: SIGNATURE_ON_FOREIGN_INPUT (refusal:SIGNATURE_ON_FOREIGN_INPUT)
+- Source: verifier/offline-signing.js
+- URL: /reference/refusal-codes/#SIGNATURE_ON_FOREIGN_INPUT
+
+Input ${i} belongs to another party and must never be signed here. Category: signature. Remediation: Inspect the transaction parameters and ensure compliance with SIGNATURE_ON_FOREIGN_INPUT. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: SIGNER_IDENTITY_MISMATCH (refusal:SIGNER_IDENTITY_MISMATCH)
+- Source: verifier/collection-manifest.js
+- URL: /reference/refusal-codes/#SIGNER_IDENTITY_MISMATCH
+
+The signature address is not the creator address. Category: signature. Remediation: Inspect the transaction parameters and ensure compliance with SIGNER_IDENTITY_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: SIGNING_INVALID (refusal:SIGNING_INVALID)
+- Source: verifier/safeops.js
+- URL: /reference/refusal-codes/#SIGNING_INVALID
+
+The plan must carry a signing object. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with SIGNING_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: SOURCE_VALUE_INVALID (refusal:SOURCE_VALUE_INVALID)
+- Source: verifier/counterparty-asset.js
+- URL: /reference/refusal-codes/#SOURCE_VALUE_INVALID
+
+sourceValueSats must be an exact decimal string. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with SOURCE_VALUE_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: SOURCE_VALUE_MISMATCH (refusal:SOURCE_VALUE_MISMATCH)
+- Source: verifier/counterparty-asset.js
+- URL: /reference/refusal-codes/#SOURCE_VALUE_MISMATCH
+
+The spent value does not match the record, so the sat range cannot be traced. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with SOURCE_VALUE_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: STATUS_INVALID (refusal:STATUS_INVALID)
+- Source: verifier/collection-manifest.js
+- URL: /reference/refusal-codes/#STATUS_INVALID
+
+The manifest status is not one this registry names. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with STATUS_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: SUPPLY_MISMATCH (refusal:SUPPLY_MISMATCH)
+- Source: verifier/collection-manifest.js
+- URL: /reference/refusal-codes/#SUPPLY_MISMATCH
+
+A FIXED supply must declare exactly the member count. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with SUPPLY_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: SUPPLY_STATEMENT_INVALID (refusal:SUPPLY_STATEMENT_INVALID)
+- Source: verifier/collection-manifest.js
+- URL: /reference/refusal-codes/#SUPPLY_STATEMENT_INVALID
+
+The supply statement must be FIXED or OPEN with an exact declared count. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with SUPPLY_STATEMENT_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: TAKER_BINDING_INVALID (refusal:TAKER_BINDING_INVALID)
+- Source: verifier/swaps.js
+- URL: /reference/refusal-codes/#TAKER_BINDING_INVALID
+
+A taker binding must name an address. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with TAKER_BINDING_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: TERMS_AMOUNT_INVALID (refusal:TERMS_AMOUNT_INVALID)
+- Source: verifier/offers.js
+- URL: /reference/refusal-codes/#TERMS_AMOUNT_INVALID
+
+priceSats must be an exact decimal string. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with TERMS_AMOUNT_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: TERMS_CRITERIA_INVALID (refusal:TERMS_CRITERIA_INVALID)
+- Source: verifier/offers.js
+- URL: /reference/refusal-codes/#TERMS_CRITERIA_INVALID
+
+The criteria hash must be 64 lowercase hex characters. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with TERMS_CRITERIA_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: TERMS_EXPIRY_INVALID (refusal:TERMS_EXPIRY_INVALID)
+- Source: verifier/offers.js
+- URL: /reference/refusal-codes/#TERMS_EXPIRY_INVALID
+
+expiryHeight must be a block height a node can carry. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with TERMS_EXPIRY_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: TERMS_HASH_NOT_COMMITTED (refusal:TERMS_HASH_NOT_COMMITTED)
+- Source: verifier/offers.js
+- URL: /reference/refusal-codes/#TERMS_HASH_NOT_COMMITTED
+
+The revealed acceptance leaf does not commit to this offer terms hash. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with TERMS_HASH_NOT_COMMITTED. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: TERMS_KIND_UNKNOWN (refusal:TERMS_KIND_UNKNOWN)
+- Source: verifier/offers.js
+- URL: /reference/refusal-codes/#TERMS_KIND_UNKNOWN
+
+The offer kind is not one this protocol names. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with TERMS_KIND_UNKNOWN. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: TERMS_NETWORK_UNKNOWN (refusal:TERMS_NETWORK_UNKNOWN)
+- Source: verifier/offers.js
+- URL: /reference/refusal-codes/#TERMS_NETWORK_UNKNOWN
+
+The network is not one this protocol names. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with TERMS_NETWORK_UNKNOWN. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: TERMS_PROTOCOL_UNSUPPORTED (refusal:TERMS_PROTOCOL_UNSUPPORTED)
+- Source: verifier/offers.js
+- URL: /reference/refusal-codes/#TERMS_PROTOCOL_UNSUPPORTED
+
+The terms protocol version must be 1.1 or a later 1.x. Category: capability. Remediation: Inspect the transaction parameters and ensure compliance with TERMS_PROTOCOL_UNSUPPORTED. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: TERMS_RECOVERY_KEY_INVALID (refusal:TERMS_RECOVERY_KEY_INVALID)
+- Source: verifier/offers.js
+- URL: /reference/refusal-codes/#TERMS_RECOVERY_KEY_INVALID
+
+The buyer recovery key must be 64 lowercase hex characters. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with TERMS_RECOVERY_KEY_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: TERMS_ROOT_INVALID (refusal:TERMS_ROOT_INVALID)
+- Source: verifier/offers.js
+- URL: /reference/refusal-codes/#TERMS_ROOT_INVALID
+
+The collection root must be 64 lowercase hex characters. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with TERMS_ROOT_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: TERMS_SCHEMA_UNSUPPORTED (refusal:TERMS_SCHEMA_UNSUPPORTED)
+- Source: verifier/offers.js
+- URL: /reference/refusal-codes/#TERMS_SCHEMA_UNSUPPORTED
+
+The terms schema is not ordex.offer-terms/v1. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with TERMS_SCHEMA_UNSUPPORTED. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: TERMS_SCOPE_FIELDS (refusal:TERMS_SCOPE_FIELDS)
+- Source: verifier/offers.js
+- URL: /reference/refusal-codes/#TERMS_SCOPE_FIELDS
+
+An ITEM offer must name exactly one inscription id. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with TERMS_SCOPE_FIELDS. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: TERMS_SCRIPT_INVALID (refusal:TERMS_SCRIPT_INVALID)
+- Source: verifier/offers.js
+- URL: /reference/refusal-codes/#TERMS_SCRIPT_INVALID
+
+The buyer receive script must be lowercase hex bytes. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with TERMS_SCRIPT_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: TIMESTAMP_OUT_OF_TOLERANCE (refusal:TIMESTAMP_OUT_OF_TOLERANCE)
+- Source: verifier/events.js
+- URL: /reference/refusal-codes/#TIMESTAMP_OUT_OF_TOLERANCE
+
+The delivery timestamp is outside the allowed clock skew. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with TIMESTAMP_OUT_OF_TOLERANCE. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: TRACE_ID_INVALID (refusal:TRACE_ID_INVALID)
+- Source: verifier/events.js
+- URL: /reference/refusal-codes/#TRACE_ID_INVALID
+
+The event must carry a trace id of at most 128 characters. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with TRACE_ID_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: TRACKED_ASSET_UNASSIGNED (refusal:TRACKED_ASSET_UNASSIGNED)
+- Source: verifier/safeops.js
+- URL: /reference/refusal-codes/#TRACKED_ASSET_UNASSIGNED
+
+Asset ${key} has no destination in the asset transitions. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with TRACKED_ASSET_UNASSIGNED. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: TRANSITION_OUTPUT_MISSING (refusal:TRANSITION_OUTPUT_MISSING)
+- Source: verifier/safeops.js
+- URL: /reference/refusal-codes/#TRANSITION_OUTPUT_MISSING
+
+Asset ${key} names output ${transition.toOutput}, which does not exist. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with TRANSITION_OUTPUT_MISSING. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: TRANSITION_SAT_FLOW_MISMATCH (refusal:TRANSITION_SAT_FLOW_MISMATCH)
+- Source: verifier/safeops.js
+- URL: /reference/refusal-codes/#TRANSITION_SAT_FLOW_MISMATCH
+
+Asset ${key} declares output ${transition.toOutput}, but the sat range of input ${i} begins in a different output. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with TRANSITION_SAT_FLOW_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: TRANSITION_SOURCE_MISMATCH (refusal:TRANSITION_SOURCE_MISMATCH)
+- Source: verifier/safeops.js
+- URL: /reference/refusal-codes/#TRANSITION_SOURCE_MISMATCH
+
+Asset ${key} declares input ${transition.fromInput} but rides on input ${i}. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with TRANSITION_SOURCE_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: UNCLOSED_SIGHASH (refusal:UNCLOSED_SIGHASH)
+- Source: verifier/swaps.js
+- URL: /reference/refusal-codes/#UNCLOSED_SIGHASH
+
+Every input must commit to every output (SIGHASH_ALL), or one party could move its asset without the other receiving theirs. Category: signature. Remediation: Inspect the transaction parameters and ensure compliance with UNCLOSED_SIGHASH. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: UNEXPECTED_MAKER_INPUT (refusal:UNEXPECTED_MAKER_INPUT)
+- Source: verifier/swaps.js
+- URL: /reference/refusal-codes/#UNEXPECTED_MAKER_INPUT
+
+Input ${key} spends an outpoint the intent never committed. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with UNEXPECTED_MAKER_INPUT. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: UNEXPECTED_SIGNATURE (refusal:UNEXPECTED_SIGNATURE)
+- Source: verifier/safeops.js
+- URL: /reference/refusal-codes/#UNEXPECTED_SIGNATURE
+
+Input ${i} was not part of the signing policy but carries a signature. Category: signature. Remediation: Inspect the transaction parameters and ensure compliance with UNEXPECTED_SIGNATURE. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: UNKNOWN_CLAIM_FAILS_CLOSED (refusal:UNKNOWN_CLAIM_FAILS_CLOSED)
+- Source: verifier/safeops.js
+- URL: /reference/refusal-codes/#UNKNOWN_CLAIM_FAILS_CLOSED
+
+Input ${i} carries an unrecognized claim (${asset.assetId}); resolve it before planning. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with UNKNOWN_CLAIM_FAILS_CLOSED. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: UNKNOWN_CRITICAL_FIELDS (refusal:UNKNOWN_CRITICAL_FIELDS)
+- Source: verifier/offline-signing.js
+- URL: /reference/refusal-codes/#UNKNOWN_CRITICAL_FIELDS
+
+The signed result carries fields this protocol does not define: ${signed.unknownCriticalFields.join(', ')}. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with UNKNOWN_CRITICAL_FIELDS. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: VALUE_CHANGED (refusal:VALUE_CHANGED)
+- Source: verifier/offline-signing.js
+- URL: /reference/refusal-codes/#VALUE_CHANGED
+
+Input ${i} no longer carries its presented value. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with VALUE_CHANGED. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: VALUE_NOT_CONSERVED (refusal:VALUE_NOT_CONSERVED)
+- Source: verifier/offline-signing.js
+- URL: /reference/refusal-codes/#VALUE_NOT_CONSERVED
+
+The inputs do not equal the outputs plus the declared fee. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with VALUE_NOT_CONSERVED. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: VERSION_INVALID (refusal:VERSION_INVALID)
+- Source: verifier/collection-manifest.js
+- URL: /reference/refusal-codes/#VERSION_INVALID
+
+The manifest version must be a positive integer. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with VERSION_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: VISIBILITY_INVALID (refusal:VISIBILITY_INVALID)
+- Source: verifier/swaps.js
+- URL: /reference/refusal-codes/#VISIBILITY_INVALID
+
+Visibility must be PUBLIC or PRIVATE. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with VISIBILITY_INVALID. Verify outpoints, scriptPubKeys, and value conservation.

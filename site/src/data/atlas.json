@@ -1,0 +1,702 @@
+[
+  {
+    "id": "system-trust-boundary",
+    "title": "Ordex System and Trust-Boundary Architecture",
+    "summary": "Visualizes the strict boundaries between the Bitcoin Blockchain, Ordex Gateway, Indexers, Verifier Web Workers, and User Wallets.",
+    "actors": [
+      "Bitcoin Node",
+      "Ordex Gateway",
+      "Ord Indexer",
+      "Browser Web Worker",
+      "User Wallet"
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "from": "Ordex Gateway",
+        "to": "Ord Indexer",
+        "label": "Query asset locations & inscriptions",
+        "safety": "Read-only query, no trust required"
+      },
+      {
+        "step": 2,
+        "from": "Ordex Gateway",
+        "to": "Bitcoin Node",
+        "label": "Check UTXO spent status & confirmations",
+        "safety": "Consensus authority validation"
+      },
+      {
+        "step": 3,
+        "from": "Ordex Gateway",
+        "to": "Browser Web Worker",
+        "label": "Serve public order artifact & manifest",
+        "safety": "Untrusted network payload"
+      },
+      {
+        "step": 4,
+        "from": "Browser Web Worker",
+        "to": "Browser Web Worker",
+        "label": "Execute Reference Verifier in isolated sandbox",
+        "safety": "Zero network, zero private keys"
+      },
+      {
+        "step": 5,
+        "from": "Browser Web Worker",
+        "to": "User Wallet",
+        "label": "Pass verified PSBT for user inspection",
+        "safety": "Explicit user authorization required"
+      },
+      {
+        "step": 6,
+        "from": "User Wallet",
+        "to": "Bitcoin Node",
+        "label": "Broadcast signed settlement transaction",
+        "safety": "Direct user-to-blockchain broadcast"
+      }
+    ]
+  },
+  {
+    "id": "public-ask-creation",
+    "title": "Public-Ask Creation and Publication",
+    "summary": "How a seller creates, signs, and distributes a portable PSBT order with SIGHASH_SINGLE | ANYONECANPAY.",
+    "actors": [
+      "Seller Wallet",
+      "Seller Client",
+      "Ordex Gateway",
+      "Orderbook / Nostr"
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "from": "Seller Client",
+        "to": "Ordex Gateway",
+        "label": "POST /api/ordex/orders/build (asset outpoint, priceSats)",
+        "safety": "Zero key material sent"
+      },
+      {
+        "step": 2,
+        "from": "Ordex Gateway",
+        "to": "Seller Client",
+        "label": "Returns unsigned PSBT with seller output at index 0",
+        "safety": "Deterministic transaction structure"
+      },
+      {
+        "step": 3,
+        "from": "Seller Client",
+        "to": "Seller Wallet",
+        "label": "Request SIGHASH_SINGLE | ANYONECANPAY signature",
+        "safety": "Seller signs ONLY their input committing to output 0"
+      },
+      {
+        "step": 4,
+        "from": "Seller Client",
+        "to": "Ordex Gateway",
+        "label": "POST /api/ordex/orders/publish with signed order artifact",
+        "safety": "Gateway verifies signature before accepting"
+      },
+      {
+        "step": 5,
+        "from": "Ordex Gateway",
+        "to": "Orderbook / Nostr",
+        "label": "Broadcast portable ask event to network",
+        "safety": "Order travels with proof attached"
+      }
+    ]
+  },
+  {
+    "id": "public-ask-purchase",
+    "title": "Public-Ask Purchase Flow",
+    "summary": "How a buyer funds, preflights, signs, and settles a public ask without intermediary custody.",
+    "actors": [
+      "Buyer Client",
+      "Ordex Gateway",
+      "Verifier Worker",
+      "Buyer Wallet",
+      "Bitcoin Network"
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "from": "Buyer Client",
+        "to": "Ordex Gateway",
+        "label": "GET /api/ordex/orders/{id}/artifact",
+        "safety": "Fetch portable PSBT"
+      },
+      {
+        "step": 2,
+        "from": "Buyer Client",
+        "to": "Ordex Gateway",
+        "label": "POST /api/ordex/orders/{id}/quote (buyer funding inputs)",
+        "safety": "Gateway composes final settlement PSBT"
+      },
+      {
+        "step": 3,
+        "from": "Buyer Client",
+        "to": "Verifier Worker",
+        "label": "Run purchase verifier (invariants 1 & 2)",
+        "safety": "Verify sat-flow and asset destination"
+      },
+      {
+        "step": 4,
+        "from": "Buyer Client",
+        "to": "Buyer Wallet",
+        "label": "Present verified transaction for signature",
+        "safety": "Buyer signs SIGHASH_ALL"
+      },
+      {
+        "step": 5,
+        "from": "Buyer Wallet",
+        "to": "Bitcoin Network",
+        "label": "Broadcast final combined transaction",
+        "safety": "Atomic settlement on-chain"
+      }
+    ]
+  },
+  {
+    "id": "batch-purchase",
+    "title": "Batch Purchase Execution",
+    "summary": "Bundling multiple independent public asks into a single atomic settlement transaction for fee optimization.",
+    "actors": [
+      "Buyer Client",
+      "Ordex Gateway",
+      "Verifier Worker",
+      "Buyer Wallet"
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "from": "Buyer Client",
+        "to": "Ordex Gateway",
+        "label": "POST /api/ordex/orders/batch-purchase (orderIds, fundingInputs)",
+        "safety": "Validates all asks are OPEN"
+      },
+      {
+        "step": 2,
+        "from": "Ordex Gateway",
+        "to": "Buyer Client",
+        "label": "Return combined PSBT with N seller payments and 1 buyer asset bundle",
+        "safety": "Combines inputs"
+      },
+      {
+        "step": 3,
+        "from": "Buyer Client",
+        "to": "Verifier Worker",
+        "label": "Verify each ask invariant independently in batch",
+        "safety": "Ensures zero shortfall across all asks"
+      },
+      {
+        "step": 4,
+        "from": "Buyer Client",
+        "to": "Buyer Wallet",
+        "label": "Sign unified funding inputs and broadcast",
+        "safety": "One transaction fee for N purchases"
+      }
+    ]
+  },
+  {
+    "id": "offers-lifecycle",
+    "title": "Offer Creation, Acceptance, and Recovery",
+    "summary": "Buyer funds Taproot output; seller accepts with asset, or buyer reclaims via timelock recovery.",
+    "actors": [
+      "Buyer",
+      "Seller",
+      "Taproot Script",
+      "Gateway",
+      "Bitcoin Consensus"
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "from": "Buyer",
+        "to": "Taproot Script",
+        "label": "Lock priceSats into Taproot 2-of-2 offer tree",
+        "safety": "Contains Acceptance & Recovery leaves"
+      },
+      {
+        "step": 2,
+        "from": "Buyer",
+        "to": "Gateway",
+        "label": "Publish offer terms hash & funding outpoint",
+        "safety": "Deterministic terms commitment"
+      },
+      {
+        "step": 3,
+        "from": "Seller",
+        "to": "Gateway",
+        "label": "POST acceptance plan with asset input",
+        "safety": "Checks terms hash match"
+      },
+      {
+        "step": 4,
+        "from": "Seller",
+        "to": "Bitcoin Consensus",
+        "label": "Broadcast acceptance spend (Seller receives BTC, Buyer receives asset)",
+        "safety": "Before expiryHeight"
+      },
+      {
+        "step": 5,
+        "from": "Buyer",
+        "to": "Bitcoin Consensus",
+        "label": "OR: Broadcast recovery spend after expiryHeight passes",
+        "safety": "Unilateral buyer reclaim via CLTV"
+      }
+    ]
+  },
+  {
+    "id": "ask-replacement",
+    "title": "Ask Replacement and Repricing",
+    "summary": "Successive artifact generation, order retirement, and portable state transitions.",
+    "actors": [
+      "Seller",
+      "Gateway",
+      "Orderbook",
+      "Old Ask",
+      "New Ask"
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "from": "Seller",
+        "to": "Gateway",
+        "label": "POST /api/ordex/orders/{id}/replace with new artifact",
+        "safety": "Proves ownership of same outpoint"
+      },
+      {
+        "step": 2,
+        "from": "Gateway",
+        "to": "Old Ask",
+        "label": "Transition state to REPLACED",
+        "safety": "Invalidates old listing"
+      },
+      {
+        "step": 3,
+        "from": "Gateway",
+        "to": "New Ask",
+        "label": "Register successor ask with OPEN status",
+        "safety": "Links predecessor ID"
+      },
+      {
+        "step": 4,
+        "from": "Gateway",
+        "to": "Orderbook",
+        "label": "Emit order.replaced and order.created events",
+        "safety": "Network updates to new price"
+      }
+    ]
+  },
+  {
+    "id": "order-state-machine",
+    "title": "Order Lifecycle State Machine",
+    "summary": "Complete finite state transitions: OPEN -> RESERVED -> SETTLED / WITHDRAWN / EXPIRED / REPLACED.",
+    "actors": [
+      "OPEN",
+      "RESERVED",
+      "SETTLED",
+      "WITHDRAWN",
+      "EXPIRED",
+      "REPLACED"
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "from": "OPEN",
+        "to": "RESERVED",
+        "label": "Buyer initiates quote and preflight lock",
+        "safety": "Temporary lock duration"
+      },
+      {
+        "step": 2,
+        "from": "RESERVED",
+        "to": "SETTLED",
+        "label": "Settlement transaction confirmed on Bitcoin",
+        "safety": "Final terminal state"
+      },
+      {
+        "step": 3,
+        "from": "RESERVED",
+        "to": "OPEN",
+        "label": "Lock timeout expires without broadcast",
+        "safety": "Restores to public pool"
+      },
+      {
+        "step": 4,
+        "from": "OPEN",
+        "to": "WITHDRAWN",
+        "label": "Seller spends input or publishes withdrawal",
+        "safety": "Immediate invalidation"
+      },
+      {
+        "step": 5,
+        "from": "OPEN",
+        "to": "REPLACED",
+        "label": "Seller publishes valid successor artifact",
+        "safety": "Points to new order"
+      }
+    ]
+  },
+  {
+    "id": "runes-burn-safety",
+    "title": "Rune Burn and Cenotaph Safety Path",
+    "summary": "Preventing catastrophic accidental burns of Runes balances during transaction composition.",
+    "actors": [
+      "Composer",
+      "Runestone Parser",
+      "Runes Verifier",
+      "Outputs"
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "from": "Composer",
+        "to": "Runestone Parser",
+        "label": "Parse OP_RETURN script and decipher Runestone",
+        "safety": "Checks even tags and varints"
+      },
+      {
+        "step": 2,
+        "from": "Runestone Parser",
+        "to": "Runes Verifier",
+        "label": "Validate edicts against input balances",
+        "safety": "Detects malformed tags or missing inputs"
+      },
+      {
+        "step": 3,
+        "from": "Runes Verifier",
+        "to": "Composer",
+        "label": "VERDICT: Clean Edict Routing vs CENOTAPH Refusal",
+        "safety": "Rejects cenotaphs that burn balances"
+      },
+      {
+        "step": 4,
+        "from": "Composer",
+        "to": "Outputs",
+        "label": "Route allocated Runes to explicit output index",
+        "safety": "Zero unassigned balances"
+      }
+    ]
+  },
+  {
+    "id": "interop-portable-orders",
+    "title": "Interoperability and Portable-Order Distribution",
+    "summary": "Distribution of Ordex orders across Nostr relays and OpenOrdex-compatible interfaces.",
+    "actors": [
+      "Publisher",
+      "Ordex Gateway",
+      "Nostr Relay Mesh",
+      "External Aggregator"
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "from": "Publisher",
+        "to": "Ordex Gateway",
+        "label": "Publish signed order with proof",
+        "safety": "Verifies BIP-340 / Schnorr"
+      },
+      {
+        "step": 2,
+        "from": "Ordex Gateway",
+        "to": "Nostr Relay Mesh",
+        "label": "Publish Kind 10008 / 10009 Nostr events",
+        "safety": "Cryptographic event envelope"
+      },
+      {
+        "step": 3,
+        "from": "Nostr Relay Mesh",
+        "to": "External Aggregator",
+        "label": "Sync portable inventory peer-to-peer",
+        "safety": "Order remains verifiable everywhere"
+      }
+    ]
+  },
+  {
+    "id": "safeops-shield",
+    "title": "SafeOps Planning and Execution Shield",
+    "summary": "38-rule invariant checking for UTXO management, consolidations, and fee accelerations.",
+    "actors": [
+      "Treasury",
+      "SafeOps Engine",
+      "Execution Shield",
+      "Signer"
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "from": "Treasury",
+        "to": "SafeOps Engine",
+        "label": "Submit raw UTXO consolidation plan",
+        "safety": "Specifies intended outputs"
+      },
+      {
+        "step": 2,
+        "from": "SafeOps Engine",
+        "to": "Execution Shield",
+        "label": "Run invariant checks (dust, conservation, asset tracking)",
+        "safety": "Fails closed on unknown claims"
+      },
+      {
+        "step": 3,
+        "from": "Execution Shield",
+        "to": "Signer",
+        "label": "Generate Expected-Transaction Manifest with SHA-256 digest",
+        "safety": "Immutable contract of intent"
+      },
+      {
+        "step": 4,
+        "from": "Signer",
+        "to": "SafeOps Engine",
+        "label": "Return signed result matching manifest digest exactly",
+        "safety": "Refuses altered scripts or values"
+      }
+    ]
+  },
+  {
+    "id": "atomic-swap-settlement",
+    "title": "Atomic Swap Settlement Sequence",
+    "summary": "Single-transaction dual-settlement between Maker and Taker with no third-party custody.",
+    "actors": [
+      "Maker",
+      "Gateway",
+      "Taker",
+      "Verifier",
+      "Bitcoin Network"
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "from": "Maker",
+        "to": "Gateway",
+        "label": "Publish swap intent with exact outpoint commitment",
+        "safety": "Maker proof included"
+      },
+      {
+        "step": 2,
+        "from": "Taker",
+        "to": "Gateway",
+        "label": "Submit acceptance plan matching consideration",
+        "safety": "Validates fee split"
+      },
+      {
+        "step": 3,
+        "from": "Gateway",
+        "to": "Verifier",
+        "label": "Verify atomicity invariant (unclosed sighashes refused)",
+        "safety": "Both parties bound"
+      },
+      {
+        "step": 4,
+        "from": "Gateway",
+        "to": "Bitcoin Network",
+        "label": "Broadcast single combined settlement transaction",
+        "safety": "Assets exchange simultaneously"
+      }
+    ]
+  },
+  {
+    "id": "event-stream-replay",
+    "title": "Event Stream, Cursor, and Webhook Delivery",
+    "summary": "Cursor-driven resumption, duplicate suppression, and HMAC-SHA256 signature verification.",
+    "actors": [
+      "Event Bus",
+      "Checkpoint Store",
+      "SSE / WebSocket Stream",
+      "Subscriber",
+      "Webhook Receiver"
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "from": "Event Bus",
+        "to": "Checkpoint Store",
+        "label": "Persist event with sequential ID and digest",
+        "safety": "Total order guarantees"
+      },
+      {
+        "step": 2,
+        "from": "Subscriber",
+        "to": "SSE / WebSocket Stream",
+        "label": "Connect with ?cursor={lastSeenEventId}",
+        "safety": "Replays missed events"
+      },
+      {
+        "step": 3,
+        "from": "Event Bus",
+        "to": "Webhook Receiver",
+        "label": "POST webhook with X-Ordex-Signature & Timestamp",
+        "safety": "HMAC-SHA256 authenticated"
+      },
+      {
+        "step": 4,
+        "from": "Webhook Receiver",
+        "to": "Webhook Receiver",
+        "label": "Validate signature locally using shared secret",
+        "safety": "Prevents forged payloads"
+      }
+    ]
+  },
+  {
+    "id": "collection-provenance-flow",
+    "title": "Collection Manifest and Membership Proof",
+    "summary": "Merkle tree construction, BIP-322 creator signature, and client-side verification.",
+    "actors": [
+      "Collection Creator",
+      "Manifest Compiler",
+      "Ordex Registry",
+      "Client Verifier"
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "from": "Collection Creator",
+        "to": "Manifest Compiler",
+        "label": "Supply verified item list of inscription IDs",
+        "safety": "Lexicographically sorted"
+      },
+      {
+        "step": 2,
+        "from": "Manifest Compiler",
+        "to": "Manifest Compiler",
+        "label": "Compute Merkle Root and digest",
+        "safety": "Deterministic tree hash"
+      },
+      {
+        "step": 3,
+        "from": "Collection Creator",
+        "to": "Ordex Registry",
+        "label": "Publish manifest with BIP-322 creator signature",
+        "safety": "Proves authority"
+      },
+      {
+        "step": 4,
+        "from": "Client Verifier",
+        "to": "Client Verifier",
+        "label": "Verify item membership proof against published root",
+        "safety": "O(log N) verification"
+      }
+    ]
+  },
+  {
+    "id": "counterparty-heritage-flow",
+    "title": "Counterparty Heritage Attachment Model",
+    "summary": "Binding historical 2014 Counterparty asset balances to modern UTXOs for ord-compatible trading.",
+    "actors": [
+      "Asset Holder",
+      "Heritage Coordinator",
+      "UTXO State",
+      "Verifier"
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "from": "Asset Holder",
+        "to": "Heritage Coordinator",
+        "label": "Request attach plan for Counterparty asset ID",
+        "safety": "Reads address balance"
+      },
+      {
+        "step": 2,
+        "from": "Heritage Coordinator",
+        "to": "UTXO State",
+        "label": "Compose Bitcoin transaction attaching balance to output",
+        "safety": "Ensures sat-flow conservation"
+      },
+      {
+        "step": 3,
+        "from": "Verifier",
+        "to": "Asset Holder",
+        "label": "Confirm attached UTXO invariant and readiness",
+        "safety": "Refuses unproven inputs"
+      }
+    ]
+  },
+  {
+    "id": "cold-signing-roundtrip",
+    "title": "Cold-Signing Air-Gapped Round Trip",
+    "summary": "Coordinator creates manifest; offline workstation verifies and signs; coordinator broadcasts.",
+    "actors": [
+      "Online Coordinator",
+      "Air-Gapped Workstation",
+      "Protocol Lab (Offline)",
+      "Hardware Signer"
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "from": "Online Coordinator",
+        "to": "Air-Gapped Workstation",
+        "label": "Transfer PSBT + Expected Transaction Manifest via QR / USB",
+        "safety": "No live network connection"
+      },
+      {
+        "step": 2,
+        "from": "Air-Gapped Workstation",
+        "to": "Protocol Lab (Offline)",
+        "label": "Load manifest and PSBT into local worker",
+        "safety": "Inspects all inputs and outputs"
+      },
+      {
+        "step": 3,
+        "from": "Protocol Lab (Offline)",
+        "to": "Hardware Signer",
+        "label": "Approve signing if all 26 invariants pass",
+        "safety": "Keys never exposed to online PC"
+      },
+      {
+        "step": 4,
+        "from": "Hardware Signer",
+        "to": "Online Coordinator",
+        "label": "Return signed transaction for re-verification & broadcast",
+        "safety": "Coordinator verifies matching digest"
+      }
+    ]
+  },
+  {
+    "id": "evidence-authority-hierarchy",
+    "title": "Evidence and Authority Hierarchy",
+    "summary": "Distinguishing Publisher Claims, Gateway Observations, Protocol Verifications, and Chain Proofs.",
+    "actors": [
+      "Deterministic Example",
+      "Publisher Claim",
+      "Gateway Observation",
+      "Protocol Verification",
+      "Chain Proof"
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "from": "Deterministic Example",
+        "to": "Deterministic Example",
+        "label": "Level 0: Mock data generated from contract fixtures",
+        "safety": "Zero network or trust"
+      },
+      {
+        "step": 2,
+        "from": "Publisher Claim",
+        "to": "Publisher Claim",
+        "label": "Level 1: Unverified payload provided by counterparty",
+        "safety": "Subject to verification"
+      },
+      {
+        "step": 3,
+        "from": "Gateway Observation",
+        "to": "Gateway Observation",
+        "label": "Level 2: Information observed & reported by gateway",
+        "safety": "Gateway-trusted"
+      },
+      {
+        "step": 4,
+        "from": "Protocol Verification",
+        "to": "Protocol Verification",
+        "label": "Level 3: Verified by Ordex reference rules in Web Worker",
+        "safety": "Cryptographically checked"
+      },
+      {
+        "step": 5,
+        "from": "Chain Proof",
+        "to": "Chain Proof",
+        "label": "Level 4: Confirmed by Bitcoin consensus & block inclusion",
+        "safety": "Highest cryptographic proof"
+      }
+    ]
+  }
+]

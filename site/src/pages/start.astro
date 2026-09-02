@@ -1,0 +1,93 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { RoleChooser } from '../components/shell/RoleChooser.jsx';
+import { FeedbackWidget } from '../components/feedback/FeedbackWidget.jsx';
+---
+
+<BaseLayout
+  title="Get Started with Ordex (5-Minute Quickstart)"
+  description="Personalize your integration path, review prerequisites, and make your first verified Ordex request."
+  currentNav="start"
+>
+  <div style="display: flex; flex-direction: column; gap: 2rem;">
+    <div>
+      <h1 style="margin: 0 0 0.5rem 0; font-size: 2.2rem; font-weight: 800;">Get Started with Ordex</h1>
+      <p style="margin: 0; font-size: 1.1rem; color: var(--color-text-secondary);">
+        Choose your role, install the pinned SDK, and execute your first mock purchase preflight in under five minutes.
+      </p>
+    </div>
+
+    {/* Role Chooser */}
+    <RoleChooser client:load />
+
+    {/* 5-Minute Quickstart Card */}
+    <div class="panel">
+      <div class="panel-header">
+        <h2 style="margin: 0; font-size: 1.3rem;">1. Prerequisites & Installation</h2>
+        <span class="badge badge-verification">Node.js 24 LTS Pin</span>
+      </div>
+      <p style="font-size: 0.9rem; color: var(--color-text-secondary); margin: 0 0 1rem 0;">
+        Ordex uses exact pinned dependencies and the Node.js native test runner. Install the client SDK:
+      </p>
+      <pre><code>npm install @bitcoinuniverse/ordex-sdk@1.0.0</code></pre>
+    </div>
+
+    {/* 2. First Verification Request */}
+    <div class="panel">
+      <div class="panel-header">
+        <h2 style="margin: 0; font-size: 1.3rem;">2. First Verification (Deterministic Mock)</h2>
+        <span class="badge badge-example">Runs Offline</span>
+      </div>
+      <p style="font-size: 0.9rem; color: var(--color-text-secondary); margin: 0 0 1rem 0;">
+        Verify a portable public ask settlement transaction locally using the reference verifier rules:
+      </p>
+      <pre><code>import &#123; verifyPurchaseArrangement &#125; from '@bitcoinuniverse/ordex-sdk/verifier';
+
+// Example order terms
+const order = &#123;
+  offeredOutpoint: &#123; txid: '7b28f7a9...29', vout: 0 &#125;,
+  priceSats: '150000',
+  sellerPaymentScriptHex: '001438924b8923489123049182309481230948120394'
+&#125;;
+
+// Verification runs synchronously in milliseconds with zero network requests
+const verdict = verifyPurchaseArrangement(sampleTx, order);
+console.log('Result:', verdict.ok ? 'ACCEPTED' : verdict.code);</code></pre>
+
+      <div style="display: flex; gap: 0.75rem; margin-top: 1rem;">
+        <a href="/build/playground" class="btn btn-primary">
+          Test in Live Playground →
+        </a>
+        <a href="/build/recipes" class="btn btn-secondary">
+          Browse Step-by-Step Recipes →
+        </a>
+      </div>
+    </div>
+
+    {/* Next Steps Grid */}
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem;">
+      <a href="/build/wizards" class="panel" style="text-decoration: none; color: inherit;">
+        <h3 style="margin: 0 0 0.25rem 0; font-size: 1.05rem;">Guided Wizards (12 Workflows)</h3>
+        <p style="margin: 0; font-size: 0.85rem; color: var(--color-text-secondary);">
+          Step-by-step decision trees for publishing asks, batch buying, and setting up SafeOps.
+        </p>
+      </a>
+
+      <a href="/kits" class="panel" style="text-decoration: none; color: inherit;">
+        <h3 style="margin: 0 0 0.25rem 0; font-size: 1.05rem;">Starter Repositories</h3>
+        <p style="margin: 0; font-size: 0.85rem; color: var(--color-text-secondary);">
+          Generate a full Node.js, Browser, or Cloudflare Worker starter repo with tests and CI.
+        </p>
+      </a>
+
+      <a href="/lab" class="panel" style="text-decoration: none; color: inherit;">
+        <h3 style="margin: 0 0 0.25rem 0; font-size: 1.05rem;">Ordex Protocol Lab</h3>
+        <p style="margin: 0; font-size: 0.85rem; color: var(--color-text-secondary);">
+          Inspect sat flow diagrams, PSBT inputs and outputs, and test custom transaction plans.
+        </p>
+      </a>
+    </div>
+
+    <FeedbackWidget client:load route="/start" heading="Get Started with Ordex" />
+  </div>
+</BaseLayout>

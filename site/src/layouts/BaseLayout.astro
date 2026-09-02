@@ -1,0 +1,113 @@
+---
+import { GlobalSearch } from '../components/shell/GlobalSearch.jsx';
+import { ThemeToggle } from '../components/shell/ThemeToggle.jsx';
+import { OfflineStatus } from '../components/offline/OfflineStatus.jsx';
+import '../styles/design-system.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+  currentNav?: string;
+}
+
+const {
+  title = 'Ordex: Interactive Bitcoin Marketplace Documentation',
+  description = 'Authoritative, visual, interactive, and verifiable documentation platform for the Ordex Bitcoin protocol.',
+  currentNav = ''
+} = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Ordex Documentation" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content="https://bitcoinuniverseio.github.io/ordex/" />
+    <meta property="og:locale" content="en" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <title>{title}</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+    <OfflineStatus client:load />
+
+    <!-- Application Header Shell -->
+    <header class="app-header">
+      <div class="header-container">
+        <a class="brand-group" href="/">
+          <div class="brand-icon">OX</div>
+          <span>Ordex</span>
+          <span class="badge badge-verification" style="font-size: 0.7rem;">v1.2</span>
+        </a>
+
+        <nav class="header-nav" aria-label="Main Navigation">
+          <a href="/start" class={currentNav === 'start' ? 'active' : ''}>Start</a>
+          <a href="/learn" class={currentNav === 'learn' ? 'active' : ''}>Learn</a>
+          <a href="/build" class={currentNav === 'build' ? 'active' : ''}>Build</a>
+          <a href="/verify" class={currentNav === 'verify' ? 'active' : ''}>Verify</a>
+          <a href="/operate" class={currentNav === 'operate' ? 'active' : ''}>Operate</a>
+          <a href="/reference" class={currentNav === 'reference' ? 'active' : ''}>Reference</a>
+          <a href="/releases" class={currentNav === 'releases' ? 'active' : ''}>Releases</a>
+        </nav>
+
+        <div class="header-actions">
+          <GlobalSearch client:load />
+          <ThemeToggle client:load />
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main id="main-content" class="layout-container">
+      <slot />
+    </main>
+
+    <!-- Application Footer -->
+    <footer class="app-footer">
+      <div class="footer-container">
+        <div>
+          <div style="font-weight: 700; color: var(--color-text-primary); margin-bottom: 0.25rem;">
+            Ordex Protocol Documentation Platform
+          </div>
+          <div>
+            Built from authoritative OpenAPI 3.1, AsyncAPI 3.0, and checked-in reference verifiers.
+          </div>
+          <div style="margin-top: 0.5rem; font-size: 0.8rem;">
+            Zero seed phrases. Zero custody. Zero tracking cookies. All verifiers execute locally in Web Workers.
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 1.5rem; font-size: 0.85rem;">
+          <div>
+            <div style="font-weight: 600; color: var(--color-text-primary); margin-bottom: 0.4rem;">Products</div>
+            <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.25rem;">
+              <li><a href="/lab">Protocol Lab</a></li>
+              <li><a href="/verify">Conformance Studio</a></li>
+              <li><a href="/atlas">Visual Atlas</a></li>
+              <li><a href="/kits">Integration Kits</a></li>
+              <li><a href="/ask">Ask Ordex</a></li>
+            </ul>
+          </div>
+
+          <div>
+            <div style="font-weight: 600; color: var(--color-text-primary); margin-bottom: 0.4rem;">Resources</div>
+            <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.25rem;">
+              <li><a href="/reference/api">API Reference</a></li>
+              <li><a href="/reference/specifications">Specifications</a></li>
+              <li><a href="/reference/refusal-codes">Refusal Codes</a></li>
+              <li><a href="/compatibility">Compatibility Matrix</a></li>
+              <li><a href="/insights">Insights Dashboard</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

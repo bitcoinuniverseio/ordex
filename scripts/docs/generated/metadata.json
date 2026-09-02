@@ -1,0 +1,6614 @@
+{
+  "openapiOps": [
+    {
+      "method": "GET",
+      "path": "/api/ordex/health",
+      "operationId": "getHealth",
+      "summary": "The observed verification verdict, not the configuration",
+      "description": "Reports configuration completeness and, separately, whether a Bitcoin listing can actually be verified right now: storage writable, both nodes answering, and the ord index within its accepted lag of Bitcoin Core.",
+      "tags": [
+        "status"
+      ],
+      "parameters": [],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "The health report.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HealthReport"
+              }
+            }
+          }
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/ordex/protocol",
+      "operationId": "getProtocol",
+      "summary": "The protocol contract this gateway speaks",
+      "description": "",
+      "tags": [
+        "status"
+      ],
+      "parameters": [],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "The protocol contract.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProtocolContract"
+              }
+            }
+          }
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/ordex/catalog",
+      "operationId": "getCatalog",
+      "summary": "The markets this gateway serves, and what it verifies for each",
+      "description": "Every entry states its verification scope in plain language and its capabilities as booleans. An entry in the catalog never implies a working flow beyond what its capabilities state.",
+      "tags": [
+        "status"
+      ],
+      "parameters": [],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "The protocol catalog.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ProtocolTemplate"
+                }
+              }
+            }
+          }
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/ordex/orders",
+      "operationId": "listOrders",
+      "summary": "One page of the orderbook",
+      "description": "Paging is keyset, never offset. A request carrying an `offset` parameter is refused with 400, and a malformed cursor is a 400 rather than a silent restart from the first page.",
+      "tags": [
+        "orders"
+      ],
+      "parameters": [
+        {
+          "name": "protocol",
+          "in": "query",
+          "schema": {
+            "type": "string"
+          },
+          "description": "One catalog protocol id."
+        },
+        {
+          "name": "protocols",
+          "in": "query",
+          "schema": {
+            "type": "string"
+          },
+          "description": "Comma separated catalog ids. Applied before sorting and pagination."
+        },
+        {
+          "name": "group",
+          "in": "query",
+          "schema": {
+            "type": "string"
+          },
+          "description": "A catalog group id, expanded to every protocol it contains."
+        },
+        {
+          "name": "token",
+          "in": "query",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "source",
+          "in": "query",
+          "schema": {
+            "$ref": "#/components/schemas/Source"
+          }
+        },
+        {
+          "name": "state",
+          "in": "query",
+          "schema": {
+            "type": "string"
+          },
+          "description": "An order state from `OrderState`."
+        },
+        {
+          "name": "safety",
+          "in": "query",
+          "schema": {
+            "type": "string"
+          },
+          "description": "A safety class from `PsbtInspection.safety`."
+        },
+        {
+          "name": "orderClass",
+          "in": "query",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "signature",
+          "in": "query",
+          "schema": {
+            "type": "string"
+          },
+          "description": "A signature status from `SignatureStatus`."
+        },
+        {
+          "name": "side",
+          "in": "query",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "seller",
+          "in": "query",
+          "schema": {
+            "type": "string"
+          },
+          "description": "Restricts the page to the listings one seller script owns."
+        },
+        {
+          "name": "assetInscriptionId",
+          "in": "query",
+          "schema": {
+            "type": "string"
+          },
+          "description": "Restricts the page to orders claiming one inscription. Resolved through an index of order claims."
+        },
+        {
+          "name": "assetOutpoint",
+          "in": "query",
+          "schema": {
+            "type": "string"
+          },
+          "description": "Restricts the page to orders claiming an asset at one `txid:vout`."
+        },
+        {
+          "name": "search",
+          "in": "query",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "sort",
+          "in": "query",
+          "schema": {
+            "type": "string",
+            "enum": [
+              "newest",
+              "oldest",
+              "price_asc",
+              "price_desc",
+              "token_asc",
+              "protocol_asc",
+              "validation_newest"
+            ]
+          },
+          "description": "Every sort ends on the order id, which is unique, so the ordering is total and a cursor resumes exactly. An unpriced order sorts after every priced one in both price directions."
+        },
+        {
+          "name": "includeWithdrawn",
+          "in": "query",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "limit",
+          "in": "query",
+          "schema": {
+            "type": "string"
+          },
+          "description": "Page size as a decimal string."
+        },
+        {
+          "name": "cursor",
+          "in": "query",
+          "schema": {
+            "type": "string"
+          },
+          "description": "The keyset resume point a previous page answered with."
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "One page of orders.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderPage"
+              }
+            }
+          }
+        },
+        "400": {
+          "$ref": "#/components/responses/BadRequest"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/ordex/activity",
+      "operationId": "listActivity",
+      "summary": "The appended lifecycle log, newest first",
+      "description": "Reads the appended transition log, so an entry is something that happened rather than a listing's current state restated after the fact.",
+      "tags": [
+        "activity"
+      ],
+      "parameters": [
+        {
+          "name": "orderId",
+          "in": "query",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "limit",
+          "in": "query",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "cursor",
+          "in": "query",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "One page of lifecycle transitions.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActivityPage"
+              }
+            }
+          }
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/ordex/orders/{id}",
+      "operationId": "getOrder",
+      "summary": "One order",
+      "description": "",
+      "tags": [
+        "orders"
+      ],
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/OrderId"
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "The order, without its signed artifact.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderSummary"
+              }
+            }
+          }
+        },
+        "404": {
+          "$ref": "#/components/responses/NotFound"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/ordex/orders/{id}/artifact",
+      "operationId": "getOrderArtifact",
+      "summary": "The signed artifact for one live listing",
+      "description": "Deliberately its own rate limited request. A browse response carrying raw PSBTs would hand every public ask to anything that can read the market. Only a live listing hands over its artifact; any other state is refused with 400.",
+      "tags": [
+        "orders"
+      ],
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/OrderId"
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "The signed artifact and its current verification.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderArtifact"
+              }
+            }
+          }
+        },
+        "400": {
+          "$ref": "#/components/responses/BadRequest"
+        },
+        "404": {
+          "$ref": "#/components/responses/NotFound"
+        },
+        "429": {
+          "$ref": "#/components/responses/RateLimited"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/ordex/orders/import",
+      "operationId": "importOrder",
+      "summary": "Take a signed artifact and verify it",
+      "description": "A source may supply signed order evidence, but it never overrides what the node and the ord index prove. The claims travel as evidence and the authorities decide the state.",
+      "tags": [
+        "interoperability"
+      ],
+      "parameters": [],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ImportRequest"
+            }
+          }
+        }
+      },
+      "responses": {
+        "201": {
+          "description": "The imported order after verification.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderSummary"
+              }
+            }
+          }
+        },
+        "400": {
+          "$ref": "#/components/responses/BadRequest"
+        },
+        "429": {
+          "$ref": "#/components/responses/RateLimited"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/ordex/orders/openordex-event",
+      "operationId": "importOpenOrdexEvent",
+      "summary": "Take a signed OpenOrdex event and verify it",
+      "description": "Accepts a kind 802 Nostr event carrying a signed PSBT, verifies the event signature, then verifies the order exactly as a direct import.",
+      "tags": [
+        "interoperability"
+      ],
+      "parameters": [],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/NostrEvent"
+            }
+          }
+        }
+      },
+      "responses": {
+        "201": {
+          "description": "The imported order after verification.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderSummary"
+              }
+            }
+          }
+        },
+        "400": {
+          "$ref": "#/components/responses/BadRequest"
+        },
+        "429": {
+          "$ref": "#/components/responses/RateLimited"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/ordex/orders/build",
+      "operationId": "buildAsk",
+      "summary": "Build the unsigned seller half",
+      "description": "Composes the one input, one output PSBT a seller signs `SIGHASH_SINGLE | SIGHASH_ANYONECANPAY`. The asset and outpoint are verified against the node and the ord index before anything is composed.",
+      "tags": [
+        "selling"
+      ],
+      "parameters": [],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/BuildAskRequest"
+            }
+          }
+        }
+      },
+      "responses": {
+        "201": {
+          "description": "The unsigned seller half and its inspection.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BuildAskResult"
+              }
+            }
+          }
+        },
+        "400": {
+          "$ref": "#/components/responses/BadRequest"
+        },
+        "429": {
+          "$ref": "#/components/responses/RateLimited"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/ordex/orders/publish",
+      "operationId": "publishAsk",
+      "summary": "Take the signed seller half and publish it",
+      "description": "",
+      "tags": [
+        "selling"
+      ],
+      "parameters": [],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/PublishAskRequest"
+            }
+          }
+        }
+      },
+      "responses": {
+        "201": {
+          "description": "The published order after verification.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderSummary"
+              }
+            }
+          }
+        },
+        "400": {
+          "$ref": "#/components/responses/BadRequest"
+        },
+        "429": {
+          "$ref": "#/components/responses/RateLimited"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/ordex/orders/{id}/ownership-challenge",
+      "operationId": "getOwnershipChallenge",
+      "summary": "The message a listing owner signs before managing it",
+      "description": "",
+      "tags": [
+        "selling"
+      ],
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/OrderId"
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "The challenge to sign with the key that owns the offered output.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OwnershipChallenge"
+              }
+            }
+          }
+        },
+        "404": {
+          "$ref": "#/components/responses/NotFound"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/ordex/orders/{id}/withdraw",
+      "operationId": "withdrawOrder",
+      "summary": "Remove a listing, proved by the key owning the output it sells",
+      "description": "Withdrawal is discovery, not cancellation. It stops this gateway publishing the listing; it cannot unpublish a signed artifact already distributed elsewhere. Only spending the offered output makes such an artifact unusable.",
+      "tags": [
+        "selling"
+      ],
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/OrderId"
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/OwnershipProof"
+            }
+          }
+        }
+      },
+      "responses": {
+        "201": {
+          "description": "The withdrawn order.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderSummary"
+              }
+            }
+          }
+        },
+        "400": {
+          "$ref": "#/components/responses/BadRequest"
+        },
+        "404": {
+          "$ref": "#/components/responses/NotFound"
+        },
+        "429": {
+          "$ref": "#/components/responses/RateLimited"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/ordex/admin/orders/{id}/withdraw",
+      "operationId": "adminWithdrawOrder",
+      "summary": "Operator moderation, separately authenticated",
+      "description": "",
+      "tags": [
+        "operator"
+      ],
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/OrderId"
+        }
+      ],
+      "requestBody": {
+        "required": false,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "reason": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "responses": {
+        "201": {
+          "description": "The withdrawn order.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderSummary"
+              }
+            }
+          }
+        },
+        "401": {
+          "description": "Operator credentials missing, invalid, or not configured.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponse"
+              }
+            }
+          }
+        },
+        "404": {
+          "$ref": "#/components/responses/NotFound"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/ordex/orders/{id}/nostr-envelope",
+      "operationId": "getNostrEnvelope",
+      "summary": "The unsigned kind 802 event announcing this listing",
+      "description": "The gateway never holds Nostr keys. The customer's own NIP-07 signer signs this envelope, the browser publishes it, and the signed event can then be handed back through the OpenOrdex import route.",
+      "tags": [
+        "interoperability"
+      ],
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/OrderId"
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "The unsigned event envelope.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NostrEnvelope"
+              }
+            }
+          }
+        },
+        "404": {
+          "$ref": "#/components/responses/NotFound"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/ordex/orders/{id}/revalidate",
+      "operationId": "revalidateOrder",
+      "summary": "Recheck one order against both authorities",
+      "description": "",
+      "tags": [
+        "orders"
+      ],
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/OrderId"
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "201": {
+          "description": "The order after a fresh verification.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderSummary"
+              }
+            }
+          }
+        },
+        "404": {
+          "$ref": "#/components/responses/NotFound"
+        },
+        "429": {
+          "$ref": "#/components/responses/RateLimited"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/ordex/orders/{id}/quote",
+      "operationId": "quoteOrder",
+      "summary": "Compose the buyer half and state the exact terms",
+      "description": "The caller names its own outputs and nothing else. Value and script are read from Bitcoin Core, never from the request, so a buyer cannot make a purchase look cheaper by describing their own funding wrongly. Each named output is checked against the ord index first: an output holding an asset is not spare change, and an unexamined output is unknown rather than empty.",
+      "tags": [
+        "buying"
+      ],
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/OrderId"
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/QuoteRequest"
+            }
+          }
+        }
+      },
+      "responses": {
+        "201": {
+          "description": "The unsigned buyer half and the exact economics. A fee or a royalty of zero is stated as zero rather than omitted.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Quote"
+              }
+            }
+          }
+        },
+        "400": {
+          "$ref": "#/components/responses/BadRequest"
+        },
+        "404": {
+          "$ref": "#/components/responses/NotFound"
+        },
+        "429": {
+          "$ref": "#/components/responses/RateLimited"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/ordex/orders/{id}/preflight",
+      "operationId": "preflightOrder",
+      "summary": "Verify a signed purchase and ask the node whether it would accept it",
+      "description": "Takes either `finalTxHex` or the `signedPsbt` a wallet actually answers with. Given a PSBT it finalises only inputs the buyer already signed: it creates no signature and changes no input, output, or amount, and an unsigned input is an error rather than a guess. It rechecks the order against the chain, binds the transaction to the order, proves the sat flow invariant, then asks the node itself. The gateway does not broadcast; that is the buyer's own deliberate step.",
+      "tags": [
+        "buying"
+      ],
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/OrderId"
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/PreflightRequest"
+            }
+          }
+        }
+      },
+      "responses": {
+        "201": {
+          "description": "The verdict, with the exact bytes checked so a buyer broadcasts those and no others.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreflightResult"
+              }
+            }
+          }
+        },
+        "400": {
+          "$ref": "#/components/responses/BadRequest"
+        },
+        "404": {
+          "$ref": "#/components/responses/NotFound"
+        },
+        "429": {
+          "$ref": "#/components/responses/RateLimited"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/ordex/orders/{id}/replace",
+      "operationId": "replaceOrder",
+      "summary": "Replace a live ask with a freshly signed one for the same output",
+      "description": "Repricing is a protocol operation, not a database edit. The old order must be live, the owner proof must match the offered output, and the new artifact must be signed against the same outpoint. The old order leaves the book as REPLACED and the new one goes live in one step, and two live asks for one output and seller cannot exist.",
+      "tags": [
+        "selling"
+      ],
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/OrderId"
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ReplaceAskRequest"
+            }
+          }
+        }
+      },
+      "responses": {
+        "201": {
+          "description": "The retired order id and the live replacement.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReplaceAskResult"
+              }
+            }
+          }
+        },
+        "400": {
+          "$ref": "#/components/responses/BadRequest"
+        },
+        "404": {
+          "$ref": "#/components/responses/NotFound"
+        },
+        "429": {
+          "$ref": "#/components/responses/RateLimited"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/ordex/orders/batch-purchase",
+      "operationId": "composeBatchPurchase",
+      "summary": "Compose several live asks into one transaction",
+      "description": "Up to eight asks, one funding plan, one transaction, composed only when every seller signature and every sat flow invariant can coexist. There is no partial composition: when any ask cannot be proved the answer names every refusal and settles nothing.",
+      "tags": [
+        "buying"
+      ],
+      "parameters": [],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/BatchPurchaseRequest"
+            }
+          }
+        }
+      },
+      "responses": {
+        "201": {
+          "description": "The composed batch with every placement stated.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BatchPurchaseResult"
+              }
+            }
+          }
+        },
+        "400": {
+          "$ref": "#/components/responses/BadRequest"
+        },
+        "409": {
+          "description": "At least one ask cannot coexist in the batch.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BatchPurchaseRefused"
+              }
+            }
+          }
+        },
+        "429": {
+          "$ref": "#/components/responses/RateLimited"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/ordex/orders/batch-preflight",
+      "operationId": "preflightBatchPurchase",
+      "summary": "Verify a signed batch and ask the node about the exact bytes",
+      "description": "Rechecks every placement against both authorities, proves the sat flow invariant for every ask, then asks the node whether it would accept the composed transaction. The answer carries the exact bytes checked.",
+      "tags": [
+        "buying"
+      ],
+      "parameters": [],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/BatchPreflightRequest"
+            }
+          }
+        }
+      },
+      "responses": {
+        "201": {
+          "description": "The per-ask verdicts and the node answer.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BatchPreflightResult"
+              }
+            }
+          }
+        },
+        "400": {
+          "$ref": "#/components/responses/BadRequest"
+        },
+        "404": {
+          "$ref": "#/components/responses/NotFound"
+        },
+        "429": {
+          "$ref": "#/components/responses/RateLimited"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/ordex/offers",
+      "operationId": "listOffers",
+      "summary": "One page of the offer book",
+      "description": "Keyset paged exactly like the orders: limit and cursor in, nextCursor out, empty on the last page. A malformed cursor is a 400, never a silent first page.",
+      "tags": [
+        "offers"
+      ],
+      "parameters": [
+        {
+          "name": "limit",
+          "in": "query",
+          "schema": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 20
+          }
+        },
+        {
+          "name": "cursor",
+          "in": "query",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "offerKind",
+          "in": "query",
+          "schema": {
+            "$ref": "#/components/schemas/OfferKind"
+          }
+        },
+        {
+          "name": "collectionId",
+          "in": "query",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "state",
+          "in": "query",
+          "schema": {
+            "$ref": "#/components/schemas/OfferState"
+          }
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "The offer page.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfferPage"
+              }
+            }
+          }
+        },
+        "400": {
+          "$ref": "#/components/responses/BadRequest"
+        },
+        "429": {
+          "$ref": "#/components/responses/RateLimited"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/ordex/offers",
+      "operationId": "publishOffer",
+      "summary": "Publish a funded offer",
+      "description": "Takes exact offer terms and funded-output evidence. The gateway recomputes the terms hash, recomputes the Taproot tree and tweak from the two leaves, requires the funded script to commit to both, asks Bitcoin Core whether the output exists and is unspent, and refuses everything else. The offer goes live once the funding confirms.",
+      "tags": [
+        "offers"
+      ],
+      "parameters": [],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/OfferPublishRequest"
+            }
+          }
+        }
+      },
+      "responses": {
+        "201": {
+          "description": "The published offer in PENDING_CONFIRMATION.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfferSummary"
+              }
+            }
+          }
+        },
+        "400": {
+          "$ref": "#/components/responses/BadRequest"
+        },
+        "404": {
+          "$ref": "#/components/responses/NotFound"
+        },
+        "429": {
+          "$ref": "#/components/responses/RateLimited"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/ordex/offers/{id}",
+      "operationId": "getOffer",
+      "summary": "One offer with its lifecycle state and freshness",
+      "description": "",
+      "tags": [
+        "offers"
+      ],
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/OfferId"
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "The offer.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfferSummary"
+              }
+            }
+          }
+        },
+        "400": {
+          "$ref": "#/components/responses/BadRequest"
+        },
+        "404": {
+          "$ref": "#/components/responses/NotFound"
+        },
+        "429": {
+          "$ref": "#/components/responses/RateLimited"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/ordex/offers/{id}/revalidate",
+      "operationId": "revalidateOffer",
+      "summary": "Recheck one offer against both authorities",
+      "description": "",
+      "tags": [
+        "offers"
+      ],
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/OfferId"
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "201": {
+          "description": "The rechecked offer.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfferSummary"
+              }
+            }
+          }
+        },
+        "400": {
+          "$ref": "#/components/responses/BadRequest"
+        },
+        "404": {
+          "$ref": "#/components/responses/NotFound"
+        },
+        "429": {
+          "$ref": "#/components/responses/RateLimited"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/ordex/offers/{id}/withdraw",
+      "operationId": "withdrawOffer",
+      "summary": "Remove an offer from discovery, proved by the recovery key",
+      "description": "Discovery, not cancellation: the funded output stays spendable by the acceptance path until it is spent, and by the recovery path after expiry. A BIP 322 signature by the recovery key proves who may stop publishing the offer.",
+      "tags": [
+        "offers"
+      ],
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/OfferId"
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/OwnershipProof"
+            }
+          }
+        }
+      },
+      "responses": {
+        "201": {
+          "description": "The withdrawn offer.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfferSummary"
+              }
+            }
+          }
+        },
+        "400": {
+          "$ref": "#/components/responses/BadRequest"
+        },
+        "404": {
+          "$ref": "#/components/responses/NotFound"
+        },
+        "429": {
+          "$ref": "#/components/responses/RateLimited"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/ordex/offers/{id}/acceptance-plan",
+      "operationId": "planOfferAcceptance",
+      "summary": "State the exact acceptance arrangement for one live offer",
+      "description": "Given the seller outpoint, reads every value from the node and the ord index, lays out padding, buyer asset, every preserve in sat order, the seller payment at the seller input index, and change, and refuses when the Feline is elsewhere, the root no longer holds, or expiry has passed.",
+      "tags": [
+        "offers"
+      ],
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/OfferId"
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/OfferAcceptancePlanRequest"
+            }
+          }
+        }
+      },
+      "responses": {
+        "201": {
+          "description": "The exact arrangement to build and sign.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfferAcceptancePlan"
+              }
+            }
+          }
+        },
+        "400": {
+          "$ref": "#/components/responses/BadRequest"
+        },
+        "404": {
+          "$ref": "#/components/responses/NotFound"
+        },
+        "429": {
+          "$ref": "#/components/responses/RateLimited"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/ordex/offers/{id}/preflight",
+      "operationId": "preflightOfferAcceptance",
+      "summary": "Verify a built acceptance and ask the node",
+      "description": "Parses the complete acceptance, checks every rule in spec/offers.md including both policy signatures against the committed terms tree, then asks the node whether it would accept the bytes. The answer carries the exact bytes checked.",
+      "tags": [
+        "offers"
+      ],
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/OfferId"
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/OfferPreflightRequest"
+            }
+          }
+        }
+      },
+      "responses": {
+        "201": {
+          "description": "The acceptance verdict.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfferPreflightResult"
+              }
+            }
+          }
+        },
+        "400": {
+          "$ref": "#/components/responses/BadRequest"
+        },
+        "404": {
+          "$ref": "#/components/responses/NotFound"
+        },
+        "429": {
+          "$ref": "#/components/responses/RateLimited"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/ordex/safeops/plans",
+      "operationId": "createSafeOpsPlan",
+      "summary": "Build a complete SafeOps plan",
+      "description": "Resolves every selected outpoint against the protocol authorities, builds the deterministic output map and sat flow, and returns the full plan with its digest before any wallet opens. Unexamined inputs fail closed.",
+      "tags": [
+        "safeops"
+      ],
+      "parameters": [],
+      "requestBody": null,
+      "responses": {
+        "201": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SafeOpsPlanResult"
+              }
+            }
+          },
+          "description": "The result."
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/ordex/safeops/plans/{planId}",
+      "operationId": "getSafeOpsPlan",
+      "summary": "One stored SafeOps plan",
+      "description": "Returns the plan exactly as it was built, with its current actionability against the live chain.",
+      "tags": [
+        "safeops"
+      ],
+      "parameters": [
+        {
+          "name": "planId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "description": "The plan identifier returned at creation."
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SafeOpsPlanResult"
+              }
+            }
+          },
+          "description": "The result."
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/ordex/safeops/plans/{planId}/shield",
+      "operationId": "refreshExecutionShield",
+      "summary": "Refresh the execution shield for a plan",
+      "description": "Re-reads every input, protocol ownership, mempool conflicts, and fee estimates, then either confirms the plan is still fresh or invalidates the signing session and names exactly what changed.",
+      "tags": [
+        "safeops"
+      ],
+      "parameters": [
+        {
+          "name": "planId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "description": "The plan identifier."
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "201": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShieldResult"
+              }
+            }
+          },
+          "description": "The result."
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/ordex/safeops/broadcast",
+      "operationId": "broadcastSafeOpsTransaction",
+      "summary": "Relay a fully signed transaction after an explicit user broadcast action",
+      "description": "Verifies the signed result against its plan or manifest, runs Bitcoin Core preflight, and only then relays. The gateway never composes a signature and never broadcasts on its own initiative.",
+      "tags": [
+        "safeops"
+      ],
+      "parameters": [],
+      "requestBody": null,
+      "responses": {
+        "201": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BroadcastReceipt"
+              }
+            }
+          },
+          "description": "The result."
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/ordex/safeops/operations/{txid}",
+      "operationId": "getSafeOpsOperation",
+      "summary": "Monitor one broadcast operation",
+      "description": "Mempool state, conflicts, confirmations, replacement, and reorg reconciliation for one transaction, with the events that recorded every transition.",
+      "tags": [
+        "safeops"
+      ],
+      "parameters": [
+        {
+          "name": "txid",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "description": "The transaction id of the operation."
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OperationStatus"
+              }
+            }
+          },
+          "description": "The result."
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/ordex/safeops/rbf",
+      "operationId": "planSafeOpsRbf",
+      "summary": "Plan an RBF replacement of one of your transactions",
+      "description": "Offered only when node policy allows the replacement and the user controls every required input. Asset outputs, third party payments, and seller outputs are preserved; the extra fee comes only from user owned cardinal value.",
+      "tags": [
+        "safeops"
+      ],
+      "parameters": [],
+      "requestBody": null,
+      "responses": {
+        "201": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SafeOpsRbfResult"
+              }
+            }
+          },
+          "description": "The result."
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/ordex/safeops/cpfp",
+      "operationId": "planSafeOpsCpfp",
+      "summary": "Plan a CPFP child for one of your stuck transactions",
+      "description": "Offered only when the user controls a spendable output whose spending moves no tracked asset. The child fee is computed from the combined package fee rate under node package policy.",
+      "tags": [
+        "safeops"
+      ],
+      "parameters": [],
+      "requestBody": null,
+      "responses": {
+        "201": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SafeOpsCpfpResult"
+              }
+            }
+          },
+          "description": "The result."
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/ordex/swaps/intents",
+      "operationId": "publishSwapIntent",
+      "summary": "Publish a signed swap intent",
+      "description": "Verifies the BIP-322 maker proof, the intent digest, and the current state of every committed outpoint before the intent goes live. Private intents are never listed publicly.",
+      "tags": [
+        "swaps"
+      ],
+      "parameters": [],
+      "requestBody": null,
+      "responses": {
+        "201": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SwapIntentView"
+              }
+            }
+          },
+          "description": "The result."
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/ordex/swaps/intents",
+      "operationId": "listSwapIntents",
+      "summary": "List live public swap intents",
+      "description": "Keyset pagination by creation. Every intent is returned with the gateway independent resolution of its committed outpoints.",
+      "tags": [
+        "swaps"
+      ],
+      "parameters": [],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SwapIntentPage"
+              }
+            }
+          },
+          "description": "The result."
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/ordex/swaps/intents/{intentId}",
+      "operationId": "getSwapIntent",
+      "summary": "One swap intent with its live outpoint state",
+      "description": "The taker view independently resolves every asset claim against the chain authorities instead of repeating the maker text.",
+      "tags": [
+        "swaps"
+      ],
+      "parameters": [
+        {
+          "name": "intentId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "description": "The intent identifier."
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SwapIntentView"
+              }
+            }
+          },
+          "description": "The result."
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/ordex/swaps/intents/{intentId}/withdraw",
+      "operationId": "withdrawSwapIntent",
+      "summary": "Withdraw a swap intent",
+      "description": "Only the maker may withdraw, proven by a fresh BIP-322 signature over the withdrawal request.",
+      "tags": [
+        "swaps"
+      ],
+      "parameters": [
+        {
+          "name": "intentId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "description": "The intent identifier."
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "201": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SwapIntentView"
+              }
+            }
+          },
+          "description": "The result."
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/ordex/swaps/intents/{intentId}/acceptance-plan",
+      "operationId": "buildSwapAcceptancePlan",
+      "summary": "Build the one transaction acceptance plan for a taker",
+      "description": "Revalidates the maker outpoints, resolves the taker selection, builds exact input order for sat flow safety, assigns fees only to permitted cardinal value, and refuses any combination that cannot settle in one transaction.",
+      "tags": [
+        "swaps"
+      ],
+      "parameters": [
+        {
+          "name": "intentId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "description": "The intent identifier."
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "201": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SwapSession"
+              }
+            }
+          },
+          "description": "The result."
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/ordex/swaps/sessions/{sessionId}",
+      "operationId": "getSwapSession",
+      "summary": "One swap session with its signature progress",
+      "description": "Shows which party has signed, the current outpoint and conflict state, and whether the session is ready for preflight or broadcast.",
+      "tags": [
+        "swaps"
+      ],
+      "parameters": [
+        {
+          "name": "sessionId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "description": "The session identifier."
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SwapSession"
+              }
+            }
+          },
+          "description": "The result."
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/ordex/swaps/sessions/{sessionId}/signatures",
+      "operationId": "submitSwapSignature",
+      "summary": "Submit one party signed PSBT",
+      "description": "The submitted PSBT is compared against the acceptance plan. An input added, removed, reordered, or re signed outside the policy refuses the submission.",
+      "tags": [
+        "swaps"
+      ],
+      "parameters": [
+        {
+          "name": "sessionId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "description": "The session identifier."
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "201": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SwapSession"
+              }
+            }
+          },
+          "description": "The result."
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/ordex/swaps/sessions/{sessionId}/preflight",
+      "operationId": "preflightSwapSession",
+      "summary": "Run node preflight on the fully signed swap",
+      "description": "Only a transaction carrying every required signature reaches this route. Bitcoin Core testmempoolaccept decides.",
+      "tags": [
+        "swaps"
+      ],
+      "parameters": [
+        {
+          "name": "sessionId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "description": "The session identifier."
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "201": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerificationView"
+              }
+            }
+          },
+          "description": "The result."
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/ordex/swaps/sessions/{sessionId}/broadcast",
+      "operationId": "broadcastSwapSession",
+      "summary": "Relay the fully signed swap after the explicit user broadcast action",
+      "description": "Both parties assets move in one transaction or not at all. The relay happens only after the user action and a passing preflight.",
+      "tags": [
+        "swaps"
+      ],
+      "parameters": [
+        {
+          "name": "sessionId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "description": "The session identifier."
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "201": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BroadcastReceipt"
+              }
+            }
+          },
+          "description": "The result."
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/ordex/swaps/private",
+      "operationId": "storePrivateSwap",
+      "summary": "Store an encrypted private swap link",
+      "description": "The payload is encrypted client side. The server stores ciphertext and routing metadata only, never the key, never the terms, never a log of either.",
+      "tags": [
+        "swaps"
+      ],
+      "parameters": [],
+      "requestBody": null,
+      "responses": {
+        "201": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrivateSwapEnvelope"
+              }
+            }
+          },
+          "description": "The result."
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/ordex/swaps/private",
+      "operationId": "listPrivateSwaps",
+      "summary": "List the caller stored private swap envelopes",
+      "description": "Returns ciphertext envelopes only. Decryption happens client side with the key from the URL fragment.",
+      "tags": [
+        "swaps"
+      ],
+      "parameters": [],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/PrivateSwapEnvelope"
+                }
+              }
+            }
+          },
+          "description": "The result."
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/ordex/swaps/private/{privateId}",
+      "operationId": "getPrivateSwap",
+      "summary": "Fetch one encrypted private swap envelope",
+      "description": "Returns the ciphertext. The decryption key lives in the URL fragment and is never sent to the server.",
+      "tags": [
+        "swaps"
+      ],
+      "parameters": [
+        {
+          "name": "privateId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "description": "The private envelope identifier."
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrivateSwapEnvelope"
+              }
+            }
+          },
+          "description": "The result."
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/ordex/swaps/private/{privateId}",
+      "operationId": "destroyPrivateSwap",
+      "summary": "Destroy an encrypted private swap envelope",
+      "description": "Client side destruction: the ciphertext is removed and the envelope is marked destroyed.",
+      "tags": [
+        "swaps"
+      ],
+      "parameters": [
+        {
+          "name": "privateId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "description": "The private envelope identifier."
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "destroyed"
+                ],
+                "properties": {
+                  "destroyed": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          },
+          "description": "The result."
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/ordex/events",
+      "operationId": "listOrdexEvents",
+      "summary": "Keyset paginated event history",
+      "description": "Replay by cursor. Seven days minimum retention. Reversals appear as reverted events naming the event they reverse.",
+      "tags": [
+        "events"
+      ],
+      "parameters": [],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EventPage"
+              }
+            }
+          },
+          "description": "The result."
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/ordex/events/stream",
+      "operationId": "streamOrdexEvents",
+      "summary": "Server sent event stream of live events",
+      "description": "Filter by network, event type, aggregate, protocol, or collection. Last-Event-ID resumption, heartbeats, bounded buffers, and slow consumer disconnection with a resumable cursor. The same envelopes are available over WebSocket at the streaming gateway.",
+      "tags": [
+        "events"
+      ],
+      "parameters": [],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "An SSE stream of ordex-event/v1 envelopes with id, event, and data fields.",
+          "content": {
+            "text/event-stream": {
+              "schema": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/ordex/events/checkpoint",
+      "operationId": "getEventStreamCheckpoint",
+      "summary": "The current stream sequence and lag",
+      "description": "Lets a consumer decide whether it is behind and from which cursor to resume without gaps.",
+      "tags": [
+        "events"
+      ],
+      "parameters": [],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EventStreamCheckpoint"
+              }
+            }
+          },
+          "description": "The result."
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/ordex/webhooks/subscriptions",
+      "operationId": "createWebhookSubscription",
+      "summary": "Create a webhook subscription",
+      "description": "Returns the signing secret exactly once. The endpoint stays PENDING_VERIFICATION until it answers the challenge.",
+      "tags": [
+        "webhooks"
+      ],
+      "parameters": [],
+      "requestBody": null,
+      "responses": {
+        "201": {
+          "description": "The subscription with its one time secret.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/WebhookSubscription"
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "secret"
+                    ],
+                    "properties": {
+                      "secret": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/ordex/webhooks/subscriptions",
+      "operationId": "listWebhookSubscriptions",
+      "summary": "List your webhook subscriptions",
+      "description": "Bound to the authenticated developer key.",
+      "tags": [
+        "webhooks"
+      ],
+      "parameters": [],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/WebhookSubscription"
+                }
+              }
+            }
+          },
+          "description": "The result."
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/ordex/webhooks/subscriptions/{subscriptionId}",
+      "operationId": "getWebhookSubscription",
+      "summary": "One webhook subscription",
+      "description": "Never returns the signing secret.",
+      "tags": [
+        "webhooks"
+      ],
+      "parameters": [
+        {
+          "name": "subscriptionId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "description": "The subscription identifier."
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookSubscription"
+              }
+            }
+          },
+          "description": "The result."
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/ordex/webhooks/subscriptions/{subscriptionId}",
+      "operationId": "updateWebhookSubscription",
+      "summary": "Update, pause, or resume a subscription",
+      "description": "URL changes re-enter verification.",
+      "tags": [
+        "webhooks"
+      ],
+      "parameters": [
+        {
+          "name": "subscriptionId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "description": "The subscription identifier."
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookSubscription"
+              }
+            }
+          },
+          "description": "The result."
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/ordex/webhooks/subscriptions/{subscriptionId}",
+      "operationId": "deleteWebhookSubscription",
+      "summary": "Delete a webhook subscription",
+      "description": "Pending deliveries drain before removal.",
+      "tags": [
+        "webhooks"
+      ],
+      "parameters": [
+        {
+          "name": "subscriptionId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "description": "The subscription identifier."
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "deleted"
+                ],
+                "properties": {
+                  "deleted": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          },
+          "description": "The result."
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/ordex/webhooks/subscriptions/{subscriptionId}/rotate-secret",
+      "operationId": "rotateWebhookSecret",
+      "summary": "Rotate the signing secret",
+      "description": "The old secret keeps verifying during a bounded overlap window so rotation never drops a delivery.",
+      "tags": [
+        "webhooks"
+      ],
+      "parameters": [
+        {
+          "name": "subscriptionId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "description": "The subscription identifier."
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "201": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookSecretReveal"
+              }
+            }
+          },
+          "description": "The result."
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/ordex/webhooks/subscriptions/{subscriptionId}/verify",
+      "operationId": "verifyWebhookEndpoint",
+      "summary": "Answer the endpoint challenge",
+      "description": "The endpoint must echo the challenge value delivered to it before the subscription activates.",
+      "tags": [
+        "webhooks"
+      ],
+      "parameters": [
+        {
+          "name": "subscriptionId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "description": "The subscription identifier."
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "201": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookSubscription"
+              }
+            }
+          },
+          "description": "The result."
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/ordex/webhooks/subscriptions/{subscriptionId}/test",
+      "operationId": "testWebhookSubscription",
+      "summary": "Send a signed test delivery",
+      "description": "A ping envelope signed exactly like a real delivery.",
+      "tags": [
+        "webhooks"
+      ],
+      "parameters": [
+        {
+          "name": "subscriptionId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "description": "The subscription identifier."
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "201": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookDelivery"
+              }
+            }
+          },
+          "description": "The result."
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/ordex/webhooks/deliveries",
+      "operationId": "listWebhookDeliveries",
+      "summary": "Delivery history with attempt detail",
+      "description": "Keyset paginated, filterable by subscription and state.",
+      "tags": [
+        "webhooks"
+      ],
+      "parameters": [],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookDeliveryPage"
+              }
+            }
+          },
+          "description": "The result."
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/ordex/webhooks/deliveries/{deliveryId}/replay",
+      "operationId": "replayWebhookDelivery",
+      "summary": "Replay one delivery",
+      "description": "Re-signs the original body and re-enters the retry schedule.",
+      "tags": [
+        "webhooks"
+      ],
+      "parameters": [
+        {
+          "name": "deliveryId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "description": "The delivery identifier."
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "201": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookDelivery"
+              }
+            }
+          },
+          "description": "The result."
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/ordex/collections/manifests",
+      "operationId": "publishCollectionManifest",
+      "summary": "Publish a creator signed collection manifest",
+      "description": "The manifest is verified structurally, the creator signature address is bound, and the membership root is recomputed before publication. A published manifest is immutable; corrections are new versions.",
+      "tags": [
+        "provenance"
+      ],
+      "parameters": [],
+      "requestBody": null,
+      "responses": {
+        "201": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CollectionManifestDocument"
+              }
+            }
+          },
+          "description": "The result."
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/ordex/collections/manifests",
+      "operationId": "listCollectionManifests",
+      "summary": "List published manifests",
+      "description": "Keyset paginated, filterable by collection id, network, and status.",
+      "tags": [
+        "provenance"
+      ],
+      "parameters": [],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CollectionManifestPage"
+              }
+            }
+          },
+          "description": "The result."
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/ordex/collections/manifests/{manifestId}",
+      "operationId": "getCollectionManifest",
+      "summary": "One collection manifest",
+      "description": "Superseded and revoked versions stay visible; history is never deleted.",
+      "tags": [
+        "provenance"
+      ],
+      "parameters": [
+        {
+          "name": "manifestId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "description": "The manifest digest or its published identifier."
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CollectionManifestDocument"
+              }
+            }
+          },
+          "description": "The result."
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/ordex/collections/manifests/{manifestId}/proofs/{memberIdentity}",
+      "operationId": "getCollectionMembershipProof",
+      "summary": "A membership proof for one member",
+      "description": "The SDK verifies the proof offline with nothing but this response.",
+      "tags": [
+        "provenance"
+      ],
+      "parameters": [
+        {
+          "name": "manifestId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "description": "The manifest identifier."
+        },
+        {
+          "name": "memberIdentity",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "description": "The member identity."
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MembershipProofResponse"
+              }
+            }
+          },
+          "description": "The result."
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/ordex/collections/manifests/{manifestId}/revisions",
+      "operationId": "reviseCollectionManifest",
+      "summary": "Supersede or revoke a manifest",
+      "description": "Both moves are creator signed. A revocation does not delete history.",
+      "tags": [
+        "provenance"
+      ],
+      "parameters": [
+        {
+          "name": "manifestId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "description": "The manifest the revision applies to."
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "201": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "manifest",
+                  "revocation"
+                ],
+                "properties": {
+                  "manifest": {
+                    "$ref": "#/components/schemas/CollectionManifestDocument"
+                  },
+                  "revocation": {
+                    "type": "object",
+                    "additionalProperties": true
+                  }
+                }
+              }
+            }
+          },
+          "description": "The result."
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/ordex/collections/{collectionId}/provenance",
+      "operationId": "getCollectionProvenance",
+      "summary": "The full provenance record of a collection",
+      "description": "Separate labels for the cryptographic claim, the on chain anchor, Universe curation, third party curation, and community reports.",
+      "tags": [
+        "provenance"
+      ],
+      "parameters": [
+        {
+          "name": "collectionId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "description": "The stable collection identifier."
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CollectionProvenance"
+              }
+            }
+          },
+          "description": "The result."
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/ordex/heritage/readiness",
+      "operationId": "getHeritageReadiness",
+      "summary": "Whether the Counterparty authority currently proves ownership",
+      "description": "The heritage market fails closed unless the self hosted Counterparty Core is ready, fresh, and on the intended network. There is no public API fallback in production.",
+      "tags": [
+        "heritage"
+      ],
+      "parameters": [],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HeritageReadiness"
+              }
+            }
+          },
+          "description": "The result."
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/ordex/heritage/assets/{assetId}",
+      "operationId": "getHeritageAsset",
+      "summary": "One Counterparty asset with its live attachment state",
+      "description": "Identity is the authoritative numeric asset id plus current ledger state. A ticker or name alone is never an identity.",
+      "tags": [
+        "heritage"
+      ],
+      "parameters": [
+        {
+          "name": "assetId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "description": "The numeric Counterparty asset id or its exact long name."
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HeritageAsset"
+              }
+            }
+          },
+          "description": "The result."
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/ordex/heritage/assets/{assetId}/utxos",
+      "operationId": "listHeritageAssetUtxos",
+      "summary": "The UTXOs currently carrying an asset",
+      "description": "Each record binds quantity, outpoint, and the authority checkpoints it was read at.",
+      "tags": [
+        "heritage"
+      ],
+      "parameters": [
+        {
+          "name": "assetId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "description": "The numeric Counterparty asset id or its exact long name."
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/HeritageAttachmentRecord"
+                }
+              }
+            }
+          },
+          "description": "The result."
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/ordex/heritage/addresses/{address}/assets",
+      "operationId": "listHeritageAddressAssets",
+      "summary": "The Counterparty assets of one address",
+      "description": "Address balances and their current attached outpoints.",
+      "tags": [
+        "heritage"
+      ],
+      "parameters": [
+        {
+          "name": "address",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "description": "The Bitcoin address."
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "description": "The result."
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/ordex/heritage/attach",
+      "operationId": "buildHeritageAttach",
+      "summary": "Compose a user signed attach transaction",
+      "description": "Returns the unsigned PSBT, the exact XCP gas and miner fee, and everything that would travel. The user signs with their own wallet; the server never holds the asset, XCP, or BTC.",
+      "tags": [
+        "heritage"
+      ],
+      "parameters": [],
+      "requestBody": null,
+      "responses": {
+        "201": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HeritageComposeResult"
+              }
+            }
+          },
+          "description": "The result."
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/ordex/heritage/detach",
+      "operationId": "buildHeritageDetach",
+      "summary": "Compose a user signed detach transaction",
+      "description": "The same guarantees as attach, in reverse.",
+      "tags": [
+        "heritage"
+      ],
+      "parameters": [],
+      "requestBody": null,
+      "responses": {
+        "201": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HeritageComposeResult"
+              }
+            }
+          },
+          "description": "The result."
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/ordex/signing/sessions",
+      "operationId": "openSigningSession",
+      "summary": "Open an offline signing session",
+      "description": "Creates the expected transaction manifest for one prepared transaction and returns it for review, export, or QR animation.",
+      "tags": [
+        "signing"
+      ],
+      "parameters": [],
+      "requestBody": null,
+      "responses": {
+        "201": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SigningSession"
+              }
+            }
+          },
+          "description": "The result."
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/ordex/signing/sessions",
+      "operationId": "listSigningSessions",
+      "summary": "List your signing sessions",
+      "description": "Sessions of the authenticated account, newest first.",
+      "tags": [
+        "signing"
+      ],
+      "parameters": [],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/SigningSession"
+                }
+              }
+            }
+          },
+          "description": "The result."
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/ordex/signing/sessions/{sessionId}",
+      "operationId": "getSigningSession",
+      "summary": "One signing session",
+      "description": "Includes the manifest, the imported signed result, and any rejection with its stable code.",
+      "tags": [
+        "signing"
+      ],
+      "parameters": [
+        {
+          "name": "sessionId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "description": "The session identifier."
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SigningSession"
+              }
+            }
+          },
+          "description": "The result."
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/ordex/signing/sessions/{sessionId}/signed-result",
+      "operationId": "submitSignedResult",
+      "summary": "Import a signed result for verification",
+      "description": "The signed result is compared against the manifest. Any change to the unsigned transaction, its outputs, the fee bound, or the asset destinations refuses the import with a stable code.",
+      "tags": [
+        "signing"
+      ],
+      "parameters": [
+        {
+          "name": "sessionId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "description": "The session identifier."
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "201": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SigningVerificationResult"
+              }
+            }
+          },
+          "description": "The result."
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/ordex/signing/verify",
+      "operationId": "verifySigningArtifacts",
+      "summary": "Verify a manifest and signed result pair without a session",
+      "description": "The same checks the session flow runs, usable directly by SDK consumers and the reference conformance tests.",
+      "tags": [
+        "signing"
+      ],
+      "parameters": [],
+      "requestBody": null,
+      "responses": {
+        "201": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SigningVerificationResult"
+              }
+            }
+          },
+          "description": "The result."
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      }
+    }
+  ],
+  "asyncapiChannels": [
+    {
+      "name": "eventsStream",
+      "address": "/events/stream",
+      "description": "Server sent events. The SSE id field carries the event id; sending Last-Event-ID resumes exactly after it. Filters: network, type, aggregateType, aggregateId, protocol, collectionId.",
+      "messages": {
+        "ordexEvent": {
+          "$ref": "#/components/messages/ordexEvent"
+        },
+        "heartbeat": {
+          "payload": {
+            "type": "string",
+            "const": ": heartbeat"
+          },
+          "description": "A comment line at least every 15 seconds so proxies never close an idle stream."
+        }
+      }
+    },
+    {
+      "name": "eventsSocket",
+      "address": "/events/ws",
+      "description": "WebSocket for high volume consumers. One connection, many subscriptions, cursor resumption, bounded buffers, slow consumer disconnect with a resumable cursor.",
+      "messages": {
+        "subscribe": {
+          "payload": {
+            "type": "object",
+            "required": [
+              "op"
+            ],
+            "properties": {
+              "op": {
+                "type": "string",
+                "const": "subscribe"
+              },
+              "filters": {
+                "type": "object",
+                "additionalProperties": true
+              },
+              "cursor": {
+                "type": "string",
+                "description": "Resume from this event sequence and id."
+              }
+            }
+          },
+          "description": "Multiplex many filters over one connection."
+        },
+        "ordexEvent": {
+          "$ref": "#/components/messages/ordexEvent"
+        }
+      }
+    },
+    {
+      "name": "webhookDelivery",
+      "address": "{subscriberUrl}",
+      "description": "HTTP POST of one envelope per delivery, signed with the X-Ordex-Signature header: t=<unix>,d=<deliveryId>,v1=<hmac-sha256 over timestamp.deliveryId.sha256(body)>. Verify with the SDK enforcer or verifier/events.js.",
+      "messages": {
+        "ordexEvent": {
+          "$ref": "#/components/messages/ordexEvent"
+        }
+      }
+    }
+  ],
+  "vectorFamilies": {
+    "collection-manifest": {
+      "file": "collection-manifest-vectors.json",
+      "count": 14,
+      "description": "Collection manifest, revocation, and membership proof vectors.",
+      "version": 1,
+      "vectors": [
+        {
+          "id": "a creator signed manifest is accepted",
+          "title": "a creator signed manifest is accepted",
+          "expected": {
+            "ok": true
+          }
+        },
+        {
+          "id": "an unsorted member list is refused",
+          "title": "an unsorted member list is refused",
+          "expected": {
+            "ok": false,
+            "code": "MEMBERS_UNSORTED"
+          }
+        },
+        {
+          "id": "a duplicated member is refused",
+          "title": "a duplicated member is refused",
+          "expected": {
+            "ok": false,
+            "code": "MEMBERS_DUPLICATED"
+          }
+        },
+        {
+          "id": "a membership root that does not match the members is refused",
+          "title": "a membership root that does not match the members is refused",
+          "expected": {
+            "ok": false,
+            "code": "MEMBERSHIP_ROOT_MISMATCH"
+          }
+        },
+        {
+          "id": "a fixed supply that disagrees with the member count is refused",
+          "title": "a fixed supply that disagrees with the member count is refused",
+          "expected": {
+            "ok": false,
+            "code": "SUPPLY_MISMATCH"
+          }
+        },
+        {
+          "id": "a version 2 manifest without a previous digest is refused",
+          "title": "a version 2 manifest without a previous digest is refused",
+          "expected": {
+            "ok": false,
+            "code": "PREVIOUS_DIGEST_REQUIRED"
+          }
+        },
+        {
+          "id": "a manifest edited after signing no longer matches its digest",
+          "title": "a manifest edited after signing no longer matches its digest",
+          "expected": {
+            "ok": false,
+            "code": "DIGEST_MISMATCH"
+          }
+        },
+        {
+          "id": "a signature by an address that is not the creator is refused",
+          "title": "a signature by an address that is not the creator is refused",
+          "expected": {
+            "ok": false,
+            "code": "SIGNER_IDENTITY_MISMATCH"
+          }
+        },
+        {
+          "id": "a revocation signed by the creator is accepted",
+          "title": "a revocation signed by the creator is accepted",
+          "expected": {
+            "ok": true
+          }
+        },
+        {
+          "id": "a revocation naming a different manifest is refused",
+          "title": "a revocation naming a different manifest is refused",
+          "expected": {
+            "ok": false,
+            "code": "MANIFEST_DIGEST_MISMATCH"
+          }
+        },
+        {
+          "id": "a revocation signed by a non creator is refused",
+          "title": "a revocation signed by a non creator is refused",
+          "expected": {
+            "ok": false,
+            "code": "SIGNER_IDENTITY_MISMATCH"
+          }
+        },
+        {
+          "id": "a membership proof resolves for a real member",
+          "title": "a membership proof resolves for a real member",
+          "expected": {
+            "ok": true
+          }
+        },
+        {
+          "id": "a membership proof for a stranger does not resolve",
+          "title": "a membership proof for a stranger does not resolve",
+          "expected": {
+            "ok": false,
+            "code": "MEMBER_NOT_PROVEN"
+          }
+        },
+        {
+          "id": "a tampered proof step does not resolve",
+          "title": "a tampered proof step does not resolve",
+          "expected": {
+            "ok": false,
+            "code": "MEMBER_NOT_PROVEN"
+          }
+        }
+      ]
+    },
+    "counterparty-asset": {
+      "file": "counterparty-asset-vectors.json",
+      "count": 12,
+      "description": "Counterparty UTXO attachment record and attachment-follows vectors.",
+      "version": 1,
+      "vectors": [
+        {
+          "id": "a ready attachment record is accepted",
+          "title": "a ready attachment record is accepted",
+          "expected": {
+            "ok": true
+          }
+        },
+        {
+          "id": "a name without the numeric asset id is refused",
+          "title": "a name without the numeric asset id is refused",
+          "expected": {
+            "ok": false,
+            "code": "ASSET_ID_REQUIRED"
+          }
+        },
+        {
+          "id": "a non integer quantity is refused",
+          "title": "a non integer quantity is refused",
+          "expected": {
+            "ok": false,
+            "code": "QUANTITY_INVALID"
+          }
+        },
+        {
+          "id": "a record produced while the authority was not ready is refused",
+          "title": "a record produced while the authority was not ready is refused",
+          "expected": {
+            "ok": false,
+            "code": "AUTHORITY_NOT_READY"
+          }
+        },
+        {
+          "id": "a record that does not state an existing attachment is refused",
+          "title": "a record that does not state an existing attachment is refused",
+          "expected": {
+            "ok": false,
+            "code": "ATTACHMENT_STATE_UNKNOWN"
+          }
+        },
+        {
+          "id": "a record without a ledger hash is refused",
+          "title": "a record without a ledger hash is refused",
+          "expected": {
+            "ok": false,
+            "code": "CHECKPOINT_INVALID"
+          }
+        },
+        {
+          "id": "a spend that carries the attachment to the planned output is accepted",
+          "title": "a spend that carries the attachment to the planned output is accepted",
+          "expected": {
+            "ok": true,
+            "carriedToIndex": 1
+          }
+        },
+        {
+          "id": "a spend that never touches the outpoint is refused",
+          "title": "a spend that never touches the outpoint is refused",
+          "expected": {
+            "ok": false,
+            "code": "OUTPOINT_NOT_SPENT"
+          }
+        },
+        {
+          "id": "a spend whose sat flow lands the asset elsewhere is refused",
+          "title": "a spend whose sat flow lands the asset elsewhere is refused",
+          "expected": {
+            "ok": false,
+            "code": "DESTINATION_MISMATCH"
+          }
+        },
+        {
+          "id": "a spend that never reabsorbs the range start is refused",
+          "title": "a spend that never reabsorbs the range start is refused",
+          "expected": {
+            "ok": false,
+            "code": "SAT_FLOW_SHORTFALL"
+          }
+        },
+        {
+          "id": "a spend whose value disagrees with the record is refused",
+          "title": "a spend whose value disagrees with the record is refused",
+          "expected": {
+            "ok": false,
+            "code": "SOURCE_VALUE_MISMATCH"
+          }
+        },
+        {
+          "id": "a duplicated attached outpoint is refused",
+          "title": "a duplicated attached outpoint is refused",
+          "expected": {
+            "ok": false,
+            "code": "OUTPOINT_DUPLICATED"
+          }
+        }
+      ]
+    },
+    "event": {
+      "file": "event-vectors.json",
+      "count": 14,
+      "description": "ordex-event/v1 envelope and webhook signature vectors.",
+      "version": 1,
+      "vectors": [
+        {
+          "id": "a current event envelope is accepted",
+          "title": "a current event envelope is accepted",
+          "expected": {
+            "ok": true
+          }
+        },
+        {
+          "id": "a reverted event naming the event it reverses is accepted",
+          "title": "a reverted event naming the event it reverses is accepted",
+          "expected": {
+            "ok": true
+          }
+        },
+        {
+          "id": "a reverted event without a reversed id is refused",
+          "title": "a reverted event without a reversed id is refused",
+          "expected": {
+            "ok": false,
+            "code": "REVERTED_EVENT_REQUIRED"
+          }
+        },
+        {
+          "id": "a current event may not name a reversed id",
+          "title": "a current event may not name a reversed id",
+          "expected": {
+            "ok": false,
+            "code": "STATUS_INVALID"
+          }
+        },
+        {
+          "id": "an unknown event type is refused",
+          "title": "an unknown event type is refused",
+          "expected": {
+            "ok": false,
+            "code": "EVENT_TYPE_INVALID"
+          }
+        },
+        {
+          "id": "a non increasing sequence is refused",
+          "title": "a non increasing sequence is refused",
+          "expected": {
+            "ok": false,
+            "code": "SEQUENCE_INVALID"
+          }
+        },
+        {
+          "id": "an event without a chain checkpoint is refused",
+          "title": "an event without a chain checkpoint is refused",
+          "expected": {
+            "ok": false,
+            "code": "CHECKPOINT_INVALID"
+          }
+        },
+        {
+          "id": "an array payload is refused",
+          "title": "an array payload is refused",
+          "expected": {
+            "ok": false,
+            "code": "PAYLOAD_INVALID"
+          }
+        },
+        {
+          "id": "a malformed artifact digest is refused",
+          "title": "a malformed artifact digest is refused",
+          "expected": {
+            "ok": false,
+            "code": "ARTIFACT_DIGEST_INVALID"
+          }
+        },
+        {
+          "id": "a freshly signed delivery verifies",
+          "title": "a freshly signed delivery verifies",
+          "expected": {
+            "ok": true
+          }
+        },
+        {
+          "id": "a tampered body fails the digest binding",
+          "title": "a tampered body fails the digest binding",
+          "expected": {
+            "ok": false,
+            "code": "SIGNATURE_INVALID"
+          }
+        },
+        {
+          "id": "a replayed delivery outside the tolerance is refused",
+          "title": "a replayed delivery outside the tolerance is refused",
+          "expected": {
+            "ok": false,
+            "code": "TIMESTAMP_OUT_OF_TOLERANCE"
+          }
+        },
+        {
+          "id": "a different secret fails",
+          "title": "a different secret fails",
+          "expected": {
+            "ok": false,
+            "code": "SIGNATURE_INVALID"
+          }
+        },
+        {
+          "id": "a truncated header is refused",
+          "title": "a truncated header is refused",
+          "expected": {
+            "ok": false,
+            "code": "HEADER_MALFORMED"
+          }
+        }
+      ]
+    },
+    "offer": {
+      "file": "offer-vectors.json",
+      "count": 25,
+      "description": "Shared conformance vectors for offers v1. verifier/offers.js and sdk/src/offers.ts must both answer every case exactly as recorded here.",
+      "version": "1.1",
+      "vectors": [
+        {
+          "id": "a valid ITEM offer verifies and carries its hash",
+          "title": "a valid ITEM offer verifies and carries its hash",
+          "expected": {
+            "ok": true,
+            "offerTermsHash": "0f3a4504589332bc4026dbf61fb6dac64458b3e16140d55206dd53b8efcb9562"
+          }
+        },
+        {
+          "id": "a changed price changes the hash",
+          "title": "a changed price changes the hash",
+          "expected": {
+            "ok": true,
+            "offerTermsHash": "3aa9298d5474cbcbc53bbf925b74374d0701441fef9f5e12fb229681af45d105"
+          }
+        },
+        {
+          "id": "an unknown field is refused",
+          "title": "an unknown field is refused",
+          "expected": {
+            "ok": false,
+            "code": "MALFORMED_TERMS"
+          }
+        },
+        {
+          "id": "a wrong schema is refused",
+          "title": "a wrong schema is refused",
+          "expected": {
+            "ok": false,
+            "code": "TERMS_SCHEMA_UNSUPPORTED"
+          }
+        },
+        {
+          "id": "protocol 1.0 terms are refused",
+          "title": "protocol 1.0 terms are refused",
+          "expected": {
+            "ok": false,
+            "code": "TERMS_PROTOCOL_UNSUPPORTED"
+          }
+        },
+        {
+          "id": "an ITEM offer without an inscription is refused",
+          "title": "an ITEM offer without an inscription is refused",
+          "expected": {
+            "ok": false,
+            "code": "TERMS_SCOPE_FIELDS"
+          }
+        },
+        {
+          "id": "a TRAIT offer without a value is refused",
+          "title": "a TRAIT offer without a value is refused",
+          "expected": {
+            "ok": false,
+            "code": "TERMS_SCOPE_FIELDS"
+          }
+        },
+        {
+          "id": "a COLLECTION offer must not scope a trait",
+          "title": "a COLLECTION offer must not scope a trait",
+          "expected": {
+            "ok": false,
+            "code": "TERMS_SCOPE_FIELDS"
+          }
+        },
+        {
+          "id": "a malformed root is refused",
+          "title": "a malformed root is refused",
+          "expected": {
+            "ok": false,
+            "code": "TERMS_ROOT_INVALID"
+          }
+        },
+        {
+          "id": "a fractional price is refused",
+          "title": "a fractional price is refused",
+          "expected": {
+            "ok": false,
+            "code": "TERMS_AMOUNT_INVALID"
+          }
+        },
+        {
+          "id": "an unrepresentable expiry is refused",
+          "title": "an unrepresentable expiry is refused",
+          "expected": {
+            "ok": false,
+            "code": "TERMS_EXPIRY_INVALID"
+          }
+        },
+        {
+          "id": "a malformed recovery key is refused",
+          "title": "a malformed recovery key is refused",
+          "expected": {
+            "ok": false,
+            "code": "TERMS_RECOVERY_KEY_INVALID"
+          }
+        },
+        {
+          "id": "a valid acceptance passes",
+          "title": "a valid acceptance passes",
+          "expected": {
+            "ok": true,
+            "sharedIndex": 2
+          }
+        },
+        {
+          "id": "one policy signature is not an acceptance",
+          "title": "one policy signature is not an acceptance",
+          "expected": {
+            "ok": false,
+            "code": "POLICY_SIGNATURES_MISSING"
+          }
+        },
+        {
+          "id": "a leaf that commits to different terms is refused",
+          "title": "a leaf that commits to different terms is refused",
+          "expected": {
+            "ok": false,
+            "code": "TERMS_HASH_NOT_COMMITTED"
+          }
+        },
+        {
+          "id": "acceptance after expiry is refused",
+          "title": "acceptance after expiry is refused",
+          "expected": {
+            "ok": false,
+            "code": "OFFER_EXPIRED"
+          }
+        },
+        {
+          "id": "a changed seller payment is refused",
+          "title": "a changed seller payment is refused",
+          "expected": {
+            "ok": false,
+            "code": "SELLER_VALUE_MISMATCH"
+          }
+        },
+        {
+          "id": "a Feline sat range that reaches the payment is refused",
+          "title": "a Feline sat range that reaches the payment is refused",
+          "expected": {
+            "ok": false,
+            "code": "SAT_FLOW_SHORTFALL"
+          }
+        },
+        {
+          "id": "a fee over the committed maximum is refused",
+          "title": "a fee over the committed maximum is refused",
+          "expected": {
+            "ok": false,
+            "code": "FEE_OVER_MAXIMUM"
+          }
+        },
+        {
+          "id": "the buyer asset output must sit ahead of the payment",
+          "title": "the buyer asset output must sit ahead of the payment",
+          "expected": {
+            "ok": false,
+            "code": "BUYER_ASSET_OUTPUT_MISSING"
+          }
+        },
+        {
+          "id": "acceptance without the Feline input is refused",
+          "title": "acceptance without the Feline input is refused",
+          "expected": {
+            "ok": false,
+            "code": "FELINE_OUTPOINT_MISSING"
+          }
+        },
+        {
+          "id": "a valid recovery after expiry passes",
+          "title": "a valid recovery after expiry passes",
+          "expected": {
+            "ok": true
+          }
+        },
+        {
+          "id": "a recovery before expiry is refused",
+          "title": "a recovery before expiry is refused",
+          "expected": {
+            "ok": false,
+            "code": "RECOVERY_BEFORE_EXPIRY"
+          }
+        },
+        {
+          "id": "a recovery paying elsewhere is refused",
+          "title": "a recovery paying elsewhere is refused",
+          "expected": {
+            "ok": false,
+            "code": "RECOVERY_OUTPUT_WRONG"
+          }
+        },
+        {
+          "id": "a leaf without the recovery key is refused",
+          "title": "a leaf without the recovery key is refused",
+          "expected": {
+            "ok": false,
+            "code": "RECOVERY_LEAF_MISMATCH"
+          }
+        }
+      ]
+    },
+    "offline-signing": {
+      "file": "offline-signing-vectors.json",
+      "count": 16,
+      "description": "Expected transaction manifest and signed result comparison vectors.",
+      "version": 1,
+      "vectors": [
+        {
+          "id": "a complete manifest is accepted",
+          "title": "a complete manifest is accepted",
+          "expected": {
+            "ok": true
+          }
+        },
+        {
+          "id": "a manifest whose digest was edited is refused",
+          "title": "a manifest whose digest was edited is refused",
+          "expected": {
+            "ok": false,
+            "code": "DIGEST_MISMATCH"
+          }
+        },
+        {
+          "id": "an input without an explanation is refused",
+          "title": "an input without an explanation is refused",
+          "expected": {
+            "ok": false,
+            "code": "INPUT_DESCRIPTION_INVALID"
+          }
+        },
+        {
+          "id": "a manifest that does not conserve value is refused",
+          "title": "a manifest that does not conserve value is refused",
+          "expected": {
+            "ok": false,
+            "code": "VALUE_NOT_CONSERVED"
+          }
+        },
+        {
+          "id": "a dust recipient output is refused",
+          "title": "a dust recipient output is refused",
+          "expected": {
+            "ok": false,
+            "code": "DUST_OUTPUT"
+          }
+        },
+        {
+          "id": "a signed result matching the manifest is accepted",
+          "title": "a signed result matching the manifest is accepted",
+          "expected": {
+            "ok": true
+          }
+        },
+        {
+          "id": "a signed result from a different manifest is refused",
+          "title": "a signed result from a different manifest is refused",
+          "expected": {
+            "ok": false,
+            "code": "MANIFEST_DIGEST_MISMATCH"
+          }
+        },
+        {
+          "id": "a reordered input is refused",
+          "title": "a reordered input is refused",
+          "expected": {
+            "ok": false,
+            "code": "INPUT_REORDERED"
+          }
+        },
+        {
+          "id": "an added output is refused",
+          "title": "an added output is refused",
+          "expected": {
+            "ok": false,
+            "code": "OUTPUT_SET_CHANGED"
+          }
+        },
+        {
+          "id": "a changed output script is refused",
+          "title": "a changed output script is refused",
+          "expected": {
+            "ok": false,
+            "code": "SCRIPT_CHANGED"
+          }
+        },
+        {
+          "id": "a fee outside the approved bound is refused",
+          "title": "a fee outside the approved bound is refused",
+          "expected": {
+            "ok": false,
+            "code": "FEE_OUT_OF_BOUNDS"
+          }
+        },
+        {
+          "id": "a missing user signature is refused",
+          "title": "a missing user signature is refused",
+          "expected": {
+            "ok": false,
+            "code": "REQUIRED_SIGNATURE_MISSING"
+          }
+        },
+        {
+          "id": "a signature on a foreign input is refused",
+          "title": "a signature on a foreign input is refused",
+          "expected": {
+            "ok": false,
+            "code": "SIGNATURE_ON_FOREIGN_INPUT"
+          }
+        },
+        {
+          "id": "an unapproved sighash is refused",
+          "title": "an unapproved sighash is refused",
+          "expected": {
+            "ok": false,
+            "code": "SIGHASH_UNEXPECTED"
+          }
+        },
+        {
+          "id": "a protected asset that moved elsewhere is refused",
+          "title": "a protected asset that moved elsewhere is refused",
+          "expected": {
+            "ok": false,
+            "code": "PROTECTED_ASSET_MISPLACED"
+          }
+        },
+        {
+          "id": "an unknown critical field is refused",
+          "title": "an unknown critical field is refused",
+          "expected": {
+            "ok": false,
+            "code": "UNKNOWN_CRITICAL_FIELDS"
+          }
+        }
+      ]
+    },
+    "purchase": {
+      "file": "purchase-vectors.json",
+      "count": 11,
+      "description": "Conformance vectors for completing an Ordex public ask. Each case names a transaction shape, the order terms, and the exact verdict a compatible verifier must reach. The rules verified here are stated in spec/purchase.md.",
+      "version": 1,
+      "vectors": [
+        {
+          "id": "arrangement-ordex-builds",
+          "title": "arrangement-ordex-builds",
+          "expected": {
+            "ok": true,
+            "sharedIndex": 2
+          }
+        },
+        {
+          "id": "surplus-ahead-of-payment",
+          "title": "surplus-ahead-of-payment",
+          "expected": {
+            "ok": true,
+            "sharedIndex": 1
+          }
+        },
+        {
+          "id": "offered-input-first",
+          "title": "offered-input-first",
+          "expected": {
+            "ok": false,
+            "code": "SAT_FLOW_SHORTFALL"
+          }
+        },
+        {
+          "id": "shortfall-by-one-sat",
+          "title": "shortfall-by-one-sat",
+          "expected": {
+            "ok": false,
+            "code": "SAT_FLOW_SHORTFALL"
+          }
+        },
+        {
+          "id": "payment-at-wrong-index",
+          "title": "payment-at-wrong-index",
+          "expected": {
+            "ok": false,
+            "code": "SELLER_SCRIPT_MISMATCH"
+          }
+        },
+        {
+          "id": "underpaid-seller",
+          "title": "underpaid-seller",
+          "expected": {
+            "ok": false,
+            "code": "SELLER_VALUE_MISMATCH"
+          }
+        },
+        {
+          "id": "offered-outpoint-missing",
+          "title": "offered-outpoint-missing",
+          "expected": {
+            "ok": false,
+            "code": "OFFERED_OUTPOINT_MISSING"
+          }
+        },
+        {
+          "id": "offered-outpoint-duplicated",
+          "title": "offered-outpoint-duplicated",
+          "expected": {
+            "ok": false,
+            "code": "OFFERED_OUTPOINT_DUPLICATED"
+          }
+        },
+        {
+          "id": "no-output-at-shared-index",
+          "title": "no-output-at-shared-index",
+          "expected": {
+            "ok": false,
+            "code": "SELLER_OUTPUT_MISSING"
+          }
+        },
+        {
+          "id": "unreadable-input-value",
+          "title": "unreadable-input-value",
+          "expected": {
+            "ok": false,
+            "code": "INPUT_VALUE_UNKNOWN"
+          }
+        },
+        {
+          "id": "fractional-value-refused",
+          "title": "fractional-value-refused",
+          "expected": {
+            "ok": false,
+            "code": "INPUT_VALUE_UNKNOWN"
+          }
+        }
+      ]
+    },
+    "rune-burn": {
+      "file": "rune-burn-vectors.json",
+      "count": 25,
+      "description": "Conformance vectors for the Ordex rune burn rule. Each case names the output scripts of a final transaction, what the rune index reports about each input being spent, and the exact verdict a compatible verifier must reach. The rules verified here are stated in spec/runes.md.",
+      "version": 1,
+      "vectors": [
+        {
+          "id": "no-runestone",
+          "title": "no-runestone",
+          "expected": {
+            "safe": true,
+            "runestone": "NONE"
+          }
+        },
+        {
+          "id": "plain-op-return",
+          "title": "plain-op-return",
+          "expected": {
+            "safe": true,
+            "runestone": "NONE"
+          }
+        },
+        {
+          "id": "single-edict",
+          "title": "single-edict",
+          "expected": {
+            "safe": true,
+            "runestone": "RUNESTONE"
+          }
+        },
+        {
+          "id": "edict-split-across-all",
+          "title": "edict-split-across-all",
+          "expected": {
+            "safe": true,
+            "runestone": "RUNESTONE"
+          }
+        },
+        {
+          "id": "pointer-in-range",
+          "title": "pointer-in-range",
+          "expected": {
+            "safe": true,
+            "runestone": "RUNESTONE"
+          }
+        },
+        {
+          "id": "unrecognized-odd-tag",
+          "title": "unrecognized-odd-tag",
+          "expected": {
+            "safe": true,
+            "runestone": "RUNESTONE"
+          }
+        },
+        {
+          "id": "op-0-is-an-empty-push",
+          "title": "op-0-is-an-empty-push",
+          "expected": {
+            "safe": true,
+            "runestone": "RUNESTONE"
+          }
+        },
+        {
+          "id": "cenotaph-clean-inputs",
+          "title": "cenotaph-clean-inputs",
+          "expected": {
+            "safe": true,
+            "runestone": "CENOTAPH"
+          }
+        },
+        {
+          "id": "unrecognized-even-tag",
+          "title": "unrecognized-even-tag",
+          "expected": {
+            "safe": false,
+            "runestone": "CENOTAPH",
+            "code": "CENOTAPH_BURNS_BALANCE",
+            "flaw": "UNRECOGNIZED_EVEN_TAG"
+          }
+        },
+        {
+          "id": "unrecognized-flag",
+          "title": "unrecognized-flag",
+          "expected": {
+            "safe": false,
+            "runestone": "CENOTAPH",
+            "code": "CENOTAPH_BURNS_BALANCE",
+            "flaw": "UNRECOGNIZED_FLAG"
+          }
+        },
+        {
+          "id": "terms-without-etching",
+          "title": "terms-without-etching",
+          "expected": {
+            "safe": false,
+            "runestone": "CENOTAPH",
+            "code": "CENOTAPH_BURNS_BALANCE",
+            "flaw": "UNRECOGNIZED_FLAG"
+          }
+        },
+        {
+          "id": "pointer-out-of-range",
+          "title": "pointer-out-of-range",
+          "expected": {
+            "safe": false,
+            "runestone": "CENOTAPH",
+            "code": "CENOTAPH_BURNS_BALANCE",
+            "flaw": "UNRECOGNIZED_EVEN_TAG"
+          }
+        },
+        {
+          "id": "truncated-field",
+          "title": "truncated-field",
+          "expected": {
+            "safe": false,
+            "runestone": "CENOTAPH",
+            "code": "CENOTAPH_BURNS_BALANCE",
+            "flaw": "TRUNCATED_FIELD"
+          }
+        },
+        {
+          "id": "trailing-integers",
+          "title": "trailing-integers",
+          "expected": {
+            "safe": false,
+            "runestone": "CENOTAPH",
+            "code": "CENOTAPH_BURNS_BALANCE",
+            "flaw": "TRAILING_INTEGERS"
+          }
+        },
+        {
+          "id": "edict-output-over-max",
+          "title": "edict-output-over-max",
+          "expected": {
+            "safe": false,
+            "runestone": "CENOTAPH",
+            "code": "CENOTAPH_BURNS_BALANCE",
+            "flaw": "EDICT_OUTPUT"
+          }
+        },
+        {
+          "id": "edict-rune-id-zero-block",
+          "title": "edict-rune-id-zero-block",
+          "expected": {
+            "safe": false,
+            "runestone": "CENOTAPH",
+            "code": "CENOTAPH_BURNS_BALANCE",
+            "flaw": "EDICT_RUNE_ID"
+          }
+        },
+        {
+          "id": "edict-block-delta-overflow",
+          "title": "edict-block-delta-overflow",
+          "expected": {
+            "safe": false,
+            "runestone": "CENOTAPH",
+            "code": "CENOTAPH_BURNS_BALANCE",
+            "flaw": "EDICT_RUNE_ID"
+          }
+        },
+        {
+          "id": "edict-tx-delta-overflow",
+          "title": "edict-tx-delta-overflow",
+          "expected": {
+            "safe": false,
+            "runestone": "CENOTAPH",
+            "code": "CENOTAPH_BURNS_BALANCE",
+            "flaw": "EDICT_RUNE_ID"
+          }
+        },
+        {
+          "id": "varint-unterminated",
+          "title": "varint-unterminated",
+          "expected": {
+            "safe": false,
+            "runestone": "CENOTAPH",
+            "code": "CENOTAPH_BURNS_BALANCE",
+            "flaw": "VARINT"
+          }
+        },
+        {
+          "id": "varint-overlong",
+          "title": "varint-overlong",
+          "expected": {
+            "safe": false,
+            "runestone": "CENOTAPH",
+            "code": "CENOTAPH_BURNS_BALANCE",
+            "flaw": "VARINT"
+          }
+        },
+        {
+          "id": "varint-overflows-u128",
+          "title": "varint-overflows-u128",
+          "expected": {
+            "safe": false,
+            "runestone": "CENOTAPH",
+            "code": "CENOTAPH_BURNS_BALANCE",
+            "flaw": "VARINT"
+          }
+        },
+        {
+          "id": "opcode-in-payload",
+          "title": "opcode-in-payload",
+          "expected": {
+            "safe": false,
+            "runestone": "CENOTAPH",
+            "code": "CENOTAPH_BURNS_BALANCE",
+            "flaw": "OPCODE"
+          }
+        },
+        {
+          "id": "push-past-end-of-script",
+          "title": "push-past-end-of-script",
+          "expected": {
+            "safe": false,
+            "runestone": "CENOTAPH",
+            "code": "CENOTAPH_BURNS_BALANCE",
+            "flaw": "INVALID_SCRIPT"
+          }
+        },
+        {
+          "id": "first-runestone-wins",
+          "title": "first-runestone-wins",
+          "expected": {
+            "safe": false,
+            "runestone": "CENOTAPH",
+            "code": "CENOTAPH_BURNS_BALANCE",
+            "flaw": "UNRECOGNIZED_EVEN_TAG"
+          }
+        },
+        {
+          "id": "cenotaph-unindexed-input",
+          "title": "cenotaph-unindexed-input",
+          "expected": {
+            "safe": false,
+            "runestone": "CENOTAPH",
+            "code": "CENOTAPH_WITH_UNPROVEN_INPUT",
+            "flaw": "UNRECOGNIZED_EVEN_TAG"
+          }
+        }
+      ]
+    },
+    "safeops": {
+      "file": "safeops-vectors.json",
+      "count": 17,
+      "description": "SafeOps plan and signed result vectors. Every plan digest in this file was computed by safeopsPlanDigest.",
+      "version": 1,
+      "vectors": [
+        {
+          "id": "a cardinal batch send plan with examined inputs is accepted",
+          "title": "a cardinal batch send plan with examined inputs is accepted",
+          "expected": {
+            "ok": true
+          }
+        },
+        {
+          "id": "an input that was never examined fails closed",
+          "title": "an input that was never examined fails closed",
+          "expected": {
+            "ok": false,
+            "code": "INVENTORY_UNEXAMINED"
+          }
+        },
+        {
+          "id": "a cardinal operation refuses an input that carries an inscription",
+          "title": "a cardinal operation refuses an input that carries an inscription",
+          "expected": {
+            "ok": false,
+            "code": "ASSET_IN_CARDINAL_OPERATION"
+          }
+        },
+        {
+          "id": "a tracked asset without a transition is refused",
+          "title": "a tracked asset without a transition is refused",
+          "expected": {
+            "ok": false,
+            "code": "TRACKED_ASSET_UNASSIGNED"
+          }
+        },
+        {
+          "id": "a transition naming a missing output is refused",
+          "title": "a transition naming a missing output is refused",
+          "expected": {
+            "ok": false,
+            "code": "TRANSITION_OUTPUT_MISSING"
+          }
+        },
+        {
+          "id": "a transition against the sat flow is refused",
+          "title": "a transition against the sat flow is refused",
+          "expected": {
+            "ok": false,
+            "code": "TRANSITION_SAT_FLOW_MISMATCH"
+          }
+        },
+        {
+          "id": "an unknown claim fails closed even with a transition",
+          "title": "an unknown claim fails closed even with a transition",
+          "expected": {
+            "ok": false,
+            "code": "UNKNOWN_CLAIM_FAILS_CLOSED"
+          }
+        },
+        {
+          "id": "outputs that do not conserve value are refused",
+          "title": "outputs that do not conserve value are refused",
+          "expected": {
+            "ok": false,
+            "code": "VALUE_NOT_CONSERVED"
+          }
+        },
+        {
+          "id": "a dust output is refused",
+          "title": "a dust output is refused",
+          "expected": {
+            "ok": false,
+            "code": "DUST_OUTPUT"
+          }
+        },
+        {
+          "id": "a rune operation without a rune allocation is refused",
+          "title": "a rune operation without a rune allocation is refused",
+          "expected": {
+            "ok": false,
+            "code": "RUNE_INPUT_MISSING_ALLOCATION"
+          }
+        },
+        {
+          "id": "a plan whose digest was edited is refused",
+          "title": "a plan whose digest was edited is refused",
+          "expected": {
+            "ok": false,
+            "code": "DIGEST_MISMATCH"
+          }
+        },
+        {
+          "id": "a fully signed result matching its plan is accepted",
+          "title": "a fully signed result matching its plan is accepted",
+          "expected": {
+            "ok": true
+          }
+        },
+        {
+          "id": "a signed result from a different plan is refused",
+          "title": "a signed result from a different plan is refused",
+          "expected": {
+            "ok": false,
+            "code": "PLAN_DIGEST_MISMATCH"
+          }
+        },
+        {
+          "id": "a changed output script is refused after signing",
+          "title": "a changed output script is refused after signing",
+          "expected": {
+            "ok": false,
+            "code": "SCRIPT_CHANGED"
+          }
+        },
+        {
+          "id": "an unsigned required input is refused",
+          "title": "an unsigned required input is refused",
+          "expected": {
+            "ok": false,
+            "code": "SIGNATURE_MISSING"
+          }
+        },
+        {
+          "id": "a signature outside the signing policy is refused",
+          "title": "a signature outside the signing policy is refused",
+          "expected": {
+            "ok": false,
+            "code": "UNEXPECTED_SIGNATURE"
+          }
+        },
+        {
+          "id": "a changed sighash is refused",
+          "title": "a changed sighash is refused",
+          "expected": {
+            "ok": false,
+            "code": "SIGHASH_CHANGED"
+          }
+        }
+      ]
+    },
+    "swap": {
+      "file": "swap-vectors.json",
+      "count": 17,
+      "description": "Swap intent and acceptance plan vectors. Intent digests were computed by swapIntentDigest.",
+      "version": 1,
+      "vectors": [
+        {
+          "id": "a public intent with exact outpoints is accepted",
+          "title": "a public intent with exact outpoints is accepted",
+          "expected": {
+            "ok": true
+          }
+        },
+        {
+          "id": "an intent with the wrong schema is refused",
+          "title": "an intent with the wrong schema is refused",
+          "expected": {
+            "ok": false,
+            "code": "SCHEMA_UNSUPPORTED"
+          }
+        },
+        {
+          "id": "an intent for an unnamed network is refused",
+          "title": "an intent for an unnamed network is refused",
+          "expected": {
+            "ok": false,
+            "code": "NETWORK_UNKNOWN"
+          }
+        },
+        {
+          "id": "a non-BTC give without an asset id is refused",
+          "title": "a non-BTC give without an asset id is refused",
+          "expected": {
+            "ok": false,
+            "code": "GIVES_INVALID"
+          }
+        },
+        {
+          "id": "an intent expiring before its checkpoint is refused",
+          "title": "an intent expiring before its checkpoint is refused",
+          "expected": {
+            "ok": false,
+            "code": "EXPIRY_INVALID"
+          }
+        },
+        {
+          "id": "an intent whose digest was edited is refused",
+          "title": "an intent whose digest was edited is refused",
+          "expected": {
+            "ok": false,
+            "code": "DIGEST_MISMATCH"
+          }
+        },
+        {
+          "id": "an intent without a maker identity proof is refused",
+          "title": "an intent without a maker identity proof is refused",
+          "expected": {
+            "ok": false,
+            "code": "MAKER_PROOF_INVALID"
+          }
+        },
+        {
+          "id": "a private intent bound to a taker is accepted",
+          "title": "a private intent bound to a taker is accepted",
+          "expected": {
+            "ok": true
+          }
+        },
+        {
+          "id": "an acceptance plan matching its intent is accepted",
+          "title": "an acceptance plan matching its intent is accepted",
+          "expected": {
+            "ok": true
+          }
+        },
+        {
+          "id": "an acceptance plan from a different intent is refused",
+          "title": "an acceptance plan from a different intent is refused",
+          "expected": {
+            "ok": false,
+            "code": "INTENT_DIGEST_MISMATCH"
+          }
+        },
+        {
+          "id": "a one sided transaction cannot settle atomically",
+          "title": "a one sided transaction cannot settle atomically",
+          "expected": {
+            "ok": false,
+            "code": "ATOMICITY_IMPOSSIBLE"
+          }
+        },
+        {
+          "id": "a sighash that does not close the transaction is refused",
+          "title": "a sighash that does not close the transaction is refused",
+          "expected": {
+            "ok": false,
+            "code": "UNCLOSED_SIGHASH"
+          }
+        },
+        {
+          "id": "an acceptance plan that drops a committed outpoint is refused",
+          "title": "an acceptance plan that drops a committed outpoint is refused",
+          "expected": {
+            "ok": false,
+            "code": "MAKER_OUTPOINT_MISSING"
+          }
+        },
+        {
+          "id": "a maker input the intent never committed is refused",
+          "title": "a maker input the intent never committed is refused",
+          "expected": {
+            "ok": false,
+            "code": "UNEXPECTED_MAKER_INPUT"
+          }
+        },
+        {
+          "id": "a consideration shortfall is refused",
+          "title": "a consideration shortfall is refused",
+          "expected": {
+            "ok": false,
+            "code": "CONSIDERATION_SHORTFALL"
+          }
+        },
+        {
+          "id": "a maker fee above the intent budget is refused",
+          "title": "a maker fee above the intent budget is refused",
+          "expected": {
+            "ok": false,
+            "code": "FEE_BUDGET_EXCEEDED"
+          }
+        },
+        {
+          "id": "a maker asset without a delivery transition is refused",
+          "title": "a maker asset without a delivery transition is refused",
+          "expected": {
+            "ok": false,
+            "code": "MAKER_ASSET_UNASSIGNED"
+          }
+        }
+      ]
+    }
+  },
+  "refusalList": [
+    {
+      "code": "ACCOUNT_INVALID",
+      "verifiers": [
+        "offline-signing.js"
+      ],
+      "reasons": [
+        "The account may carry only an output descriptor string."
+      ]
+    },
+    {
+      "code": "ADAPTER_VERSIONS_MISSING",
+      "verifiers": [
+        "swaps.js"
+      ],
+      "reasons": [
+        "The intent must name the protocol adapter versions it relies on."
+      ]
+    },
+    {
+      "code": "ADDRESS_MISSING",
+      "verifiers": [
+        "counterparty-asset.js"
+      ],
+      "reasons": [
+        "The record must name the address that controls the outpoint."
+      ]
+    },
+    {
+      "code": "AGGREGATE_INVALID",
+      "verifiers": [
+        "events.js"
+      ],
+      "reasons": [
+        "The event must name an aggregate type, id, and version."
+      ]
+    },
+    {
+      "code": "ANCHOR_INVALID",
+      "verifiers": [
+        "collection-manifest.js"
+      ],
+      "reasons": [
+        "An anchor must name a lowercase 64 hex transaction id."
+      ]
+    },
+    {
+      "code": "ARTIFACT_DIGEST_INVALID",
+      "verifiers": [
+        "events.js"
+      ],
+      "reasons": [
+        "Every artifact digest must be 64 lowercase hex characters."
+      ]
+    },
+    {
+      "code": "ASSET_EXPECTATION_INVALID",
+      "verifiers": [
+        "offline-signing.js"
+      ],
+      "reasons": [
+        "Output ${i} carries a malformed asset expectation."
+      ]
+    },
+    {
+      "code": "ASSET_ID_REQUIRED",
+      "verifiers": [
+        "counterparty-asset.js"
+      ],
+      "reasons": [
+        "Asset identity is the authoritative numeric Counterparty asset id; a name alone is never an identity."
+      ]
+    },
+    {
+      "code": "ASSET_IDENTITY_MISSING",
+      "verifiers": [
+        "counterparty-asset.js"
+      ],
+      "reasons": [
+        "The record must describe the attached asset.",
+        "The record must carry the asset name.",
+        "The record must state whether the asset is divisible."
+      ]
+    },
+    {
+      "code": "ASSET_IN_CARDINAL_OPERATION",
+      "verifiers": [
+        "safeops.js"
+      ],
+      "reasons": [
+        "Input ${i} carries ${assets[0].assetType} ${assets[0].assetId}; this operation moves cardinal value only."
+      ]
+    },
+    {
+      "code": "ASSET_TRANSITION_DUPLICATED",
+      "verifiers": [
+        "safeops.js",
+        "swaps.js"
+      ],
+      "reasons": [
+        "Asset ${key} is assigned to more than one transition."
+      ]
+    },
+    {
+      "code": "ATOMICITY_IMPOSSIBLE",
+      "verifiers": [
+        "swaps.js"
+      ],
+      "reasons": [
+        "A swap settles both sides in one transaction with inputs and outputs from both parties."
+      ]
+    },
+    {
+      "code": "ATTACHMENT_STATE_UNKNOWN",
+      "verifiers": [
+        "counterparty-asset.js"
+      ],
+      "reasons": [
+        "The record must state that the attachment currently exists."
+      ]
+    },
+    {
+      "code": "AUTHORITY_NOT_READY",
+      "verifiers": [
+        "counterparty-asset.js"
+      ],
+      "reasons": [
+        "The record may only be produced while the self hosted Counterparty Core authority reports ready."
+      ]
+    },
+    {
+      "code": "BODY_INVALID",
+      "verifiers": [
+        "events.js"
+      ],
+      "reasons": [
+        "The body must be the exact string that was received."
+      ]
+    },
+    {
+      "code": "BUYER_ASSET_OUTPUT_MISSING",
+      "verifiers": [
+        "offers.js"
+      ],
+      "reasons": [
+        "The buyer receive script must appear exactly once ahead of the seller payment."
+      ]
+    },
+    {
+      "code": "CENOTAPH_BURNS_BALANCE",
+      "verifiers": [
+        "runes.js"
+      ],
+      "reasons": []
+    },
+    {
+      "code": "CENOTAPH_WITH_UNPROVEN_INPUT",
+      "verifiers": [
+        "runes.js"
+      ],
+      "reasons": []
+    },
+    {
+      "code": "CHECKPOINT_INVALID",
+      "verifiers": [
+        "counterparty-asset.js",
+        "events.js",
+        "safeops.js",
+        "swaps.js"
+      ],
+      "reasons": [
+        "The record must carry the block height, block hash, and Counterparty ledger hash it was read at.",
+        "The event must carry the chain checkpoint it was observed at.",
+        "The plan must carry the chain checkpoint it was built against.",
+        "The intent must carry the chain checkpoint it was signed against."
+      ]
+    },
+    {
+      "code": "COLLECTION_ID_INVALID",
+      "verifiers": [
+        "collection-manifest.js"
+      ],
+      "reasons": [
+        "The manifest must name a collection id of at most 200 characters.",
+        "The revocation must name the collection id."
+      ]
+    },
+    {
+      "code": "CONSIDERATION_SHORTFALL",
+      "verifiers": [
+        "swaps.js"
+      ],
+      "reasons": [
+        "No output pays the maker receive script at least ${criterion.minQuantitySats} for ${criterion.assetType}."
+      ]
+    },
+    {
+      "code": "COTRAVELING_INVALID",
+      "verifiers": [
+        "counterparty-asset.js"
+      ],
+      "reasons": [
+        "coTravelingAssets must be an array.",
+        "Every co-traveling asset needs a name, an asset id, and an exact quantity."
+      ]
+    },
+    {
+      "code": "CREATED_AT_INVALID",
+      "verifiers": [
+        "collection-manifest.js"
+      ],
+      "reasons": [
+        "createdAtHeight must be a non-negative block height."
+      ]
+    },
+    {
+      "code": "CREATOR_ADDRESS_INVALID",
+      "verifiers": [
+        "collection-manifest.js"
+      ],
+      "reasons": [
+        "The manifest must name the creator signing address."
+      ]
+    },
+    {
+      "code": "CREATOR_SIGNATURE_INVALID",
+      "verifiers": [
+        "collection-manifest.js"
+      ],
+      "reasons": [
+        "The manifest must carry a bip322 creator signature.",
+        "The revocation must carry a bip322 creator signature."
+      ]
+    },
+    {
+      "code": "DESTINATION_MISMATCH",
+      "verifiers": [
+        "counterparty-asset.js"
+      ],
+      "reasons": [
+        "The sat range lands on output ${carriedToIndex}, not the planned output ${expectedOutputIndex}."
+      ]
+    },
+    {
+      "code": "DESTINATION_MISSING",
+      "verifiers": [
+        "counterparty-asset.js"
+      ],
+      "reasons": [
+        "The plan names an output that does not exist."
+      ]
+    },
+    {
+      "code": "DIGEST_MISMATCH",
+      "verifiers": [
+        "collection-manifest.js",
+        "offline-signing.js",
+        "safeops.js",
+        "swaps.js"
+      ],
+      "reasons": [
+        "The manifest digest does not match its content.",
+        "The revocation digest does not match its content.",
+        "The manifest digest does not match the transaction it describes.",
+        "The plan digest does not match its binding content.",
+        "The intent digest does not match its signed content."
+      ]
+    },
+    {
+      "code": "DISPLAY_NAME_INVALID",
+      "verifiers": [
+        "collection-manifest.js"
+      ],
+      "reasons": [
+        "The manifest must name a display name of at most 200 characters."
+      ]
+    },
+    {
+      "code": "DUST_OUTPUT",
+      "verifiers": [
+        "offline-signing.js",
+        "safeops.js",
+        "swaps.js"
+      ],
+      "reasons": [
+        "Output ${i} is below the 546 sat dust floor."
+      ]
+    },
+    {
+      "code": "EVENT_ID_INVALID",
+      "verifiers": [
+        "events.js"
+      ],
+      "reasons": [
+        "The event id must be a lowercase uuid."
+      ]
+    },
+    {
+      "code": "EVENT_TYPE_INVALID",
+      "verifiers": [
+        "events.js"
+      ],
+      "reasons": [
+        "The event type must look like ordex.<family>.<name>."
+      ]
+    },
+    {
+      "code": "EXPIRY_INVALID",
+      "verifiers": [
+        "safeops.js",
+        "swaps.js"
+      ],
+      "reasons": [
+        "The expiry height must be a block after the checkpoint height."
+      ]
+    },
+    {
+      "code": "FEE_BUDGET_EXCEEDED",
+      "verifiers": [
+        "swaps.js"
+      ],
+      "reasons": [
+        "The maker contribution exceeds the budget the intent approved."
+      ]
+    },
+    {
+      "code": "FEE_BUDGET_INVALID",
+      "verifiers": [
+        "swaps.js"
+      ],
+      "reasons": [
+        "maxMakerFeeSats must be an exact non-negative decimal string."
+      ]
+    },
+    {
+      "code": "FEE_CHANGED",
+      "verifiers": [
+        "safeops.js",
+        "swaps.js"
+      ],
+      "reasons": [
+        "The signed transaction fee no longer matches the planned fee.",
+        "The declared fee does not match the transaction."
+      ]
+    },
+    {
+      "code": "FEE_INVALID",
+      "verifiers": [
+        "offline-signing.js",
+        "safeops.js",
+        "swaps.js"
+      ],
+      "reasons": [
+        "feeSats and maxFeeSats must be exact decimal strings and fee <= maxFee.",
+        "The plan must carry a fee object.",
+        "The acceptance plan must carry a fee object.",
+        "Fee contributions must be exact decimal strings."
+      ]
+    },
+    {
+      "code": "FEE_OUT_OF_BOUNDS",
+      "verifiers": [
+        "offline-signing.js"
+      ],
+      "reasons": [
+        "The signed transaction fee left the bound the manifest approved."
+      ]
+    },
+    {
+      "code": "FEE_OVER_MAXIMUM",
+      "verifiers": [
+        "offers.js"
+      ],
+      "reasons": [
+        "The fee exceeds the maximum the terms committed to."
+      ]
+    },
+    {
+      "code": "FEE_SPLIT_INVALID",
+      "verifiers": [
+        "swaps.js"
+      ],
+      "reasons": [
+        "The maker and taker contributions must equal the declared fee."
+      ]
+    },
+    {
+      "code": "FELINE_OUTPOINT_DUPLICATED",
+      "verifiers": [
+        "offers.js"
+      ],
+      "reasons": [
+        "The Feline outpoint appears at more than one index."
+      ]
+    },
+    {
+      "code": "FELINE_OUTPOINT_MISSING",
+      "verifiers": [
+        "offers.js"
+      ],
+      "reasons": [
+        "No input spends the seller Feline output."
+      ]
+    },
+    {
+      "code": "GIVES_INVALID",
+      "verifiers": [
+        "swaps.js"
+      ],
+      "reasons": [
+        "The intent must give at least one exact outpoint with an exact quantity."
+      ]
+    },
+    {
+      "code": "HEADER_MALFORMED",
+      "verifiers": [
+        "events.js"
+      ],
+      "reasons": [
+        "The header must look like t=<unix>,d=<id>,v1=<hex>.",
+        "The header must carry t, d, and a 64 hex v1 signature."
+      ]
+    },
+    {
+      "code": "HEADER_MISSING",
+      "verifiers": [
+        "events.js"
+      ],
+      "reasons": [
+        "Expected an X-Ordex-Signature header value."
+      ]
+    },
+    {
+      "code": "IDENTITY_TYPE_UNKNOWN",
+      "verifiers": [
+        "collection-manifest.js"
+      ],
+      "reasons": [
+        "The member identity type is not one this registry names."
+      ]
+    },
+    {
+      "code": "INPUT_DESCRIPTION_INVALID",
+      "verifiers": [
+        "offline-signing.js"
+      ],
+      "reasons": [
+        "Input ${i} needs an outpoint, an exact value and script, whether the user controls it, and why it is spent."
+      ]
+    },
+    {
+      "code": "INPUT_DUPLICATED",
+      "verifiers": [
+        "swaps.js"
+      ],
+      "reasons": [
+        "Input ${key} appears more than once."
+      ]
+    },
+    {
+      "code": "INPUT_ORDER_CHANGED",
+      "verifiers": [
+        "safeops.js"
+      ],
+      "reasons": [
+        "Input ${i} was reordered or substituted after the plan was agreed."
+      ]
+    },
+    {
+      "code": "INPUT_OUTPOINT_INVALID",
+      "verifiers": [
+        "safeops.js",
+        "swaps.js"
+      ],
+      "reasons": [
+        "Input ${i} does not carry a lowercase txid and vout."
+      ]
+    },
+    {
+      "code": "INPUT_PARTY_INVALID",
+      "verifiers": [
+        "swaps.js"
+      ],
+      "reasons": [
+        "Input ${i} must name the maker or the taker."
+      ]
+    },
+    {
+      "code": "INPUT_REORDERED",
+      "verifiers": [
+        "offline-signing.js"
+      ],
+      "reasons": [
+        "Input ${i} was reordered or substituted."
+      ]
+    },
+    {
+      "code": "INPUT_SET_CHANGED",
+      "verifiers": [
+        "offline-signing.js",
+        "safeops.js"
+      ],
+      "reasons": [
+        "The signed transaction spends a different set of inputs than the manifest presented.",
+        "The signed transaction does not spend exactly the planned inputs."
+      ]
+    },
+    {
+      "code": "INPUT_VALUE_CHANGED",
+      "verifiers": [
+        "safeops.js"
+      ],
+      "reasons": [
+        "Input ${i} no longer carries its planned value."
+      ]
+    },
+    {
+      "code": "INPUT_VALUE_INVALID",
+      "verifiers": [
+        "safeops.js",
+        "swaps.js"
+      ],
+      "reasons": [
+        "Input ${i} does not carry an exact decimal value."
+      ]
+    },
+    {
+      "code": "INPUT_VALUE_UNKNOWN",
+      "verifiers": [
+        "counterparty-asset.js",
+        "offers.js",
+        "purchase.js"
+      ],
+      "reasons": [
+        "Input ${i} has no readable value, so the sat range cannot be traced.",
+        "The value of input ${i} could not be read, so the invariant cannot be proved.",
+        "The Feline output value could not be read, so the invariant cannot be proved.",
+        "An input value could not be read, so the fee cannot be proved.",
+        "The value of input ${i} could not be read, so the sat flow invariant cannot be evaluated.",
+        "The value of the offered output could not be read, so the sat flow invariant cannot be evaluated."
+      ]
+    },
+    {
+      "code": "INPUTS_EMPTY",
+      "verifiers": [
+        "safeops.js"
+      ],
+      "reasons": [
+        "A plan must select at least one input."
+      ]
+    },
+    {
+      "code": "INTENT_DIGEST_MISMATCH",
+      "verifiers": [
+        "swaps.js"
+      ],
+      "reasons": [
+        "The acceptance plan was not built from this intent."
+      ]
+    },
+    {
+      "code": "INVENTORY_UNEXAMINED",
+      "verifiers": [
+        "safeops.js"
+      ],
+      "reasons": [
+        "Input ${i} was never examined against the protocol authorities."
+      ]
+    },
+    {
+      "code": "MAKER_OUTPOINT_MISSING",
+      "verifiers": [
+        "swaps.js"
+      ],
+      "reasons": [
+        "The committed outpoint ${key} is not spent by the acceptance plan."
+      ]
+    },
+    {
+      "code": "MAKER_OUTPOINT_REASSIGNED",
+      "verifiers": [
+        "swaps.js"
+      ],
+      "reasons": [
+        "The committed outpoint ${key} is claimed by the taker."
+      ]
+    },
+    {
+      "code": "MAKER_PROOF_INVALID",
+      "verifiers": [
+        "swaps.js"
+      ],
+      "reasons": [
+        "The intent must carry a bip322 maker identity proof with an address."
+      ]
+    },
+    {
+      "code": "MALFORMED_ACCEPTANCE",
+      "verifiers": [
+        "offers.js",
+        "swaps.js"
+      ],
+      "reasons": [
+        "Expected inputs, outputs, and a policy signature count.",
+        "The acceptance leaf must be lowercase hex bytes.",
+        "Output ${i} does not carry an exact decimal value.",
+        "An output value is not an exact decimal string.",
+        "The outputs carry more than the inputs.",
+        "Expected an acceptance plan object."
+      ]
+    },
+    {
+      "code": "MALFORMED_EVENT",
+      "verifiers": [
+        "events.js"
+      ],
+      "reasons": [
+        "Expected an event object."
+      ]
+    },
+    {
+      "code": "MALFORMED_INTENT",
+      "verifiers": [
+        "swaps.js"
+      ],
+      "reasons": [
+        "Expected an intent object."
+      ]
+    },
+    {
+      "code": "MALFORMED_MANIFEST",
+      "verifiers": [
+        "collection-manifest.js",
+        "offline-signing.js"
+      ],
+      "reasons": [
+        "Expected a manifest object.",
+        "The manifest must state whether it was prepared by a watch-only profile.",
+        "The manifest must describe at least one input and one output."
+      ]
+    },
+    {
+      "code": "MALFORMED_OFFER",
+      "verifiers": [
+        "offers.js"
+      ],
+      "reasons": [
+        "Expected both outpoints and the terms hash.",
+        "priceSats must be an exact decimal string.",
+        "maxNetworkFeeSats must be an exact decimal string.",
+        "Expected the offer outpoint and the recovery key."
+      ]
+    },
+    {
+      "code": "MALFORMED_ORDER",
+      "verifiers": [
+        "purchase.js"
+      ],
+      "reasons": [
+        "Expected an offered outpoint with txid and vout.",
+        "sellerPaymentValueSats must be an exact decimal string.",
+        "sellerPaymentScriptHex must be a nonempty hex string."
+      ]
+    },
+    {
+      "code": "MALFORMED_PLAN",
+      "verifiers": [
+        "safeops.js"
+      ],
+      "reasons": [
+        "Expected a plan object.",
+        "Expected an outputs array."
+      ]
+    },
+    {
+      "code": "MALFORMED_RECORD",
+      "verifiers": [
+        "counterparty-asset.js"
+      ],
+      "reasons": [
+        "Expected an attachment record object."
+      ]
+    },
+    {
+      "code": "MALFORMED_RECOVERY",
+      "verifiers": [
+        "offers.js"
+      ],
+      "reasons": [
+        "Expected inputs and outputs arrays.",
+        "The recovery values could not be proved exact."
+      ]
+    },
+    {
+      "code": "MALFORMED_REVOCATION",
+      "verifiers": [
+        "collection-manifest.js"
+      ],
+      "reasons": [
+        "Expected a revocation object."
+      ]
+    },
+    {
+      "code": "MALFORMED_SIGNED_RESULT",
+      "verifiers": [
+        "offline-signing.js",
+        "safeops.js"
+      ],
+      "reasons": [
+        "Expected a signed result object.",
+        "The signed result must carry inputs and outputs.",
+        "Every input needs an exact decimal value.",
+        "Every output needs an exact decimal value.",
+        "The signed result must carry transaction inputs and outputs."
+      ]
+    },
+    {
+      "code": "MALFORMED_TERMS",
+      "verifiers": [
+        "offers.js"
+      ],
+      "reasons": [
+        "Expected a terms object.",
+        "Unknown field ${key}.",
+        "The terms must name a collection id."
+      ]
+    },
+    {
+      "code": "MALFORMED_TRANSACTION",
+      "verifiers": [
+        "counterparty-asset.js",
+        "purchase.js"
+      ],
+      "reasons": [
+        "Expected inputs and outputs arrays.",
+        "Output ${i} does not carry an exact decimal value."
+      ]
+    },
+    {
+      "code": "MANIFEST_DIGEST_INVALID",
+      "verifiers": [
+        "collection-manifest.js"
+      ],
+      "reasons": [
+        "The revocation must name the manifest digest it revokes."
+      ]
+    },
+    {
+      "code": "MANIFEST_DIGEST_MISMATCH",
+      "verifiers": [
+        "collection-manifest.js",
+        "offline-signing.js"
+      ],
+      "reasons": [
+        "The revocation names a different manifest than the one supplied.",
+        "The signed result was not produced from this manifest. Present the manifest again and sign it fresh."
+      ]
+    },
+    {
+      "code": "MEMBER_NOT_PROVEN",
+      "verifiers": [
+        "collection-manifest.js"
+      ],
+      "reasons": [
+        "The proof does not resolve to the membership root, so this identity is not a member."
+      ]
+    },
+    {
+      "code": "MEMBERS_DUPLICATED",
+      "verifiers": [
+        "collection-manifest.js"
+      ],
+      "reasons": [
+        "The member ${sortedMembers[i]} appears more than once."
+      ]
+    },
+    {
+      "code": "MEMBERS_EMPTY",
+      "verifiers": [
+        "collection-manifest.js"
+      ],
+      "reasons": [
+        "A manifest must list at least one member identity."
+      ]
+    },
+    {
+      "code": "MEMBERS_INVALID",
+      "verifiers": [
+        "collection-manifest.js"
+      ],
+      "reasons": [
+        "Every member identity must be a string of at most 256 characters."
+      ]
+    },
+    {
+      "code": "MEMBERS_UNSORTED",
+      "verifiers": [
+        "collection-manifest.js"
+      ],
+      "reasons": [
+        "The member list must be stored in ascending sorted order."
+      ]
+    },
+    {
+      "code": "MEMBERSHIP_ROOT_MISMATCH",
+      "verifiers": [
+        "collection-manifest.js"
+      ],
+      "reasons": [
+        "The membership root does not match the member list."
+      ]
+    },
+    {
+      "code": "NETWORK_MISMATCH",
+      "verifiers": [
+        "swaps.js"
+      ],
+      "reasons": [
+        "The acceptance plan was built for a different network."
+      ]
+    },
+    {
+      "code": "NETWORK_UNKNOWN",
+      "verifiers": [
+        "collection-manifest.js",
+        "counterparty-asset.js",
+        "events.js",
+        "offline-signing.js",
+        "safeops.js",
+        "swaps.js"
+      ],
+      "reasons": [
+        "The network is not one this protocol names."
+      ]
+    },
+    {
+      "code": "NONCE_INVALID",
+      "verifiers": [
+        "swaps.js"
+      ],
+      "reasons": [
+        "The intent must carry a nonce of 8 to 128 characters."
+      ]
+    },
+    {
+      "code": "OBSERVED_AT_INVALID",
+      "verifiers": [
+        "events.js"
+      ],
+      "reasons": [
+        "observedAt must be an ISO-8601 timestamp ending in Z."
+      ]
+    },
+    {
+      "code": "OFFER_EXPIRED",
+      "verifiers": [
+        "offers.js"
+      ],
+      "reasons": [
+        "The expiry height has passed; recovery is the only remaining path."
+      ]
+    },
+    {
+      "code": "OFFER_OUTPOINT_DUPLICATED",
+      "verifiers": [
+        "offers.js"
+      ],
+      "reasons": [
+        "The funded output appears at more than one index.",
+        "The funded output appears twice."
+      ]
+    },
+    {
+      "code": "OFFER_OUTPOINT_MISSING",
+      "verifiers": [
+        "offers.js"
+      ],
+      "reasons": [
+        "No input spends the funded offer output.",
+        "No input spends the funded output."
+      ]
+    },
+    {
+      "code": "OFFERED_OUTPOINT_DUPLICATED",
+      "verifiers": [
+        "purchase.js"
+      ],
+      "reasons": [
+        "The offered outpoint appears at more than one index, so one signature would answer for two positions."
+      ]
+    },
+    {
+      "code": "OFFERED_OUTPOINT_MISSING",
+      "verifiers": [
+        "purchase.js"
+      ],
+      "reasons": [
+        "No input spends the offered output."
+      ]
+    },
+    {
+      "code": "OPERATION_KIND_UNKNOWN",
+      "verifiers": [
+        "safeops.js"
+      ],
+      "reasons": [
+        "The operation kind is not one this protocol names."
+      ]
+    },
+    {
+      "code": "OUTPOINT_DUPLICATED",
+      "verifiers": [
+        "counterparty-asset.js"
+      ],
+      "reasons": [
+        "The attached outpoint appears at more than one index."
+      ]
+    },
+    {
+      "code": "OUTPOINT_INVALID",
+      "verifiers": [
+        "counterparty-asset.js"
+      ],
+      "reasons": [
+        "The record must name a lowercase txid and vout."
+      ]
+    },
+    {
+      "code": "OUTPOINT_NOT_SPENT",
+      "verifiers": [
+        "counterparty-asset.js"
+      ],
+      "reasons": [
+        "No input spends the attached outpoint."
+      ]
+    },
+    {
+      "code": "OUTPUT_DESCRIPTION_INVALID",
+      "verifiers": [
+        "offline-signing.js"
+      ],
+      "reasons": [
+        "Output ${i} needs an exact script and value, a role, and who receives it."
+      ]
+    },
+    {
+      "code": "OUTPUT_ROLE_UNKNOWN",
+      "verifiers": [
+        "safeops.js"
+      ],
+      "reasons": [
+        "Output ${i} does not name a recipient, change, or preserve role."
+      ]
+    },
+    {
+      "code": "OUTPUT_SCRIPT_INVALID",
+      "verifiers": [
+        "safeops.js",
+        "swaps.js"
+      ],
+      "reasons": [
+        "Output ${i} does not carry lowercase hex script bytes."
+      ]
+    },
+    {
+      "code": "OUTPUT_SET_CHANGED",
+      "verifiers": [
+        "offline-signing.js",
+        "safeops.js"
+      ],
+      "reasons": [
+        "The signed transaction carries a different set of outputs than the manifest presented.",
+        "The signed transaction does not carry exactly the planned outputs."
+      ]
+    },
+    {
+      "code": "OUTPUT_VALUE_INVALID",
+      "verifiers": [
+        "safeops.js",
+        "swaps.js"
+      ],
+      "reasons": [
+        "Output ${i} does not carry an exact decimal value."
+      ]
+    },
+    {
+      "code": "OUTPUT_VALUE_UNKNOWN",
+      "verifiers": [
+        "counterparty-asset.js"
+      ],
+      "reasons": [
+        "Output ${i} has no readable value, so the sat range cannot be traced."
+      ]
+    },
+    {
+      "code": "PAYLOAD_INVALID",
+      "verifiers": [
+        "events.js"
+      ],
+      "reasons": [
+        "The payload must be an object."
+      ]
+    },
+    {
+      "code": "PLAN_DIGEST_MISMATCH",
+      "verifiers": [
+        "safeops.js"
+      ],
+      "reasons": [
+        "The signed result was not produced from this plan. Refresh the plan and sign again."
+      ]
+    },
+    {
+      "code": "POLICY_SIGNATURES_MISSING",
+      "verifiers": [
+        "offers.js"
+      ],
+      "reasons": [
+        "A valid acceptance carries exactly one signature from each independent policy signer."
+      ]
+    },
+    {
+      "code": "PREVIOUS_DIGEST_FORBIDDEN",
+      "verifiers": [
+        "collection-manifest.js"
+      ],
+      "reasons": [
+        "Version 1 cannot name a previous manifest."
+      ]
+    },
+    {
+      "code": "PREVIOUS_DIGEST_REQUIRED",
+      "verifiers": [
+        "collection-manifest.js"
+      ],
+      "reasons": [
+        "A manifest after version 1 must name the manifest it supersedes."
+      ]
+    },
+    {
+      "code": "PROOF_MALFORMED",
+      "verifiers": [
+        "collection-manifest.js"
+      ],
+      "reasons": [
+        "Every proof step needs a sibling digest and a position."
+      ]
+    },
+    {
+      "code": "PROTECTED_ASSET_MISPLACED",
+      "verifiers": [
+        "offline-signing.js"
+      ],
+      "reasons": [
+        "Asset ${key} was not part of the presented plan at all.",
+        "Asset ${key} landed on output ${movement.outputIndex} instead of the presented output ${expectedIndex}."
+      ]
+    },
+    {
+      "code": "PROTOCOL_FAMILY_UNKNOWN",
+      "verifiers": [
+        "collection-manifest.js"
+      ],
+      "reasons": [
+        "The protocol family is not one this registry names."
+      ]
+    },
+    {
+      "code": "PROTOCOL_UNSUPPORTED",
+      "verifiers": [
+        "collection-manifest.js",
+        "safeops.js",
+        "swaps.js"
+      ],
+      "reasons": [
+        "The manifest protocol version must be 1.2 or a later 1.x.",
+        "The revocation protocol version must be 1.2 or a later 1.x.",
+        "The plan protocol version must be 1.2 or a later 1.x.",
+        "The intent protocol version must be 1.2 or a later 1.x."
+      ]
+    },
+    {
+      "code": "PURPOSE_MISSING",
+      "verifiers": [
+        "offline-signing.js"
+      ],
+      "reasons": [
+        "The manifest must state in one line what the transaction is for."
+      ]
+    },
+    {
+      "code": "QUANTITY_INVALID",
+      "verifiers": [
+        "counterparty-asset.js"
+      ],
+      "reasons": [
+        "quantitySats must be an exact decimal string of atomic units."
+      ]
+    },
+    {
+      "code": "REASON_REQUIRED",
+      "verifiers": [
+        "collection-manifest.js"
+      ],
+      "reasons": [
+        "The revocation must state a reason of at most 500 characters."
+      ]
+    },
+    {
+      "code": "RECEIVE_SCRIPT_INVALID",
+      "verifiers": [
+        "swaps.js"
+      ],
+      "reasons": [
+        "The maker receive script must be lowercase hex bytes."
+      ]
+    },
+    {
+      "code": "RECOVERY_BEFORE_EXPIRY",
+      "verifiers": [
+        "offers.js"
+      ],
+      "reasons": [
+        "The locktime is below the expiry height.",
+        "The locktime is a timestamp, not the block height the terms committed to."
+      ]
+    },
+    {
+      "code": "RECOVERY_LEAF_MISMATCH",
+      "verifiers": [
+        "offers.js"
+      ],
+      "reasons": [
+        "The recovery leaf must be lowercase hex bytes.",
+        "The revealed leaf does not carry the buyer recovery key.",
+        "The revealed leaf carries no CHECKLOCKTIMEVERIFY."
+      ]
+    },
+    {
+      "code": "RECOVERY_OUTPUT_WRONG",
+      "verifiers": [
+        "offers.js"
+      ],
+      "reasons": [
+        "A recovery pays one output, the buyer receive script.",
+        "The recovery does not pay the buyer receive script."
+      ]
+    },
+    {
+      "code": "REQUIRED_SIGNATURE_MISSING",
+      "verifiers": [
+        "offline-signing.js"
+      ],
+      "reasons": [
+        "Input ${i} is still unsigned; the result is incomplete."
+      ]
+    },
+    {
+      "code": "REQUIRES_INVALID",
+      "verifiers": [
+        "swaps.js"
+      ],
+      "reasons": [
+        "The intent must require at least one exact asset with a minimum quantity."
+      ]
+    },
+    {
+      "code": "REVERTED_EVENT_REQUIRED",
+      "verifiers": [
+        "events.js"
+      ],
+      "reasons": [
+        "A reverted event must name the event id it reverses.",
+        "An event cannot reverse itself."
+      ]
+    },
+    {
+      "code": "RUNE_INPUT_MISSING_ALLOCATION",
+      "verifiers": [
+        "safeops.js"
+      ],
+      "reasons": [
+        "Input ${i} carries no rune allocation."
+      ]
+    },
+    {
+      "code": "SAT_FLOW_SHORTFALL",
+      "verifiers": [
+        "counterparty-asset.js",
+        "offers.js",
+        "purchase.js"
+      ],
+      "reasons": [
+        "No output absorbs the start of the attached outpoint range; the attachment would be lost.",
+        "The outputs ahead of the seller payment do not absorb the whole range the Feline occupies.",
+        "The outputs ahead of the seller payment do not absorb the whole range the offered output occupies,"
+      ]
+    },
+    {
+      "code": "SCHEMA_UNSUPPORTED",
+      "verifiers": [
+        "collection-manifest.js",
+        "counterparty-asset.js",
+        "events.js",
+        "offline-signing.js",
+        "safeops.js",
+        "swaps.js"
+      ],
+      "reasons": [
+        "The manifest schema is not ordex.collection-manifest/v1.",
+        "The revocation schema is not ordex.collection-manifest-revocation/v1.",
+        "The record schema is not ordex.counterparty-utxo-asset/v1.",
+        "The event schema version is not 1.",
+        "The manifest schema is not ordex.expected-transaction-manifest/v1.",
+        "The signed result schema is not ordex.offline-signing-session/v1.",
+        "The plan schema is not ordex.safeops-plan/v1.",
+        "The signed result schema is not ordex.safeops-signed-result/v1.",
+        "The intent schema is not ordex.swap-intent/v1.",
+        "The acceptance schema is not ordex.swap-acceptance-plan/v1."
+      ]
+    },
+    {
+      "code": "SCRIPT_CHANGED",
+      "verifiers": [
+        "offline-signing.js",
+        "safeops.js"
+      ],
+      "reasons": [
+        "Output ${i} no longer pays its presented script.",
+        "Output ${i} no longer pays the planned script."
+      ]
+    },
+    {
+      "code": "SECRET_INVALID",
+      "verifiers": [
+        "events.js"
+      ],
+      "reasons": [
+        "The subscription secret must be a nonempty string."
+      ]
+    },
+    {
+      "code": "SELLER_OUTPUT_MISSING",
+      "verifiers": [
+        "offers.js",
+        "purchase.js"
+      ],
+      "reasons": [
+        "No output exists at index ${n}, the index the seller signed.",
+        "No output exists at index ${n}, the index the seller's signed input occupies."
+      ]
+    },
+    {
+      "code": "SELLER_SCRIPT_MISMATCH",
+      "verifiers": [
+        "offers.js",
+        "purchase.js"
+      ],
+      "reasons": [
+        "The output at the seller index does not pay the signed script.",
+        "The output at index ${n} does not pay the script the seller's signature commits to."
+      ]
+    },
+    {
+      "code": "SELLER_VALUE_MISMATCH",
+      "verifiers": [
+        "offers.js",
+        "purchase.js"
+      ],
+      "reasons": [
+        "The seller payment is not the exact offer price.",
+        "The output at index ${n} does not carry the exact asking price."
+      ]
+    },
+    {
+      "code": "SEQUENCE_INVALID",
+      "verifiers": [
+        "events.js"
+      ],
+      "reasons": [
+        "The sequence must be a positive integer that never decreases."
+      ]
+    },
+    {
+      "code": "SEQUENCE_NOT_REPLACEABLE",
+      "verifiers": [
+        "offers.js"
+      ],
+      "reasons": [
+        "A final sequence disables the locktime the recovery relies on."
+      ]
+    },
+    {
+      "code": "SIGHASH_CHANGED",
+      "verifiers": [
+        "safeops.js"
+      ],
+      "reasons": [
+        "Input ${i} was signed with a different sighash than the plan approved."
+      ]
+    },
+    {
+      "code": "SIGHASH_UNEXPECTED",
+      "verifiers": [
+        "offline-signing.js"
+      ],
+      "reasons": [
+        "Input ${i} was signed with a sighash the manifest did not approve."
+      ]
+    },
+    {
+      "code": "SIGHASH_UNKNOWN",
+      "verifiers": [
+        "offline-signing.js"
+      ],
+      "reasons": [
+        "Input ${i} names a sighash this protocol does not define."
+      ]
+    },
+    {
+      "code": "SIGNATURE_INVALID",
+      "verifiers": [
+        "events.js"
+      ],
+      "reasons": [
+        "The signature does not match this secret, delivery id, and body."
+      ]
+    },
+    {
+      "code": "SIGNATURE_MISSING",
+      "verifiers": [
+        "safeops.js"
+      ],
+      "reasons": [
+        "Input ${i} is required to sign and is still unsigned."
+      ]
+    },
+    {
+      "code": "SIGNATURE_ON_FOREIGN_INPUT",
+      "verifiers": [
+        "offline-signing.js"
+      ],
+      "reasons": [
+        "Input ${i} belongs to another party and must never be signed here."
+      ]
+    },
+    {
+      "code": "SIGNER_IDENTITY_MISMATCH",
+      "verifiers": [
+        "collection-manifest.js"
+      ],
+      "reasons": [
+        "The signature address is not the creator address.",
+        "The revocation was signed by an address that never created the manifest."
+      ]
+    },
+    {
+      "code": "SIGNING_INVALID",
+      "verifiers": [
+        "safeops.js"
+      ],
+      "reasons": [
+        "The plan must carry a signing object.",
+        "The plan must name at least one required signing index.",
+        "Signing index ${String(index)} is not one of the selected inputs."
+      ]
+    },
+    {
+      "code": "SOURCE_VALUE_INVALID",
+      "verifiers": [
+        "counterparty-asset.js"
+      ],
+      "reasons": [
+        "sourceValueSats must be an exact decimal string."
+      ]
+    },
+    {
+      "code": "SOURCE_VALUE_MISMATCH",
+      "verifiers": [
+        "counterparty-asset.js"
+      ],
+      "reasons": [
+        "The spent value does not match the record, so the sat range cannot be traced."
+      ]
+    },
+    {
+      "code": "STATUS_INVALID",
+      "verifiers": [
+        "collection-manifest.js",
+        "events.js"
+      ],
+      "reasons": [
+        "The manifest status is not one this registry names.",
+        "The status must be current or reverted.",
+        "Only a reverted event may name a revertedEventId."
+      ]
+    },
+    {
+      "code": "SUPPLY_MISMATCH",
+      "verifiers": [
+        "collection-manifest.js"
+      ],
+      "reasons": [
+        "A FIXED supply must declare exactly the member count."
+      ]
+    },
+    {
+      "code": "SUPPLY_STATEMENT_INVALID",
+      "verifiers": [
+        "collection-manifest.js"
+      ],
+      "reasons": [
+        "The supply statement must be FIXED or OPEN with an exact declared count."
+      ]
+    },
+    {
+      "code": "TAKER_BINDING_INVALID",
+      "verifiers": [
+        "swaps.js"
+      ],
+      "reasons": [
+        "A taker binding must name an address."
+      ]
+    },
+    {
+      "code": "TERMS_AMOUNT_INVALID",
+      "verifiers": [
+        "offers.js"
+      ],
+      "reasons": [
+        "priceSats must be an exact decimal string.",
+        "maxNetworkFeeSats must be an exact decimal string."
+      ]
+    },
+    {
+      "code": "TERMS_CRITERIA_INVALID",
+      "verifiers": [
+        "offers.js"
+      ],
+      "reasons": [
+        "The criteria hash must be 64 lowercase hex characters."
+      ]
+    },
+    {
+      "code": "TERMS_EXPIRY_INVALID",
+      "verifiers": [
+        "offers.js"
+      ],
+      "reasons": [
+        "expiryHeight must be a block height a node can carry."
+      ]
+    },
+    {
+      "code": "TERMS_HASH_NOT_COMMITTED",
+      "verifiers": [
+        "offers.js"
+      ],
+      "reasons": [
+        "The revealed acceptance leaf does not commit to this offer terms hash."
+      ]
+    },
+    {
+      "code": "TERMS_KIND_UNKNOWN",
+      "verifiers": [
+        "offers.js"
+      ],
+      "reasons": [
+        "The offer kind is not one this protocol names."
+      ]
+    },
+    {
+      "code": "TERMS_NETWORK_UNKNOWN",
+      "verifiers": [
+        "offers.js"
+      ],
+      "reasons": [
+        "The network is not one this protocol names."
+      ]
+    },
+    {
+      "code": "TERMS_PROTOCOL_UNSUPPORTED",
+      "verifiers": [
+        "offers.js"
+      ],
+      "reasons": [
+        "The terms protocol version must be 1.1 or a later 1.x."
+      ]
+    },
+    {
+      "code": "TERMS_RECOVERY_KEY_INVALID",
+      "verifiers": [
+        "offers.js"
+      ],
+      "reasons": [
+        "The buyer recovery key must be 64 lowercase hex characters."
+      ]
+    },
+    {
+      "code": "TERMS_ROOT_INVALID",
+      "verifiers": [
+        "offers.js"
+      ],
+      "reasons": [
+        "The collection root must be 64 lowercase hex characters."
+      ]
+    },
+    {
+      "code": "TERMS_SCHEMA_UNSUPPORTED",
+      "verifiers": [
+        "offers.js"
+      ],
+      "reasons": [
+        "The terms schema is not ordex.offer-terms/v1."
+      ]
+    },
+    {
+      "code": "TERMS_SCOPE_FIELDS",
+      "verifiers": [
+        "offers.js"
+      ],
+      "reasons": [
+        "An ITEM offer must name exactly one inscription id.",
+        "An ITEM offer must not carry trait fields.",
+        "A TRAIT offer must name one trait of at most 128 characters.",
+        "A TRAIT offer must name one trait value of at most 256 characters.",
+        "A TRAIT offer must not carry an item inscription id.",
+        "A COLLECTION offer must not scope further."
+      ]
+    },
+    {
+      "code": "TERMS_SCRIPT_INVALID",
+      "verifiers": [
+        "offers.js"
+      ],
+      "reasons": [
+        "The buyer receive script must be lowercase hex bytes."
+      ]
+    },
+    {
+      "code": "TIMESTAMP_OUT_OF_TOLERANCE",
+      "verifiers": [
+        "events.js"
+      ],
+      "reasons": [
+        "The delivery timestamp is outside the allowed clock skew."
+      ]
+    },
+    {
+      "code": "TRACE_ID_INVALID",
+      "verifiers": [
+        "events.js"
+      ],
+      "reasons": [
+        "The event must carry a trace id of at most 128 characters."
+      ]
+    },
+    {
+      "code": "TRACKED_ASSET_UNASSIGNED",
+      "verifiers": [
+        "safeops.js"
+      ],
+      "reasons": [
+        "Asset ${key} has no destination in the asset transitions."
+      ]
+    },
+    {
+      "code": "TRANSITION_OUTPUT_MISSING",
+      "verifiers": [
+        "safeops.js",
+        "swaps.js"
+      ],
+      "reasons": [
+        "Asset ${key} names output ${transition.toOutput}, which does not exist."
+      ]
+    },
+    {
+      "code": "TRANSITION_SAT_FLOW_MISMATCH",
+      "verifiers": [
+        "safeops.js",
+        "swaps.js"
+      ],
+      "reasons": [
+        "Asset ${key} declares output ${transition.toOutput}, but the sat range of input ${i} begins in a different output.",
+        "Asset ${key} declares output ${transition.toOutput}, but the sat range of input ${fromIndex} begins in a different output."
+      ]
+    },
+    {
+      "code": "TRANSITION_SOURCE_MISMATCH",
+      "verifiers": [
+        "safeops.js",
+        "swaps.js"
+      ],
+      "reasons": [
+        "Asset ${key} declares input ${transition.fromInput} but rides on input ${i}.",
+        "Asset ${key} declares input ${transition.fromInput} but rides on input ${fromIndex}."
+      ]
+    },
+    {
+      "code": "UNCLOSED_SIGHASH",
+      "verifiers": [
+        "swaps.js"
+      ],
+      "reasons": [
+        "Every input must commit to every output (SIGHASH_ALL), or one party could move its asset without the other receiving theirs."
+      ]
+    },
+    {
+      "code": "UNEXPECTED_MAKER_INPUT",
+      "verifiers": [
+        "swaps.js"
+      ],
+      "reasons": [
+        "Input ${key} spends an outpoint the intent never committed."
+      ]
+    },
+    {
+      "code": "UNEXPECTED_SIGNATURE",
+      "verifiers": [
+        "safeops.js"
+      ],
+      "reasons": [
+        "Input ${i} was not part of the signing policy but carries a signature."
+      ]
+    },
+    {
+      "code": "UNKNOWN_CLAIM_FAILS_CLOSED",
+      "verifiers": [
+        "safeops.js"
+      ],
+      "reasons": [
+        "Input ${i} carries an unrecognized claim (${asset.assetId}); resolve it before planning."
+      ]
+    },
+    {
+      "code": "UNKNOWN_CRITICAL_FIELDS",
+      "verifiers": [
+        "offline-signing.js"
+      ],
+      "reasons": [
+        "The signed result carries fields this protocol does not define: ${signed.unknownCriticalFields.join(', ')}."
+      ]
+    },
+    {
+      "code": "VALUE_CHANGED",
+      "verifiers": [
+        "offline-signing.js",
+        "safeops.js"
+      ],
+      "reasons": [
+        "Input ${i} no longer carries its presented value.",
+        "Output ${i} no longer carries its presented value.",
+        "Output ${i} no longer carries its planned value."
+      ]
+    },
+    {
+      "code": "VALUE_NOT_CONSERVED",
+      "verifiers": [
+        "offline-signing.js",
+        "safeops.js",
+        "swaps.js"
+      ],
+      "reasons": [
+        "The inputs do not equal the outputs plus the declared fee.",
+        "The inputs do not equal the outputs plus the declared fee, so the plan cannot be built as written.",
+        "The outputs exceed the inputs."
+      ]
+    },
+    {
+      "code": "VERSION_INVALID",
+      "verifiers": [
+        "collection-manifest.js"
+      ],
+      "reasons": [
+        "The manifest version must be a positive integer."
+      ]
+    },
+    {
+      "code": "VISIBILITY_INVALID",
+      "verifiers": [
+        "swaps.js"
+      ],
+      "reasons": [
+        "Visibility must be PUBLIC or PRIVATE."
+      ]
+    }
+  ],
+  "specs": [
+    {
+      "file": "api.md",
+      "headings": [
+        {
+          "level": 1,
+          "title": "The Ordex gateway API"
+        },
+        {
+          "level": 2,
+          "title": "Reads"
+        },
+        {
+          "level": 2,
+          "title": "Paging is keyset, never offset"
+        },
+        {
+          "level": 2,
+          "title": "Filters"
+        },
+        {
+          "level": 2,
+          "title": "Writes"
+        },
+        {
+          "level": 2,
+          "title": "`POST /orders/:id/quote`"
+        },
+        {
+          "level": 2,
+          "title": "`POST /orders/:id/preflight`"
+        }
+      ]
+    },
+    {
+      "file": "batch-purchase.md",
+      "headings": [
+        {
+          "level": 1,
+          "title": "Buying several asks in one transaction"
+        },
+        {
+          "level": 2,
+          "title": "The arrangement"
+        },
+        {
+          "level": 2,
+          "title": "What Ordex refuses before composing"
+        },
+        {
+          "level": 2,
+          "title": "What Ordex refuses before handing the result over"
+        },
+        {
+          "level": 2,
+          "title": "No partial result"
+        }
+      ]
+    },
+    {
+      "file": "cold-signing.md",
+      "headings": [
+        {
+          "level": 1,
+          "title": "Cold signing and watch-only mode v1"
+        },
+        {
+          "level": 2,
+          "title": "The SignerAdapter contract"
+        },
+        {
+          "level": 2,
+          "title": "The expected transaction manifest"
+        },
+        {
+          "level": 2,
+          "title": "The nine refusals"
+        },
+        {
+          "level": 2,
+          "title": "The stepper"
+        },
+        {
+          "level": 2,
+          "title": "Watch-only profiles"
+        },
+        {
+          "level": 2,
+          "title": "Blind signing is prohibited"
+        }
+      ]
+    },
+    {
+      "file": "collection-manifest.md",
+      "headings": [
+        {
+          "level": 1,
+          "title": "Collection provenance registry v1"
+        },
+        {
+          "level": 2,
+          "title": "The manifest"
+        },
+        {
+          "level": 2,
+          "title": "Membership proofs"
+        },
+        {
+          "level": 2,
+          "title": "Publication, versioning, revocation"
+        },
+        {
+          "level": 2,
+          "title": "Verification states"
+        },
+        {
+          "level": 2,
+          "title": "Compatibility"
+        },
+        {
+          "level": 2,
+          "title": "Gates"
+        }
+      ]
+    },
+    {
+      "file": "counterparty-utxo-asset.md",
+      "headings": [
+        {
+          "level": 1,
+          "title": "Counterparty heritage assets v1"
+        },
+        {
+          "level": 2,
+          "title": "Identity"
+        },
+        {
+          "level": 2,
+          "title": "The authority"
+        },
+        {
+          "level": 2,
+          "title": "The attachment record"
+        },
+        {
+          "level": 2,
+          "title": "Attachment follows the spend"
+        },
+        {
+          "level": 2,
+          "title": "Attach and detach"
+        },
+        {
+          "level": 2,
+          "title": "Protection everywhere"
+        },
+        {
+          "level": 2,
+          "title": "Trading path"
+        },
+        {
+          "level": 2,
+          "title": "Readiness gates"
+        }
+      ]
+    },
+    {
+      "file": "events.md",
+      "headings": [
+        {
+          "level": 1,
+          "title": "Realtime events and signed webhooks v1"
+        },
+        {
+          "level": 2,
+          "title": "The envelope"
+        },
+        {
+          "level": 2,
+          "title": "Event families"
+        },
+        {
+          "level": 2,
+          "title": "Streaming"
+        },
+        {
+          "level": 2,
+          "title": "Signed webhooks"
+        },
+        {
+          "level": 2,
+          "title": "Historical APIs"
+        }
+      ]
+    },
+    {
+      "file": "interoperability.md",
+      "headings": [
+        {
+          "level": 1,
+          "title": "Portable orders: import, export, and OpenOrdex"
+        },
+        {
+          "level": 2,
+          "title": "Identity is the artifact, not the venue"
+        },
+        {
+          "level": 2,
+          "title": "Import: `POST /api/ordex/orders/import`"
+        },
+        {
+          "level": 2,
+          "title": "OpenOrdex events: `POST /api/ordex/orders/openordex-event`"
+        },
+        {
+          "level": 2,
+          "title": "Export: the envelope and the artifact"
+        },
+        {
+          "level": 2,
+          "title": "What a source may never do"
+        }
+      ]
+    },
+    {
+      "file": "lifecycle.md",
+      "headings": [
+        {
+          "level": 1,
+          "title": "Order lifecycle"
+        },
+        {
+          "level": 2,
+          "title": "States"
+        },
+        {
+          "level": 2,
+          "title": "Actionability"
+        },
+        {
+          "level": 2,
+          "title": "Withdrawal is discovery, not cancellation"
+        },
+        {
+          "level": 2,
+          "title": "The activity log"
+        }
+      ]
+    },
+    {
+      "file": "offers.md",
+      "headings": [
+        {
+          "level": 1,
+          "title": "Offers v1"
+        },
+        {
+          "level": 2,
+          "title": "The three offer kinds"
+        },
+        {
+          "level": 2,
+          "title": "Offer terms"
+        },
+        {
+          "level": 2,
+          "title": "The funded offer output"
+        },
+        {
+          "level": 3,
+          "title": "Acceptance leaf"
+        },
+        {
+          "level": 3,
+          "title": "Recovery leaf"
+        },
+        {
+          "level": 3,
+          "title": "The policy signers"
+        },
+        {
+          "level": 2,
+          "title": "Acceptance"
+        },
+        {
+          "level": 2,
+          "title": "Recovery"
+        },
+        {
+          "level": 2,
+          "title": "Offer lifecycle"
+        },
+        {
+          "level": 2,
+          "title": "What Ordex never does"
+        }
+      ]
+    },
+    {
+      "file": "purchase.md",
+      "headings": [
+        {
+          "level": 1,
+          "title": "Completing a public ask"
+        },
+        {
+          "level": 2,
+          "title": "The seller half"
+        },
+        {
+          "level": 2,
+          "title": "Rule one: the indexes must match"
+        },
+        {
+          "level": 2,
+          "title": "Rule two: that index cannot be zero"
+        },
+        {
+          "level": 2,
+          "title": "The arrangement Ordex builds"
+        },
+        {
+          "level": 2,
+          "title": "What Ordex refuses"
+        },
+        {
+          "level": 2,
+          "title": "What Ordex never does"
+        },
+        {
+          "level": 2,
+          "title": "A public ask can be raced"
+        }
+      ]
+    },
+    {
+      "file": "runes.md",
+      "headings": [
+        {
+          "level": 1,
+          "title": "Not burning the runes a purchase spends"
+        },
+        {
+          "level": 2,
+          "title": "Where a rune balance lives"
+        },
+        {
+          "level": 2,
+          "title": "The cenotaph"
+        },
+        {
+          "level": 2,
+          "title": "Reading the runestone"
+        },
+        {
+          "level": 2,
+          "title": "What makes it a cenotaph"
+        },
+        {
+          "level": 2,
+          "title": "The rule a client must apply"
+        },
+        {
+          "level": 2,
+          "title": "Conformance"
+        }
+      ]
+    },
+    {
+      "file": "safeops.md",
+      "headings": [
+        {
+          "level": 1,
+          "title": "SafeOps v1"
+        },
+        {
+          "level": 2,
+          "title": "Who does what"
+        },
+        {
+          "level": 2,
+          "title": "Inventory resolution"
+        },
+        {
+          "level": 2,
+          "title": "The plan"
+        },
+        {
+          "level": 2,
+          "title": "Asset safety rules"
+        },
+        {
+          "level": 2,
+          "title": "Partitioning at scale"
+        },
+        {
+          "level": 2,
+          "title": "The execution shield"
+        },
+        {
+          "level": 2,
+          "title": "Signed results"
+        },
+        {
+          "level": 2,
+          "title": "RBF and CPFP"
+        },
+        {
+          "level": 2,
+          "title": "Monitoring"
+        }
+      ]
+    },
+    {
+      "file": "swaps.md",
+      "headings": [
+        {
+          "level": 1,
+          "title": "Atomic swap links and the OTC desk v1"
+        },
+        {
+          "level": 2,
+          "title": "The two stage model"
+        },
+        {
+          "level": 2,
+          "title": "The intent"
+        },
+        {
+          "level": 2,
+          "title": "Private encrypted links"
+        },
+        {
+          "level": 2,
+          "title": "The acceptance plan"
+        },
+        {
+          "level": 2,
+          "title": "Lifecycle"
+        },
+        {
+          "level": 2,
+          "title": "Settlement cohort"
+        },
+        {
+          "level": 2,
+          "title": "Adversarial coverage"
+        }
+      ]
+    }
+  ]
+}
