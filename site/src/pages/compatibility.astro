@@ -1,0 +1,24 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { CompatibilityMatrix } from '../components/releases/CompatibilityMatrix.jsx';
+import { FeedbackWidget } from '../components/feedback/FeedbackWidget.jsx';
+---
+
+<BaseLayout
+  title="Platform Compatibility Matrix: Ordex Protocol"
+  description="Comprehensive capability matrix across protocol versions, gateway implementations, runtimes, offline support, and signing boundaries."
+  currentNav="releases"
+>
+  <div style="display: flex; flex-direction: column; gap: 2rem;">
+    <div>
+      <h1 style="margin: 0 0 0.5rem 0; font-size: 2.2rem; font-weight: 800;">Platform Compatibility Matrix</h1>
+      <p style="margin: 0; font-size: 1.1rem; color: var(--color-text-secondary);">
+        Authoritative compatibility status across runtimes, gateways, event transports, and offline execution environments.
+      </p>
+    </div>
+
+    <CompatibilityMatrix client:load />
+
+    <FeedbackWidget client:load route="/compatibility" heading="Platform Compatibility Matrix" />
+  </div>
+</BaseLayout>

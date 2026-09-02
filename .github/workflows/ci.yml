@@ -39,11 +39,17 @@ jobs:
           $ErrorActionPreference = 'Stop'
           if ((node --version).Trim() -ne 'v24.19.0') { throw 'Unexpected Node.js version' }
 
-      # The repository has no dependencies on purpose, so there is nothing to
-      # install and nothing to audit. Each check below is its own step so a
-      # red result cannot be erased by a later green command.
-      - name: Run the reference verifier against the conformance vectors
+      - name: Install locked root dependencies
+        run: npm ci
+
+      - name: Audit root dependencies
+        run: npm audit --audit-level=low
+
+      - name: Run the reference verifiers and unit tests
         run: npm test
+
+      - name: Run the conformance CLI runner
+        run: npm run conformance
 
       - name: Build the documentation site
         run: npm run build
@@ -55,7 +61,7 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          foreach ($file in 'dist/client/index.html', 'dist/client/api-reference.html', 'dist/server/index.js') {
+          foreach ($file in 'dist/client/index.html', 'dist/client/api-reference.html', 'dist/server/index.js', 'dist/client/lab/index.html', 'dist/client/verify/index.html', 'dist/client/atlas/index.html', 'dist/client/kits/index.html', 'dist/client/ask/index.html', 'dist/client/pagefind/pagefind.js') {
             if (-not (Test-Path $file)) { throw "$file missing from the build output" }
           }
 
