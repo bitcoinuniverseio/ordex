@@ -2398,7 +2398,7 @@ export interface components {
             observedAt: string;
             checkpoint: components["schemas"]["Checkpoint"];
             /** @enum {string} */
-            status: "canonical" | "reverted";
+            status: "current" | "reverted";
             /** Format: uuid */
             revertedEventId?: string;
             payload: {

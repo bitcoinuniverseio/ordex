@@ -73,7 +73,7 @@ const refuse = (code: OrdexEventRefusalCode, reason: string): OrdexEventVerdict 
  *   id (uuid), type (ordex.<family>.<name>), schemaVersion ('1'), network,
  *   sequence (monotonic per network), aggregate { type, id, version },
  *   observedAt (ISO-8601 Z), checkpoint { height, blockHash },
- *   status ('canonical'|'reverted'), revertedEventId? (required when
+ *   status ('current'|'reverted'), revertedEventId? (required when
  *   reverted), payload (object), artifactDigests? (hex64 strings),
  *   traceId
  */
@@ -121,8 +121,8 @@ export function validateOrdexEvent(event: unknown): OrdexEventVerdict {
   ) {
     return refuse('CHECKPOINT_INVALID', 'The event must carry the chain checkpoint it was observed at.');
   }
-  if (e.status !== 'canonical' && e.status !== 'reverted') {
-    return refuse('STATUS_INVALID', 'The status must be canonical or reverted.');
+  if (e.status !== 'current' && e.status !== 'reverted') {
+    return refuse('STATUS_INVALID', 'The status must be current or reverted.');
   }
   if (e.status === 'reverted') {
     if (typeof e.revertedEventId !== 'string' || !EVENT_ID.test(e.revertedEventId)) {
