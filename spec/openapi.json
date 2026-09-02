@@ -2,9 +2,9 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Ordex gateway API",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "summary": "Portable Bitcoin orders, verified before you act.",
-    "description": "The HTTP contract an Ordex gateway serves under `/api/ordex`. Amounts and protocol quantities are atomic integers carried as decimal strings, never as floating point numbers. Reads answer 200. Writes answer 201 and are rate limited. Errors use the envelope in `ErrorResponse`. The gateway composes and verifies transactions; it never signs, never holds or contributes funds, and never broadcasts on its own initiative.",
+    "description": "The HTTP contract an Ordex gateway serves under `/api/ordex`. Amounts and protocol quantities are atomic integers carried as decimal strings, never as floating point numbers. Reads answer 200. Writes answer 201 and are rate limited. Errors use the envelope in `ErrorResponse`. The gateway composes and verifies transactions; it never signs, never holds or contributes funds, and never broadcasts on its own initiative. Version 1.1 adds offers v1 (item, collection, and trait offers with a funded Taproot output, an independent two-signer acceptance path, and a buyer recovery path), ask replacement, and batch purchase. Every 1.0 operation is unchanged.",
     "license": {
       "name": "MIT",
       "identifier": "MIT"
@@ -32,6 +32,7 @@
     { "name": "activity", "description": "The appended lifecycle log." },
     { "name": "selling", "description": "Building, publishing, and withdrawing a listing." },
     { "name": "buying", "description": "Quoting and preflighting a purchase." },
+    { "name": "offers", "description": "Buyer-posted offers funded into a Taproot output that two independent policy signers can spend together and the buyer can recover alone after expiry." },
     { "name": "interoperability", "description": "Importing and exporting portable signed orders." },
     { "name": "operator", "description": "Separately authenticated moderation." }
   ],
@@ -416,6 +417,486 @@
           "default": { "$ref": "#/components/responses/Error" }
         }
       }
+    },
+    "/api/ordex/orders/{id}/replace": {
+          "post": {
+                "tags": [
+                      "selling"
+                ],
+                "operationId": "replaceOrder",
+                "summary": "Replace a live ask with a freshly signed one for the same output",
+                "description": "Repricing is a protocol operation, not a database edit. The old order must be live, the owner proof must match the offered output, and the new artifact must be signed against the same outpoint. The old order leaves the book as REPLACED and the new one goes live in one step, and two live asks for one output and seller cannot exist.",
+                "parameters": [
+                      {
+                            "$ref": "#/components/parameters/OrderId"
+                      }
+                ],
+                "requestBody": {
+                      "required": true,
+                      "content": {
+                            "application/json": {
+                                  "schema": {
+                                        "$ref": "#/components/schemas/ReplaceAskRequest"
+                                  }
+                            }
+                      }
+                },
+                "responses": {
+                      "201": {
+                            "description": "The retired order id and the live replacement.",
+                            "content": {
+                                  "application/json": {
+                                        "schema": {
+                                              "$ref": "#/components/schemas/ReplaceAskResult"
+                                        }
+                                  }
+                            }
+                      },
+                      "400": {
+                            "$ref": "#/components/responses/BadRequest"
+                      },
+                      "404": {
+                            "$ref": "#/components/responses/NotFound"
+                      },
+                      "429": {
+                            "$ref": "#/components/responses/RateLimited"
+                      },
+                      "default": {
+                            "$ref": "#/components/responses/Error"
+                      }
+                }
+          }
+    },
+    "/api/ordex/orders/batch-purchase": {
+          "post": {
+                "tags": [
+                      "buying"
+                ],
+                "operationId": "composeBatchPurchase",
+                "summary": "Compose several live asks into one transaction",
+                "description": "Up to eight asks, one funding plan, one transaction, composed only when every seller signature and every sat flow invariant can coexist. There is no partial composition: when any ask cannot be proved the answer names every refusal and settles nothing.",
+                "requestBody": {
+                      "required": true,
+                      "content": {
+                            "application/json": {
+                                  "schema": {
+                                        "$ref": "#/components/schemas/BatchPurchaseRequest"
+                                  }
+                            }
+                      }
+                },
+                "responses": {
+                      "201": {
+                            "description": "The composed batch with every placement stated.",
+                            "content": {
+                                  "application/json": {
+                                        "schema": {
+                                              "$ref": "#/components/schemas/BatchPurchaseResult"
+                                        }
+                                  }
+                            }
+                      },
+                      "400": {
+                            "$ref": "#/components/responses/BadRequest"
+                      },
+                      "409": {
+                            "description": "At least one ask cannot coexist in the batch.",
+                            "content": {
+                                  "application/json": {
+                                        "schema": {
+                                              "$ref": "#/components/schemas/BatchPurchaseRefused"
+                                        }
+                                  }
+                            }
+                      },
+                      "429": {
+                            "$ref": "#/components/responses/RateLimited"
+                      },
+                      "default": {
+                            "$ref": "#/components/responses/Error"
+                      }
+                }
+          }
+    },
+    "/api/ordex/orders/batch-preflight": {
+          "post": {
+                "tags": [
+                      "buying"
+                ],
+                "operationId": "preflightBatchPurchase",
+                "summary": "Verify a signed batch and ask the node about the exact bytes",
+                "description": "Rechecks every placement against both authorities, proves the sat flow invariant for every ask, then asks the node whether it would accept the composed transaction. The answer carries the exact bytes checked.",
+                "requestBody": {
+                      "required": true,
+                      "content": {
+                            "application/json": {
+                                  "schema": {
+                                        "$ref": "#/components/schemas/BatchPreflightRequest"
+                                  }
+                            }
+                      }
+                },
+                "responses": {
+                      "201": {
+                            "description": "The per-ask verdicts and the node answer.",
+                            "content": {
+                                  "application/json": {
+                                        "schema": {
+                                              "$ref": "#/components/schemas/BatchPreflightResult"
+                                        }
+                                  }
+                            }
+                      },
+                      "400": {
+                            "$ref": "#/components/responses/BadRequest"
+                      },
+                      "404": {
+                            "$ref": "#/components/responses/NotFound"
+                      },
+                      "429": {
+                            "$ref": "#/components/responses/RateLimited"
+                      },
+                      "default": {
+                            "$ref": "#/components/responses/Error"
+                      }
+                }
+          }
+    },
+    "/api/ordex/offers": {
+          "get": {
+                "tags": [
+                      "offers"
+                ],
+                "operationId": "listOffers",
+                "summary": "One page of the offer book",
+                "description": "Keyset paged exactly like the orders: limit and cursor in, nextCursor out, empty on the last page. A malformed cursor is a 400, never a silent first page.",
+                "parameters": [
+                      {
+                            "name": "limit",
+                            "in": "query",
+                            "schema": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 100,
+                                  "default": 20
+                            }
+                      },
+                      {
+                            "name": "cursor",
+                            "in": "query",
+                            "schema": {
+                                  "type": "string"
+                            }
+                      },
+                      {
+                            "name": "offerKind",
+                            "in": "query",
+                            "schema": {
+                                  "$ref": "#/components/schemas/OfferKind"
+                            }
+                      },
+                      {
+                            "name": "collectionId",
+                            "in": "query",
+                            "schema": {
+                                  "type": "string"
+                            }
+                      },
+                      {
+                            "name": "state",
+                            "in": "query",
+                            "schema": {
+                                  "$ref": "#/components/schemas/OfferState"
+                            }
+                      }
+                ],
+                "responses": {
+                      "200": {
+                            "description": "The offer page.",
+                            "content": {
+                                  "application/json": {
+                                        "schema": {
+                                              "$ref": "#/components/schemas/OfferPage"
+                                        }
+                                  }
+                            }
+                      },
+                      "400": {
+                            "$ref": "#/components/responses/BadRequest"
+                      },
+                      "429": {
+                            "$ref": "#/components/responses/RateLimited"
+                      },
+                      "default": {
+                            "$ref": "#/components/responses/Error"
+                      }
+                }
+          },
+          "post": {
+                "tags": [
+                      "offers"
+                ],
+                "operationId": "publishOffer",
+                "summary": "Publish a funded offer",
+                "description": "Takes exact offer terms and funded-output evidence. The gateway recomputes the terms hash, recomputes the Taproot tree and tweak from the two leaves, requires the funded script to commit to both, asks Bitcoin Core whether the output exists and is unspent, and refuses everything else. The offer goes live once the funding confirms.",
+                "requestBody": {
+                      "required": true,
+                      "content": {
+                            "application/json": {
+                                  "schema": {
+                                        "$ref": "#/components/schemas/OfferPublishRequest"
+                                  }
+                            }
+                      }
+                },
+                "responses": {
+                      "201": {
+                            "description": "The published offer in PENDING_CONFIRMATION.",
+                            "content": {
+                                  "application/json": {
+                                        "schema": {
+                                              "$ref": "#/components/schemas/OfferSummary"
+                                        }
+                                  }
+                            }
+                      },
+                      "400": {
+                            "$ref": "#/components/responses/BadRequest"
+                      },
+                      "404": {
+                            "$ref": "#/components/responses/NotFound"
+                      },
+                      "429": {
+                            "$ref": "#/components/responses/RateLimited"
+                      },
+                      "default": {
+                            "$ref": "#/components/responses/Error"
+                      }
+                }
+          }
+    },
+    "/api/ordex/offers/{id}": {
+          "get": {
+                "tags": [
+                      "offers"
+                ],
+                "operationId": "getOffer",
+                "summary": "One offer with its lifecycle state and freshness",
+                "parameters": [
+                      {
+                            "$ref": "#/components/parameters/OfferId"
+                      }
+                ],
+                "responses": {
+                      "200": {
+                            "description": "The offer.",
+                            "content": {
+                                  "application/json": {
+                                        "schema": {
+                                              "$ref": "#/components/schemas/OfferSummary"
+                                        }
+                                  }
+                            }
+                      },
+                      "400": {
+                            "$ref": "#/components/responses/BadRequest"
+                      },
+                      "404": {
+                            "$ref": "#/components/responses/NotFound"
+                      },
+                      "429": {
+                            "$ref": "#/components/responses/RateLimited"
+                      },
+                      "default": {
+                            "$ref": "#/components/responses/Error"
+                      }
+                }
+          }
+    },
+    "/api/ordex/offers/{id}/revalidate": {
+          "post": {
+                "tags": [
+                      "offers"
+                ],
+                "operationId": "revalidateOffer",
+                "summary": "Recheck one offer against both authorities",
+                "parameters": [
+                      {
+                            "$ref": "#/components/parameters/OfferId"
+                      }
+                ],
+                "responses": {
+                      "201": {
+                            "description": "The rechecked offer.",
+                            "content": {
+                                  "application/json": {
+                                        "schema": {
+                                              "$ref": "#/components/schemas/OfferSummary"
+                                        }
+                                  }
+                            }
+                      },
+                      "400": {
+                            "$ref": "#/components/responses/BadRequest"
+                      },
+                      "404": {
+                            "$ref": "#/components/responses/NotFound"
+                      },
+                      "429": {
+                            "$ref": "#/components/responses/RateLimited"
+                      },
+                      "default": {
+                            "$ref": "#/components/responses/Error"
+                      }
+                }
+          }
+    },
+    "/api/ordex/offers/{id}/withdraw": {
+          "post": {
+                "tags": [
+                      "offers"
+                ],
+                "operationId": "withdrawOffer",
+                "summary": "Remove an offer from discovery, proved by the recovery key",
+                "description": "Discovery, not cancellation: the funded output stays spendable by the acceptance path until it is spent, and by the recovery path after expiry. A BIP 322 signature by the recovery key proves who may stop publishing the offer.",
+                "parameters": [
+                      {
+                            "$ref": "#/components/parameters/OfferId"
+                      }
+                ],
+                "requestBody": {
+                      "required": true,
+                      "content": {
+                            "application/json": {
+                                  "schema": {
+                                        "$ref": "#/components/schemas/OwnershipProof"
+                                  }
+                            }
+                      }
+                },
+                "responses": {
+                      "201": {
+                            "description": "The withdrawn offer.",
+                            "content": {
+                                  "application/json": {
+                                        "schema": {
+                                              "$ref": "#/components/schemas/OfferSummary"
+                                        }
+                                  }
+                            }
+                      },
+                      "400": {
+                            "$ref": "#/components/responses/BadRequest"
+                      },
+                      "404": {
+                            "$ref": "#/components/responses/NotFound"
+                      },
+                      "429": {
+                            "$ref": "#/components/responses/RateLimited"
+                      },
+                      "default": {
+                            "$ref": "#/components/responses/Error"
+                      }
+                }
+          }
+    },
+    "/api/ordex/offers/{id}/acceptance-plan": {
+          "post": {
+                "tags": [
+                      "offers"
+                ],
+                "operationId": "planOfferAcceptance",
+                "summary": "State the exact acceptance arrangement for one live offer",
+                "description": "Given the seller outpoint, reads every value from the node and the ord index, lays out padding, buyer asset, every preserve in sat order, the seller payment at the seller input index, and change, and refuses when the Feline is elsewhere, the root no longer holds, or expiry has passed.",
+                "parameters": [
+                      {
+                            "$ref": "#/components/parameters/OfferId"
+                      }
+                ],
+                "requestBody": {
+                      "required": true,
+                      "content": {
+                            "application/json": {
+                                  "schema": {
+                                        "$ref": "#/components/schemas/OfferAcceptancePlanRequest"
+                                  }
+                            }
+                      }
+                },
+                "responses": {
+                      "201": {
+                            "description": "The exact arrangement to build and sign.",
+                            "content": {
+                                  "application/json": {
+                                        "schema": {
+                                              "$ref": "#/components/schemas/OfferAcceptancePlan"
+                                        }
+                                  }
+                            }
+                      },
+                      "400": {
+                            "$ref": "#/components/responses/BadRequest"
+                      },
+                      "404": {
+                            "$ref": "#/components/responses/NotFound"
+                      },
+                      "429": {
+                            "$ref": "#/components/responses/RateLimited"
+                      },
+                      "default": {
+                            "$ref": "#/components/responses/Error"
+                      }
+                }
+          }
+    },
+    "/api/ordex/offers/{id}/preflight": {
+          "post": {
+                "tags": [
+                      "offers"
+                ],
+                "operationId": "preflightOfferAcceptance",
+                "summary": "Verify a built acceptance and ask the node",
+                "description": "Parses the complete acceptance, checks every rule in spec/offers.md including both policy signatures against the committed terms tree, then asks the node whether it would accept the bytes. The answer carries the exact bytes checked.",
+                "parameters": [
+                      {
+                            "$ref": "#/components/parameters/OfferId"
+                      }
+                ],
+                "requestBody": {
+                      "required": true,
+                      "content": {
+                            "application/json": {
+                                  "schema": {
+                                        "$ref": "#/components/schemas/OfferPreflightRequest"
+                                  }
+                            }
+                      }
+                },
+                "responses": {
+                      "201": {
+                            "description": "The acceptance verdict.",
+                            "content": {
+                                  "application/json": {
+                                        "schema": {
+                                              "$ref": "#/components/schemas/OfferPreflightResult"
+                                        }
+                                  }
+                            }
+                      },
+                      "400": {
+                            "$ref": "#/components/responses/BadRequest"
+                      },
+                      "404": {
+                            "$ref": "#/components/responses/NotFound"
+                      },
+                      "429": {
+                            "$ref": "#/components/responses/RateLimited"
+                      },
+                      "default": {
+                            "$ref": "#/components/responses/Error"
+                      }
+                }
+          }
     }
   },
   "components": {
@@ -433,6 +914,13 @@
         "required": true,
         "schema": { "type": "string" },
         "description": "The order id."
+      },
+      "OfferId": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "string" },
+        "description": "The gateway offer identifier."
       }
     },
     "responses": {
@@ -474,8 +962,8 @@
       },
       "OrderState": {
         "type": "string",
-        "enum": ["PENDING_NODE", "PENDING_ORD", "LIVE", "MEMPOOL_CONFLICTED", "SPENT", "SETTLED", "REJECTED", "WITHDRAWN"],
-        "description": "Every state is reachable. A mempool conflict can return to LIVE when the conflicting spend is replaced or dropped; a confirmed spend does not come back short of a reorg. SETTLED is narrower than SPENT: the offered output was spent by a transaction observed carrying this order's exact payout."
+        "enum": ["PENDING_NODE", "PENDING_ORD", "LIVE", "MEMPOOL_CONFLICTED", "SPENT", "SETTLED", "REPLACED", "REJECTED", "WITHDRAWN"],
+        "description": "Every state is reachable. A mempool conflict can return to LIVE when the conflicting spend is replaced or dropped; a confirmed spend does not come back short of a reorg. SETTLED is narrower than SPENT: the offered output was spent by a transaction observed carrying this order's exact payout. REPLACED is the terminal state of a live ask whose owner published a fresh ask for the same output through POST /orders/{id}/replace."
       },
       "Actionability": {
         "type": "string",
@@ -1114,7 +1602,799 @@
           }
         }
       },
-      "ErrorResponse": {
+        "OfferKind": {
+              "type": "string",
+              "enum": [
+                      "ITEM",
+                      "COLLECTION",
+                      "TRAIT"
+              ],
+              "description": "What an offer binds to. ITEM names one exact inscription; COLLECTION names every Feline included in the committed root; TRAIT names one exact trait name and value inside that root."
+      },
+      "OfferState": {
+              "type": "string",
+              "enum": [
+                      "PENDING_CONFIRMATION",
+                      "LIVE",
+                      "ACCEPTED",
+                      "RECOVERED",
+                      "MEMPOOL_CONFLICTED",
+                      "SPENT",
+                      "EXPIRED",
+                      "WITHDRAWN",
+                      "REJECTED"
+              ],
+              "description": "The funded-output lifecycle. PENDING_CONFIRMATION is not live. ACCEPTED and RECOVERED are the two settled outcomes. EXPIRED means the current height passed expiryHeight with the output unspent, so recovery is the only remaining path. WITHDRAWN is discovery, not cancellation: only a spend settles the funds."
+      },
+      "OfferTerms": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                      "schema",
+                      "protocolVersion",
+                      "network",
+                      "offerKind",
+                      "collectionId",
+                      "collectionRoot",
+                      "criteriaHash",
+                      "buyerReceiveScriptHex",
+                      "priceSats",
+                      "maxNetworkFeeSats",
+                      "expiryHeight",
+                      "buyerRecoveryKeyHex"
+              ],
+              "properties": {
+                      "schema": {
+                              "const": "ordex.offer-terms/v1",
+                              "description": "The terms schema this contract carries."
+                      },
+                      "protocolVersion": {
+                              "type": "string",
+                              "description": "The gateway protocol version the terms were written for, 1.1 or later."
+                      },
+                      "network": {
+                              "$ref": "#/components/schemas/Network"
+                      },
+                      "offerKind": {
+                              "$ref": "#/components/schemas/OfferKind"
+                      },
+                      "collectionId": {
+                              "type": "string",
+                              "description": "The collection the scope names."
+                      },
+                      "collectionRoot": {
+                              "type": "string",
+                              "pattern": "^[0-9a-f]{64}$",
+                              "description": "Lowercase hex SHA-256 collection Merkle root the scope binds to."
+                      },
+                      "itemInscriptionId": {
+                              "type": "string",
+                              "pattern": "^[0-9a-f]{64}i[0-9]+$",
+                              "description": "ITEM offers only: the exact inscription the offer buys."
+                      },
+                      "traitName": {
+                              "type": "string",
+                              "maxLength": 128,
+                              "description": "TRAIT offers only: the exact trait name."
+                      },
+                      "traitValue": {
+                              "type": "string",
+                              "maxLength": 256,
+                              "description": "TRAIT offers only: the exact trait value."
+                      },
+                      "criteriaHash": {
+                              "type": "string",
+                              "pattern": "^[0-9a-f]{64}$",
+                              "description": "SHA-256 over the exact serialized scope criteria the buyer accepted, so a verifier can recheck scope membership without trusting a description of it."
+                      },
+                      "buyerReceiveScriptHex": {
+                              "type": "string",
+                              "pattern": "^[0-9a-f]*$",
+                              "description": "Lowercase hex script the bought Feline must land in."
+                      },
+                      "priceSats": {
+                              "allOf": [
+                                      {
+                                              "$ref": "#/components/schemas/AtomicSats"
+                                      }
+                              ],
+                              "description": "Exact price paid to the accepting seller."
+                      },
+                      "maxNetworkFeeSats": {
+                              "allOf": [
+                                      {
+                                              "$ref": "#/components/schemas/AtomicSats"
+                                      }
+                              ],
+                              "description": "The largest fee an acceptance may pay."
+                      },
+                      "expiryHeight": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 2147483647,
+                              "description": "Block height after which acceptance is refused and the recovery path unlocks."
+                      },
+                      "buyerRecoveryKeyHex": {
+                              "type": "string",
+                              "pattern": "^[0-9a-f]{64}$",
+                              "description": "Lowercase hex x-only key that can recover the funded output alone after expiry."
+                      }
+              }
+      },
+      "OfferTermsHash": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$",
+              "description": "SHA-256 over the terms serialized as UTF-8 JSON with object keys sorted recursively and no insignificant whitespace. Two parties that hold the same terms hold the same hash."
+      },
+      "OfferFunding": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                      "fundedTxid",
+                      "fundedVout",
+                      "tapInternalKeyHex",
+                      "acceptanceLeafScriptHex",
+                      "recoveryLeafScriptHex"
+              ],
+              "properties": {
+                      "fundedTxid": {
+                              "type": "string",
+                              "description": "The transaction that created the funded output."
+                      },
+                      "fundedVout": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "description": "The funded output index."
+                      },
+                      "tapInternalKeyHex": {
+                              "type": "string",
+                              "pattern": "^[0-9a-f]{64}$",
+                              "description": "Lowercase hex x-only internal key of the funded output."
+                      },
+                      "acceptanceLeafScriptHex": {
+                              "type": "string",
+                              "pattern": "^[0-9a-f]*$",
+                              "description": "The acceptance leaf: the terms hash push, both policy keys, CHECKSIG, CHECKSIGADD, and the 2-of-2 equal. The gateway recomputes the tree and the tweak from these leaves, so the funded script must commit to the exact terms."
+                      },
+                      "recoveryLeafScriptHex": {
+                              "type": "string",
+                              "pattern": "^[0-9a-f]*$",
+                              "description": "The recovery leaf: the expiry height, CHECKLOCKTIMEVERIFY, and the buyer recovery key."
+                      }
+              }
+      },
+      "OfferValidation": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                      "checkedAt",
+                      "nodeStatus",
+                      "rootStatus"
+              ],
+              "properties": {
+                      "checkedAt": {
+                              "type": "string",
+                              "format": "date-time",
+                              "description": "When both authorities were last asked."
+                      },
+                      "nodeStatus": {
+                              "type": "string",
+                              "enum": [
+                                      "UNCONFIGURED",
+                                      "READY",
+                                      "UNAVAILABLE",
+                                      "OUTPOINT_MISSING",
+                                      "OUTPOINT_SPENT"
+                              ],
+                              "description": "What Bitcoin Core said about the funded output."
+                      },
+                      "rootStatus": {
+                              "type": "string",
+                              "enum": [
+                                      "NOT_REQUESTED",
+                                      "UNCONFIGURED",
+                                      "VERIFIED",
+                                      "ROOT_MISMATCH",
+                                      "UNAVAILABLE"
+                              ],
+                              "description": "What the collection authority said about the committed root."
+                      }
+              }
+      },
+      "OfferSummary": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                      "id",
+                      "terms",
+                      "offerTermsHash",
+                      "funding",
+                      "state",
+                      "validation",
+                      "postedAt"
+              ],
+              "properties": {
+                      "id": {
+                              "type": "string",
+                              "description": "The gateway identifier for this offer."
+                      },
+                      "terms": {
+                              "$ref": "#/components/schemas/OfferTerms"
+                      },
+                      "offerTermsHash": {
+                              "$ref": "#/components/schemas/OfferTermsHash"
+                      },
+                      "funding": {
+                              "$ref": "#/components/schemas/OfferFunding"
+                      },
+                      "state": {
+                              "$ref": "#/components/schemas/OfferState"
+                      },
+                      "actionability": {
+                              "$ref": "#/components/schemas/Actionability"
+                      },
+                      "validation": {
+                              "$ref": "#/components/schemas/OfferValidation"
+                      },
+                      "settledByTxid": {
+                              "type": "string",
+                              "description": "ACCEPTED and RECOVERED offers only: the transaction that settled the funds."
+                      },
+                      "acceptedOrderId": {
+                              "type": "string",
+                              "description": "ACCEPTED offers only: the order whose acceptance carried the settlement."
+                      },
+                      "postedAt": {
+                              "type": "string",
+                              "format": "date-time",
+                              "description": "When the gateway published the offer."
+                      },
+                      "checkpoint": {
+                              "$ref": "#/components/schemas/ListingReadiness"
+                      }
+              }
+      },
+      "OfferPage": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                      "offers",
+                      "hasMore"
+              ],
+              "properties": {
+                      "offers": {
+                              "type": "array",
+                              "items": {
+                                      "$ref": "#/components/schemas/OfferSummary"
+                              },
+                              "maxItems": 100
+                      },
+                      "nextCursor": {
+                              "type": "string",
+                              "description": "Empty on the last page. Resume from here for a stable, offset-free read."
+                      },
+                      "hasMore": {
+                              "type": "boolean"
+                      }
+              }
+      },
+      "OfferPublishRequest": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                      "terms",
+                      "funding"
+              ],
+              "properties": {
+                      "terms": {
+                              "$ref": "#/components/schemas/OfferTerms"
+                      },
+                      "funding": {
+                              "$ref": "#/components/schemas/OfferFunding"
+                      }
+              }
+      },
+      "OfferAcceptancePlanRequest": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                      "sellerFelineOutpoint",
+                      "sellerPaymentScriptHex"
+              ],
+              "properties": {
+                      "sellerFelineOutpoint": {
+                              "allOf": [
+                                      {
+                                              "$ref": "#/components/schemas/Outpoint"
+                                      }
+                              ],
+                              "description": "The output the accepting seller will spend to deliver the Feline."
+                      },
+                      "sellerPaymentScriptHex": {
+                              "type": "string",
+                              "pattern": "^[0-9a-f]*$",
+                              "description": "The script the seller payment output must carry, committed by the seller signature."
+                      }
+              }
+      },
+      "OfferAcceptancePlan": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                      "offerId",
+                      "sellerInputIndex",
+                      "offerInputIndex",
+                      "sellerPaymentOutputIndex",
+                      "buyerAssetOutputIndex",
+                      "inputs",
+                      "outputs",
+                      "estimatedFeeSats",
+                      "withinMaxNetworkFee",
+                      "expiresAtHeight",
+                      "checkpoint"
+              ],
+              "properties": {
+                      "offerId": {
+                              "type": "string",
+                              "description": "The offer this plan settles."
+                      },
+                      "sellerInputIndex": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "description": "Where the Feline input sits, and with it the seller payment."
+                      },
+                      "offerInputIndex": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "description": "Where the funded offer output sits."
+                      },
+                      "sellerPaymentOutputIndex": {
+                              "type": "integer",
+                              "minimum": 0
+                      },
+                      "buyerAssetOutputIndex": {
+                              "type": "integer",
+                              "minimum": 0
+                      },
+                      "inputs": {
+                              "type": "array",
+                              "description": "Every input in transaction order, with the exact values read from the node.",
+                              "items": {
+                                      "type": "object",
+                                      "additionalProperties": false,
+                                      "required": [
+                                              "txid",
+                                              "vout",
+                                              "valueSats",
+                                              "role"
+                                      ],
+                                      "properties": {
+                                              "txid": {
+                                                      "type": "string"
+                                              },
+                                              "vout": {
+                                                      "type": "integer",
+                                                      "minimum": 0
+                                              },
+                                              "valueSats": {
+                                                      "$ref": "#/components/schemas/AtomicSats"
+                                              },
+                                              "role": {
+                                                      "type": "string",
+                                                      "enum": [
+                                                              "PADDING",
+                                                              "OFFER",
+                                                              "SELLER_FELINE"
+                                                      ]
+                                              }
+                                      }
+                              }
+                      },
+                      "outputs": {
+                              "type": "array",
+                              "description": "Every output in transaction order: padding merge, buyer asset, seller preserves in sat order, seller payment at the seller input index, buyer change last.",
+                              "items": {
+                                      "type": "object",
+                                      "additionalProperties": false,
+                                      "required": [
+                                              "scriptHex",
+                                              "valueSats",
+                                              "role"
+                                      ],
+                                      "properties": {
+                                              "scriptHex": {
+                                                      "type": "string"
+                                              },
+                                              "valueSats": {
+                                                      "$ref": "#/components/schemas/AtomicSats"
+                                              },
+                                              "role": {
+                                                      "type": "string",
+                                                      "enum": [
+                                                              "PADDING_MERGE",
+                                                              "BUYER_ASSET",
+                                                              "SELLER_PRESERVE",
+                                                              "SELLER_PAYMENT",
+                                                              "BUYER_CHANGE"
+                                                      ]
+                                              }
+                                      }
+                              }
+                      },
+                      "estimatedFeeSats": {
+                              "allOf": [
+                                      {
+                                              "$ref": "#/components/schemas/AtomicSats"
+                                      }
+                              ],
+                              "description": "The fee the composed arrangement pays at the current rate."
+                      },
+                      "withinMaxNetworkFee": {
+                              "type": "boolean",
+                              "description": "False means the terms refuse acceptance as composed."
+                      },
+                      "expiresAtHeight": {
+                              "type": "integer",
+                              "description": "The terms expiry height, restated so a stale plan is visible."
+                      },
+                      "checkpoint": {
+                              "$ref": "#/components/schemas/ListingReadiness"
+                      }
+              }
+      },
+      "OfferPreflightRequest": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                      "finalTxHex"
+              ],
+              "properties": {
+                      "finalTxHex": {
+                              "type": "string",
+                              "pattern": "^[0-9a-f]+$",
+                              "description": "The complete acceptance, seller signature and both policy signatures included."
+                      }
+              }
+      },
+      "OfferPreflightResult": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                      "offerId",
+                      "allowed",
+                      "checkedAt"
+              ],
+              "properties": {
+                      "offerId": {
+                              "type": "string"
+                      },
+                      "allowed": {
+                              "type": "boolean"
+                      },
+                      "rejectReason": {
+                              "type": "string",
+                              "description": "Present when not allowed."
+                      },
+                      "finalTxHex": {
+                              "type": "string",
+                              "description": "The exact bytes checked, so a seller broadcasts those and no others."
+                      },
+                      "txid": {
+                              "type": "string"
+                      },
+                      "vsize": {
+                              "type": "integer"
+                      },
+                      "feesSats": {
+                              "$ref": "#/components/schemas/AtomicSats"
+                      },
+                      "policySignatureCount": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 2,
+                              "description": "How many of the two acceptance-leaf signatures the parsed witness carries."
+                      },
+                      "nodeAcceptance": {
+                              "type": "object",
+                              "additionalProperties": true,
+                              "description": "What the node answered when asked whether it would accept these bytes."
+                      },
+                      "checkedAt": {
+                              "type": "string",
+                              "format": "date-time"
+                      }
+              }
+      },
+      "ReplaceAskRequest": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                      "artifact",
+                      "ownership"
+              ],
+              "description": "A freshly signed seller half for the same offered output, plus the same owner proof withdrawal requires. The old order leaves the book as REPLACED and the new one goes live in one step.",
+              "properties": {
+                      "artifact": {
+                              "$ref": "#/components/schemas/PublishAskRequest"
+                      },
+                      "ownership": {
+                              "$ref": "#/components/schemas/OwnershipProof"
+                      }
+              }
+      },
+      "ReplaceAskResult": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                      "replacedOrderId",
+                      "order"
+              ],
+              "properties": {
+                      "replacedOrderId": {
+                              "type": "string",
+                              "description": "The order this replacement retired."
+                      },
+                      "order": {
+                              "$ref": "#/components/schemas/OrderSummary"
+                      }
+              }
+      },
+      "BatchPurchaseRequest": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                      "orderIds",
+                      "assetReceiveAddress",
+                      "paymentAddress",
+                      "paddingUtxos",
+                      "fundingUtxos",
+                      "feeRateSatsPerVb"
+              ],
+              "properties": {
+                      "orderIds": {
+                              "type": "array",
+                              "items": {
+                                      "type": "string"
+                              },
+                              "minItems": 1,
+                              "maxItems": 8,
+                              "description": "The live asks to settle in one transaction, in the order the buyer reviewed them."
+                      },
+                      "assetReceiveAddress": {
+                              "type": "string",
+                              "description": "Where every purchased Feline lands, one output per ask."
+                      },
+                      "paymentAddress": {
+                              "type": "string",
+                              "description": "Where padding merges and change return to the buyer."
+                      },
+                      "paddingUtxos": {
+                              "type": "array",
+                              "minItems": 2,
+                              "maxItems": 16,
+                              "items": {
+                                      "$ref": "#/components/schemas/Outpoint"
+                              },
+                              "description": "Two asset-free cardinal outputs per ask, read back from the node before anything is composed."
+                      },
+                      "fundingUtxos": {
+                              "type": "array",
+                              "items": {
+                                      "$ref": "#/components/schemas/Outpoint"
+                              },
+                              "description": "Cardinal outputs that cover every price and the fee."
+                      },
+                      "feeRateSatsPerVb": {
+                              "type": "number",
+                              "exclusiveMinimum": 0,
+                              "description": "The exact rate the buyer approved."
+                      }
+              }
+      },
+      "BatchPurchaseResult": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                      "psbt",
+                      "placements",
+                      "totals",
+                      "expiresAt"
+              ],
+              "properties": {
+                      "psbt": {
+                              "type": "string",
+                              "description": "The unsigned buyer half. Every seller input arrives already signed; the buyer signs only their own inputs."
+                      },
+                      "placements": {
+                              "type": "array",
+                              "minItems": 1,
+                              "maxItems": 8,
+                              "items": {
+                                      "type": "object",
+                                      "additionalProperties": false,
+                                      "required": [
+                                              "orderId",
+                                              "sellerInputIndex",
+                                              "sellerPaymentOutputIndex",
+                                              "buyerAssetOutputIndex"
+                                      ],
+                                      "properties": {
+                                              "orderId": {
+                                                      "type": "string"
+                                              },
+                                              "sellerInputIndex": {
+                                                      "type": "integer",
+                                                      "minimum": 0
+                                              },
+                                              "sellerPaymentOutputIndex": {
+                                                      "type": "integer",
+                                                      "minimum": 0
+                                              },
+                                              "buyerAssetOutputIndex": {
+                                                      "type": "integer",
+                                                      "minimum": 0
+                                              },
+                                              "priceSats": {
+                                                      "allOf": [
+                                                              {
+                                                                      "$ref": "#/components/schemas/AtomicSats"
+                                                              }
+                                                      ],
+                                                      "description": "This ask's exact price."
+                                              }
+                                      }
+                              }
+                      },
+                      "totals": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                      "totalBuyerCostSats",
+                                      "networkFeeSats"
+                              ],
+                              "properties": {
+                                      "totalBuyerCostSats": {
+                                              "allOf": [
+                                                      {
+                                                              "$ref": "#/components/schemas/AtomicSats"
+                                                      }
+                                              ],
+                                              "description": "Every price, every fee, and every padding sat, stated once."
+                                      },
+                                      "networkFeeSats": {
+                                              "$ref": "#/components/schemas/AtomicSats"
+                                      }
+                              }
+                      },
+                      "expiresAt": {
+                              "type": "string",
+                              "format": "date-time",
+                              "description": "How long the composed batch stays composable before at least one ask can no longer be proved."
+                      }
+              }
+      },
+      "BatchRefusal": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                      "orderId",
+                      "code",
+                      "reason"
+              ],
+              "properties": {
+                      "orderId": {
+                              "type": "string",
+                              "description": "The refused ask."
+                      },
+                      "code": {
+                              "type": "string",
+                              "description": "A stable, machine readable refusal code."
+                      },
+                      "reason": {
+                              "type": "string",
+                              "description": "A human explanation of the same refusal."
+                      }
+              }
+      },
+      "BatchPurchaseRefused": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                      "refusals"
+              ],
+              "description": "Answered when at least one ask cannot coexist in the batch. There is no partial composition: every refused order is named, and the client falls back to separate purchases.",
+              "properties": {
+                      "refusals": {
+                              "type": "array",
+                              "minItems": 1,
+                              "items": {
+                                      "$ref": "#/components/schemas/BatchRefusal"
+                              }
+                      }
+              }
+      },
+      "BatchPreflightRequest": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                      "batchId"
+              ],
+              "properties": {
+                      "batchId": {
+                              "type": "string",
+                              "description": "The identifier the batch-purchase answer carried."
+                      },
+                      "signedPsbt": {
+                              "type": "string",
+                              "description": "The batch PSBT with every buyer input signed."
+                      },
+                      "finalTxHex": {
+                              "type": "string",
+                              "pattern": "^[0-9a-f]+$",
+                              "description": "Or the exact final bytes, when already finalized."
+                      }
+              }
+      },
+      "BatchPreflightResult": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                      "allowed",
+                      "placements",
+                      "checkedAt"
+              ],
+              "properties": {
+                      "allowed": {
+                              "type": "boolean"
+                      },
+                      "finalTxHex": {
+                              "type": "string",
+                              "description": "The exact bytes checked, so a buyer broadcasts those and no others."
+                      },
+                      "txid": {
+                              "type": "string"
+                      },
+                      "vsize": {
+                              "type": "integer"
+                      },
+                      "feesSats": {
+                              "$ref": "#/components/schemas/AtomicSats"
+                      },
+                      "placements": {
+                              "type": "array",
+                              "items": {
+                                      "type": "object",
+                                      "additionalProperties": false,
+                                      "required": [
+                                              "orderId",
+                                              "allowed"
+                                      ],
+                                      "properties": {
+                                              "orderId": {
+                                                      "type": "string"
+                                              },
+                                              "allowed": {
+                                                      "type": "boolean"
+                                              },
+                                              "rejectReason": {
+                                                      "type": "string",
+                                                      "description": "Present when this ask failed inside an otherwise parseable batch."
+                                              }
+                                      }
+                              }
+                      },
+                      "nodeAcceptance": {
+                              "type": "object",
+                              "additionalProperties": true,
+                              "description": "What the node answered about the exact composed bytes."
+                      },
+                      "checkedAt": {
+                              "type": "string",
+                              "format": "date-time"
+                      }
+              }
+      },
+    "ErrorResponse": {
         "type": "object",
         "required": ["statusCode", "error", "message"],
         "description": "The error envelope every route answers with. Rate limited requests additionally carry `code: ORDEX_RATE_LIMITED`.",

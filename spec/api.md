@@ -8,7 +8,10 @@ machine readable contract in [openapi.json](openapi.json). This page explains
 the decisions; the contract states the wire format, and the two are kept in
 step in the same commit.
 
-Reads answer `200`. Every write answers `201`.
+The contract carries a protocol version. Reads answer `200`. Every write
+answers `201`. A client that pins a version gets that version's behavior for
+every operation it names; additive operations such as offers, replacement, and
+batch purchase arrived at `1.1` without changing any `1.0` operation.
 
 ## Reads
 
@@ -69,10 +72,20 @@ book.
 | `POST /orders/openordex-event` | Takes a signed OpenOrdex event and verifies it. |
 | `POST /orders/build` | Builds the unsigned seller half. |
 | `POST /orders/publish` | Takes the signed seller half and publishes it. |
+| `POST /orders/{id}/replace` | Replaces a live ask with a freshly signed one for the same output: the old order leaves the book as `REPLACED` and the new one goes live, in one step. |
 | `POST /orders/:id/revalidate` | Rechecks one order against both authorities. |
 | `POST /orders/:id/withdraw` | Removes a listing, proved by the key owning the output it sells. |
 | `POST /orders/:id/quote` | Composes the buyer half and states the exact terms. |
 | `POST /orders/:id/preflight` | Verifies a signed purchase and asks the node whether it would accept it. |
+| `POST /orders/batch-purchase` | Composes several live asks into one transaction when every seller half can coexist. See [batch-purchase.md](batch-purchase.md). |
+| `POST /orders/batch-preflight` | Verifies a signed batch and asks the node about the exact composed bytes. |
+| `POST /offers` | Takes funded-output evidence and exact offer terms, verifies both, and publishes the offer. See [offers.md](offers.md). |
+| `GET /offers` | One page of the offer book, keyset paged like the orders. |
+| `GET /offers/:id` | One offer with its current lifecycle state and freshness. |
+| `POST /offers/:id/revalidate` | Rechecks one offer against both authorities. |
+| `POST /offers/:id/withdraw` | Removes an offer from discovery, proved by the buyer's recovery key. |
+| `POST /offers/:id/acceptance-plan` | States the exact acceptance arrangement for one live offer against one seller outpoint, preserves included. |
+| `POST /offers/:id/preflight` | Verifies a built acceptance, policy signatures included, and asks the node whether it would accept it. |
 
 Every write is rate limited.
 
