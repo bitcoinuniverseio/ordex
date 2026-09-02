@@ -43,7 +43,7 @@ export function sortedJson(value) {
  *   id (uuid), type (ordex.<family>.<name>), schemaVersion ('1'), network,
  *   sequence (monotonic per network), aggregate { type, id, version },
  *   observedAt (ISO-8601 Z), checkpoint { height, blockHash },
- *   status ('canonical'|'reverted'), revertedEventId? (required when
+ *   status ('current'|'reverted'), revertedEventId? (required when
  *   reverted), payload (object), artifactDigests? (hex64 strings),
  *   traceId
  */
@@ -90,8 +90,8 @@ export function validateOrdexEvent(event) {
   ) {
     return refuse('CHECKPOINT_INVALID', 'The event must carry the chain checkpoint it was observed at.');
   }
-  if (event.status !== 'canonical' && event.status !== 'reverted') {
-    return refuse('STATUS_INVALID', 'The status must be canonical or reverted.');
+  if (event.status !== 'current' && event.status !== 'reverted') {
+    return refuse('STATUS_INVALID', 'The status must be current or reverted.');
   }
   if (event.status === 'reverted') {
     if (typeof event.revertedEventId !== 'string' || !EVENT_ID.test(event.revertedEventId)) {
