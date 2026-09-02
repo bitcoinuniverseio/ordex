@@ -1,0 +1,1 @@
+var e=`/ordex`.replace(/\/$/,``);function t(t){if(!t)return`${e}/`;if(t.startsWith(`http://`)||t.startsWith(`https://`)||t.startsWith(`#`)||t.startsWith(`mailto:`))return t;let n=t.startsWith(`/`)?t:`/${t}`;return n.startsWith(`${e}/`)||n===e?n:`${e}${n}`}export{t};
