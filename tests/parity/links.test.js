@@ -17,8 +17,9 @@ test('critical internal navigation links point to existing static routes', async
   }
 
   for (const href of hrefs) {
-    if (href === '/') continue;
-    const cleanPath = href.replace(/^\//, '').replace(/\/$/, '');
+    if (href === '/' || href === '/ordex' || href === '/ordex/') continue;
+    const cleanPath = href.replace(/^\/ordex\/?/, '').replace(/^\//, '').replace(/\/$/, '');
+    if (!cleanPath) continue;
     const candidate1 = resolve(root, 'dist', 'client', cleanPath, 'index.html');
     const candidate2 = resolve(root, 'dist', 'client', `${cleanPath}.html`);
     const candidate3 = resolve(root, 'dist', 'client', cleanPath);

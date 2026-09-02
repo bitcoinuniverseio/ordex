@@ -3,6 +3,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import { RoleChooser } from '../components/shell/RoleChooser.jsx';
 import { TruthLabel } from '../components/shell/TruthLabel.jsx';
 import { FeedbackWidget } from '../components/feedback/FeedbackWidget.jsx';
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 ---
 
 <BaseLayout
@@ -25,16 +26,16 @@ import { FeedbackWidget } from '../components/feedback/FeedbackWidget.jsx';
         </p>
 
         <div style="display: flex; flex-wrap: wrap; gap: 0.75rem;">
-          <a href="/start" class="btn btn-primary" style="font-size: 1rem; padding: 0.6rem 1.25rem;">
+          <a href={`${base}/start`} class="btn btn-primary" style="font-size: 1rem; padding: 0.6rem 1.25rem;">
             Get Started (5 Min) →
           </a>
-          <a href="/build/playground" class="btn btn-secondary" style="font-size: 1rem; padding: 0.6rem 1.25rem;">
+          <a href={`${base}/build/playground`} class="btn btn-secondary" style="font-size: 1rem; padding: 0.6rem 1.25rem;">
             Open API Playground 🚀
           </a>
-          <a href="/lab" class="btn btn-outline" style="font-size: 1rem; padding: 0.6rem 1.25rem;">
+          <a href={`${base}/lab`} class="btn btn-outline" style="font-size: 1rem; padding: 0.6rem 1.25rem;">
             Ordex Protocol Lab 🔬
           </a>
-          <a href="/verify" class="btn btn-outline" style="font-size: 1rem; padding: 0.6rem 1.25rem;">
+          <a href={`${base}/verify`} class="btn btn-outline" style="font-size: 1rem; padding: 0.6rem 1.25rem;">
             Run Conformance Vectors (151/151) ⚖️
           </a>
         </div>
@@ -48,7 +49,7 @@ import { FeedbackWidget } from '../components/feedback/FeedbackWidget.jsx';
     <div>
       <h2 style="margin: 0 0 1rem 0; font-size: 1.5rem;">Documentation Products & Developer Tooling</h2>
       <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.25rem;">
-        <a href="/lab" class="panel" style="text-decoration: none; color: inherit; transition: transform 0.15s, border-color 0.15s;">
+        <a href={`${base}/lab`} class="panel" style="text-decoration: none; color: inherit; transition: transform 0.15s, border-color 0.15s;">
           <div style="font-size: 1.75rem; margin-bottom: 0.5rem;">🔬</div>
           <h3 style="margin: 0 0 0.25rem 0; font-size: 1.1rem; color: var(--color-text-primary);">Ordex Protocol Lab</h3>
           <p style="margin: 0; font-size: 0.85rem; color: var(--color-text-secondary); line-height: 1.4;">
@@ -56,7 +57,7 @@ import { FeedbackWidget } from '../components/feedback/FeedbackWidget.jsx';
           </p>
         </a>
 
-        <a href="/build/playground" class="panel" style="text-decoration: none; color: inherit;">
+        <a href={`${base}/build/playground`} class="panel" style="text-decoration: none; color: inherit;">
           <div style="font-size: 1.75rem; margin-bottom: 0.5rem;">🚀</div>
           <h3 style="margin: 0 0 0.25rem 0; font-size: 1.1rem; color: var(--color-text-primary);">API & Event Playground</h3>
           <p style="margin: 0; font-size: 0.85rem; color: var(--color-text-secondary); line-height: 1.4;">
@@ -64,7 +65,7 @@ import { FeedbackWidget } from '../components/feedback/FeedbackWidget.jsx';
           </p>
         </a>
 
-        <a href="/verify" class="panel" style="text-decoration: none; color: inherit;">
+        <a href={`${base}/verify`} class="panel" style="text-decoration: none; color: inherit;">
           <div style="font-size: 1.75rem; margin-bottom: 0.5rem;">⚖️</div>
           <h3 style="margin: 0 0 0.25rem 0; font-size: 1.1rem; color: var(--color-text-primary);">Conformance Studio & Doctor</h3>
           <p style="margin: 0; font-size: 0.85rem; color: var(--color-text-secondary); line-height: 1.4;">
@@ -72,7 +73,7 @@ import { FeedbackWidget } from '../components/feedback/FeedbackWidget.jsx';
           </p>
         </a>
 
-        <a href="/atlas" class="panel" style="text-decoration: none; color: inherit;">
+        <a href={`${base}/atlas`} class="panel" style="text-decoration: none; color: inherit;">
           <div style="font-size: 1.75rem; margin-bottom: 0.5rem;">🗺️</div>
           <h3 style="margin: 0 0 0.25rem 0; font-size: 1.1rem; color: var(--color-text-primary);">Visual Protocol Atlas</h3>
           <p style="margin: 0; font-size: 0.85rem; color: var(--color-text-secondary); line-height: 1.4;">
@@ -80,7 +81,7 @@ import { FeedbackWidget } from '../components/feedback/FeedbackWidget.jsx';
           </p>
         </a>
 
-        <a href="/kits" class="panel" style="text-decoration: none; color: inherit;">
+        <a href={`${base}/kits`} class="panel" style="text-decoration: none; color: inherit;">
           <div style="font-size: 1.75rem; margin-bottom: 0.5rem;">📦</div>
           <h3 style="margin: 0 0 0.25rem 0; font-size: 1.1rem; color: var(--color-text-primary);">Integration Kit Generator</h3>
           <p style="margin: 0; font-size: 0.85rem; color: var(--color-text-secondary); line-height: 1.4;">
@@ -88,7 +89,7 @@ import { FeedbackWidget } from '../components/feedback/FeedbackWidget.jsx';
           </p>
         </a>
 
-        <a href="/ask" class="panel" style="text-decoration: none; color: inherit;">
+        <a href={`${base}/ask`} class="panel" style="text-decoration: none; color: inherit;">
           <div style="font-size: 1.75rem; margin-bottom: 0.5rem;">🤖</div>
           <h3 style="margin: 0 0 0.25rem 0; font-size: 1.1rem; color: var(--color-text-primary);">Ask Ordex Assistant</h3>
           <p style="margin: 0; font-size: 0.85rem; color: var(--color-text-secondary); line-height: 1.4;">
