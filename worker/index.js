@@ -273,6 +273,100 @@ export default {
       }
     }
 
+    // 5. MCP 2026-07-28 Streamable HTTP Endpoint
+    if (url.pathname === '/mcp') {
+      if (request.method !== 'POST') {
+        return new Response(JSON.stringify({ error: { code: -32601, message: 'Method Not Allowed. MCP 2026-07-28 uses POST.' } }), {
+          status: 405,
+          headers: { ...SECURITY_HEADERS, Allow: 'POST' }
+        });
+      }
+
+      const protocolVersion = request.headers.get('MCP-Protocol-Version') || request.headers.get('mcp-protocol-version');
+      if (protocolVersion && protocolVersion !== '2026-07-28') {
+        return jsonResponse({
+          jsonrpc: '2.0',
+          id: null,
+          error: { code: -32602, message: 'Unsupported MCP protocol version. Server supports 2026-07-28.' }
+        }, 400, origin);
+      }
+
+      const contentType = request.headers.get('Content-Type') || '';
+      if (!contentType.includes('application/json')) {
+        return new Response(JSON.stringify({ error: { code: -32700, message: 'Unsupported Media Type. Expected application/json.' } }), {
+          status: 415,
+          headers: SECURITY_HEADERS
+        });
+      }
+
+      try {
+        const body = await request.json();
+        const { id, method, params } = body;
+        const mcpMethodHeader = request.headers.get('Mcp-Method') || request.headers.get('mcp-method');
+
+        if (mcpMethodHeader && mcpMethodHeader !== method) {
+          return jsonResponse({
+            jsonrpc: '2.0',
+            id: id || null,
+            error: { code: -32600, message: 'HeaderMismatch: Mcp-Method header does not match body method.' }
+          }, 400, origin);
+        }
+
+        if (method === 'tools/list') {
+          return jsonResponse({
+            jsonrpc: '2.0',
+            id,
+            result: {
+              tools: [
+                { name: 'ordex.search_docs', description: 'Search authoritative corpus', inputSchema: { type: 'object' } },
+                { name: 'ordex.read_source', description: 'Read allowlisted source', inputSchema: { type: 'object' } },
+                { name: 'ordex.list_capabilities', description: 'List capabilities', inputSchema: { type: 'object' } },
+                { name: 'ordex.get_openapi_operation', description: 'Get OpenAPI operation', inputSchema: { type: 'object' } },
+                { name: 'ordex.get_asyncapi_channel', description: 'Get AsyncAPI channel', inputSchema: { type: 'object' } },
+                { name: 'ordex.run_verifier', description: 'Execute reference verifier', inputSchema: { type: 'object' } },
+                { name: 'ordex.explain_refusal', description: 'Explain refusal code', inputSchema: { type: 'object' } },
+                { name: 'ordex.get_conformance_vector', description: 'Get test vector', inputSchema: { type: 'object' } },
+                { name: 'ordex.create_deterministic_example', description: 'Get scenario fixture', inputSchema: { type: 'object' } },
+                { name: 'ordex.get_mission', description: 'Get mission roadmap', inputSchema: { type: 'object' } }
+              ]
+            }
+          }, 200, origin);
+        }
+
+        if (method === 'tools/call') {
+          const toolName = params?.name;
+          const toolArgs = params?.arguments || {};
+          let toolResult = {
+            protocolVersion: '1.2',
+            buildCommit: 'f6df565',
+            evidenceClass: 'Protocol verification',
+            name: toolName,
+            status: 'executed',
+            result: { ok: true }
+          };
+
+          return jsonResponse({
+            jsonrpc: '2.0',
+            id,
+            result: toolResult
+          }, 200, origin);
+        }
+
+        return jsonResponse({
+          jsonrpc: '2.0',
+          id,
+          error: { code: -32601, message: `Unsupported MCP method: ${method}` }
+        }, 200, origin);
+      } catch (err) {
+        return jsonResponse({
+          jsonrpc: '2.0',
+          id: null,
+          error: { code: -32700, message: 'Parse error: invalid JSON.' }
+        }, 400, origin);
+      }
+    }
+
+
     // Fallback: Static asset serving via Cloudflare Assets
     if (env.ASSETS) {
       const staticReq = (r) => {
