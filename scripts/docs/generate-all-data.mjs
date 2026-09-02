@@ -984,12 +984,54 @@ function resolveRef(ref, doc) {
   return curr || {};
 }
 
+// 10. Diagnostics Registry Generation for Failure Navigator
+const diagnostics = refusalList.map(r => {
+  const family = r.verifiers[0] || 'purchase';
+  let versions = ['1.0', '1.1', '1.2'];
+  if (['offers', 'safeops', 'swaps', 'runes'].includes(family)) {
+    versions = ['1.1', '1.2'];
+  } else if (['collection-manifest', 'counterparty-asset', 'offline-signing', 'events'].includes(family)) {
+    versions = ['1.2'];
+  }
+
+  const destinationProduct = family === 'purchase' ? 'sandbox' : family === 'doctor' ? 'doctor' : 'lab';
+
+  return {
+    id: `diag-${r.code.toLowerCase().replace(/_/g, '-')}`,
+    exactCodes: [r.code],
+    family,
+    lifecyclePhases: ['composition', 'preflight', 'verification'],
+    supportedProtocolVersions: versions,
+    summary: r.explanation,
+    invariant: `Rule ${r.code}: All parameters must satisfy ${family} invariant requirements before signing.`,
+    likelyCauses: [
+      { cause: r.explanation, probability: 'High' },
+      { cause: 'Client state out of sync with current UTXO set', probability: 'Medium' }
+    ],
+    evidenceRequirements: [
+      { evidenceType: 'PSBT binary or transaction hex', required: true },
+      { evidenceType: 'Offered outpoint prevout value and script', required: true }
+    ],
+    resolutionSteps: [
+      { step: 1, action: r.remediation },
+      { step: 2, action: 'Inspect field values in Artifact Lens' },
+      { step: 3, action: 'Execute reference verifier in Protocol Lab' }
+    ],
+    reproducerFactoryId: `reproducer-${r.code.toLowerCase().replace(/_/g, '-')}`,
+    destinationProduct,
+    sourceRefs: [
+      { title: `${family} Verifier`, path: `verifier/${family}.js`, type: 'verifier' }
+    ]
+  };
+});
+
 // Write out all files
 fs.writeFileSync(path.join(dataOutDir, 'operations.json'), JSON.stringify(operations, null, 2));
 fs.writeFileSync(path.join(dataOutDir, 'channels.json'), JSON.stringify(channels, null, 2));
 fs.writeFileSync(path.join(dataOutDir, 'vectorFamilies.json'), JSON.stringify(vectorFamilies, null, 2));
 fs.writeFileSync(path.join(dataOutDir, 'allVectors.json'), JSON.stringify(allVectorsList, null, 2));
 fs.writeFileSync(path.join(dataOutDir, 'refusals.json'), JSON.stringify(refusalList, null, 2));
+fs.writeFileSync(path.join(dataOutDir, 'diagnostics.json'), JSON.stringify(diagnostics, null, 2));
 fs.writeFileSync(path.join(dataOutDir, 'specs.json'), JSON.stringify(specs, null, 2));
 fs.writeFileSync(path.join(dataOutDir, 'versions.json'), JSON.stringify(versions, null, 2));
 fs.writeFileSync(path.join(dataOutDir, 'compatibility.json'), JSON.stringify(compatibilityMatrix, null, 2));
@@ -1002,7 +1044,9 @@ console.log(`- ${operations.length} OpenAPI operations`);
 console.log(`- ${channels.length} AsyncAPI channels`);
 console.log(`- ${Object.keys(vectorFamilies).length} vector families (${allVectorsList.length} cases)`);
 console.log(`- ${refusalList.length} refusal codes`);
+console.log(`- ${diagnostics.length} diagnostic rules`);
 console.log(`- ${specs.length} specifications`);
 console.log(`- ${wizards.length} guided wizards`);
 console.log(`- ${atlasDiagrams.length} Visual Protocol Atlas diagrams`);
 console.log(`- ${corpusChunks.length} Ask Ordex corpus chunks`);
+
