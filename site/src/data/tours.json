@@ -1,0 +1,89 @@
+[
+  {
+    "id": "tour-overview",
+    "title": "Ordex Overview & Trust Boundaries",
+    "summary": "Discover the task-first workspace, local Web Worker verifiers, and non-custodial boundaries.",
+    "relatedMissionId": "integrate-public-asks",
+    "captures": {
+      "desktopLight": "assets/tours/overview-desktop-light.png",
+      "desktopDark": "assets/tours/overview-desktop-dark.png",
+      "mobileLight": "assets/tours/overview-mobile-light.png"
+    },
+    "altText": "Ordex Launchpad homepage showing goal selector and active mission cards in high-contrast light theme",
+    "hotspots": [
+      { "label": "Brand Mark", "x": 5, "y": 3 },
+      { "label": "Disclosure Mode Toggle", "x": 20, "y": 3 },
+      { "label": "Command Center", "x": 75, "y": 3 },
+      { "label": "Context Lens Rail", "x": 90, "y": 40 }
+    ]
+  },
+  {
+    "id": "tour-public-asks",
+    "title": "Publish & Settle Public Asks",
+    "summary": "Walk through how a seller lists an inscription and a buyer funds the purchase without custodian escrow.",
+    "relatedMissionId": "integrate-public-asks",
+    "captures": {
+      "desktopLight": "assets/tours/public-asks-desktop-light.png",
+      "desktopDark": "assets/tours/public-asks-desktop-dark.png",
+      "mobileLight": "assets/tours/public-asks-mobile-light.png"
+    },
+    "altText": "Active Mission Workspace showing stage progress bar, prerequisites checklist, and tool adapter links",
+    "hotspots": [
+      { "label": "Task Stage Map", "x": 50, "y": 20 },
+      { "label": "Target Tool Action", "x": 80, "y": 45 },
+      { "label": "Completion Criteria", "x": 50, "y": 75 }
+    ]
+  },
+  {
+    "id": "tour-wallet-mutations",
+    "title": "Inspect Wallet Mutations in Artifact Lens",
+    "summary": "Detect output reordering, dropped proprietary keys, and sighash downgrades before signing.",
+    "relatedMissionId": "protect-wallet-signing",
+    "captures": {
+      "desktopLight": "assets/tours/wallet-mutations-desktop-light.png",
+      "desktopDark": "assets/tours/wallet-mutations-desktop-dark.png",
+      "mobileLight": "assets/tours/wallet-mutations-mobile-light.png"
+    },
+    "altText": "Artifact Lens Wallet Mutation Lab showing semantic differences between expected and mutated transactions",
+    "hotspots": [
+      { "label": "Input Payload Bar", "x": 50, "y": 15 },
+      { "label": "Inspection Tabs", "x": 30, "y": 28 },
+      { "label": "Mutation Severity Pill", "x": 85, "y": 40 }
+    ]
+  },
+  {
+    "id: ": "tour-failure-diagnose",
+    "id": "tour-failure-diagnose",
+    "title": "Diagnose Protocol Failures",
+    "summary": "Map refusal codes to violated invariants and generate minimal deterministic reproducers.",
+    "relatedMissionId": "diagnose-protocol-failure",
+    "captures": {
+      "desktopLight": "assets/tours/diagnose-desktop-light.png",
+      "desktopDark": "assets/tours/diagnose-desktop-dark.png",
+      "mobileLight": "assets/tours/diagnose-mobile-light.png"
+    },
+    "altText": "Failure Navigator triage view showing violated invariant, cause tree, and ordered recovery steps",
+    "hotspots": [
+      { "label": "Refusal Code Input", "x": 50, "y": 18 },
+      { "label": "Violated Invariant", "x": 50, "y": 42 },
+      { "label": "Recovery Steps", "x": 50, "y": 68 }
+    ]
+  },
+  {
+    "id": "tour-agent-bridge",
+    "title": "Connect AI Coding Agents (MCP)",
+    "summary": "Configure Claude Code, Cursor, or Codex over local stdio or modern Streamable HTTP.",
+    "relatedMissionId": "operate-gateway-and-events",
+    "captures": {
+      "desktopLight": "assets/tours/agent-bridge-desktop-light.png",
+      "desktopDark": "assets/tours/agent-bridge-desktop-dark.png",
+      "mobileLight": "assets/tours/agent-bridge-mobile-light.png"
+    },
+    "altText": "Agent Bridge interface showing local stdio config, tool explorer, and live test console",
+    "hotspots": [
+      { "label": "Stdio Config JSON", "x": 30, "y": 25 },
+      { "label": "Tool List Rail", "x": 15, "y": 60 },
+      { "label": "Execution Output", "x": 65, "y": 75 }
+    ]
+  }
+]
