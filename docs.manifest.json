@@ -27,12 +27,23 @@
     "spec/api.md",
     "spec/lifecycle.md",
     "spec/purchase.md",
+    "spec/offers.md",
+    "spec/batch-purchase.md",
     "spec/runes.md",
-    "spec/interoperability.md"
+    "spec/interoperability.md",
+    "spec/safeops.md",
+    "spec/swaps.md",
+    "spec/events.md",
+    "spec/collection-manifest.md",
+    "spec/counterparty-utxo-asset.md",
+    "spec/cold-signing.md"
   ],
   "contracts": {
     "openapi": [
       "spec/openapi.json"
+    ],
+    "asyncapi": [
+      "spec/asyncapi.json"
     ]
   },
   "owners": [
