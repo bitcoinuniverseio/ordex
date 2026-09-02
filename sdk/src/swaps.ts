@@ -441,7 +441,11 @@ export function verifySwapAcceptance(acceptance: unknown, intent: unknown): Swap
   if (fee !== declaredFee) {
     return acceptanceRefuse('FEE_CHANGED', 'The declared fee does not match the transaction.');
   }
-  if (makerFee > parseSats(i.maxMakerFeeSats)) {
+  const maxMakerFee = parseSats(i.maxMakerFeeSats);
+  if (maxMakerFee === null) {
+    return refuse('FEE_BUDGET_INVALID', 'maxMakerFeeSats must be an exact non-negative decimal string.');
+  }
+  if (makerFee > maxMakerFee) {
     return acceptanceRefuse('FEE_BUDGET_EXCEEDED', 'The maker contribution exceeds the budget the intent approved.');
   }
 
@@ -449,10 +453,13 @@ export function verifySwapAcceptance(acceptance: unknown, intent: unknown): Swap
   // receive script with at least the minimum quantity.
   for (const criterion of i.requires as SwapRequirement[]) {
     const minimum = parseSats(criterion.minQuantitySats);
-    const satisfied = outputs.some(
-      (output) =>
-        output.scriptHex === i.makerReceiveScriptHex && parseSats(output?.valueSats) >= minimum,
-    );
+    if (minimum === null) {
+      return refuse('REQUIRES_INVALID', 'The intent must require at least one exact asset with a minimum quantity.');
+    }
+    const satisfied = outputs.some((output) => {
+      const value = parseSats(output?.valueSats);
+      return output.scriptHex === i.makerReceiveScriptHex && value !== null && value >= minimum;
+    });
     if (!satisfied) {
       return acceptanceRefuse(
         'CONSIDERATION_SHORTFALL',
