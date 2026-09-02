@@ -30,6 +30,25 @@ export {
   type Runestone,
   type RunestoneFlaw,
 } from './runes.js';
+export {
+  OFFER_TERMS_SCHEMA,
+  offerTermsHash,
+  sortedJson,
+  verifyOfferAcceptance,
+  verifyOfferRecovery,
+  verifyOfferTerms,
+  type OfferAcceptanceContext,
+  type OfferAcceptanceRefusalCode,
+  type OfferAcceptanceTransaction,
+  type OfferAcceptanceVerdict,
+  type OfferKind,
+  type OfferRecoveryRefusalCode,
+  type OfferRecoveryTransaction,
+  type OfferRecoveryVerdict,
+  type OfferTerms,
+  type OfferTermsRefusalCode,
+  type OfferTermsVerdict,
+} from './offers.js';
 
 type Schemas = components['schemas'];
 

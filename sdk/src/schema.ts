@@ -346,6 +346,184 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/ordex/orders/{id}/replace": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Replace a live ask with a freshly signed one for the same output
+         * @description Repricing is a protocol operation, not a database edit. The old order must be live, the owner proof must match the offered output, and the new artifact must be signed against the same outpoint. The old order leaves the book as REPLACED and the new one goes live in one step, and two live asks for one output and seller cannot exist.
+         */
+        post: operations["replaceOrder"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ordex/orders/batch-purchase": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Compose several live asks into one transaction
+         * @description Up to eight asks, one funding plan, one transaction, composed only when every seller signature and every sat flow invariant can coexist. There is no partial composition: when any ask cannot be proved the answer names every refusal and settles nothing.
+         */
+        post: operations["composeBatchPurchase"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ordex/orders/batch-preflight": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Verify a signed batch and ask the node about the exact bytes
+         * @description Rechecks every placement against both authorities, proves the sat flow invariant for every ask, then asks the node whether it would accept the composed transaction. The answer carries the exact bytes checked.
+         */
+        post: operations["preflightBatchPurchase"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ordex/offers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * One page of the offer book
+         * @description Keyset paged exactly like the orders: limit and cursor in, nextCursor out, empty on the last page. A malformed cursor is a 400, never a silent first page.
+         */
+        get: operations["listOffers"];
+        put?: never;
+        /**
+         * Publish a funded offer
+         * @description Takes exact offer terms and funded-output evidence. The gateway recomputes the terms hash, recomputes the Taproot tree and tweak from the two leaves, requires the funded script to commit to both, asks Bitcoin Core whether the output exists and is unspent, and refuses everything else. The offer goes live once the funding confirms.
+         */
+        post: operations["publishOffer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ordex/offers/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One offer with its lifecycle state and freshness */
+        get: operations["getOffer"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ordex/offers/{id}/revalidate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Recheck one offer against both authorities */
+        post: operations["revalidateOffer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ordex/offers/{id}/withdraw": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Remove an offer from discovery, proved by the recovery key
+         * @description Discovery, not cancellation: the funded output stays spendable by the acceptance path until it is spent, and by the recovery path after expiry. A BIP 322 signature by the recovery key proves who may stop publishing the offer.
+         */
+        post: operations["withdrawOffer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ordex/offers/{id}/acceptance-plan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * State the exact acceptance arrangement for one live offer
+         * @description Given the seller outpoint, reads every value from the node and the ord index, lays out padding, buyer asset, every preserve in sat order, the seller payment at the seller input index, and change, and refuses when the Feline is elsewhere, the root no longer holds, or expiry has passed.
+         */
+        post: operations["planOfferAcceptance"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ordex/offers/{id}/preflight": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Verify a built acceptance and ask the node
+         * @description Parses the complete acceptance, checks every rule in spec/offers.md including both policy signatures against the committed terms tree, then asks the node whether it would accept the bytes. The answer carries the exact bytes checked.
+         */
+        post: operations["preflightOfferAcceptance"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -362,10 +540,10 @@ export interface components {
         /** @enum {string} */
         OrderClass: "ASK_ANYONECANPAY" | "BID_FULLY_FUNDED" | "UNSUPPORTED";
         /**
-         * @description Every state is reachable. A mempool conflict can return to LIVE when the conflicting spend is replaced or dropped; a confirmed spend does not come back short of a reorg. SETTLED is narrower than SPENT: the offered output was spent by a transaction observed carrying this order's exact payout.
+         * @description Every state is reachable. A mempool conflict can return to LIVE when the conflicting spend is replaced or dropped; a confirmed spend does not come back short of a reorg. SETTLED is narrower than SPENT: the offered output was spent by a transaction observed carrying this order's exact payout. REPLACED is the terminal state of a live ask whose owner published a fresh ask for the same output through POST /orders/{id}/replace.
          * @enum {string}
          */
-        OrderState: "PENDING_NODE" | "PENDING_ORD" | "LIVE" | "MEMPOOL_CONFLICTED" | "SPENT" | "SETTLED" | "REJECTED" | "WITHDRAWN";
+        OrderState: "PENDING_NODE" | "PENDING_ORD" | "LIVE" | "MEMPOOL_CONFLICTED" | "SPENT" | "SETTLED" | "REPLACED" | "REJECTED" | "WITHDRAWN";
         /**
          * @description What a customer may do right now. A LIVE order whose verification has aged past its freshness bound is REVIEW_ONLY, not HANDOFF_READY.
          * @enum {string}
@@ -741,6 +919,257 @@ export interface components {
                 note: string;
             };
         };
+        /**
+         * @description What an offer binds to. ITEM names one exact inscription; COLLECTION names every Feline included in the committed root; TRAIT names one exact trait name and value inside that root.
+         * @enum {string}
+         */
+        OfferKind: "ITEM" | "COLLECTION" | "TRAIT";
+        /**
+         * @description The funded-output lifecycle. PENDING_CONFIRMATION is not live. ACCEPTED and RECOVERED are the two settled outcomes. EXPIRED means the current height passed expiryHeight with the output unspent, so recovery is the only remaining path. WITHDRAWN is discovery, not cancellation: only a spend settles the funds.
+         * @enum {string}
+         */
+        OfferState: "PENDING_CONFIRMATION" | "LIVE" | "ACCEPTED" | "RECOVERED" | "MEMPOOL_CONFLICTED" | "SPENT" | "EXPIRED" | "WITHDRAWN" | "REJECTED";
+        OfferTerms: {
+            /**
+             * @description The terms schema this contract carries.
+             * @constant
+             */
+            schema: "ordex.offer-terms/v1";
+            /** @description The gateway protocol version the terms were written for, 1.1 or later. */
+            protocolVersion: string;
+            network: components["schemas"]["Network"];
+            offerKind: components["schemas"]["OfferKind"];
+            /** @description The collection the scope names. */
+            collectionId: string;
+            /** @description Lowercase hex SHA-256 collection Merkle root the scope binds to. */
+            collectionRoot: string;
+            /** @description ITEM offers only: the exact inscription the offer buys. */
+            itemInscriptionId?: string;
+            /** @description TRAIT offers only: the exact trait name. */
+            traitName?: string;
+            /** @description TRAIT offers only: the exact trait value. */
+            traitValue?: string;
+            /** @description SHA-256 over the exact serialized scope criteria the buyer accepted, so a verifier can recheck scope membership without trusting a description of it. */
+            criteriaHash: string;
+            /** @description Lowercase hex script the bought Feline must land in. */
+            buyerReceiveScriptHex: string;
+            /** @description Exact price paid to the accepting seller. */
+            priceSats: components["schemas"]["AtomicSats"];
+            /** @description The largest fee an acceptance may pay. */
+            maxNetworkFeeSats: components["schemas"]["AtomicSats"];
+            /** @description Block height after which acceptance is refused and the recovery path unlocks. */
+            expiryHeight: number;
+            /** @description Lowercase hex x-only key that can recover the funded output alone after expiry. */
+            buyerRecoveryKeyHex: string;
+        };
+        /** @description SHA-256 over the terms serialized as UTF-8 JSON with object keys sorted recursively and no insignificant whitespace. Two parties that hold the same terms hold the same hash. */
+        OfferTermsHash: string;
+        OfferFunding: {
+            /** @description The transaction that created the funded output. */
+            fundedTxid: string;
+            /** @description The funded output index. */
+            fundedVout: number;
+            /** @description Lowercase hex x-only internal key of the funded output. */
+            tapInternalKeyHex: string;
+            /** @description The acceptance leaf: the terms hash push, both policy keys, CHECKSIG, CHECKSIGADD, and the 2-of-2 equal. The gateway recomputes the tree and the tweak from these leaves, so the funded script must commit to the exact terms. */
+            acceptanceLeafScriptHex: string;
+            /** @description The recovery leaf: the expiry height, CHECKLOCKTIMEVERIFY, and the buyer recovery key. */
+            recoveryLeafScriptHex: string;
+        };
+        OfferValidation: {
+            /**
+             * Format: date-time
+             * @description When both authorities were last asked.
+             */
+            checkedAt: string;
+            /**
+             * @description What Bitcoin Core said about the funded output.
+             * @enum {string}
+             */
+            nodeStatus: "UNCONFIGURED" | "READY" | "UNAVAILABLE" | "OUTPOINT_MISSING" | "OUTPOINT_SPENT";
+            /**
+             * @description What the collection authority said about the committed root.
+             * @enum {string}
+             */
+            rootStatus: "NOT_REQUESTED" | "UNCONFIGURED" | "VERIFIED" | "ROOT_MISMATCH" | "UNAVAILABLE";
+        };
+        OfferSummary: {
+            /** @description The gateway identifier for this offer. */
+            id: string;
+            terms: components["schemas"]["OfferTerms"];
+            offerTermsHash: components["schemas"]["OfferTermsHash"];
+            funding: components["schemas"]["OfferFunding"];
+            state: components["schemas"]["OfferState"];
+            actionability?: components["schemas"]["Actionability"];
+            validation: components["schemas"]["OfferValidation"];
+            /** @description ACCEPTED and RECOVERED offers only: the transaction that settled the funds. */
+            settledByTxid?: string;
+            /** @description ACCEPTED offers only: the order whose acceptance carried the settlement. */
+            acceptedOrderId?: string;
+            /**
+             * Format: date-time
+             * @description When the gateway published the offer.
+             */
+            postedAt: string;
+            checkpoint?: components["schemas"]["ListingReadiness"];
+        };
+        OfferPage: {
+            offers: components["schemas"]["OfferSummary"][];
+            /** @description Empty on the last page. Resume from here for a stable, offset-free read. */
+            nextCursor?: string;
+            hasMore: boolean;
+        };
+        OfferPublishRequest: {
+            terms: components["schemas"]["OfferTerms"];
+            funding: components["schemas"]["OfferFunding"];
+        };
+        OfferAcceptancePlanRequest: {
+            /** @description The output the accepting seller will spend to deliver the Feline. */
+            sellerFelineOutpoint: components["schemas"]["Outpoint"];
+            /** @description The script the seller payment output must carry, committed by the seller signature. */
+            sellerPaymentScriptHex: string;
+        };
+        OfferAcceptancePlan: {
+            /** @description The offer this plan settles. */
+            offerId: string;
+            /** @description Where the Feline input sits, and with it the seller payment. */
+            sellerInputIndex: number;
+            /** @description Where the funded offer output sits. */
+            offerInputIndex: number;
+            sellerPaymentOutputIndex: number;
+            buyerAssetOutputIndex: number;
+            /** @description Every input in transaction order, with the exact values read from the node. */
+            inputs: {
+                txid: string;
+                vout: number;
+                valueSats: components["schemas"]["AtomicSats"];
+                /** @enum {string} */
+                role: "PADDING" | "OFFER" | "SELLER_FELINE";
+            }[];
+            /** @description Every output in transaction order: padding merge, buyer asset, seller preserves in sat order, seller payment at the seller input index, buyer change last. */
+            outputs: {
+                scriptHex: string;
+                valueSats: components["schemas"]["AtomicSats"];
+                /** @enum {string} */
+                role: "PADDING_MERGE" | "BUYER_ASSET" | "SELLER_PRESERVE" | "SELLER_PAYMENT" | "BUYER_CHANGE";
+            }[];
+            /** @description The fee the composed arrangement pays at the current rate. */
+            estimatedFeeSats: components["schemas"]["AtomicSats"];
+            /** @description False means the terms refuse acceptance as composed. */
+            withinMaxNetworkFee: boolean;
+            /** @description The terms expiry height, restated so a stale plan is visible. */
+            expiresAtHeight: number;
+            checkpoint: components["schemas"]["ListingReadiness"];
+        };
+        OfferPreflightRequest: {
+            /** @description The complete acceptance, seller signature and both policy signatures included. */
+            finalTxHex: string;
+        };
+        OfferPreflightResult: {
+            offerId: string;
+            allowed: boolean;
+            /** @description Present when not allowed. */
+            rejectReason?: string;
+            /** @description The exact bytes checked, so a seller broadcasts those and no others. */
+            finalTxHex?: string;
+            txid?: string;
+            vsize?: number;
+            feesSats?: components["schemas"]["AtomicSats"];
+            /** @description How many of the two acceptance-leaf signatures the parsed witness carries. */
+            policySignatureCount?: number;
+            /** @description What the node answered when asked whether it would accept these bytes. */
+            nodeAcceptance?: {
+                [key: string]: unknown;
+            };
+            /** Format: date-time */
+            checkedAt: string;
+        };
+        /** @description A freshly signed seller half for the same offered output, plus the same owner proof withdrawal requires. The old order leaves the book as REPLACED and the new one goes live in one step. */
+        ReplaceAskRequest: {
+            artifact: components["schemas"]["PublishAskRequest"];
+            ownership: components["schemas"]["OwnershipProof"];
+        };
+        ReplaceAskResult: {
+            /** @description The order this replacement retired. */
+            replacedOrderId: string;
+            order: components["schemas"]["OrderSummary"];
+        };
+        BatchPurchaseRequest: {
+            /** @description The live asks to settle in one transaction, in the order the buyer reviewed them. */
+            orderIds: string[];
+            /** @description Where every purchased Feline lands, one output per ask. */
+            assetReceiveAddress: string;
+            /** @description Where padding merges and change return to the buyer. */
+            paymentAddress: string;
+            /** @description Two asset-free cardinal outputs per ask, read back from the node before anything is composed. */
+            paddingUtxos: components["schemas"]["Outpoint"][];
+            /** @description Cardinal outputs that cover every price and the fee. */
+            fundingUtxos: components["schemas"]["Outpoint"][];
+            /** @description The exact rate the buyer approved. */
+            feeRateSatsPerVb: number;
+        };
+        BatchPurchaseResult: {
+            /** @description The unsigned buyer half. Every seller input arrives already signed; the buyer signs only their own inputs. */
+            psbt: string;
+            placements: {
+                orderId: string;
+                sellerInputIndex: number;
+                sellerPaymentOutputIndex: number;
+                buyerAssetOutputIndex: number;
+                /** @description This ask's exact price. */
+                priceSats?: components["schemas"]["AtomicSats"];
+            }[];
+            totals: {
+                /** @description Every price, every fee, and every padding sat, stated once. */
+                totalBuyerCostSats: components["schemas"]["AtomicSats"];
+                networkFeeSats: components["schemas"]["AtomicSats"];
+            };
+            /**
+             * Format: date-time
+             * @description How long the composed batch stays composable before at least one ask can no longer be proved.
+             */
+            expiresAt: string;
+        };
+        BatchRefusal: {
+            /** @description The refused ask. */
+            orderId: string;
+            /** @description A stable, machine readable refusal code. */
+            code: string;
+            /** @description A human explanation of the same refusal. */
+            reason: string;
+        };
+        /** @description Answered when at least one ask cannot coexist in the batch. There is no partial composition: every refused order is named, and the client falls back to separate purchases. */
+        BatchPurchaseRefused: {
+            refusals: components["schemas"]["BatchRefusal"][];
+        };
+        BatchPreflightRequest: {
+            /** @description The identifier the batch-purchase answer carried. */
+            batchId: string;
+            /** @description The batch PSBT with every buyer input signed. */
+            signedPsbt?: string;
+            /** @description Or the exact final bytes, when already finalized. */
+            finalTxHex?: string;
+        };
+        BatchPreflightResult: {
+            allowed: boolean;
+            /** @description The exact bytes checked, so a buyer broadcasts those and no others. */
+            finalTxHex?: string;
+            txid?: string;
+            vsize?: number;
+            feesSats?: components["schemas"]["AtomicSats"];
+            placements: {
+                orderId: string;
+                allowed: boolean;
+                /** @description Present when this ask failed inside an otherwise parseable batch. */
+                rejectReason?: string;
+            }[];
+            /** @description What the node answered about the exact composed bytes. */
+            nodeAcceptance?: {
+                [key: string]: unknown;
+            };
+            /** Format: date-time */
+            checkedAt: string;
+        };
         /** @description The error envelope every route answers with. Rate limited requests additionally carry `code: ORDEX_RATE_LIMITED`. */
         ErrorResponse: {
             statusCode: number;
@@ -793,6 +1222,8 @@ export interface components {
     parameters: {
         /** @description The order id. */
         OrderId: string;
+        /** @description The gateway offer identifier. */
+        OfferId: string;
     };
     requestBodies: never;
     headers: never;
@@ -1302,6 +1733,305 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PreflightResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["RateLimited"];
+            default: components["responses"]["Error"];
+        };
+    };
+    replaceOrder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The order id. */
+                id: components["parameters"]["OrderId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReplaceAskRequest"];
+            };
+        };
+        responses: {
+            /** @description The retired order id and the live replacement. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReplaceAskResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["RateLimited"];
+            default: components["responses"]["Error"];
+        };
+    };
+    composeBatchPurchase: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BatchPurchaseRequest"];
+            };
+        };
+        responses: {
+            /** @description The composed batch with every placement stated. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BatchPurchaseResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            /** @description At least one ask cannot coexist in the batch. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BatchPurchaseRefused"];
+                };
+            };
+            429: components["responses"]["RateLimited"];
+            default: components["responses"]["Error"];
+        };
+    };
+    preflightBatchPurchase: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BatchPreflightRequest"];
+            };
+        };
+        responses: {
+            /** @description The per-ask verdicts and the node answer. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BatchPreflightResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["RateLimited"];
+            default: components["responses"]["Error"];
+        };
+    };
+    listOffers: {
+        parameters: {
+            query?: {
+                limit?: number;
+                cursor?: string;
+                offerKind?: components["schemas"]["OfferKind"];
+                collectionId?: string;
+                state?: components["schemas"]["OfferState"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The offer page. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OfferPage"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            429: components["responses"]["RateLimited"];
+            default: components["responses"]["Error"];
+        };
+    };
+    publishOffer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OfferPublishRequest"];
+            };
+        };
+        responses: {
+            /** @description The published offer in PENDING_CONFIRMATION. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OfferSummary"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["RateLimited"];
+            default: components["responses"]["Error"];
+        };
+    };
+    getOffer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The gateway offer identifier. */
+                id: components["parameters"]["OfferId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The offer. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OfferSummary"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["RateLimited"];
+            default: components["responses"]["Error"];
+        };
+    };
+    revalidateOffer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The gateway offer identifier. */
+                id: components["parameters"]["OfferId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The rechecked offer. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OfferSummary"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["RateLimited"];
+            default: components["responses"]["Error"];
+        };
+    };
+    withdrawOffer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The gateway offer identifier. */
+                id: components["parameters"]["OfferId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OwnershipProof"];
+            };
+        };
+        responses: {
+            /** @description The withdrawn offer. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OfferSummary"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["RateLimited"];
+            default: components["responses"]["Error"];
+        };
+    };
+    planOfferAcceptance: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The gateway offer identifier. */
+                id: components["parameters"]["OfferId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OfferAcceptancePlanRequest"];
+            };
+        };
+        responses: {
+            /** @description The exact arrangement to build and sign. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OfferAcceptancePlan"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["RateLimited"];
+            default: components["responses"]["Error"];
+        };
+    };
+    preflightOfferAcceptance: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The gateway offer identifier. */
+                id: components["parameters"]["OfferId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OfferPreflightRequest"];
+            };
+        };
+        responses: {
+            /** @description The acceptance verdict. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OfferPreflightResult"];
                 };
             };
             400: components["responses"]["BadRequest"];
