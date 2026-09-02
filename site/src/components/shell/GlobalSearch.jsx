@@ -161,7 +161,9 @@ export function GlobalSearch() {
       } catch (e) {}
     }
     setIsOpen(false);
-    window.location.href = url;
+    const basePath = (typeof window !== 'undefined' && window.location.pathname.startsWith('/ordex')) ? '/ordex' : '';
+    const targetUrl = (url.startsWith('/') && !url.startsWith('/ordex')) ? `${basePath}${url}` : url;
+    window.location.href = targetUrl;
   };
 
   const handleKeyDownInResults = (e) => {
