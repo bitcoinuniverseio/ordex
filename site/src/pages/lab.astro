@@ -1,0 +1,22 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { ProtocolLab } from '../components/lab/ProtocolLab.jsx';
+import { FeedbackWidget } from '../components/feedback/FeedbackWidget.jsx';
+---
+
+<BaseLayout
+  title="Ordex Protocol Lab (/lab/): Interactive Transaction Workbench"
+  description="Browser-local protocol workbench. Analyze transactions, sat flows, and artifacts against reference verifiers in sandbox Web Workers."
+  currentNav="verify"
+>
+  <div style="display: flex; flex-direction: column; gap: 2rem;">
+    <div>
+      <h1 style="margin: 0 0 0.5rem 0; font-size: 2.2rem; font-weight: 800;">Ordex Protocol Lab</h1>
+      <p style="margin: 0; font-size: 1.1rem; color: var(--color-text-secondary);">
+        Browser-local protocol workbench. Inspect sat flow diagrams, PSBT inputs and outputs, and test custom transaction plans.
+      </p>
+    </div>
+    <ProtocolLab client:load />
+    <FeedbackWidget client:load route="/lab" heading="Ordex Protocol Lab" />
+  </div>
+</BaseLayout>

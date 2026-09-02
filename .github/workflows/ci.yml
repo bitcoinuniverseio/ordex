@@ -39,14 +39,20 @@ jobs:
           $ErrorActionPreference = 'Stop'
           if ((node --version).Trim() -ne 'v24.19.0') { throw 'Unexpected Node.js version' }
 
-      # The repository has no dependencies on purpose, so there is nothing to
-      # install and nothing to audit. Each check below is its own step so a
-      # red result cannot be erased by a later green command.
-      - name: Run the reference verifier against the conformance vectors
-        run: npm test
+      - name: Install locked root dependencies
+        run: npm ci
+
+      - name: Audit root dependencies
+        run: npm audit --audit-level=low
 
       - name: Build the documentation site
         run: npm run build
+
+      - name: Run the reference verifiers and unit tests
+        run: npm test
+
+      - name: Run the conformance CLI runner
+        run: npm run conformance
 
       # dist/ is a build output and stays untracked. The build itself fails
       # loudly on an error, so the check here is that everything the deploy
@@ -55,7 +61,7 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          foreach ($file in 'dist/client/index.html', 'dist/client/api-reference.html', 'dist/server/index.js') {
+          foreach ($file in 'dist/client/index.html', 'dist/client/api-reference.html', 'dist/server/index.js', 'dist/client/lab/index.html', 'dist/client/verify/index.html', 'dist/client/atlas/index.html', 'dist/client/kits/index.html', 'dist/client/ask/index.html', 'dist/client/pagefind/pagefind.js') {
             if (-not (Test-Path $file)) { throw "$file missing from the build output" }
           }
 

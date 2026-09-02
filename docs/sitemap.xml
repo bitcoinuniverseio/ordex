@@ -2,32 +2,102 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://bitcoinuniverseio.github.io/ordex/</loc>
-    <changefreq>weekly</changefreq>
+    <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://bitcoinuniverseio.github.io/ordex/quickstart.html</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://bitcoinuniverseio.github.io/ordex/protocol-guide.html</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://bitcoinuniverseio.github.io/ordex/architecture.html</loc>
-    <changefreq>weekly</changefreq>
+    <loc>https://bitcoinuniverseio.github.io/ordex/start/</loc>
+    <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://bitcoinuniverseio.github.io/ordex/api-reference.html</loc>
-    <changefreq>weekly</changefreq>
+    <loc>https://bitcoinuniverseio.github.io/ordex/learn/</loc>
+    <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://bitcoinuniverseio.github.io/ordex/troubleshooting.html</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
+    <loc>https://bitcoinuniverseio.github.io/ordex/build/</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://bitcoinuniverseio.github.io/ordex/build/wizards/</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://bitcoinuniverseio.github.io/ordex/build/recipes/</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://bitcoinuniverseio.github.io/ordex/build/playground/</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://bitcoinuniverseio.github.io/ordex/verify/</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://bitcoinuniverseio.github.io/ordex/lab/</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://bitcoinuniverseio.github.io/ordex/atlas/</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://bitcoinuniverseio.github.io/ordex/kits/</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://bitcoinuniverseio.github.io/ordex/ask/</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://bitcoinuniverseio.github.io/ordex/operate/</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://bitcoinuniverseio.github.io/ordex/releases/</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://bitcoinuniverseio.github.io/ordex/compatibility/</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://bitcoinuniverseio.github.io/ordex/insights/</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://bitcoinuniverseio.github.io/ordex/reference/</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://bitcoinuniverseio.github.io/ordex/reference/api/</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://bitcoinuniverseio.github.io/ordex/reference/refusal-codes/</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://bitcoinuniverseio.github.io/ordex/reference/specifications/</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
   </url>
 </urlset>

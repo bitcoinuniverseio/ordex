@@ -1,0 +1,25 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { RecipeViewer } from '../../components/wizards/RecipeViewer.jsx';
+import { FeedbackWidget } from '../../components/feedback/FeedbackWidget.jsx';
+---
+
+<BaseLayout
+  title="Operational Recipes: Ordex Multi-Step Workflows"
+  description="End-to-end operational recipes with synchronized code samples in Ordex SDK, TypeScript, Fetch, and cURL."
+  currentNav="build"
+>
+  <div style="display: flex; flex-direction: column; gap: 2rem;">
+    <div>
+      <span class="badge badge-verification">Executable Recipes</span>
+      <h1 style="margin: 0.25rem 0 0.5rem 0; font-size: 2.2rem; font-weight: 800;">Operational Recipes</h1>
+      <p style="margin: 0; font-size: 1.1rem; color: var(--color-text-secondary);">
+        Follow one operation per step. Inspect request payloads, expected success envelopes, and common refusal codes side by side.
+      </p>
+    </div>
+
+    <RecipeViewer client:load />
+
+    <FeedbackWidget client:load route="/build/recipes" heading="Operational Recipes" />
+  </div>
+</BaseLayout>

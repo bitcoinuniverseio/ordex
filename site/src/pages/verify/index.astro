@@ -1,0 +1,36 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { ConformanceStudio } from '../../components/verify/ConformanceStudio.jsx';
+import { GatewayDoctor } from '../../components/verify/GatewayDoctor.jsx';
+import { FeedbackWidget } from '../../components/feedback/FeedbackWidget.jsx';
+---
+
+<BaseLayout
+  title="Verify: Conformance Studio & Gateway Doctor"
+  description="Run all 151 official protocol vectors in your browser or run the automated 17-step compatibility diagnosis on any gateway."
+  currentNav="verify"
+>
+  <div style="display: flex; flex-direction: column; gap: 2.5rem;">
+    <div>
+      <span class="badge badge-verification">151 Vectors Across 9 Families</span>
+      <h1 style="margin: 0.25rem 0 0.5rem 0; font-size: 2.2rem; font-weight: 800;">Verification & Conformance</h1>
+      <p style="margin: 0; font-size: 1.1rem; color: var(--color-text-secondary);">
+        Verify implementation correctness against checked-in reference verifiers or diagnose a running gateway instance.
+      </p>
+    </div>
+
+    {/* Section 1: In-Browser Conformance Suite */}
+    <div>
+      <h2 style="margin: 0 0 1rem 0; font-size: 1.4rem;">1. Conformance Studio (151 Conformance Vectors)</h2>
+      <ConformanceStudio client:load />
+    </div>
+
+    {/* Section 2: Gateway Doctor */}
+    <div>
+      <h2 style="margin: 0 0 1rem 0; font-size: 1.4rem;">2. Ordex Gateway Doctor (17 Compatibility Checks)</h2>
+      <GatewayDoctor client:load />
+    </div>
+
+    <FeedbackWidget client:load route="/verify" heading="Verification & Conformance" />
+  </div>
+</BaseLayout>

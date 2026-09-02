@@ -1,0 +1,57 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { VisualProtocolAtlas } from '../components/atlas/VisualProtocolAtlas.jsx';
+import { TruthLabel } from '../components/shell/TruthLabel.jsx';
+import { FeedbackWidget } from '../components/feedback/FeedbackWidget.jsx';
+---
+
+<BaseLayout
+  title="Learn: Ordex Protocol Concepts & Architecture"
+  description="Deep dive into Ordex trust boundaries, SIGHASH_SINGLE asks, buyer offers, and sat-flow preservation."
+  currentNav="learn"
+>
+  <div style="display: flex; flex-direction: column; gap: 2rem;">
+    <div>
+      <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+        <span class="badge badge-verification">Protocol Architecture</span>
+        <TruthLabel level="Chain proof" />
+      </div>
+      <h1 style="margin: 0 0 0.5rem 0; font-size: 2.2rem; font-weight: 800;">Protocol Concepts & Trust Model</h1>
+      <p style="margin: 0; font-size: 1.1rem; color: var(--color-text-secondary);">
+        Understand how Ordex achieves trustless Bitcoin peer-to-peer trading without multi-sig escrows, smart contracts, or bridge custody.
+      </p>
+    </div>
+
+    {/* Architectural Pillars */}
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem;">
+      <div class="panel">
+        <h3 style="margin: 0 0 0.5rem 0; font-size: 1.1rem; color: var(--color-brand);">1. Portable Public Asks</h3>
+        <p style="margin: 0; font-size: 0.85rem; color: var(--color-text-secondary); line-height: 1.4;">
+          Sellers sign an input with <code>SIGHASH_SINGLE | ANYONECANPAY</code>, cryptographically locking their ordinal input to a specific payment output index. The ask is portable and verifiable by any gateway or marketplace.
+        </p>
+      </div>
+
+      <div class="panel">
+        <h3 style="margin: 0 0 0.5rem 0; font-size: 1.1rem; color: var(--color-focus);">2. Buyer-Funded Offers</h3>
+        <p style="margin: 0; font-size: 0.85rem; color: var(--color-text-secondary); line-height: 1.4;">
+          Buyers commit funds into a Taproot script-tree output. If the seller delivers before the timelock, the seller takes payment; otherwise, the buyer exercises the unilateral recovery script path.
+        </p>
+      </div>
+
+      <div class="panel">
+        <h3 style="margin: 0 0 0.5rem 0; font-size: 1.1rem; color: var(--color-success);">3. Sat-Flow Invariant</h3>
+        <p style="margin: 0; font-size: 0.85rem; color: var(--color-text-secondary); line-height: 1.4;">
+          Ordinal inscriptions travel with specific satoshis across transaction inputs and outputs. Ordex verifiers check sat ranges to ensure assets are never diluted, burned, or sent to miner fees.
+        </p>
+      </div>
+    </div>
+
+    {/* Embedded Visual Protocol Atlas */}
+    <div>
+      <h2 style="margin: 0 0 1rem 0; font-size: 1.5rem;">Visual Protocol Atlas</h2>
+      <VisualProtocolAtlas client:load />
+    </div>
+
+    <FeedbackWidget client:load route="/learn" heading="Protocol Concepts & Trust Model" />
+  </div>
+</BaseLayout>
