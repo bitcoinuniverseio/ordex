@@ -1,0 +1,22 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { AskOrdex } from '../components/ask/AskOrdex.jsx';
+import { FeedbackWidget } from '../components/feedback/FeedbackWidget.jsx';
+---
+
+<BaseLayout
+  title="Ask Ordex (/ask/): Source-Grounded Documentation Assistant"
+  description="Query protocol invariants, OpenAPI schemas, and reference verifiers with verified citations and agent context."
+  currentNav="learn"
+>
+  <div style="display: flex; flex-direction: column; gap: 2rem;">
+    <div>
+      <h1 style="margin: 0 0 0.5rem 0; font-size: 2.2rem; font-weight: 800;">Ask Ordex Assistant</h1>
+      <p style="margin: 0; font-size: 1.1rem; color: var(--color-text-secondary);">
+        Source-grounded assistant strictly grounded in protocol specifications, OpenAPI contracts, and reference verifiers.
+      </p>
+    </div>
+    <AskOrdex client:load />
+    <FeedbackWidget client:load route="/ask" heading="Ask Ordex" />
+  </div>
+</BaseLayout>

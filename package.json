@@ -4,7 +4,27 @@
   "type": "module",
   "scripts": {
     "build": "node scripts/build.mjs",
-    "test": "node --test verifier/purchase.test.js verifier/offers.test.js verifier/runes.test.js verifier/safeops.test.js verifier/swaps.test.js verifier/events.test.js verifier/collection-manifest.test.js verifier/counterparty-asset.test.js verifier/offline-signing.test.js spec/openapi.test.js spec/asyncapi.test.js scripts/api-reference.test.js",
-    "vectors": "node scripts/make-vectors.mjs"
+    "test": "node --test verifier/*.test.js spec/*.test.js scripts/api-reference.test.js tests/unit/*.test.js tests/parity/*.test.js tests/accessibility/*.test.js tests/e2e/*.test.js",
+    "test:all": "npm test && npm --prefix sdk test && node scripts/docs/conformance-cli.mjs",
+    "conformance": "node scripts/docs/conformance-cli.mjs",
+    "vectors": "node scripts/make-vectors.mjs",
+    "coverage:check": "node scripts/docs/coverage-check.mjs",
+    "site:build": "astro build",
+    "site:dev": "astro dev"
+  },
+  "dependencies": {
+    "@astrojs/preact": "6.0.5",
+    "@astrojs/starlight": "0.42.0",
+    "astro": "7.2.10",
+    "jszip": "3.10.1",
+    "pagefind": "1.5.2",
+    "preact": "10.29.8",
+    "sharp": "0.35.4"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
+    "@types/node": "24.10.1",
+    "playwright": "1.62.1",
+    "typescript": "5.9.3"
   }
 }

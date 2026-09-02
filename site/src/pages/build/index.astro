@@ -1,0 +1,55 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { FeedbackWidget } from '../../components/feedback/FeedbackWidget.jsx';
+---
+
+<BaseLayout
+  title="Build: Workflows, Recipes & Tools"
+  description="Implementation tooling, interactive wizards, step-by-step recipes, and real-time playgrounds for Ordex developers."
+  currentNav="build"
+>
+  <div style="display: flex; flex-direction: column; gap: 2rem;">
+    <div>
+      <h1 style="margin: 0 0 0.5rem 0; font-size: 2.2rem; font-weight: 800;">Build with Ordex</h1>
+      <p style="margin: 0; font-size: 1.1rem; color: var(--color-text-secondary);">
+        Choose your development path: follow an interactive wizard, execute a multi-step recipe, test in the live playground, or download a starter repository.
+      </p>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem;">
+      <a href="/build/wizards" class="panel" style="text-decoration: none; color: inherit;">
+        <div style="font-size: 2rem; margin-bottom: 0.5rem;">🧙‍♂️</div>
+        <h2 style="margin: 0 0 0.25rem 0; font-size: 1.2rem; color: var(--color-brand);">Guided Workflows (12 Wizards)</h2>
+        <p style="margin: 0; font-size: 0.85rem; color: var(--color-text-secondary); line-height: 1.4;">
+          Decision trees and checklists for publishing asks, batch buying, SafeOps shields, and gateway setups.
+        </p>
+      </a>
+
+      <a href="/build/recipes" class="panel" style="text-decoration: none; color: inherit;">
+        <div style="font-size: 2rem; margin-bottom: 0.5rem;">📋</div>
+        <h2 style="margin: 0 0 0.25rem 0; font-size: 1.2rem; color: var(--color-focus);">Operational Recipes</h2>
+        <p style="margin: 0; font-size: 0.85rem; color: var(--color-text-secondary); line-height: 1.4;">
+          Step-by-step code samples in Ordex SDK, TypeScript, Fetch, and cURL with verified responses.
+        </p>
+      </a>
+
+      <a href="/build/playground" class="panel" style="text-decoration: none; color: inherit;">
+        <div style="font-size: 2rem; margin-bottom: 0.5rem;">🚀</div>
+        <h2 style="margin: 0 0 0.25rem 0; font-size: 1.2rem; color: var(--color-success);">API & Event Playground</h2>
+        <p style="margin: 0; font-size: 0.85rem; color: var(--color-text-secondary); line-height: 1.4;">
+          Test all 78 operations and 3 event channels. Switch between offline deterministic mocks and live gateways.
+        </p>
+      </a>
+
+      <a href="/kits" class="panel" style="text-decoration: none; color: inherit;">
+        <div style="font-size: 2rem; margin-bottom: 0.5rem;">📦</div>
+        <h2 style="margin: 0 0 0.25rem 0; font-size: 1.2rem; color: var(--color-brand);">Integration Kit Generator</h2>
+        <p style="margin: 0; font-size: 0.85rem; color: var(--color-text-secondary); line-height: 1.4;">
+          Download turnkey starter repositories for Node.js, Browser, or Cloudflare Workers with pinned dependencies.
+        </p>
+      </a>
+    </div>
+
+    <FeedbackWidget client:load route="/build" heading="Build with Ordex" />
+  </div>
+</BaseLayout>

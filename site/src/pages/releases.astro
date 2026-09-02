@@ -1,0 +1,25 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { VersionDiff } from '../components/releases/VersionDiff.jsx';
+import { FeedbackWidget } from '../components/feedback/FeedbackWidget.jsx';
+---
+
+<BaseLayout
+  title="Protocol Releases & Version History: Ordex Platform"
+  description="Inspect additive protocol releases, compare versions with interactive diffs, and review backward-compatibility commitments."
+  currentNav="releases"
+>
+  <div style="display: flex; flex-direction: column; gap: 2rem;">
+    <div>
+      <span class="badge badge-verification">Protocol 1.2 Current</span>
+      <h1 style="margin: 0.25rem 0 0.5rem 0; font-size: 2.2rem; font-weight: 800;">Protocol Releases & Changelog</h1>
+      <p style="margin: 0; font-size: 1.1rem; color: var(--color-text-secondary);">
+        Ordex strictly adheres to backwards compatibility for all signed order PSBTs and on-chain settlements.
+      </p>
+    </div>
+
+    <VersionDiff client:load />
+
+    <FeedbackWidget client:load route="/releases" heading="Protocol Releases & Version History" />
+  </div>
+</BaseLayout>

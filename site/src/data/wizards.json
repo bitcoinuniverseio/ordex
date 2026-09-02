@@ -1,0 +1,647 @@
+[
+  {
+    "id": "integration-path",
+    "title": "Choose Your Ordex Integration",
+    "category": "Architecture",
+    "summary": "Identify the exact integration path, gateway topology, and SDK setup for your application role.",
+    "audience": [
+      "Marketplace Integrator",
+      "Wallet Developer",
+      "Gateway Operator",
+      "Protocol Implementer"
+    ],
+    "protocolScope": "1.0 - 1.2",
+    "steps": [
+      {
+        "id": "role",
+        "title": "Select Your Integration Role",
+        "description": "Ordex provides tailored boundaries depending on whether you display inventory, sign transactions, or run a gateway.",
+        "options": [
+          {
+            "value": "marketplace",
+            "label": "Marketplace Application",
+            "lead": "Display listings, compose purchases, listen to live order events."
+          },
+          {
+            "value": "wallet",
+            "label": "Wallet or Signer",
+            "lead": "Inspect orders, verify sat flow, and protect users before signing."
+          },
+          {
+            "value": "gateway",
+            "label": "Gateway Operator",
+            "lead": "Host an Ordex gateway catalog, indexer integration, and event bus."
+          },
+          {
+            "value": "protocol",
+            "label": "Protocol Implementer",
+            "lead": "Run conformance vectors, audit verifiers, and implement wire rules."
+          }
+        ]
+      },
+      {
+        "id": "runtime",
+        "title": "Choose Your Target Environment",
+        "description": "Where will your integration execute?",
+        "options": [
+          {
+            "value": "browser",
+            "label": "Web Browser (Client-side)",
+            "lead": "Client-side verification and UI components using @bitcoinuniverse/ordex-sdk."
+          },
+          {
+            "value": "node",
+            "label": "Node.js / Backend Server",
+            "lead": "High-throughput catalog querying, webhook ingestion, and order caching."
+          },
+          {
+            "value": "worker",
+            "label": "Cloudflare Worker / Edge",
+            "lead": "Serverless gateway endpoints, signature checks, and event forwarders."
+          },
+          {
+            "value": "offline",
+            "label": "Air-Gapped Cold Signer",
+            "lead": "Zero-network hardware or offline workstation running verification."
+          }
+        ]
+      },
+      {
+        "id": "features",
+        "title": "Select Capabilities Needed",
+        "description": "Choose which protocol families you plan to exercise.",
+        "isMulti": true,
+        "options": [
+          {
+            "value": "asks",
+            "label": "Public Asks & Purchasing",
+            "lead": "Portable PSBT orders, listing creation, and atomic buy settlement."
+          },
+          {
+            "value": "offers",
+            "label": "Buyer-Funded Offers",
+            "lead": "Taproot 2-of-2 multisig offers, seller acceptance, and recovery timeout."
+          },
+          {
+            "value": "safeops",
+            "label": "SafeOps Execution Shield",
+            "lead": "Pre-flight invariant checking for consolidations, transfers, RBF/CPFP."
+          },
+          {
+            "value": "swaps",
+            "label": "Atomic Swaps Links",
+            "lead": "Direct bilateral peer-to-peer asset-to-asset or asset-to-BTC trades."
+          },
+          {
+            "value": "events",
+            "label": "Real-Time Events & Webhooks",
+            "lead": "Orderbook delta streaming with replay cursor and HMAC signatures."
+          },
+          {
+            "value": "provenance",
+            "label": "Collection Provenance & Heritage",
+            "lead": "Merkle membership verification and Counterparty attached UTXOs."
+          }
+        ]
+      }
+    ],
+    "outcome": {
+      "recommendation": "Use @bitcoinuniverse/ordex-sdk with deterministic local mock mode for development, connecting to your selected gateway when ready.",
+      "starterKit": "node-typescript-starter",
+      "recipeLinks": [
+        "/build/recipes/publish-ask",
+        "/build/recipes/purchase-ask"
+      ],
+      "docLinks": [
+        "/learn/concepts",
+        "/learn/security-model"
+      ]
+    }
+  },
+  {
+    "id": "publish-ask",
+    "title": "Publish a Portable Public Ask",
+    "category": "Orders",
+    "summary": "Build, verify, and publish a portable PSBT public ask that any compatible market can discover and settle.",
+    "audience": [
+      "Marketplace Integrator",
+      "Wallet Developer"
+    ],
+    "protocolScope": "1.0+",
+    "steps": [
+      {
+        "id": "asset",
+        "title": "Specify Asset Details",
+        "description": "Identify the inscription, rune, or digital artifact being offered.",
+        "options": [
+          {
+            "value": "inscription",
+            "label": "Ordinal Inscription",
+            "lead": "Single sat carrying an inscription ID with explicit outpoint."
+          },
+          {
+            "value": "rune",
+            "label": "Runes Allocation",
+            "lead": "Cardinals UTXO carrying a specific Rune ID with edict specification."
+          },
+          {
+            "value": "counterparty",
+            "label": "Counterparty Heritage Asset",
+            "lead": "Attached UTXO bound to a historical Counterparty asset ID."
+          }
+        ]
+      },
+      {
+        "id": "pricing",
+        "title": "Define Price and Terms",
+        "description": "Set priceSats as an exact decimal string. Never use floating point sats.",
+        "options": [
+          {
+            "value": "fixed",
+            "label": "Fixed Price Ask",
+            "lead": "Exact atomic price in satoshis committed in the seller payment output."
+          },
+          {
+            "value": "stepped",
+            "label": "Scheduled Repricing Ask",
+            "lead": "Plan for ask replacement with successive signed artifacts."
+          }
+        ]
+      },
+      {
+        "id": "signing",
+        "title": "Seller Signing Boundary",
+        "description": "The seller signs only their own input using SIGHASH_SINGLE | SIGHASH_ANYONECANPAY, committing to receiving the payment output at the matching index.",
+        "options": [
+          {
+            "value": "standard",
+            "label": "SIGHASH_SINGLE | ANYONECANPAY",
+            "lead": "Standard portable ask signing mode allowing buyer to fund arbitrary inputs."
+          }
+        ]
+      }
+    ],
+    "outcome": {
+      "recommendation": "Call POST /api/ordex/orders/build, sign the returned unsigned PSBT, verify with Ordex verifier, and submit via POST /api/ordex/orders/publish.",
+      "apiOperation": "publishAsk",
+      "verifierFamily": "purchase"
+    }
+  },
+  {
+    "id": "purchase-ask",
+    "title": "Purchase One or More Public Asks",
+    "category": "Orders",
+    "summary": "Compose, preflight, verify sat-flow, and execute single or batch purchases against portable public asks.",
+    "audience": [
+      "Marketplace Integrator",
+      "Buyer Wallet"
+    ],
+    "protocolScope": "1.0+",
+    "steps": [
+      {
+        "id": "type",
+        "title": "Single vs Batch Purchase",
+        "description": "Execute against a single listing or bundle multiple asks into one atomic transaction.",
+        "options": [
+          {
+            "value": "single",
+            "label": "Single Ask Purchase",
+            "lead": "Fund buyer inputs, pay seller output, pay marketplace fee, receive asset."
+          },
+          {
+            "value": "batch",
+            "label": "Batch Purchase (v1.1+)",
+            "lead": "Bundle up to 10 asks in a single transaction with proportional fee savings."
+          }
+        ]
+      },
+      {
+        "id": "preflight",
+        "title": "Preflight & Sat-Flow Inspection",
+        "description": "Verify seller input is unspent, sat flow balances exactly, and buyer asset output precedes change.",
+        "options": [
+          {
+            "value": "strict",
+            "label": "Strict Invariant Preflight",
+            "lead": "Run reference verifier check before user wallet signature prompt."
+          }
+        ]
+      }
+    ],
+    "outcome": {
+      "recommendation": "Call POST /api/ordex/orders/{id}/preflight, inspect sat-flow in Protocol Lab, prompt buyer wallet to sign, broadcast to Bitcoin network.",
+      "apiOperation": "preflightOrder",
+      "verifierFamily": "purchase"
+    }
+  },
+  {
+    "id": "offers-v1",
+    "title": "Create and Manage an Offer",
+    "category": "Offers",
+    "summary": "Lock buyer funds into a Taproot 2-of-2 output committing to terms, seller acceptance, and timelocked recovery.",
+    "audience": [
+      "Marketplace Integrator",
+      "Trader"
+    ],
+    "protocolScope": "1.1+",
+    "steps": [
+      {
+        "id": "scope",
+        "title": "Select Offer Scope",
+        "description": "Ordex Offers v1 support item, collection-wide, or trait-specific bids.",
+        "options": [
+          {
+            "value": "item",
+            "label": "Item Offer",
+            "lead": "Bid on a specific inscription ID."
+          },
+          {
+            "value": "collection",
+            "label": "Collection-Wide Offer",
+            "lead": "Bid on any valid member of a verified collection Merkle root."
+          },
+          {
+            "value": "trait",
+            "label": "Trait Offer",
+            "lead": "Bid on any item possessing a specific validated attribute."
+          }
+        ]
+      },
+      {
+        "id": "recovery",
+        "title": "Set Expiry and Recovery Height",
+        "description": "Block height after which buyer can unilaterally reclaim locked funds via CHECKLOCKTIMEVERIFY leaf.",
+        "options": [
+          {
+            "value": "short",
+            "label": "144 Blocks (~24 Hours)",
+            "lead": "Fast turnaround bid."
+          },
+          {
+            "value": "standard",
+            "label": "1008 Blocks (~1 Week)",
+            "lead": "Standard market liquidity commitment."
+          }
+        ]
+      }
+    ],
+    "outcome": {
+      "recommendation": "Fund Taproot address, publish terms via POST /api/ordex/offers, monitor for acceptance or execute recovery upon expiry.",
+      "apiOperation": "publishOffer",
+      "verifierFamily": "offers"
+    }
+  },
+  {
+    "id": "replace-ask",
+    "title": "Replace or Reprice an Ask",
+    "category": "Orders",
+    "summary": "Safely update the price or terms of an existing public ask while marking prior portable copies as retired.",
+    "audience": [
+      "Seller",
+      "Marketplace"
+    ],
+    "protocolScope": "1.0+",
+    "steps": [
+      {
+        "id": "existing",
+        "title": "Retrieve Existing Order Artifact",
+        "description": "Identify the active order ID and verify current ownership challenge.",
+        "options": [
+          {
+            "value": "active",
+            "label": "Active Order Check",
+            "lead": "Confirm order is currently OPEN before generating successor."
+          }
+        ]
+      },
+      {
+        "id": "successor",
+        "title": "Generate Successor Artifact",
+        "description": "Compose new signed PSBT with updated priceSats and reference to predecessor order ID.",
+        "options": [
+          {
+            "value": "lower",
+            "label": "Price Reduction",
+            "lead": "Lower price for faster execution."
+          },
+          {
+            "value": "higher",
+            "label": "Price Increase",
+            "lead": "Adjust price upward based on market movement."
+          }
+        ]
+      }
+    ],
+    "outcome": {
+      "recommendation": "Call POST /api/ordex/orders/{id}/replace with new artifact. Gateway updates catalog and emits order.replaced event.",
+      "apiOperation": "replaceOrder",
+      "verifierFamily": "purchase"
+    }
+  },
+  {
+    "id": "safeops",
+    "title": "Plan a SafeOps Operation",
+    "category": "Safety",
+    "summary": "Plan consolidations, transfers, RBF fee bumps, or CPFP accelerations protected by Execution Shield invariants.",
+    "audience": [
+      "Treasury Operator",
+      "Wallet Developer"
+    ],
+    "protocolScope": "1.1+",
+    "steps": [
+      {
+        "id": "opKind",
+        "title": "Select Operation Kind",
+        "description": "What Bitcoin operation are you executing?",
+        "options": [
+          {
+            "value": "consolidation",
+            "label": "UTXO Consolidation",
+            "lead": "Combine multiple inputs into a clean output while preserving asset boundaries."
+          },
+          {
+            "value": "transfer",
+            "label": "Protected Cardinal Transfer",
+            "lead": "Send BTC from cardinal UTXOs without accidentally burning inscriptions."
+          },
+          {
+            "value": "rbf",
+            "label": "SafeOps RBF Acceleration",
+            "lead": "Fee-bump an unconfirmed transaction without altering committed outputs."
+          }
+        ]
+      },
+      {
+        "id": "shield",
+        "title": "Execution Shield Check",
+        "description": "Run automated checks: value conservation, dust output prevention, no inscription destruction.",
+        "options": [
+          {
+            "value": "full",
+            "label": "Comprehensive Shield Rules",
+            "lead": "Check all 38 SafeOps invariants before signing."
+          }
+        ]
+      }
+    ],
+    "outcome": {
+      "recommendation": "Post plan to /api/ordex/safeops/plans, verify shield verdict is PASS, review expected transaction manifest, and sign.",
+      "apiOperation": "createSafeOpsPlan",
+      "verifierFamily": "safeops"
+    }
+  },
+  {
+    "id": "atomic-swaps",
+    "title": "Create or Accept an Atomic Swap Link",
+    "category": "Swaps",
+    "summary": "Execute bilateral peer-to-peer OTC swaps (Asset for BTC, Asset for Asset) settling in a single atomic transaction.",
+    "audience": [
+      "Traders",
+      "OTC Desk"
+    ],
+    "protocolScope": "1.1+",
+    "steps": [
+      {
+        "id": "intent",
+        "title": "Maker Intent Specification",
+        "description": "Define give asset/outpoints and required consideration.",
+        "options": [
+          {
+            "value": "public",
+            "label": "Public Swap Link",
+            "lead": "Open to any counterparty meeting the exact requested terms."
+          },
+          {
+            "value": "private",
+            "label": "Private Taker-Bound Swap",
+            "lead": "Enforce specific taker identity or address for counterparty restriction."
+          }
+        ]
+      },
+      {
+        "id": "settlement",
+        "title": "Single-Transaction Settlement",
+        "description": "Both parties inputs and outputs are combined into one transaction. If one side fails, nothing moves.",
+        "options": [
+          {
+            "value": "atomic",
+            "label": "All-or-Nothing Atomicity",
+            "lead": "Verifier enforces no intermediate custody or unilateral execution."
+          }
+        ]
+      }
+    ],
+    "outcome": {
+      "recommendation": "Publish intent via /api/ordex/swaps/intents, taker submits acceptance plan, verifier confirms atomicity, broadcast final tx.",
+      "apiOperation": "publishSwapIntent",
+      "verifierFamily": "swaps"
+    }
+  },
+  {
+    "id": "events-webhooks",
+    "title": "Consume Events or Configure Signed Webhooks",
+    "category": "Real-Time",
+    "summary": "Stream orderbook updates via SSE or WebSocket, or register HMAC-signed webhooks with replay checkpoints.",
+    "audience": [
+      "Marketplace Integrator",
+      "Analytics Service"
+    ],
+    "protocolScope": "1.2+",
+    "steps": [
+      {
+        "id": "transport",
+        "title": "Select Transport Mechanism",
+        "description": "Real-time pull vs push notification.",
+        "options": [
+          {
+            "value": "sse",
+            "label": "Server-Sent Events (SSE)",
+            "lead": "Lightweight HTTP stream with cursor-based reconnection and replay."
+          },
+          {
+            "value": "ws",
+            "label": "WebSocket Stream",
+            "lead": "Bidirectional low-latency subscription to specific order or asset channels."
+          },
+          {
+            "value": "webhook",
+            "label": "Signed HTTP Webhook",
+            "lead": "Gateway pushes events to your endpoint with HMAC-SHA256 signature."
+          }
+        ]
+      },
+      {
+        "id": "replay",
+        "title": "Replay and Idempotency",
+        "description": "Use the event checkpoint cursor to recover from network disconnects without missing orders.",
+        "options": [
+          {
+            "value": "cursor",
+            "label": "Cursor-Based Checkpointing",
+            "lead": "Resume from last processed event ID with duplicate detection."
+          }
+        ]
+      }
+    ],
+    "outcome": {
+      "recommendation": "Subscribe to /api/ordex/events/stream?cursor={lastId} or create webhook via /api/ordex/webhooks/subscriptions.",
+      "apiOperation": "streamOrdexEvents",
+      "verifierFamily": "events"
+    }
+  },
+  {
+    "id": "collection-provenance",
+    "title": "Publish and Verify Collection Provenance",
+    "category": "Provenance",
+    "summary": "Establish cryptographic creator provenance using BIP-322 creator signatures and Merkle membership proofs.",
+    "audience": [
+      "Creators",
+      "Marketplaces"
+    ],
+    "protocolScope": "1.2+",
+    "steps": [
+      {
+        "id": "manifest",
+        "title": "Generate Collection Manifest",
+        "description": "Enumerate all collection item IDs, compute deterministic Merkle root, and sign with creator key.",
+        "options": [
+          {
+            "value": "bip322",
+            "label": "BIP-322 Creator Signature",
+            "lead": "Proves authority without moving assets."
+          }
+        ]
+      },
+      {
+        "id": "proof",
+        "title": "Verify Membership Proof",
+        "description": "Any client can verify an inscription is an authentic collection member with O(log N) proofs.",
+        "options": [
+          {
+            "value": "clientProof",
+            "label": "Zero-Network Client Verification",
+            "lead": "Verify Merkle path against published root."
+          }
+        ]
+      }
+    ],
+    "outcome": {
+      "recommendation": "Publish manifest via /api/ordex/collections/manifests, verify item proofs with collection-manifest verifier.",
+      "apiOperation": "publishCollectionManifest",
+      "verifierFamily": "collection-manifest"
+    }
+  },
+  {
+    "id": "heritage-assets",
+    "title": "Work with Counterparty Heritage Assets",
+    "category": "Heritage",
+    "summary": "Manage Bitcoin 2014-era Counterparty assets attached to specific UTXOs for modern marketplace trading.",
+    "audience": [
+      "Historical Collectors",
+      "Exchanges"
+    ],
+    "protocolScope": "1.2+",
+    "steps": [
+      {
+        "id": "action",
+        "title": "Select Heritage Action",
+        "description": "Attach or detach a Counterparty asset to a UTXO.",
+        "options": [
+          {
+            "value": "attach",
+            "label": "Attach Asset to UTXO",
+            "lead": "Bind Counterparty asset balance to a specific Bitcoin output."
+          },
+          {
+            "value": "detach",
+            "label": "Detach Asset from UTXO",
+            "lead": "Unbind asset back to standard Counterparty ledger address."
+          }
+        ]
+      }
+    ],
+    "outcome": {
+      "recommendation": "Verify readiness with /api/ordex/heritage/readiness, build attach/detach transaction, verify sat flow invariant.",
+      "apiOperation": "buildHeritageAttach",
+      "verifierFamily": "counterparty-asset"
+    }
+  },
+  {
+    "id": "cold-signing",
+    "title": "Complete a Cold-Signing Session",
+    "category": "Cold Storage",
+    "summary": "Execute high-value transactions using an air-gapped offline signer with expected-transaction manifests.",
+    "audience": [
+      "Custodians",
+      "Whales",
+      "Security Officers"
+    ],
+    "protocolScope": "1.2+",
+    "steps": [
+      {
+        "id": "prep",
+        "title": "Online Preparation",
+        "description": "Gateway or coordinator generates unsigned PSBT and cryptographically binds an Expected-Transaction Manifest.",
+        "options": [
+          {
+            "value": "manifest",
+            "label": "Generate Manifest",
+            "lead": "Manifest specifies exact inputs, outputs, fee ceiling, and purpose."
+          }
+        ]
+      },
+      {
+        "id": "offline",
+        "title": "Offline Air-Gapped Verification",
+        "description": "Transfer manifest and PSBT via QR/SD card to offline machine. Protocol Lab verifies all invariants.",
+        "options": [
+          {
+            "value": "airgap",
+            "label": "Air-Gapped Invariant Check",
+            "lead": "Run offline verifier before private key touch."
+          }
+        ]
+      }
+    ],
+    "outcome": {
+      "recommendation": "Open session via /api/ordex/signing/sessions, inspect on air-gapped machine, sign, return signed result for re-verification.",
+      "apiOperation": "openSigningSession",
+      "verifierFamily": "offline-signing"
+    }
+  },
+  {
+    "id": "validate-gateway",
+    "title": "Validate a Gateway",
+    "category": "Operations",
+    "summary": "Run automated end-to-end Gateway Doctor diagnostics against a self-hosted or remote gateway origin.",
+    "audience": [
+      "Node Operators",
+      "DevOps Engineers"
+    ],
+    "protocolScope": "1.0 - 1.2",
+    "steps": [
+      {
+        "id": "origin",
+        "title": "Specify Gateway Origin",
+        "description": "Provide the URL of the gateway under test (e.g. http://localhost:8080 or https://gateway.example.com).",
+        "options": [
+          {
+            "value": "local",
+            "label": "Local Development Gateway",
+            "lead": "Test during gateway development and CI."
+          },
+          {
+            "value": "hosted",
+            "label": "Production Remote Gateway",
+            "lead": "Audit live endpoint health, CORS, and contract version."
+          }
+        ]
+      }
+    ],
+    "outcome": {
+      "recommendation": "Execute Gateway Doctor suite in /verify/, inspect report schema verdicts, download self-test report.",
+      "apiOperation": "getHealth",
+      "verifierFamily": "doctor"
+    }
+  }
+]
