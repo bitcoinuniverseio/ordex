@@ -17,6 +17,7 @@ transitions the validators and the reconciler make.
 | `SETTLED` | The offered output was spent by a transaction carrying this order's exact payout. |
 | `REJECTED` | The artifact is unusable: malformed, wrong network, or an unsupported order class. |
 | `WITHDRAWN` | The owner of the offered output, or an operator, removed it from discovery. |
+| `REPLACED` | The owner of the offered output published a fresh ask for the same output and this one left the book for it. A replaced order is terminal in the same sense a withdrawn one is: the funds only ever move when the output is spent. |
 
 `MEMPOOL_CONFLICTED` and `SPENT` are deliberately separate. A mempool conflict
 can still be replaced or dropped and the order can return to `LIVE`. A confirmed
