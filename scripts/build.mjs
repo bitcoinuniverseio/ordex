@@ -15,6 +15,9 @@ console.log('--- Step 2: Render API reference specification page ---');
 const contract = JSON.parse(await readFile(resolve(root, 'spec', 'openapi.json'), 'utf8'));
 await writeFile(resolve(root, 'docs', 'api-reference.html'), renderApiReference(contract));
 
+console.log('--- Step 2.5: Generate deterministic product tour captures ---');
+execSync('node scripts/capture-walkthroughs.mjs', { cwd: root, stdio: 'inherit' });
+
 console.log('--- Step 3: Compile Astro static application ---');
 execSync('npx astro build', { cwd: siteDir, stdio: 'inherit' });
 
@@ -24,10 +27,12 @@ execSync('npx pagefind --site dist/client', { cwd: root, stdio: 'inherit' });
 console.log('--- Step 5: Generate machine-readable sitemap, robots, and LLM corpuses ---');
 // sitemap.xml
 const pages = [
-  '', 'start', 'learn', 'build', 'build/wizards', 'build/recipes', 'build/playground',
+  '', 'workspace', 'sandbox', 'inspect', 'diagnose', 'agents', 'tour',
+  'start', 'learn', 'build', 'build/wizards', 'build/recipes', 'build/playground',
   'verify', 'lab', 'atlas', 'kits', 'ask', 'operate', 'releases', 'compatibility', 'insights',
   'reference', 'reference/api', 'reference/refusal-codes', 'reference/specifications'
 ];
+
 const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${pages.map(p => `  <url>
@@ -92,6 +97,12 @@ const requiredFiles = [
   'dist/client/llms-full.txt',
   'dist/server/index.js',
   'dist/client/pagefind/pagefind.js',
+  'dist/client/workspace/index.html',
+  'dist/client/sandbox/index.html',
+  'dist/client/inspect/index.html',
+  'dist/client/diagnose/index.html',
+  'dist/client/agents/index.html',
+  'dist/client/tour/index.html',
   'dist/client/lab/index.html',
   'dist/client/verify/index.html',
   'dist/client/atlas/index.html',
