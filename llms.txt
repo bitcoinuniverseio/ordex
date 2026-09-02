@@ -46,18 +46,41 @@ broadcast settlement. Read every page below with that boundary in mind.
 - [The gateway API, explained](https://github.com/bitcoinuniverseio/ordex/blob/main/spec/api.md):
   every route under `/api/ordex` and why it is shaped that way.
 - [openapi.json](https://github.com/bitcoinuniverseio/ordex/blob/main/spec/openapi.json):
-  the OpenAPI 3.1 contract, field by field.
+  the OpenAPI 3.1 contract, field by field. Version 1.2 adds SafeOps, atomic
+  swaps, realtime events, signed webhooks, collection provenance, Counterparty
+  heritage, and offline signing, additively.
+- [asyncapi.json](https://github.com/bitcoinuniverseio/ordex/blob/main/spec/asyncapi.json):
+  the AsyncAPI 3.0 streaming contract: SSE, WebSocket, and signed webhooks
+  carrying the same ordex-event/v1 envelopes.
 - [Order lifecycle](https://github.com/bitcoinuniverseio/ordex/blob/main/spec/lifecycle.md):
   every reachable state and what a customer may do in each.
 - [Completing a public ask](https://github.com/bitcoinuniverseio/ordex/blob/main/spec/purchase.md):
   the two rules and the sat flow invariant that decide whether the asset
   reaches the buyer.
+- [Offers v1](https://github.com/bitcoinuniverseio/ordex/blob/main/spec/offers.md):
+  item, collection, and trait offers with a funded Taproot output and a buyer
+  recovery path.
 - [Not burning the runes a purchase spends](https://github.com/bitcoinuniverseio/ordex/blob/main/spec/runes.md):
   how the runestone assigns a rune balance, and why a cenotaph destroys runes
   in a transaction that Bitcoin itself accepts as valid.
 - [Portable orders](https://github.com/bitcoinuniverseio/ordex/blob/main/spec/interoperability.md):
   how an order enters and leaves a gateway, and the exact OpenOrdex kind 802
   event contract.
+- [SafeOps v1](https://github.com/bitcoinuniverseio/ordex/blob/main/spec/safeops.md):
+  the executable operations desk: batch transfers, consolidations, RBF, CPFP,
+  the execution shield, and post broadcast monitoring.
+- [Atomic swaps and the OTC desk](https://github.com/bitcoinuniverseio/ordex/blob/main/spec/swaps.md):
+  maker intents, encrypted private links, and one transaction settlement where
+  both sides move or nothing does.
+- [Realtime events and signed webhooks](https://github.com/bitcoinuniverseio/ordex/blob/main/spec/events.md):
+  the ordex-event/v1 envelope, replay by cursor, and webhook signatures.
+- [Collection provenance](https://github.com/bitcoinuniverseio/ordex/blob/main/spec/collection-manifest.md):
+  creator signed manifests, offline membership proofs, and revocation.
+- [Counterparty heritage assets](https://github.com/bitcoinuniverseio/ordex/blob/main/spec/counterparty-utxo-asset.md):
+  UTXO attached assets, the attachment follow rule, and the readiness gate.
+- [Cold signing and watch-only](https://github.com/bitcoinuniverseio/ordex/blob/main/spec/cold-signing.md):
+  the expected transaction manifest, the nine refusals, and the signing
+  stepper.
 - [sdk/README.md](https://github.com/bitcoinuniverseio/ordex/blob/main/sdk/README.md):
   the typed TypeScript client generated from that contract.
 
@@ -68,11 +91,32 @@ broadcast settlement. Read every page below with that boundary in mind.
   shape.
 - [conformance/rune-burn-vectors.json](https://github.com/bitcoinuniverseio/ordex/blob/main/conformance/rune-burn-vectors.json):
   the same for the rune burn rule, including the cases that burn.
+- [conformance/safeops-vectors.json](https://github.com/bitcoinuniverseio/ordex/blob/main/conformance/safeops-vectors.json):
+  plan and signed result verdicts, including the fail-closed inventory rules.
+- [conformance/swap-vectors.json](https://github.com/bitcoinuniverseio/ordex/blob/main/conformance/swap-vectors.json):
+  intent and acceptance verdicts, including the atomicity and sighash closure
+  rules.
+- [conformance/event-vectors.json](https://github.com/bitcoinuniverseio/ordex/blob/main/conformance/event-vectors.json):
+  envelope and webhook signature verdicts.
+- [conformance/collection-manifest-vectors.json](https://github.com/bitcoinuniverseio/ordex/blob/main/conformance/collection-manifest-vectors.json):
+  manifest, revocation, and membership proof verdicts.
+- [conformance/counterparty-asset-vectors.json](https://github.com/bitcoinuniverseio/ordex/blob/main/conformance/counterparty-asset-vectors.json):
+  attachment record and attachment follow verdicts.
+- [conformance/offline-signing-vectors.json](https://github.com/bitcoinuniverseio/ordex/blob/main/conformance/offline-signing-vectors.json):
+  manifest and signed result comparison verdicts, one per refusal rule.
 - [verifier/purchase.js](https://github.com/bitcoinuniverseio/ordex/blob/main/verifier/purchase.js):
   a dependency free reference verifier implementing the purchase rules, run by
   `npm test`.
 - [verifier/runes.js](https://github.com/bitcoinuniverseio/ordex/blob/main/verifier/runes.js):
   the reference verifier for the rune burn rule, run by the same command.
+- [verifier/safeops.js](https://github.com/bitcoinuniverseio/ordex/blob/main/verifier/safeops.js),
+  [verifier/swaps.js](https://github.com/bitcoinuniverseio/ordex/blob/main/verifier/swaps.js),
+  [verifier/events.js](https://github.com/bitcoinuniverseio/ordex/blob/main/verifier/events.js),
+  [verifier/collection-manifest.js](https://github.com/bitcoinuniverseio/ordex/blob/main/verifier/collection-manifest.js),
+  [verifier/counterparty-asset.js](https://github.com/bitcoinuniverseio/ordex/blob/main/verifier/counterparty-asset.js),
+  and [verifier/offline-signing.js](https://github.com/bitcoinuniverseio/ordex/blob/main/verifier/offline-signing.js):
+  the 1.2 reference verifiers, all run by the same command and all mirrored in
+  the SDK.
 
 ## Repository
 

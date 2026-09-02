@@ -1,0 +1,1522 @@
+{
+  "version": 1,
+  "protocolVersion": "1.2",
+  "description": "Swap intent and acceptance plan vectors. Intent digests were computed by swapIntentDigest.",
+  "cases": [
+    {
+      "name": "a public intent with exact outpoints is accepted",
+      "intent": {
+        "schema": "ordex.swap-intent/v1",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "visibility": "PUBLIC",
+        "makerReceiveScriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "gives": [
+          {
+            "assetType": "BTC",
+            "outpoint": {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0
+            },
+            "quantitySats": "100000"
+          }
+        ],
+        "requires": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+            "minQuantitySats": "80000"
+          }
+        ],
+        "maxMakerFeeSats": "1000",
+        "expiryHeight": 900100,
+        "nonce": "nonce-12345678",
+        "createdAtHeight": 900000,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "adapterVersions": [
+          {
+            "protocol": "ordinals",
+            "version": "1.2"
+          }
+        ],
+        "digest": "a738b378f28cffff205dcf071e2c5e47515007977d440cd47fac787187c3c469",
+        "makerIdentityProof": {
+          "kind": "bip322",
+          "address": "bc1qexampleaddress0000000000000000000000000000",
+          "signature": "MEUCIQ=="
+        }
+      },
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "name": "an intent with the wrong schema is refused",
+      "intent": {
+        "schema": "ordex.swap-intent/v2",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "visibility": "PUBLIC",
+        "makerReceiveScriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "gives": [
+          {
+            "assetType": "BTC",
+            "outpoint": {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0
+            },
+            "quantitySats": "100000"
+          }
+        ],
+        "requires": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+            "minQuantitySats": "80000"
+          }
+        ],
+        "maxMakerFeeSats": "1000",
+        "expiryHeight": 900100,
+        "nonce": "nonce-12345678",
+        "createdAtHeight": 900000,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "adapterVersions": [
+          {
+            "protocol": "ordinals",
+            "version": "1.2"
+          }
+        ],
+        "digest": "deedb81d2699d5a69066558e3cd885ed07db7d0c4f0533777a53b559980d6de5",
+        "makerIdentityProof": {
+          "kind": "bip322",
+          "address": "bc1qexampleaddress0000000000000000000000000000",
+          "signature": "MEUCIQ=="
+        }
+      },
+      "expected": {
+        "ok": false,
+        "code": "SCHEMA_UNSUPPORTED"
+      }
+    },
+    {
+      "name": "an intent for an unnamed network is refused",
+      "intent": {
+        "schema": "ordex.swap-intent/v1",
+        "protocolVersion": "1.2",
+        "network": "livenet",
+        "visibility": "PUBLIC",
+        "makerReceiveScriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "gives": [
+          {
+            "assetType": "BTC",
+            "outpoint": {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0
+            },
+            "quantitySats": "100000"
+          }
+        ],
+        "requires": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+            "minQuantitySats": "80000"
+          }
+        ],
+        "maxMakerFeeSats": "1000",
+        "expiryHeight": 900100,
+        "nonce": "nonce-12345678",
+        "createdAtHeight": 900000,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "adapterVersions": [
+          {
+            "protocol": "ordinals",
+            "version": "1.2"
+          }
+        ],
+        "digest": "a867dccd2df4f685416b1bd79846bd750c0afe102717ee96f5feafe338a74b2a",
+        "makerIdentityProof": {
+          "kind": "bip322",
+          "address": "bc1qexampleaddress0000000000000000000000000000",
+          "signature": "MEUCIQ=="
+        }
+      },
+      "expected": {
+        "ok": false,
+        "code": "NETWORK_UNKNOWN"
+      }
+    },
+    {
+      "name": "a non-BTC give without an asset id is refused",
+      "intent": {
+        "schema": "ordex.swap-intent/v1",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "visibility": "PUBLIC",
+        "makerReceiveScriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "gives": [
+          {
+            "assetType": "ORDINAL",
+            "outpoint": {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0
+            },
+            "quantitySats": "1"
+          }
+        ],
+        "requires": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+            "minQuantitySats": "80000"
+          }
+        ],
+        "maxMakerFeeSats": "1000",
+        "expiryHeight": 900100,
+        "nonce": "nonce-12345678",
+        "createdAtHeight": 900000,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "adapterVersions": [
+          {
+            "protocol": "ordinals",
+            "version": "1.2"
+          }
+        ],
+        "digest": "ca136b98d1155c2f9caa590f47077967540457ef05dda6dc455c27b5ce67dc30",
+        "makerIdentityProof": {
+          "kind": "bip322",
+          "address": "bc1qexampleaddress0000000000000000000000000000",
+          "signature": "MEUCIQ=="
+        }
+      },
+      "expected": {
+        "ok": false,
+        "code": "GIVES_INVALID"
+      }
+    },
+    {
+      "name": "an intent expiring before its checkpoint is refused",
+      "intent": {
+        "schema": "ordex.swap-intent/v1",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "visibility": "PUBLIC",
+        "makerReceiveScriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "gives": [
+          {
+            "assetType": "BTC",
+            "outpoint": {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0
+            },
+            "quantitySats": "100000"
+          }
+        ],
+        "requires": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+            "minQuantitySats": "80000"
+          }
+        ],
+        "maxMakerFeeSats": "1000",
+        "expiryHeight": 899999,
+        "nonce": "nonce-12345678",
+        "createdAtHeight": 900000,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "adapterVersions": [
+          {
+            "protocol": "ordinals",
+            "version": "1.2"
+          }
+        ],
+        "digest": "831c1696a6afbe96c2b98c52c14f8f056a7dffad12bf622e81f6b9067bcc32df",
+        "makerIdentityProof": {
+          "kind": "bip322",
+          "address": "bc1qexampleaddress0000000000000000000000000000",
+          "signature": "MEUCIQ=="
+        }
+      },
+      "expected": {
+        "ok": false,
+        "code": "EXPIRY_INVALID"
+      }
+    },
+    {
+      "name": "an intent whose digest was edited is refused",
+      "intent": {
+        "schema": "ordex.swap-intent/v1",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "visibility": "PUBLIC",
+        "makerReceiveScriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "gives": [
+          {
+            "assetType": "BTC",
+            "outpoint": {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0
+            },
+            "quantitySats": "100000"
+          }
+        ],
+        "requires": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+            "minQuantitySats": "80000"
+          }
+        ],
+        "maxMakerFeeSats": "1000",
+        "expiryHeight": 900100,
+        "nonce": "nonce-12345678",
+        "createdAtHeight": 900000,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "adapterVersions": [
+          {
+            "protocol": "ordinals",
+            "version": "1.2"
+          }
+        ],
+        "digest": "0000000000000000000000000000000000000000000000000000000000000000",
+        "makerIdentityProof": {
+          "kind": "bip322",
+          "address": "bc1qexampleaddress0000000000000000000000000000",
+          "signature": "MEUCIQ=="
+        }
+      },
+      "expected": {
+        "ok": false,
+        "code": "DIGEST_MISMATCH"
+      }
+    },
+    {
+      "name": "an intent without a maker identity proof is refused",
+      "intent": {
+        "schema": "ordex.swap-intent/v1",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "visibility": "PUBLIC",
+        "makerReceiveScriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "gives": [
+          {
+            "assetType": "BTC",
+            "outpoint": {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0
+            },
+            "quantitySats": "100000"
+          }
+        ],
+        "requires": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+            "minQuantitySats": "80000"
+          }
+        ],
+        "maxMakerFeeSats": "1000",
+        "expiryHeight": 900100,
+        "nonce": "nonce-12345678",
+        "createdAtHeight": 900000,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "adapterVersions": [
+          {
+            "protocol": "ordinals",
+            "version": "1.2"
+          }
+        ],
+        "digest": "a738b378f28cffff205dcf071e2c5e47515007977d440cd47fac787187c3c469"
+      },
+      "expected": {
+        "ok": false,
+        "code": "MAKER_PROOF_INVALID"
+      }
+    },
+    {
+      "name": "a private intent bound to a taker is accepted",
+      "intent": {
+        "schema": "ordex.swap-intent/v1",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "visibility": "PRIVATE",
+        "makerReceiveScriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "gives": [
+          {
+            "assetType": "BTC",
+            "outpoint": {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0
+            },
+            "quantitySats": "100000"
+          }
+        ],
+        "requires": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+            "minQuantitySats": "80000"
+          }
+        ],
+        "maxMakerFeeSats": "1000",
+        "expiryHeight": 900100,
+        "nonce": "nonce-12345678",
+        "createdAtHeight": 900000,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "adapterVersions": [
+          {
+            "protocol": "ordinals",
+            "version": "1.2"
+          }
+        ],
+        "takerBinding": {
+          "address": "bc1qtaker000000000000000000000000000000000"
+        },
+        "digest": "913cd68e239b1f69005ea0ce0dbfc3b5c7d1121a9d3949e3d41848c933f0d37a",
+        "makerIdentityProof": {
+          "kind": "bip322",
+          "address": "bc1qexampleaddress0000000000000000000000000000",
+          "signature": "MEUCIQ=="
+        }
+      },
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "name": "an acceptance plan matching its intent is accepted",
+      "intent": {
+        "schema": "ordex.swap-intent/v1",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "visibility": "PUBLIC",
+        "makerReceiveScriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "gives": [
+          {
+            "assetType": "BTC",
+            "outpoint": {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0
+            },
+            "quantitySats": "100000"
+          }
+        ],
+        "requires": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+            "minQuantitySats": "80000"
+          }
+        ],
+        "maxMakerFeeSats": "1000",
+        "expiryHeight": 900100,
+        "nonce": "nonce-12345678",
+        "createdAtHeight": 900000,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "adapterVersions": [
+          {
+            "protocol": "ordinals",
+            "version": "1.2"
+          }
+        ],
+        "digest": "a738b378f28cffff205dcf071e2c5e47515007977d440cd47fac787187c3c469",
+        "makerIdentityProof": {
+          "kind": "bip322",
+          "address": "bc1qexampleaddress0000000000000000000000000000",
+          "signature": "MEUCIQ=="
+        }
+      },
+      "acceptance": {
+        "schema": "ordex.swap-acceptance-plan/v1",
+        "intentDigest": "a738b378f28cffff205dcf071e2c5e47515007977d440cd47fac787187c3c469",
+        "network": "mainnet",
+        "tx": {
+          "inputs": [
+            {
+              "outpoint": {
+                "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                "vout": 1
+              },
+              "party": "taker",
+              "valueSats": "10000",
+              "assets": [
+                {
+                  "assetType": "ORDINAL",
+                  "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0"
+                }
+              ]
+            },
+            {
+              "outpoint": {
+                "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "vout": 0
+              },
+              "party": "maker",
+              "valueSats": "100000",
+              "assets": [
+                {
+                  "assetType": "BTC"
+                }
+              ]
+            }
+          ],
+          "outputs": [
+            {
+              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "valueSats": "10000",
+              "role": "takerAsset"
+            },
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "80000",
+              "role": "makerConsideration"
+            },
+            {
+              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "valueSats": "15400",
+              "role": "takerChange"
+            }
+          ]
+        },
+        "assetTransitions": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+            "fromInput": 0,
+            "toOutput": 0
+          },
+          {
+            "assetType": "BTC",
+            "assetId": "BTC",
+            "fromInput": 1,
+            "toOutput": 1
+          }
+        ],
+        "fee": {
+          "feeSats": "4600",
+          "makerFeeSats": "0",
+          "takerFeeSats": "4600"
+        },
+        "signing": {
+          "sighashPolicy": "ALL"
+        }
+      },
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "name": "an acceptance plan from a different intent is refused",
+      "intent": {
+        "schema": "ordex.swap-intent/v1",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "visibility": "PUBLIC",
+        "makerReceiveScriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "gives": [
+          {
+            "assetType": "BTC",
+            "outpoint": {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0
+            },
+            "quantitySats": "100000"
+          }
+        ],
+        "requires": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+            "minQuantitySats": "80000"
+          }
+        ],
+        "maxMakerFeeSats": "1000",
+        "expiryHeight": 900100,
+        "nonce": "nonce-12345678",
+        "createdAtHeight": 900000,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "adapterVersions": [
+          {
+            "protocol": "ordinals",
+            "version": "1.2"
+          }
+        ],
+        "digest": "a738b378f28cffff205dcf071e2c5e47515007977d440cd47fac787187c3c469",
+        "makerIdentityProof": {
+          "kind": "bip322",
+          "address": "bc1qexampleaddress0000000000000000000000000000",
+          "signature": "MEUCIQ=="
+        }
+      },
+      "acceptance": {
+        "schema": "ordex.swap-acceptance-plan/v1",
+        "intentDigest": "e5dcd02ac229c2391b30e2a5c9b1bc7b4a74c36baf2321c24e393df36ac05308",
+        "network": "mainnet",
+        "tx": {
+          "inputs": [
+            {
+              "outpoint": {
+                "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                "vout": 1
+              },
+              "party": "taker",
+              "valueSats": "10000",
+              "assets": [
+                {
+                  "assetType": "ORDINAL",
+                  "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0"
+                }
+              ]
+            },
+            {
+              "outpoint": {
+                "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "vout": 0
+              },
+              "party": "maker",
+              "valueSats": "100000",
+              "assets": [
+                {
+                  "assetType": "BTC"
+                }
+              ]
+            }
+          ],
+          "outputs": [
+            {
+              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "valueSats": "10000",
+              "role": "takerAsset"
+            },
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "80000",
+              "role": "makerConsideration"
+            },
+            {
+              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "valueSats": "15400",
+              "role": "takerChange"
+            }
+          ]
+        },
+        "assetTransitions": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+            "fromInput": 0,
+            "toOutput": 0
+          },
+          {
+            "assetType": "BTC",
+            "assetId": "BTC",
+            "fromInput": 1,
+            "toOutput": 1
+          }
+        ],
+        "fee": {
+          "feeSats": "4600",
+          "makerFeeSats": "0",
+          "takerFeeSats": "4600"
+        },
+        "signing": {
+          "sighashPolicy": "ALL"
+        }
+      },
+      "expected": {
+        "ok": false,
+        "code": "INTENT_DIGEST_MISMATCH"
+      }
+    },
+    {
+      "name": "a one sided transaction cannot settle atomically",
+      "intent": {
+        "schema": "ordex.swap-intent/v1",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "visibility": "PUBLIC",
+        "makerReceiveScriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "gives": [
+          {
+            "assetType": "BTC",
+            "outpoint": {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0
+            },
+            "quantitySats": "100000"
+          }
+        ],
+        "requires": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+            "minQuantitySats": "80000"
+          }
+        ],
+        "maxMakerFeeSats": "1000",
+        "expiryHeight": 900100,
+        "nonce": "nonce-12345678",
+        "createdAtHeight": 900000,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "adapterVersions": [
+          {
+            "protocol": "ordinals",
+            "version": "1.2"
+          }
+        ],
+        "digest": "a738b378f28cffff205dcf071e2c5e47515007977d440cd47fac787187c3c469",
+        "makerIdentityProof": {
+          "kind": "bip322",
+          "address": "bc1qexampleaddress0000000000000000000000000000",
+          "signature": "MEUCIQ=="
+        }
+      },
+      "acceptance": {
+        "schema": "ordex.swap-acceptance-plan/v1",
+        "intentDigest": "a738b378f28cffff205dcf071e2c5e47515007977d440cd47fac787187c3c469",
+        "network": "mainnet",
+        "tx": {
+          "inputs": [
+            {
+              "outpoint": {
+                "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "vout": 0
+              },
+              "party": "maker",
+              "valueSats": "100000",
+              "assets": [
+                {
+                  "assetType": "BTC"
+                }
+              ]
+            }
+          ],
+          "outputs": [
+            {
+              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "valueSats": "10000",
+              "role": "takerAsset"
+            },
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "80000",
+              "role": "makerConsideration"
+            },
+            {
+              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "valueSats": "15400",
+              "role": "takerChange"
+            }
+          ]
+        },
+        "assetTransitions": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+            "fromInput": 0,
+            "toOutput": 0
+          },
+          {
+            "assetType": "BTC",
+            "assetId": "BTC",
+            "fromInput": 1,
+            "toOutput": 1
+          }
+        ],
+        "fee": {
+          "feeSats": "4600",
+          "makerFeeSats": "0",
+          "takerFeeSats": "4600"
+        },
+        "signing": {
+          "sighashPolicy": "ALL"
+        }
+      },
+      "expected": {
+        "ok": false,
+        "code": "ATOMICITY_IMPOSSIBLE"
+      }
+    },
+    {
+      "name": "a sighash that does not close the transaction is refused",
+      "intent": {
+        "schema": "ordex.swap-intent/v1",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "visibility": "PUBLIC",
+        "makerReceiveScriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "gives": [
+          {
+            "assetType": "BTC",
+            "outpoint": {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0
+            },
+            "quantitySats": "100000"
+          }
+        ],
+        "requires": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+            "minQuantitySats": "80000"
+          }
+        ],
+        "maxMakerFeeSats": "1000",
+        "expiryHeight": 900100,
+        "nonce": "nonce-12345678",
+        "createdAtHeight": 900000,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "adapterVersions": [
+          {
+            "protocol": "ordinals",
+            "version": "1.2"
+          }
+        ],
+        "digest": "a738b378f28cffff205dcf071e2c5e47515007977d440cd47fac787187c3c469",
+        "makerIdentityProof": {
+          "kind": "bip322",
+          "address": "bc1qexampleaddress0000000000000000000000000000",
+          "signature": "MEUCIQ=="
+        }
+      },
+      "acceptance": {
+        "schema": "ordex.swap-acceptance-plan/v1",
+        "intentDigest": "a738b378f28cffff205dcf071e2c5e47515007977d440cd47fac787187c3c469",
+        "network": "mainnet",
+        "tx": {
+          "inputs": [
+            {
+              "outpoint": {
+                "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                "vout": 1
+              },
+              "party": "taker",
+              "valueSats": "10000",
+              "assets": [
+                {
+                  "assetType": "ORDINAL",
+                  "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0"
+                }
+              ]
+            },
+            {
+              "outpoint": {
+                "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "vout": 0
+              },
+              "party": "maker",
+              "valueSats": "100000",
+              "assets": [
+                {
+                  "assetType": "BTC"
+                }
+              ]
+            }
+          ],
+          "outputs": [
+            {
+              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "valueSats": "10000",
+              "role": "takerAsset"
+            },
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "80000",
+              "role": "makerConsideration"
+            },
+            {
+              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "valueSats": "15400",
+              "role": "takerChange"
+            }
+          ]
+        },
+        "assetTransitions": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+            "fromInput": 0,
+            "toOutput": 0
+          },
+          {
+            "assetType": "BTC",
+            "assetId": "BTC",
+            "fromInput": 1,
+            "toOutput": 1
+          }
+        ],
+        "fee": {
+          "feeSats": "4600",
+          "makerFeeSats": "0",
+          "takerFeeSats": "4600"
+        },
+        "signing": {
+          "sighashPolicy": "SINGLE|ANYONECANPAY"
+        }
+      },
+      "expected": {
+        "ok": false,
+        "code": "UNCLOSED_SIGHASH"
+      }
+    },
+    {
+      "name": "an acceptance plan that drops a committed outpoint is refused",
+      "intent": {
+        "schema": "ordex.swap-intent/v1",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "visibility": "PUBLIC",
+        "makerReceiveScriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "gives": [
+          {
+            "assetType": "BTC",
+            "outpoint": {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0
+            },
+            "quantitySats": "100000"
+          }
+        ],
+        "requires": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+            "minQuantitySats": "80000"
+          }
+        ],
+        "maxMakerFeeSats": "1000",
+        "expiryHeight": 900100,
+        "nonce": "nonce-12345678",
+        "createdAtHeight": 900000,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "adapterVersions": [
+          {
+            "protocol": "ordinals",
+            "version": "1.2"
+          }
+        ],
+        "digest": "a738b378f28cffff205dcf071e2c5e47515007977d440cd47fac787187c3c469",
+        "makerIdentityProof": {
+          "kind": "bip322",
+          "address": "bc1qexampleaddress0000000000000000000000000000",
+          "signature": "MEUCIQ=="
+        }
+      },
+      "acceptance": {
+        "schema": "ordex.swap-acceptance-plan/v1",
+        "intentDigest": "a738b378f28cffff205dcf071e2c5e47515007977d440cd47fac787187c3c469",
+        "network": "mainnet",
+        "tx": {
+          "inputs": [
+            {
+              "outpoint": {
+                "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                "vout": 1
+              },
+              "party": "taker",
+              "valueSats": "10000",
+              "assets": [
+                {
+                  "assetType": "ORDINAL",
+                  "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0"
+                }
+              ]
+            },
+            {
+              "outpoint": {
+                "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "vout": 2
+              },
+              "party": "taker",
+              "valueSats": "90000",
+              "assets": []
+            }
+          ],
+          "outputs": [
+            {
+              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "valueSats": "10000",
+              "role": "takerAsset"
+            },
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "80000",
+              "role": "makerConsideration"
+            },
+            {
+              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "valueSats": "15400",
+              "role": "takerChange"
+            }
+          ]
+        },
+        "assetTransitions": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+            "fromInput": 0,
+            "toOutput": 0
+          },
+          {
+            "assetType": "BTC",
+            "assetId": "BTC",
+            "fromInput": 1,
+            "toOutput": 1
+          }
+        ],
+        "fee": {
+          "feeSats": "4600",
+          "makerFeeSats": "0",
+          "takerFeeSats": "4600"
+        },
+        "signing": {
+          "sighashPolicy": "ALL"
+        }
+      },
+      "expected": {
+        "ok": false,
+        "code": "MAKER_OUTPOINT_MISSING"
+      }
+    },
+    {
+      "name": "a maker input the intent never committed is refused",
+      "intent": {
+        "schema": "ordex.swap-intent/v1",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "visibility": "PUBLIC",
+        "makerReceiveScriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "gives": [
+          {
+            "assetType": "BTC",
+            "outpoint": {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0
+            },
+            "quantitySats": "100000"
+          }
+        ],
+        "requires": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+            "minQuantitySats": "80000"
+          }
+        ],
+        "maxMakerFeeSats": "1000",
+        "expiryHeight": 900100,
+        "nonce": "nonce-12345678",
+        "createdAtHeight": 900000,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "adapterVersions": [
+          {
+            "protocol": "ordinals",
+            "version": "1.2"
+          }
+        ],
+        "digest": "a738b378f28cffff205dcf071e2c5e47515007977d440cd47fac787187c3c469",
+        "makerIdentityProof": {
+          "kind": "bip322",
+          "address": "bc1qexampleaddress0000000000000000000000000000",
+          "signature": "MEUCIQ=="
+        }
+      },
+      "acceptance": {
+        "schema": "ordex.swap-acceptance-plan/v1",
+        "intentDigest": "a738b378f28cffff205dcf071e2c5e47515007977d440cd47fac787187c3c469",
+        "network": "mainnet",
+        "tx": {
+          "inputs": [
+            {
+              "outpoint": {
+                "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                "vout": 1
+              },
+              "party": "taker",
+              "valueSats": "10000",
+              "assets": [
+                {
+                  "assetType": "ORDINAL",
+                  "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0"
+                }
+              ]
+            },
+            {
+              "outpoint": {
+                "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "vout": 0
+              },
+              "party": "maker",
+              "valueSats": "100000",
+              "assets": [
+                {
+                  "assetType": "BTC"
+                }
+              ]
+            },
+            {
+              "outpoint": {
+                "txid": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+                "vout": 0
+              },
+              "party": "maker",
+              "valueSats": "5000",
+              "assets": []
+            }
+          ],
+          "outputs": [
+            {
+              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "valueSats": "10000",
+              "role": "takerAsset"
+            },
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "80000",
+              "role": "makerConsideration"
+            },
+            {
+              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "valueSats": "20400",
+              "role": "takerChange"
+            }
+          ]
+        },
+        "assetTransitions": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+            "fromInput": 0,
+            "toOutput": 0
+          },
+          {
+            "assetType": "BTC",
+            "assetId": "BTC",
+            "fromInput": 1,
+            "toOutput": 1
+          }
+        ],
+        "fee": {
+          "feeSats": "4600",
+          "makerFeeSats": "0",
+          "takerFeeSats": "4600"
+        },
+        "signing": {
+          "sighashPolicy": "ALL"
+        }
+      },
+      "expected": {
+        "ok": false,
+        "code": "UNEXPECTED_MAKER_INPUT"
+      }
+    },
+    {
+      "name": "a consideration shortfall is refused",
+      "intent": {
+        "schema": "ordex.swap-intent/v1",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "visibility": "PUBLIC",
+        "makerReceiveScriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "gives": [
+          {
+            "assetType": "BTC",
+            "outpoint": {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0
+            },
+            "quantitySats": "100000"
+          }
+        ],
+        "requires": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+            "minQuantitySats": "80000"
+          }
+        ],
+        "maxMakerFeeSats": "1000",
+        "expiryHeight": 900100,
+        "nonce": "nonce-12345678",
+        "createdAtHeight": 900000,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "adapterVersions": [
+          {
+            "protocol": "ordinals",
+            "version": "1.2"
+          }
+        ],
+        "digest": "a738b378f28cffff205dcf071e2c5e47515007977d440cd47fac787187c3c469",
+        "makerIdentityProof": {
+          "kind": "bip322",
+          "address": "bc1qexampleaddress0000000000000000000000000000",
+          "signature": "MEUCIQ=="
+        }
+      },
+      "acceptance": {
+        "schema": "ordex.swap-acceptance-plan/v1",
+        "intentDigest": "a738b378f28cffff205dcf071e2c5e47515007977d440cd47fac787187c3c469",
+        "network": "mainnet",
+        "tx": {
+          "inputs": [
+            {
+              "outpoint": {
+                "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                "vout": 1
+              },
+              "party": "taker",
+              "valueSats": "10000",
+              "assets": [
+                {
+                  "assetType": "ORDINAL",
+                  "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0"
+                }
+              ]
+            },
+            {
+              "outpoint": {
+                "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "vout": 0
+              },
+              "party": "maker",
+              "valueSats": "100000",
+              "assets": [
+                {
+                  "assetType": "BTC"
+                }
+              ]
+            }
+          ],
+          "outputs": [
+            {
+              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "valueSats": "10000",
+              "role": "takerAsset"
+            },
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "79999",
+              "role": "makerConsideration"
+            },
+            {
+              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "valueSats": "15401",
+              "role": "takerChange"
+            }
+          ]
+        },
+        "assetTransitions": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+            "fromInput": 0,
+            "toOutput": 0
+          },
+          {
+            "assetType": "BTC",
+            "assetId": "BTC",
+            "fromInput": 1,
+            "toOutput": 1
+          }
+        ],
+        "fee": {
+          "feeSats": "4600",
+          "makerFeeSats": "0",
+          "takerFeeSats": "4600"
+        },
+        "signing": {
+          "sighashPolicy": "ALL"
+        }
+      },
+      "expected": {
+        "ok": false,
+        "code": "CONSIDERATION_SHORTFALL"
+      }
+    },
+    {
+      "name": "a maker fee above the intent budget is refused",
+      "intent": {
+        "schema": "ordex.swap-intent/v1",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "visibility": "PUBLIC",
+        "makerReceiveScriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "gives": [
+          {
+            "assetType": "BTC",
+            "outpoint": {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0
+            },
+            "quantitySats": "100000"
+          }
+        ],
+        "requires": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+            "minQuantitySats": "80000"
+          }
+        ],
+        "maxMakerFeeSats": "1000",
+        "expiryHeight": 900100,
+        "nonce": "nonce-12345678",
+        "createdAtHeight": 900000,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "adapterVersions": [
+          {
+            "protocol": "ordinals",
+            "version": "1.2"
+          }
+        ],
+        "digest": "a738b378f28cffff205dcf071e2c5e47515007977d440cd47fac787187c3c469",
+        "makerIdentityProof": {
+          "kind": "bip322",
+          "address": "bc1qexampleaddress0000000000000000000000000000",
+          "signature": "MEUCIQ=="
+        }
+      },
+      "acceptance": {
+        "schema": "ordex.swap-acceptance-plan/v1",
+        "intentDigest": "a738b378f28cffff205dcf071e2c5e47515007977d440cd47fac787187c3c469",
+        "network": "mainnet",
+        "tx": {
+          "inputs": [
+            {
+              "outpoint": {
+                "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                "vout": 1
+              },
+              "party": "taker",
+              "valueSats": "10000",
+              "assets": [
+                {
+                  "assetType": "ORDINAL",
+                  "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0"
+                }
+              ]
+            },
+            {
+              "outpoint": {
+                "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "vout": 0
+              },
+              "party": "maker",
+              "valueSats": "100000",
+              "assets": [
+                {
+                  "assetType": "BTC"
+                }
+              ]
+            }
+          ],
+          "outputs": [
+            {
+              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "valueSats": "10000",
+              "role": "takerAsset"
+            },
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "80000",
+              "role": "makerConsideration"
+            },
+            {
+              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "valueSats": "15400",
+              "role": "takerChange"
+            }
+          ]
+        },
+        "assetTransitions": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+            "fromInput": 0,
+            "toOutput": 0
+          },
+          {
+            "assetType": "BTC",
+            "assetId": "BTC",
+            "fromInput": 1,
+            "toOutput": 1
+          }
+        ],
+        "fee": {
+          "feeSats": "4600",
+          "makerFeeSats": "4600",
+          "takerFeeSats": "0"
+        },
+        "signing": {
+          "sighashPolicy": "ALL"
+        }
+      },
+      "expected": {
+        "ok": false,
+        "code": "FEE_BUDGET_EXCEEDED"
+      }
+    },
+    {
+      "name": "a maker asset without a delivery transition is refused",
+      "intent": {
+        "schema": "ordex.swap-intent/v1",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "visibility": "PUBLIC",
+        "makerReceiveScriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "gives": [
+          {
+            "assetType": "BTC",
+            "outpoint": {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0
+            },
+            "quantitySats": "100000"
+          }
+        ],
+        "requires": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+            "minQuantitySats": "80000"
+          }
+        ],
+        "maxMakerFeeSats": "1000",
+        "expiryHeight": 900100,
+        "nonce": "nonce-12345678",
+        "createdAtHeight": 900000,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "adapterVersions": [
+          {
+            "protocol": "ordinals",
+            "version": "1.2"
+          }
+        ],
+        "digest": "a738b378f28cffff205dcf071e2c5e47515007977d440cd47fac787187c3c469",
+        "makerIdentityProof": {
+          "kind": "bip322",
+          "address": "bc1qexampleaddress0000000000000000000000000000",
+          "signature": "MEUCIQ=="
+        }
+      },
+      "acceptance": {
+        "schema": "ordex.swap-acceptance-plan/v1",
+        "intentDigest": "a738b378f28cffff205dcf071e2c5e47515007977d440cd47fac787187c3c469",
+        "network": "mainnet",
+        "tx": {
+          "inputs": [
+            {
+              "outpoint": {
+                "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                "vout": 1
+              },
+              "party": "taker",
+              "valueSats": "10000",
+              "assets": [
+                {
+                  "assetType": "ORDINAL",
+                  "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0"
+                }
+              ]
+            },
+            {
+              "outpoint": {
+                "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "vout": 0
+              },
+              "party": "maker",
+              "valueSats": "100000",
+              "assets": [
+                {
+                  "assetType": "BTC"
+                }
+              ]
+            }
+          ],
+          "outputs": [
+            {
+              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "valueSats": "10000",
+              "role": "takerAsset"
+            },
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "80000",
+              "role": "makerConsideration"
+            },
+            {
+              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "valueSats": "15400",
+              "role": "takerChange"
+            }
+          ]
+        },
+        "assetTransitions": [],
+        "fee": {
+          "feeSats": "4600",
+          "makerFeeSats": "0",
+          "takerFeeSats": "4600"
+        },
+        "signing": {
+          "sighashPolicy": "ALL"
+        }
+      },
+      "expected": {
+        "ok": false,
+        "code": "MAKER_ASSET_UNASSIGNED"
+      }
+    }
+  ]
+}

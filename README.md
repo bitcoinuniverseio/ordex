@@ -17,10 +17,35 @@ Ordex lets signed PSBT order evidence travel across compatible Bitcoin markets. 
 
 Ordex builds, verifies, and hands over Bitcoin PSBTs. Its markets are Bitcoin PSBT,
 Ordinals, Bitmap, BRC-20, TAP, DMT, UNAT, Names, OP Inscriptions, OP-20, OP Names,
-Taproot OP_DROP, ARC-20, Runes, Alkanes, Mezcal, and DUST20. It has no artifact
-builder, verifier, or source adapter for Dogecoin or Counterparty assets, so those
-markets are not listed and no Bitcoin transaction is ever presented under a
-protocol label Ordex did not verify.
+Taproot OP_DROP, ARC-20, Runes, Alkanes, Mezcal, and DUST20. Counterparty heritage
+assets join at protocol 1.2 through the self-hosted Counterparty authority, with
+UTXO-attached settlement and no legacy dispenser path. Dogecoin is still out of
+scope, and no Bitcoin transaction is ever presented under a protocol label Ordex
+did not verify.
+
+## The 1.2 products
+
+Protocol 1.2 is additive: every 1.0 and 1.1 operation is unchanged.
+
+- **SafeOps and the Execution Shield** ([spec](spec/safeops.md)): an executable
+  operations desk for batch sends, ordinal and rune transfers, consolidations,
+  RBF, and CPFP, with fail-closed inventory resolution, a shield that re-verifies
+  every input before each signature, and post-broadcast monitoring.
+- **Atomic Swap Links and the OTC Desk** ([spec](spec/swaps.md)): maker intents,
+  encrypted private links, and settlement in exactly one transaction where both
+  sides move or nothing does.
+- **Realtime Developer Network** ([spec](spec/events.md), [AsyncAPI](spec/asyncapi.json)):
+  the ordex-event/v1 envelope over SSE, WebSocket, and signed webhooks, with
+  cursor replay and seven-day retention.
+- **Counterparty Heritage Market** ([spec](spec/counterparty-utxo-asset.md)):
+  UTXO-attached Counterparty assets under one readiness-gated self-hosted
+  authority, with the attachment-follow rule proven for every spend.
+- **Cold Signer and Watch-Only Mode** ([spec](spec/cold-signing.md)): one
+  SignerAdapter for wallet, file, QR, and hardware signing, built on the expected
+  transaction manifest and its nine refusals.
+- **Collection Provenance Registry** ([spec](spec/collection-manifest.md)):
+  creator-signed manifests with offline membership proofs, supersession, and
+  revocation.
 
 ## Buying is four named steps
 
@@ -46,6 +71,7 @@ behind a disclosure that says what you take on if you use it.
 - [Portable orders](spec/interoperability.md): import, export, and OpenOrdex
 - [The gateway API](spec/api.md), explained route by route
 - [The OpenAPI 3.1 contract](spec/openapi.json), the same routes field by field
+- [The AsyncAPI 3.0 streaming contract](spec/asyncapi.json)
 - [The typed SDK](sdk/README.md), generated from that contract
 - [Conformance vectors](conformance/purchase-vectors.json) and the
   [reference verifier](verifier/purchase.js) that runs them with `npm test`

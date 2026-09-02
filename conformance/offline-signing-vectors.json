@@ -1,0 +1,1384 @@
+{
+  "version": 1,
+  "description": "Expected transaction manifest and signed result comparison vectors.",
+  "cases": [
+    {
+      "name": "a complete manifest is accepted",
+      "manifest": {
+        "schema": "ordex.expected-transaction-manifest/v1",
+        "network": "mainnet",
+        "purpose": "Transfer one inscription and pay one recipient.",
+        "watchOnly": false,
+        "unsignedTx": {
+          "inputs": [
+            {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0,
+              "valueSats": "50000",
+              "scriptPubKeyHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "controlledByUser": true,
+              "sighashType": "DEFAULT",
+              "explanation": "Your sealed inscription output, spent whole."
+            },
+            {
+              "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "vout": 1,
+              "valueSats": "30000",
+              "scriptPubKeyHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "controlledByUser": true,
+              "sighashType": "DEFAULT",
+              "explanation": "Cardinal change funding the fee."
+            }
+          ],
+          "outputs": [
+            {
+              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "valueSats": "10000",
+              "role": "recipient",
+              "explanation": "The buyer receives the inscription here.",
+              "expectedAssets": [
+                {
+                  "assetType": "ORDINAL",
+                  "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0"
+                }
+              ]
+            },
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "69400",
+              "role": "change",
+              "explanation": "Your change returns here."
+            }
+          ]
+        },
+        "fee": {
+          "feeSats": "600",
+          "maxFeeSats": "2000"
+        },
+        "digest": "43fc3ad64b9de344c0820add2f78ddc944989df365491928432b99b0237376c0"
+      },
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "name": "a manifest whose digest was edited is refused",
+      "manifest": {
+        "schema": "ordex.expected-transaction-manifest/v1",
+        "network": "mainnet",
+        "purpose": "Transfer one inscription and pay one recipient.",
+        "watchOnly": false,
+        "unsignedTx": {
+          "inputs": [
+            {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0,
+              "valueSats": "50000",
+              "scriptPubKeyHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "controlledByUser": true,
+              "sighashType": "DEFAULT",
+              "explanation": "Your sealed inscription output, spent whole."
+            },
+            {
+              "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "vout": 1,
+              "valueSats": "30000",
+              "scriptPubKeyHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "controlledByUser": true,
+              "sighashType": "DEFAULT",
+              "explanation": "Cardinal change funding the fee."
+            }
+          ],
+          "outputs": [
+            {
+              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "valueSats": "10000",
+              "role": "recipient",
+              "explanation": "The buyer receives the inscription here.",
+              "expectedAssets": [
+                {
+                  "assetType": "ORDINAL",
+                  "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0"
+                }
+              ]
+            },
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "69400",
+              "role": "change",
+              "explanation": "Your change returns here."
+            }
+          ]
+        },
+        "fee": {
+          "feeSats": "600",
+          "maxFeeSats": "2000"
+        },
+        "digest": "9999999999999999999999999999999999999999999999999999999999999999"
+      },
+      "expected": {
+        "ok": false,
+        "code": "DIGEST_MISMATCH"
+      }
+    },
+    {
+      "name": "an input without an explanation is refused",
+      "manifest": {
+        "schema": "ordex.expected-transaction-manifest/v1",
+        "network": "mainnet",
+        "purpose": "Transfer one inscription and pay one recipient.",
+        "watchOnly": false,
+        "unsignedTx": {
+          "inputs": [
+            {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0,
+              "valueSats": "50000",
+              "scriptPubKeyHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "controlledByUser": true,
+              "sighashType": "DEFAULT"
+            },
+            {
+              "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "vout": 1,
+              "valueSats": "30000",
+              "scriptPubKeyHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "controlledByUser": true,
+              "sighashType": "DEFAULT",
+              "explanation": "Cardinal change funding the fee."
+            }
+          ],
+          "outputs": [
+            {
+              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "valueSats": "10000",
+              "role": "recipient",
+              "explanation": "The buyer receives the inscription here.",
+              "expectedAssets": [
+                {
+                  "assetType": "ORDINAL",
+                  "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0"
+                }
+              ]
+            },
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "69400",
+              "role": "change",
+              "explanation": "Your change returns here."
+            }
+          ]
+        },
+        "fee": {
+          "feeSats": "600",
+          "maxFeeSats": "2000"
+        },
+        "digest": "43fc3ad64b9de344c0820add2f78ddc944989df365491928432b99b0237376c0"
+      },
+      "expected": {
+        "ok": false,
+        "code": "INPUT_DESCRIPTION_INVALID"
+      }
+    },
+    {
+      "name": "a manifest that does not conserve value is refused",
+      "manifest": {
+        "schema": "ordex.expected-transaction-manifest/v1",
+        "network": "mainnet",
+        "purpose": "Transfer one inscription and pay one recipient.",
+        "watchOnly": false,
+        "unsignedTx": {
+          "inputs": [
+            {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0,
+              "valueSats": "50000",
+              "scriptPubKeyHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "controlledByUser": true,
+              "sighashType": "DEFAULT",
+              "explanation": "Your sealed inscription output, spent whole."
+            },
+            {
+              "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "vout": 1,
+              "valueSats": "30000",
+              "scriptPubKeyHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "controlledByUser": true,
+              "sighashType": "DEFAULT",
+              "explanation": "Cardinal change funding the fee."
+            }
+          ],
+          "outputs": [
+            {
+              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "valueSats": "10000",
+              "role": "recipient",
+              "explanation": "The buyer receives the inscription here.",
+              "expectedAssets": [
+                {
+                  "assetType": "ORDINAL",
+                  "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0"
+                }
+              ]
+            },
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "69401",
+              "role": "change",
+              "explanation": "Your change returns here."
+            }
+          ]
+        },
+        "fee": {
+          "feeSats": "600",
+          "maxFeeSats": "2000"
+        },
+        "digest": "43fc3ad64b9de344c0820add2f78ddc944989df365491928432b99b0237376c0"
+      },
+      "expected": {
+        "ok": false,
+        "code": "VALUE_NOT_CONSERVED"
+      }
+    },
+    {
+      "name": "a dust recipient output is refused",
+      "manifest": {
+        "schema": "ordex.expected-transaction-manifest/v1",
+        "network": "mainnet",
+        "purpose": "Transfer one inscription and pay one recipient.",
+        "watchOnly": false,
+        "unsignedTx": {
+          "inputs": [
+            {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0,
+              "valueSats": "50000",
+              "scriptPubKeyHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "controlledByUser": true,
+              "sighashType": "DEFAULT",
+              "explanation": "Your sealed output, spent whole."
+            }
+          ],
+          "outputs": [
+            {
+              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "valueSats": "100",
+              "role": "recipient",
+              "explanation": "Too small to send."
+            },
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "49300",
+              "role": "change",
+              "explanation": "Your change."
+            }
+          ]
+        },
+        "fee": {
+          "feeSats": "600",
+          "maxFeeSats": "2000"
+        },
+        "digest": "45f8238c77ae309616a2ccfc6314e4525682958297982d8830c10cfb005ffa3f"
+      },
+      "expected": {
+        "ok": false,
+        "code": "DUST_OUTPUT"
+      }
+    },
+    {
+      "name": "a signed result matching the manifest is accepted",
+      "manifest": {
+        "schema": "ordex.expected-transaction-manifest/v1",
+        "network": "mainnet",
+        "purpose": "Transfer one inscription and pay one recipient.",
+        "watchOnly": false,
+        "unsignedTx": {
+          "inputs": [
+            {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0,
+              "valueSats": "50000",
+              "scriptPubKeyHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "controlledByUser": true,
+              "sighashType": "DEFAULT",
+              "explanation": "Your sealed inscription output, spent whole."
+            },
+            {
+              "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "vout": 1,
+              "valueSats": "30000",
+              "scriptPubKeyHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "controlledByUser": true,
+              "sighashType": "DEFAULT",
+              "explanation": "Cardinal change funding the fee."
+            }
+          ],
+          "outputs": [
+            {
+              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "valueSats": "10000",
+              "role": "recipient",
+              "explanation": "The buyer receives the inscription here.",
+              "expectedAssets": [
+                {
+                  "assetType": "ORDINAL",
+                  "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0"
+                }
+              ]
+            },
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "69400",
+              "role": "change",
+              "explanation": "Your change returns here."
+            }
+          ]
+        },
+        "fee": {
+          "feeSats": "600",
+          "maxFeeSats": "2000"
+        },
+        "digest": "43fc3ad64b9de344c0820add2f78ddc944989df365491928432b99b0237376c0"
+      },
+      "signed": {
+        "schema": "ordex.offline-signing-session/v1",
+        "manifestDigest": "43fc3ad64b9de344c0820add2f78ddc944989df365491928432b99b0237376c0",
+        "tx": {
+          "inputs": [
+            {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0,
+              "valueSats": "50000",
+              "signaturePresent": true,
+              "sighashType": "DEFAULT"
+            },
+            {
+              "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "vout": 1,
+              "valueSats": "30000",
+              "signaturePresent": true,
+              "sighashType": "DEFAULT"
+            }
+          ],
+          "outputs": [
+            {
+              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "valueSats": "10000"
+            },
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "69400"
+            }
+          ],
+          "carriedAssets": [
+            {
+              "outputIndex": 0,
+              "assetType": "ORDINAL",
+              "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "name": "a signed result from a different manifest is refused",
+      "manifest": {
+        "schema": "ordex.expected-transaction-manifest/v1",
+        "network": "mainnet",
+        "purpose": "Transfer one inscription and pay one recipient.",
+        "watchOnly": false,
+        "unsignedTx": {
+          "inputs": [
+            {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0,
+              "valueSats": "50000",
+              "scriptPubKeyHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "controlledByUser": true,
+              "sighashType": "DEFAULT",
+              "explanation": "Your sealed inscription output, spent whole."
+            },
+            {
+              "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "vout": 1,
+              "valueSats": "30000",
+              "scriptPubKeyHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "controlledByUser": true,
+              "sighashType": "DEFAULT",
+              "explanation": "Cardinal change funding the fee."
+            }
+          ],
+          "outputs": [
+            {
+              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "valueSats": "10000",
+              "role": "recipient",
+              "explanation": "The buyer receives the inscription here.",
+              "expectedAssets": [
+                {
+                  "assetType": "ORDINAL",
+                  "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0"
+                }
+              ]
+            },
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "69400",
+              "role": "change",
+              "explanation": "Your change returns here."
+            }
+          ]
+        },
+        "fee": {
+          "feeSats": "600",
+          "maxFeeSats": "2000"
+        },
+        "digest": "43fc3ad64b9de344c0820add2f78ddc944989df365491928432b99b0237376c0"
+      },
+      "signed": {
+        "schema": "ordex.offline-signing-session/v1",
+        "manifestDigest": "f9ce4babf3e1182fc5fec39a321cad06c59e96a7922768dfa232d58325d4ae24",
+        "tx": {
+          "inputs": [
+            {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0,
+              "valueSats": "50000",
+              "signaturePresent": true,
+              "sighashType": "DEFAULT"
+            },
+            {
+              "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "vout": 1,
+              "valueSats": "30000",
+              "signaturePresent": true,
+              "sighashType": "DEFAULT"
+            }
+          ],
+          "outputs": [
+            {
+              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "valueSats": "10000"
+            },
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "69500"
+            }
+          ],
+          "carriedAssets": [
+            {
+              "outputIndex": 0,
+              "assetType": "ORDINAL",
+              "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "ok": false,
+        "code": "MANIFEST_DIGEST_MISMATCH"
+      }
+    },
+    {
+      "name": "a reordered input is refused",
+      "manifest": {
+        "schema": "ordex.expected-transaction-manifest/v1",
+        "network": "mainnet",
+        "purpose": "Transfer one inscription and pay one recipient.",
+        "watchOnly": false,
+        "unsignedTx": {
+          "inputs": [
+            {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0,
+              "valueSats": "50000",
+              "scriptPubKeyHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "controlledByUser": true,
+              "sighashType": "DEFAULT",
+              "explanation": "Your sealed inscription output, spent whole."
+            },
+            {
+              "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "vout": 1,
+              "valueSats": "30000",
+              "scriptPubKeyHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "controlledByUser": true,
+              "sighashType": "DEFAULT",
+              "explanation": "Cardinal change funding the fee."
+            }
+          ],
+          "outputs": [
+            {
+              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "valueSats": "10000",
+              "role": "recipient",
+              "explanation": "The buyer receives the inscription here.",
+              "expectedAssets": [
+                {
+                  "assetType": "ORDINAL",
+                  "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0"
+                }
+              ]
+            },
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "69400",
+              "role": "change",
+              "explanation": "Your change returns here."
+            }
+          ]
+        },
+        "fee": {
+          "feeSats": "600",
+          "maxFeeSats": "2000"
+        },
+        "digest": "43fc3ad64b9de344c0820add2f78ddc944989df365491928432b99b0237376c0"
+      },
+      "signed": {
+        "schema": "ordex.offline-signing-session/v1",
+        "manifestDigest": "43fc3ad64b9de344c0820add2f78ddc944989df365491928432b99b0237376c0",
+        "tx": {
+          "inputs": [
+            {
+              "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "vout": 1,
+              "valueSats": "30000",
+              "signaturePresent": true,
+              "sighashType": "DEFAULT"
+            },
+            {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0,
+              "valueSats": "50000",
+              "signaturePresent": true,
+              "sighashType": "DEFAULT"
+            }
+          ],
+          "outputs": [
+            {
+              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "valueSats": "10000"
+            },
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "69400"
+            }
+          ],
+          "carriedAssets": [
+            {
+              "outputIndex": 0,
+              "assetType": "ORDINAL",
+              "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "ok": false,
+        "code": "INPUT_REORDERED"
+      }
+    },
+    {
+      "name": "an added output is refused",
+      "manifest": {
+        "schema": "ordex.expected-transaction-manifest/v1",
+        "network": "mainnet",
+        "purpose": "Transfer one inscription and pay one recipient.",
+        "watchOnly": false,
+        "unsignedTx": {
+          "inputs": [
+            {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0,
+              "valueSats": "50000",
+              "scriptPubKeyHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "controlledByUser": true,
+              "sighashType": "DEFAULT",
+              "explanation": "Your sealed inscription output, spent whole."
+            },
+            {
+              "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "vout": 1,
+              "valueSats": "30000",
+              "scriptPubKeyHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "controlledByUser": true,
+              "sighashType": "DEFAULT",
+              "explanation": "Cardinal change funding the fee."
+            }
+          ],
+          "outputs": [
+            {
+              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "valueSats": "10000",
+              "role": "recipient",
+              "explanation": "The buyer receives the inscription here.",
+              "expectedAssets": [
+                {
+                  "assetType": "ORDINAL",
+                  "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0"
+                }
+              ]
+            },
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "69400",
+              "role": "change",
+              "explanation": "Your change returns here."
+            }
+          ]
+        },
+        "fee": {
+          "feeSats": "600",
+          "maxFeeSats": "2000"
+        },
+        "digest": "43fc3ad64b9de344c0820add2f78ddc944989df365491928432b99b0237376c0"
+      },
+      "signed": {
+        "schema": "ordex.offline-signing-session/v1",
+        "manifestDigest": "43fc3ad64b9de344c0820add2f78ddc944989df365491928432b99b0237376c0",
+        "tx": {
+          "inputs": [
+            {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0,
+              "valueSats": "50000",
+              "signaturePresent": true,
+              "sighashType": "DEFAULT"
+            },
+            {
+              "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "vout": 1,
+              "valueSats": "30000",
+              "signaturePresent": true,
+              "sighashType": "DEFAULT"
+            }
+          ],
+          "outputs": [
+            {
+              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "valueSats": "10000"
+            },
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "69400"
+            },
+            {
+              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "valueSats": "1"
+            }
+          ],
+          "carriedAssets": [
+            {
+              "outputIndex": 0,
+              "assetType": "ORDINAL",
+              "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "ok": false,
+        "code": "OUTPUT_SET_CHANGED"
+      }
+    },
+    {
+      "name": "a changed output script is refused",
+      "manifest": {
+        "schema": "ordex.expected-transaction-manifest/v1",
+        "network": "mainnet",
+        "purpose": "Transfer one inscription and pay one recipient.",
+        "watchOnly": false,
+        "unsignedTx": {
+          "inputs": [
+            {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0,
+              "valueSats": "50000",
+              "scriptPubKeyHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "controlledByUser": true,
+              "sighashType": "DEFAULT",
+              "explanation": "Your sealed inscription output, spent whole."
+            },
+            {
+              "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "vout": 1,
+              "valueSats": "30000",
+              "scriptPubKeyHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "controlledByUser": true,
+              "sighashType": "DEFAULT",
+              "explanation": "Cardinal change funding the fee."
+            }
+          ],
+          "outputs": [
+            {
+              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "valueSats": "10000",
+              "role": "recipient",
+              "explanation": "The buyer receives the inscription here.",
+              "expectedAssets": [
+                {
+                  "assetType": "ORDINAL",
+                  "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0"
+                }
+              ]
+            },
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "69400",
+              "role": "change",
+              "explanation": "Your change returns here."
+            }
+          ]
+        },
+        "fee": {
+          "feeSats": "600",
+          "maxFeeSats": "2000"
+        },
+        "digest": "43fc3ad64b9de344c0820add2f78ddc944989df365491928432b99b0237376c0"
+      },
+      "signed": {
+        "schema": "ordex.offline-signing-session/v1",
+        "manifestDigest": "43fc3ad64b9de344c0820add2f78ddc944989df365491928432b99b0237376c0",
+        "tx": {
+          "inputs": [
+            {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0,
+              "valueSats": "50000",
+              "signaturePresent": true,
+              "sighashType": "DEFAULT"
+            },
+            {
+              "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "vout": 1,
+              "valueSats": "30000",
+              "signaturePresent": true,
+              "sighashType": "DEFAULT"
+            }
+          ],
+          "outputs": [
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "10000"
+            },
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "69400"
+            }
+          ],
+          "carriedAssets": [
+            {
+              "outputIndex": 0,
+              "assetType": "ORDINAL",
+              "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "ok": false,
+        "code": "SCRIPT_CHANGED"
+      }
+    },
+    {
+      "name": "a fee outside the approved bound is refused",
+      "manifest": {
+        "schema": "ordex.expected-transaction-manifest/v1",
+        "network": "mainnet",
+        "purpose": "Transfer one inscription and pay one recipient.",
+        "watchOnly": false,
+        "unsignedTx": {
+          "inputs": [
+            {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0,
+              "valueSats": "50000",
+              "scriptPubKeyHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "controlledByUser": true,
+              "sighashType": "DEFAULT",
+              "explanation": "Your sealed inscription output, spent whole."
+            },
+            {
+              "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "vout": 1,
+              "valueSats": "30000",
+              "scriptPubKeyHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "controlledByUser": true,
+              "sighashType": "DEFAULT",
+              "explanation": "Cardinal change funding the fee."
+            }
+          ],
+          "outputs": [
+            {
+              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "valueSats": "10000",
+              "role": "recipient",
+              "explanation": "The buyer receives the inscription here.",
+              "expectedAssets": [
+                {
+                  "assetType": "ORDINAL",
+                  "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0"
+                }
+              ]
+            },
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "69400",
+              "role": "change",
+              "explanation": "Your change returns here."
+            }
+          ]
+        },
+        "fee": {
+          "feeSats": "600",
+          "maxFeeSats": "700"
+        },
+        "digest": "43fc3ad64b9de344c0820add2f78ddc944989df365491928432b99b0237376c0"
+      },
+      "signed": {
+        "schema": "ordex.offline-signing-session/v1",
+        "manifestDigest": "43fc3ad64b9de344c0820add2f78ddc944989df365491928432b99b0237376c0",
+        "tx": {
+          "inputs": [
+            {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0,
+              "valueSats": "50000",
+              "signaturePresent": true,
+              "sighashType": "DEFAULT"
+            },
+            {
+              "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "vout": 1,
+              "valueSats": "30000",
+              "signaturePresent": true,
+              "sighashType": "DEFAULT"
+            }
+          ],
+          "outputs": [
+            {
+              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "valueSats": "10000"
+            },
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "69100"
+            }
+          ],
+          "carriedAssets": [
+            {
+              "outputIndex": 0,
+              "assetType": "ORDINAL",
+              "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "ok": false,
+        "code": "FEE_OUT_OF_BOUNDS"
+      }
+    },
+    {
+      "name": "a missing user signature is refused",
+      "manifest": {
+        "schema": "ordex.expected-transaction-manifest/v1",
+        "network": "mainnet",
+        "purpose": "Transfer one inscription and pay one recipient.",
+        "watchOnly": false,
+        "unsignedTx": {
+          "inputs": [
+            {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0,
+              "valueSats": "50000",
+              "scriptPubKeyHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "controlledByUser": true,
+              "sighashType": "DEFAULT",
+              "explanation": "Your sealed inscription output, spent whole."
+            },
+            {
+              "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "vout": 1,
+              "valueSats": "30000",
+              "scriptPubKeyHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "controlledByUser": true,
+              "sighashType": "DEFAULT",
+              "explanation": "Cardinal change funding the fee."
+            }
+          ],
+          "outputs": [
+            {
+              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "valueSats": "10000",
+              "role": "recipient",
+              "explanation": "The buyer receives the inscription here.",
+              "expectedAssets": [
+                {
+                  "assetType": "ORDINAL",
+                  "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0"
+                }
+              ]
+            },
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "69400",
+              "role": "change",
+              "explanation": "Your change returns here."
+            }
+          ]
+        },
+        "fee": {
+          "feeSats": "600",
+          "maxFeeSats": "2000"
+        },
+        "digest": "43fc3ad64b9de344c0820add2f78ddc944989df365491928432b99b0237376c0"
+      },
+      "signed": {
+        "schema": "ordex.offline-signing-session/v1",
+        "manifestDigest": "43fc3ad64b9de344c0820add2f78ddc944989df365491928432b99b0237376c0",
+        "tx": {
+          "inputs": [
+            {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0,
+              "valueSats": "50000",
+              "signaturePresent": false,
+              "sighashType": "DEFAULT"
+            },
+            {
+              "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "vout": 1,
+              "valueSats": "30000",
+              "signaturePresent": true,
+              "sighashType": "DEFAULT"
+            }
+          ],
+          "outputs": [
+            {
+              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "valueSats": "10000"
+            },
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "69400"
+            }
+          ],
+          "carriedAssets": [
+            {
+              "outputIndex": 0,
+              "assetType": "ORDINAL",
+              "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "ok": false,
+        "code": "REQUIRED_SIGNATURE_MISSING"
+      }
+    },
+    {
+      "name": "a signature on a foreign input is refused",
+      "manifest": {
+        "schema": "ordex.expected-transaction-manifest/v1",
+        "network": "mainnet",
+        "purpose": "Transfer one inscription and pay one recipient.",
+        "watchOnly": false,
+        "unsignedTx": {
+          "inputs": [
+            {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0,
+              "valueSats": "50000",
+              "scriptPubKeyHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "controlledByUser": true,
+              "sighashType": "DEFAULT",
+              "explanation": "Your sealed inscription output, spent whole."
+            },
+            {
+              "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "vout": 1,
+              "valueSats": "30000",
+              "scriptPubKeyHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "controlledByUser": false,
+              "sighashType": "DEFAULT",
+              "explanation": "Cardinal change funding the fee."
+            }
+          ],
+          "outputs": [
+            {
+              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "valueSats": "10000",
+              "role": "recipient",
+              "explanation": "The buyer receives the inscription here.",
+              "expectedAssets": [
+                {
+                  "assetType": "ORDINAL",
+                  "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0"
+                }
+              ]
+            },
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "69400",
+              "role": "change",
+              "explanation": "Your change returns here."
+            }
+          ]
+        },
+        "fee": {
+          "feeSats": "600",
+          "maxFeeSats": "2000"
+        },
+        "digest": "43fc3ad64b9de344c0820add2f78ddc944989df365491928432b99b0237376c0"
+      },
+      "signed": {
+        "schema": "ordex.offline-signing-session/v1",
+        "manifestDigest": "43fc3ad64b9de344c0820add2f78ddc944989df365491928432b99b0237376c0",
+        "tx": {
+          "inputs": [
+            {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0,
+              "valueSats": "50000",
+              "signaturePresent": true,
+              "sighashType": "DEFAULT"
+            },
+            {
+              "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "vout": 1,
+              "valueSats": "30000",
+              "signaturePresent": true,
+              "sighashType": "DEFAULT"
+            }
+          ],
+          "outputs": [
+            {
+              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "valueSats": "10000"
+            },
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "69400"
+            }
+          ],
+          "carriedAssets": [
+            {
+              "outputIndex": 0,
+              "assetType": "ORDINAL",
+              "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "ok": false,
+        "code": "SIGNATURE_ON_FOREIGN_INPUT"
+      }
+    },
+    {
+      "name": "an unapproved sighash is refused",
+      "manifest": {
+        "schema": "ordex.expected-transaction-manifest/v1",
+        "network": "mainnet",
+        "purpose": "Transfer one inscription and pay one recipient.",
+        "watchOnly": false,
+        "unsignedTx": {
+          "inputs": [
+            {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0,
+              "valueSats": "50000",
+              "scriptPubKeyHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "controlledByUser": true,
+              "sighashType": "DEFAULT",
+              "explanation": "Your sealed inscription output, spent whole."
+            },
+            {
+              "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "vout": 1,
+              "valueSats": "30000",
+              "scriptPubKeyHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "controlledByUser": true,
+              "sighashType": "DEFAULT",
+              "explanation": "Cardinal change funding the fee."
+            }
+          ],
+          "outputs": [
+            {
+              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "valueSats": "10000",
+              "role": "recipient",
+              "explanation": "The buyer receives the inscription here.",
+              "expectedAssets": [
+                {
+                  "assetType": "ORDINAL",
+                  "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0"
+                }
+              ]
+            },
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "69400",
+              "role": "change",
+              "explanation": "Your change returns here."
+            }
+          ]
+        },
+        "fee": {
+          "feeSats": "600",
+          "maxFeeSats": "2000"
+        },
+        "digest": "43fc3ad64b9de344c0820add2f78ddc944989df365491928432b99b0237376c0"
+      },
+      "signed": {
+        "schema": "ordex.offline-signing-session/v1",
+        "manifestDigest": "43fc3ad64b9de344c0820add2f78ddc944989df365491928432b99b0237376c0",
+        "tx": {
+          "inputs": [
+            {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0,
+              "valueSats": "50000",
+              "signaturePresent": true,
+              "sighashType": "ALL"
+            },
+            {
+              "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "vout": 1,
+              "valueSats": "30000",
+              "signaturePresent": true,
+              "sighashType": "DEFAULT"
+            }
+          ],
+          "outputs": [
+            {
+              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "valueSats": "10000"
+            },
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "69400"
+            }
+          ],
+          "carriedAssets": [
+            {
+              "outputIndex": 0,
+              "assetType": "ORDINAL",
+              "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "ok": false,
+        "code": "SIGHASH_UNEXPECTED"
+      }
+    },
+    {
+      "name": "a protected asset that moved elsewhere is refused",
+      "manifest": {
+        "schema": "ordex.expected-transaction-manifest/v1",
+        "network": "mainnet",
+        "purpose": "Transfer one inscription and pay one recipient.",
+        "watchOnly": false,
+        "unsignedTx": {
+          "inputs": [
+            {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0,
+              "valueSats": "50000",
+              "scriptPubKeyHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "controlledByUser": true,
+              "sighashType": "DEFAULT",
+              "explanation": "Your sealed inscription output, spent whole."
+            },
+            {
+              "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "vout": 1,
+              "valueSats": "30000",
+              "scriptPubKeyHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "controlledByUser": true,
+              "sighashType": "DEFAULT",
+              "explanation": "Cardinal change funding the fee."
+            }
+          ],
+          "outputs": [
+            {
+              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "valueSats": "10000",
+              "role": "recipient",
+              "explanation": "The buyer receives the inscription here.",
+              "expectedAssets": [
+                {
+                  "assetType": "ORDINAL",
+                  "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0"
+                }
+              ]
+            },
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "69400",
+              "role": "change",
+              "explanation": "Your change returns here."
+            }
+          ]
+        },
+        "fee": {
+          "feeSats": "600",
+          "maxFeeSats": "2000"
+        },
+        "digest": "43fc3ad64b9de344c0820add2f78ddc944989df365491928432b99b0237376c0"
+      },
+      "signed": {
+        "schema": "ordex.offline-signing-session/v1",
+        "manifestDigest": "43fc3ad64b9de344c0820add2f78ddc944989df365491928432b99b0237376c0",
+        "tx": {
+          "inputs": [
+            {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0,
+              "valueSats": "50000",
+              "signaturePresent": true,
+              "sighashType": "DEFAULT"
+            },
+            {
+              "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "vout": 1,
+              "valueSats": "30000",
+              "signaturePresent": true,
+              "sighashType": "DEFAULT"
+            }
+          ],
+          "outputs": [
+            {
+              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "valueSats": "10000"
+            },
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "69400"
+            }
+          ],
+          "carriedAssets": [
+            {
+              "outputIndex": 1,
+              "assetType": "ORDINAL",
+              "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "ok": false,
+        "code": "PROTECTED_ASSET_MISPLACED"
+      }
+    },
+    {
+      "name": "an unknown critical field is refused",
+      "manifest": {
+        "schema": "ordex.expected-transaction-manifest/v1",
+        "network": "mainnet",
+        "purpose": "Transfer one inscription and pay one recipient.",
+        "watchOnly": false,
+        "unsignedTx": {
+          "inputs": [
+            {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0,
+              "valueSats": "50000",
+              "scriptPubKeyHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "controlledByUser": true,
+              "sighashType": "DEFAULT",
+              "explanation": "Your sealed inscription output, spent whole."
+            },
+            {
+              "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "vout": 1,
+              "valueSats": "30000",
+              "scriptPubKeyHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "controlledByUser": true,
+              "sighashType": "DEFAULT",
+              "explanation": "Cardinal change funding the fee."
+            }
+          ],
+          "outputs": [
+            {
+              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "valueSats": "10000",
+              "role": "recipient",
+              "explanation": "The buyer receives the inscription here.",
+              "expectedAssets": [
+                {
+                  "assetType": "ORDINAL",
+                  "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0"
+                }
+              ]
+            },
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "69400",
+              "role": "change",
+              "explanation": "Your change returns here."
+            }
+          ]
+        },
+        "fee": {
+          "feeSats": "600",
+          "maxFeeSats": "2000"
+        },
+        "digest": "43fc3ad64b9de344c0820add2f78ddc944989df365491928432b99b0237376c0"
+      },
+      "signed": {
+        "schema": "ordex.offline-signing-session/v1",
+        "manifestDigest": "43fc3ad64b9de344c0820add2f78ddc944989df365491928432b99b0237376c0",
+        "tx": {
+          "inputs": [
+            {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0,
+              "valueSats": "50000",
+              "signaturePresent": true,
+              "sighashType": "DEFAULT"
+            },
+            {
+              "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "vout": 1,
+              "valueSats": "30000",
+              "signaturePresent": true,
+              "sighashType": "DEFAULT"
+            }
+          ],
+          "outputs": [
+            {
+              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "valueSats": "10000"
+            },
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "69400"
+            }
+          ],
+          "carriedAssets": [
+            {
+              "outputIndex": 0,
+              "assetType": "ORDINAL",
+              "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0"
+            }
+          ]
+        },
+        "unknownCriticalFields": [
+          "proprietary.key.mystery"
+        ]
+      },
+      "expected": {
+        "ok": false,
+        "code": "UNKNOWN_CRITICAL_FIELDS"
+      }
+    }
+  ]
+}
