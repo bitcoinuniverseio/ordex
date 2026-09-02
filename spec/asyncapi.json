@@ -102,7 +102,7 @@
               "required": ["height", "blockHash"],
               "properties": { "height": { "type": "integer" }, "blockHash": { "type": "string", "pattern": "^[0-9a-f]{64}$" } }
             },
-            "status": { "type": "string", "enum": ["canonical", "reverted"] },
+            "status": { "type": "string", "enum": ["current", "reverted"] },
             "revertedEventId": { "type": "string", "format": "uuid" },
             "payload": { "type": "object", "additionalProperties": true },
             "artifactDigests": { "type": "array", "items": { "type": "string", "pattern": "^[0-9a-f]{64}$" } },
@@ -121,7 +121,7 @@
               "aggregate": { "type": "order", "id": "01J8ZQ0V2M3N4P5Q6R7S8T9UVW", "version": 4 },
               "observedAt": "2026-09-02T12:00:00Z",
               "checkpoint": { "height": 900001, "blockHash": "0000000000000000000111111111111111111111111111111111111111111112" },
-              "status": "canonical",
+              "status": "current",
               "payload": { "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc" },
               "artifactDigests": ["0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"],
               "traceId": "trace-1a2b3c4d"

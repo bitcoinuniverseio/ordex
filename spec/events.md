@@ -6,7 +6,7 @@ Every public state change in an Ordex gateway becomes one immutable event envelo
 
 ## The envelope
 
-An envelope carries: a globally unique id (uuid), the event type (`ordex.<family>.<name>`), schema version `1`, network, a monotonic per-network sequence, the aggregate type, id, and version, the observation time, the chain checkpoint (height and block hash) it was observed at, a status of `canonical` or `reverted`, the id of the reversed event when status is `reverted`, the public payload, artifact digests, and a trace id that reveals no private user information.
+An envelope carries: a globally unique id (uuid), the event type (`ordex.<family>.<name>`), schema version `1`, network, a monotonic per-network sequence, the aggregate type, id, and version, the observation time, the chain checkpoint (height and block hash) it was observed at, a status of `current` or `reverted`, the id of the reversed event when status is `reverted`, the public payload, artifact digests, and a trace id that reveals no private user information.
 
 Rules the verifier enforces:
 

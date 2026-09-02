@@ -569,7 +569,7 @@ function validEvent(overrides = {}) {
     aggregate: { type: 'order', id: '01J8ZQ0V2M3N4P5Q6R7S8T9UVW', version: 1 },
     observedAt: '2026-09-02T12:00:00Z',
     checkpoint: { height: 900000, blockHash: BLOCK_HASH },
-    status: 'canonical',
+    status: 'current',
     payload: { orderId: '01J8ZQ0V2M3N4P5Q6R7S8T9UVW' },
     artifactDigests: [LEDGER_HASH],
     traceId: 'trace-1a2b3c4d',
@@ -578,7 +578,7 @@ function validEvent(overrides = {}) {
 }
 
 const eventCases = [
-  { name: 'a canonical event envelope is accepted', event: validEvent(), expected: { ok: true } },
+  { name: 'a current event envelope is accepted', event: validEvent(), expected: { ok: true } },
   {
     name: 'a reverted event naming the event it reverses is accepted',
     event: validEvent({
@@ -595,7 +595,7 @@ const eventCases = [
     expected: { ok: false, code: 'REVERTED_EVENT_REQUIRED' },
   },
   {
-    name: 'a canonical event may not name a reversed id',
+    name: 'a current event may not name a reversed id',
     event: validEvent({ revertedEventId: '0f1e2d3c-4b5a-4978-8796-a5b4c3d2e1f0' }),
     expected: { ok: false, code: 'STATUS_INVALID' },
   },
