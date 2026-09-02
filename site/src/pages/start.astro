@@ -2,6 +2,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { RoleChooser } from '../components/shell/RoleChooser.jsx';
 import { FeedbackWidget } from '../components/feedback/FeedbackWidget.jsx';
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 ---
 
 <BaseLayout
@@ -55,10 +56,10 @@ const verdict = verifyPurchaseArrangement(sampleTx, order);
 console.log('Result:', verdict.ok ? 'ACCEPTED' : verdict.code);</code></pre>
 
       <div style="display: flex; gap: 0.75rem; margin-top: 1rem;">
-        <a href="/build/playground" class="btn btn-primary">
+        <a href={`${base}/build/playground`} class="btn btn-primary">
           Test in Live Playground →
         </a>
-        <a href="/build/recipes" class="btn btn-secondary">
+        <a href={`${base}/build/recipes`} class="btn btn-secondary">
           Browse Step-by-Step Recipes →
         </a>
       </div>
@@ -66,21 +67,21 @@ console.log('Result:', verdict.ok ? 'ACCEPTED' : verdict.code);</code></pre>
 
     {/* Next Steps Grid */}
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem;">
-      <a href="/build/wizards" class="panel" style="text-decoration: none; color: inherit;">
+      <a href={`${base}/build/wizards`} class="panel" style="text-decoration: none; color: inherit;">
         <h3 style="margin: 0 0 0.25rem 0; font-size: 1.05rem;">Guided Wizards (12 Workflows)</h3>
         <p style="margin: 0; font-size: 0.85rem; color: var(--color-text-secondary);">
           Step-by-step decision trees for publishing asks, batch buying, and setting up SafeOps.
         </p>
       </a>
 
-      <a href="/kits" class="panel" style="text-decoration: none; color: inherit;">
+      <a href={`${base}/kits`} class="panel" style="text-decoration: none; color: inherit;">
         <h3 style="margin: 0 0 0.25rem 0; font-size: 1.05rem;">Starter Repositories</h3>
         <p style="margin: 0; font-size: 0.85rem; color: var(--color-text-secondary);">
           Generate a full Node.js, Browser, or Cloudflare Worker starter repo with tests and CI.
         </p>
       </a>
 
-      <a href="/lab" class="panel" style="text-decoration: none; color: inherit;">
+      <a href={`${base}/lab`} class="panel" style="text-decoration: none; color: inherit;">
         <h3 style="margin: 0 0 0.25rem 0; font-size: 1.05rem;">Ordex Protocol Lab</h3>
         <p style="margin: 0; font-size: 0.85rem; color: var(--color-text-secondary);">
           Inspect sat flow diagrams, PSBT inputs and outputs, and test custom transaction plans.

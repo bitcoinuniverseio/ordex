@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { FeedbackWidget } from '../../components/feedback/FeedbackWidget.jsx';
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 ---
 
 <BaseLayout
@@ -17,7 +18,7 @@ import { FeedbackWidget } from '../../components/feedback/FeedbackWidget.jsx';
     </div>
 
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem;">
-      <a href="/build/wizards" class="panel" style="text-decoration: none; color: inherit;">
+      <a href={`${base}/build/wizards`} class="panel" style="text-decoration: none; color: inherit;">
         <div style="font-size: 2rem; margin-bottom: 0.5rem;">🧙‍♂️</div>
         <h2 style="margin: 0 0 0.25rem 0; font-size: 1.2rem; color: var(--color-brand);">Guided Workflows (12 Wizards)</h2>
         <p style="margin: 0; font-size: 0.85rem; color: var(--color-text-secondary); line-height: 1.4;">
@@ -25,7 +26,7 @@ import { FeedbackWidget } from '../../components/feedback/FeedbackWidget.jsx';
         </p>
       </a>
 
-      <a href="/build/recipes" class="panel" style="text-decoration: none; color: inherit;">
+      <a href={`${base}/build/recipes`} class="panel" style="text-decoration: none; color: inherit;">
         <div style="font-size: 2rem; margin-bottom: 0.5rem;">📋</div>
         <h2 style="margin: 0 0 0.25rem 0; font-size: 1.2rem; color: var(--color-focus);">Operational Recipes</h2>
         <p style="margin: 0; font-size: 0.85rem; color: var(--color-text-secondary); line-height: 1.4;">
@@ -33,7 +34,7 @@ import { FeedbackWidget } from '../../components/feedback/FeedbackWidget.jsx';
         </p>
       </a>
 
-      <a href="/build/playground" class="panel" style="text-decoration: none; color: inherit;">
+      <a href={`${base}/build/playground`} class="panel" style="text-decoration: none; color: inherit;">
         <div style="font-size: 2rem; margin-bottom: 0.5rem;">🚀</div>
         <h2 style="margin: 0 0 0.25rem 0; font-size: 1.2rem; color: var(--color-success);">API & Event Playground</h2>
         <p style="margin: 0; font-size: 0.85rem; color: var(--color-text-secondary); line-height: 1.4;">
@@ -41,7 +42,7 @@ import { FeedbackWidget } from '../../components/feedback/FeedbackWidget.jsx';
         </p>
       </a>
 
-      <a href="/kits" class="panel" style="text-decoration: none; color: inherit;">
+      <a href={`${base}/kits`} class="panel" style="text-decoration: none; color: inherit;">
         <div style="font-size: 2rem; margin-bottom: 0.5rem;">📦</div>
         <h2 style="margin: 0 0 0.25rem 0; font-size: 1.2rem; color: var(--color-brand);">Integration Kit Generator</h2>
         <p style="margin: 0; font-size: 0.85rem; color: var(--color-text-secondary); line-height: 1.4;">

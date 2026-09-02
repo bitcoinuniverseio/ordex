@@ -1,15 +1,7 @@
 import { h } from 'preact';
 import { useState } from 'preact/hooks';
 import corpusData from '../../data/corpus.json';
-
-function resolveUrl(url) {
-  if (!url) return '#';
-  if (url.startsWith('http://') || url.startsWith('https://')) return url;
-  if (typeof window !== 'undefined' && window.location.pathname.startsWith('/ordex')) {
-    if (url.startsWith('/') && !url.startsWith('/ordex')) return `/ordex${url}`;
-  }
-  return url;
-}
+import { resolveUrl } from '../../lib/base-url.js';
 import { TruthLabel } from '../shell/TruthLabel.jsx';
 
 export function AskOrdex({ pageContext = '' }) {

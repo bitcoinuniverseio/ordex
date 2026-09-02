@@ -25,3 +25,10 @@ test('guided experience routes exist with accessible landmarks and headings', as
     assert.ok(html.includes('<h1'), `${r} missing top-level h1 heading`);
   }
 });
+
+test('all routes strictly use /ordex/ base path and have zero dead links', async () => {
+  const { execSync } = await import('node:child_process');
+  assert.doesNotThrow(() => {
+    execSync('node scripts/check-links.mjs', { cwd: root, stdio: 'pipe' });
+  }, 'check-links.mjs must pass with zero errors');
+});

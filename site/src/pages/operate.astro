@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { FeedbackWidget } from '../components/feedback/FeedbackWidget.jsx';
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 ---
 
 <BaseLayout
@@ -34,10 +35,10 @@ import { FeedbackWidget } from '../components/feedback/FeedbackWidget.jsx';
           <li>Digest binding: signed result must match the approved plan.</li>
         </ul>
         <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
-          <a href="/build/wizards#plan-safeops" class="btn btn-secondary" style="font-size: 0.8rem;">
+          <a href={`${base}/build/wizards#plan-safeops`} class="btn btn-secondary" style="font-size: 0.8rem;">
             Run SafeOps Wizard →
           </a>
-          <a href="/lab?family=safeops" class="btn btn-outline" style="font-size: 0.8rem;">
+          <a href={`${base}/lab?family=safeops`} class="btn btn-outline" style="font-size: 0.8rem;">
             Test SafeOps in Lab 🔬
           </a>
         </div>
@@ -58,10 +59,10 @@ import { FeedbackWidget } from '../components/feedback/FeedbackWidget.jsx';
           <li>Two-sided closing signatures enforcing atomic execution.</li>
         </ul>
         <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
-          <a href="/build/wizards#atomic-swap" class="btn btn-secondary" style="font-size: 0.8rem;">
+          <a href={`${base}/build/wizards#atomic-swap`} class="btn btn-secondary" style="font-size: 0.8rem;">
             Create Swap Intent →
           </a>
-          <a href="/lab?family=swaps" class="btn btn-outline" style="font-size: 0.8rem;">
+          <a href={`${base}/lab?family=swaps`} class="btn btn-outline" style="font-size: 0.8rem;">
             Test Swaps in Lab 🔬
           </a>
         </div>
@@ -82,10 +83,10 @@ import { FeedbackWidget } from '../components/feedback/FeedbackWidget.jsx';
           <li>On-chain creator-signed revocation support.</li>
         </ul>
         <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
-          <a href="/build/wizards#collection-manifest" class="btn btn-secondary" style="font-size: 0.8rem;">
+          <a href={`${base}/build/wizards#collection-manifest`} class="btn btn-secondary" style="font-size: 0.8rem;">
             Create Manifest →
           </a>
-          <a href="/lab?family=collection-manifest" class="btn btn-outline" style="font-size: 0.8rem;">
+          <a href={`${base}/lab?family=collection-manifest`} class="btn btn-outline" style="font-size: 0.8rem;">
             Test Proofs in Lab 🔬
           </a>
         </div>
@@ -106,10 +107,10 @@ import { FeedbackWidget } from '../components/feedback/FeedbackWidget.jsx';
           <li>Sat-flow preservation for Counterparty attached balances.</li>
         </ul>
         <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
-          <a href="/build/wizards#cold-signing" class="btn btn-secondary" style="font-size: 0.8rem;">
+          <a href={`${base}/build/wizards#cold-signing`} class="btn btn-secondary" style="font-size: 0.8rem;">
             Cold Signing Wizard →
           </a>
-          <a href="/lab?family=offline-signing" class="btn btn-outline" style="font-size: 0.8rem;">
+          <a href={`${base}/lab?family=offline-signing`} class="btn btn-outline" style="font-size: 0.8rem;">
             Inspect Manifest 🔬
           </a>
         </div>
