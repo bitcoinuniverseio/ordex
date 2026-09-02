@@ -422,6 +422,7 @@ export function verifySafeOpsPlan(plan: unknown): SafeOpsPlanVerdict {
 
 export type SafeOpsSignedResultRefusalCode =
   | 'MALFORMED_SIGNED_RESULT'
+  | 'SCHEMA_UNSUPPORTED'
   | 'PLAN_DIGEST_MISMATCH'
   | 'INPUT_SET_CHANGED'
   | 'INPUT_ORDER_CHANGED'
