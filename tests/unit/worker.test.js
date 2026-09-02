@@ -44,3 +44,27 @@ test('D1 database migration SQL exists and creates required tables', async () =>
   assert.ok(sql.includes('CREATE TABLE IF NOT EXISTS docs_events_raw'));
   assert.ok(sql.includes('CREATE TABLE IF NOT EXISTS docs_events_hourly'));
 });
+
+test('worker implements streamable /mcp endpoint adhering to 2026-07-28 spec', async () => {
+  const workerModule = await import('../../worker/index.js');
+  const worker = workerModule.default;
+  const req = new Request('http://localhost/mcp', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'mcp-protocol-version': '2026-07-28'
+    },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'tools/list'
+    })
+  });
+  const res = await worker.fetch(req, {});
+  assert.equal(res.status, 200);
+  const data = await res.json();
+  assert.equal(data.jsonrpc, '2.0');
+  assert.ok(data.result);
+  assert.equal(data.result.tools.length, 10);
+});
+
