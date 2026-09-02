@@ -45,14 +45,14 @@ jobs:
       - name: Audit root dependencies
         run: npm audit --audit-level=low
 
+      - name: Build the documentation site
+        run: npm run build
+
       - name: Run the reference verifiers and unit tests
         run: npm test
 
       - name: Run the conformance CLI runner
         run: npm run conformance
-
-      - name: Build the documentation site
-        run: npm run build
 
       # dist/ is a build output and stays untracked. The build itself fails
       # loudly on an error, so the check here is that everything the deploy
