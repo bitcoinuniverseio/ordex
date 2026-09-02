@@ -524,6 +524,878 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/ordex/safeops/plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Build a complete SafeOps plan
+         * @description Resolves every selected outpoint against the protocol authorities, builds the deterministic output map and sat flow, and returns the full plan with its digest before any wallet opens. Unexamined inputs fail closed.
+         */
+        post: operations["createSafeOpsPlan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ordex/safeops/plans/{planId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * One stored SafeOps plan
+         * @description Returns the plan exactly as it was built, with its current actionability against the live chain.
+         */
+        get: operations["getSafeOpsPlan"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ordex/safeops/plans/{planId}/shield": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Refresh the execution shield for a plan
+         * @description Re-reads every input, protocol ownership, mempool conflicts, and fee estimates, then either confirms the plan is still fresh or invalidates the signing session and names exactly what changed.
+         */
+        post: operations["refreshExecutionShield"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ordex/safeops/broadcast": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Relay a fully signed transaction after an explicit user broadcast action
+         * @description Verifies the signed result against its plan or manifest, runs Bitcoin Core preflight, and only then relays. The gateway never composes a signature and never broadcasts on its own initiative.
+         */
+        post: operations["broadcastSafeOpsTransaction"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ordex/safeops/operations/{txid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Monitor one broadcast operation
+         * @description Mempool state, conflicts, confirmations, replacement, and reorg reconciliation for one transaction, with the events that recorded every transition.
+         */
+        get: operations["getSafeOpsOperation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ordex/safeops/rbf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Plan an RBF replacement of one of your transactions
+         * @description Offered only when node policy allows the replacement and the user controls every required input. Asset outputs, third party payments, and seller outputs are preserved; the extra fee comes only from user owned cardinal value.
+         */
+        post: operations["planSafeOpsRbf"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ordex/safeops/cpfp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Plan a CPFP child for one of your stuck transactions
+         * @description Offered only when the user controls a spendable output whose spending moves no tracked asset. The child fee is computed from the combined package fee rate under node package policy.
+         */
+        post: operations["planSafeOpsCpfp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ordex/swaps/intents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List live public swap intents
+         * @description Keyset pagination by creation. Every intent is returned with the gateway independent resolution of its committed outpoints.
+         */
+        get: operations["listSwapIntents"];
+        put?: never;
+        /**
+         * Publish a signed swap intent
+         * @description Verifies the BIP-322 maker proof, the intent digest, and the current state of every committed outpoint before the intent goes live. Private intents are never listed publicly.
+         */
+        post: operations["publishSwapIntent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ordex/swaps/intents/{intentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * One swap intent with its live outpoint state
+         * @description The taker view independently resolves every asset claim against the chain authorities instead of repeating the maker text.
+         */
+        get: operations["getSwapIntent"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ordex/swaps/intents/{intentId}/withdraw": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Withdraw a swap intent
+         * @description Only the maker may withdraw, proven by a fresh BIP-322 signature over the withdrawal request.
+         */
+        post: operations["withdrawSwapIntent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ordex/swaps/intents/{intentId}/acceptance-plan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Build the one transaction acceptance plan for a taker
+         * @description Revalidates the maker outpoints, resolves the taker selection, builds exact input order for sat flow safety, assigns fees only to permitted cardinal value, and refuses any combination that cannot settle in one transaction.
+         */
+        post: operations["buildSwapAcceptancePlan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ordex/swaps/sessions/{sessionId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * One swap session with its signature progress
+         * @description Shows which party has signed, the current outpoint and conflict state, and whether the session is ready for preflight or broadcast.
+         */
+        get: operations["getSwapSession"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ordex/swaps/sessions/{sessionId}/signatures": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit one party signed PSBT
+         * @description The submitted PSBT is compared against the acceptance plan. An input added, removed, reordered, or re signed outside the policy refuses the submission.
+         */
+        post: operations["submitSwapSignature"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ordex/swaps/sessions/{sessionId}/preflight": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run node preflight on the fully signed swap
+         * @description Only a transaction carrying every required signature reaches this route. Bitcoin Core testmempoolaccept decides.
+         */
+        post: operations["preflightSwapSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ordex/swaps/sessions/{sessionId}/broadcast": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Relay the fully signed swap after the explicit user broadcast action
+         * @description Both parties assets move in one transaction or not at all. The relay happens only after the user action and a passing preflight.
+         */
+        post: operations["broadcastSwapSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ordex/swaps/private": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the caller stored private swap envelopes
+         * @description Returns ciphertext envelopes only. Decryption happens client side with the key from the URL fragment.
+         */
+        get: operations["listPrivateSwaps"];
+        put?: never;
+        /**
+         * Store an encrypted private swap link
+         * @description The payload is encrypted client side. The server stores ciphertext and routing metadata only, never the key, never the terms, never a log of either.
+         */
+        post: operations["storePrivateSwap"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ordex/swaps/private/{privateId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Fetch one encrypted private swap envelope
+         * @description Returns the ciphertext. The decryption key lives in the URL fragment and is never sent to the server.
+         */
+        get: operations["getPrivateSwap"];
+        put?: never;
+        post?: never;
+        /**
+         * Destroy an encrypted private swap envelope
+         * @description Client side destruction: the ciphertext is removed and the envelope is marked destroyed.
+         */
+        delete: operations["destroyPrivateSwap"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ordex/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Keyset paginated event history
+         * @description Replay by cursor. Seven days minimum retention. Reversals appear as reverted events naming the event they reverse.
+         */
+        get: operations["listOrdexEvents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ordex/events/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Server sent event stream of live events
+         * @description Filter by network, event type, aggregate, protocol, or collection. Last-Event-ID resumption, heartbeats, bounded buffers, and slow consumer disconnection with a resumable cursor. The same envelopes are available over WebSocket at the streaming gateway.
+         */
+        get: operations["streamOrdexEvents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ordex/events/checkpoint": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The current stream sequence and lag
+         * @description Lets a consumer decide whether it is behind and from which cursor to resume without gaps.
+         */
+        get: operations["getEventStreamCheckpoint"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ordex/webhooks/subscriptions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List your webhook subscriptions
+         * @description Bound to the authenticated developer key.
+         */
+        get: operations["listWebhookSubscriptions"];
+        put?: never;
+        /**
+         * Create a webhook subscription
+         * @description Returns the signing secret exactly once. The endpoint stays PENDING_VERIFICATION until it answers the challenge.
+         */
+        post: operations["createWebhookSubscription"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ordex/webhooks/subscriptions/{subscriptionId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * One webhook subscription
+         * @description Never returns the signing secret.
+         */
+        get: operations["getWebhookSubscription"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a webhook subscription
+         * @description Pending deliveries drain before removal.
+         */
+        delete: operations["deleteWebhookSubscription"];
+        options?: never;
+        head?: never;
+        /**
+         * Update, pause, or resume a subscription
+         * @description URL changes re-enter verification.
+         */
+        patch: operations["updateWebhookSubscription"];
+        trace?: never;
+    };
+    "/api/ordex/webhooks/subscriptions/{subscriptionId}/rotate-secret": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rotate the signing secret
+         * @description The old secret keeps verifying during a bounded overlap window so rotation never drops a delivery.
+         */
+        post: operations["rotateWebhookSecret"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ordex/webhooks/subscriptions/{subscriptionId}/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Answer the endpoint challenge
+         * @description The endpoint must echo the challenge value delivered to it before the subscription activates.
+         */
+        post: operations["verifyWebhookEndpoint"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ordex/webhooks/subscriptions/{subscriptionId}/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send a signed test delivery
+         * @description A ping envelope signed exactly like a real delivery.
+         */
+        post: operations["testWebhookSubscription"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ordex/webhooks/deliveries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Delivery history with attempt detail
+         * @description Keyset paginated, filterable by subscription and state.
+         */
+        get: operations["listWebhookDeliveries"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ordex/webhooks/deliveries/{deliveryId}/replay": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Replay one delivery
+         * @description Re-signs the original body and re-enters the retry schedule.
+         */
+        post: operations["replayWebhookDelivery"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ordex/collections/manifests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List published manifests
+         * @description Keyset paginated, filterable by collection id, network, and status.
+         */
+        get: operations["listCollectionManifests"];
+        put?: never;
+        /**
+         * Publish a creator signed collection manifest
+         * @description The manifest is verified structurally, the creator signature address is bound, and the membership root is recomputed before publication. A published manifest is immutable; corrections are new versions.
+         */
+        post: operations["publishCollectionManifest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ordex/collections/manifests/{manifestId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * One collection manifest
+         * @description Superseded and revoked versions stay visible; history is never deleted.
+         */
+        get: operations["getCollectionManifest"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ordex/collections/manifests/{manifestId}/proofs/{memberIdentity}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A membership proof for one member
+         * @description The SDK verifies the proof offline with nothing but this response.
+         */
+        get: operations["getCollectionMembershipProof"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ordex/collections/manifests/{manifestId}/revisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Supersede or revoke a manifest
+         * @description Both moves are creator signed. A revocation does not delete history.
+         */
+        post: operations["reviseCollectionManifest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ordex/collections/{collectionId}/provenance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The full provenance record of a collection
+         * @description Separate labels for the cryptographic claim, the on chain anchor, Universe curation, third party curation, and community reports.
+         */
+        get: operations["getCollectionProvenance"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ordex/heritage/readiness": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Whether the Counterparty authority currently proves ownership
+         * @description The heritage market fails closed unless the self hosted Counterparty Core is ready, fresh, and on the intended network. There is no public API fallback in production.
+         */
+        get: operations["getHeritageReadiness"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ordex/heritage/assets/{assetId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * One Counterparty asset with its live attachment state
+         * @description Identity is the authoritative numeric asset id plus current ledger state. A ticker or name alone is never an identity.
+         */
+        get: operations["getHeritageAsset"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ordex/heritage/assets/{assetId}/utxos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The UTXOs currently carrying an asset
+         * @description Each record binds quantity, outpoint, and the authority checkpoints it was read at.
+         */
+        get: operations["listHeritageAssetUtxos"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ordex/heritage/addresses/{address}/assets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The Counterparty assets of one address
+         * @description Address balances and their current attached outpoints.
+         */
+        get: operations["listHeritageAddressAssets"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ordex/heritage/attach": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Compose a user signed attach transaction
+         * @description Returns the unsigned PSBT, the exact XCP gas and miner fee, and everything that would travel. The user signs with their own wallet; the server never holds the asset, XCP, or BTC.
+         */
+        post: operations["buildHeritageAttach"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ordex/heritage/detach": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Compose a user signed detach transaction
+         * @description The same guarantees as attach, in reverse.
+         */
+        post: operations["buildHeritageDetach"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ordex/signing/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List your signing sessions
+         * @description Sessions of the authenticated account, newest first.
+         */
+        get: operations["listSigningSessions"];
+        put?: never;
+        /**
+         * Open an offline signing session
+         * @description Creates the expected transaction manifest for one prepared transaction and returns it for review, export, or QR animation.
+         */
+        post: operations["openSigningSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ordex/signing/sessions/{sessionId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * One signing session
+         * @description Includes the manifest, the imported signed result, and any rejection with its stable code.
+         */
+        get: operations["getSigningSession"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ordex/signing/sessions/{sessionId}/signed-result": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import a signed result for verification
+         * @description The signed result is compared against the manifest. Any change to the unsigned transaction, its outputs, the fee bound, or the asset destinations refuses the import with a stable code.
+         */
+        post: operations["submitSignedResult"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ordex/signing/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Verify a manifest and signed result pair without a session
+         * @description The same checks the session flow runs, usable directly by SDK consumers and the reference conformance tests.
+         */
+        post: operations["verifySigningArtifacts"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1179,6 +2051,635 @@ export interface components {
             code?: string;
         } & {
             [key: string]: unknown;
+        };
+        /** @description The chain state a document was built against. A document built against a stale checkpoint is refused. */
+        Checkpoint: {
+            height: number;
+            blockHash: string;
+        };
+        /** @description A normalized transaction: exact inputs and outputs in order. Parsers convert raw bytes into this shape before verification. */
+        TxDescription: {
+            inputs: components["schemas"]["TxInputDescription"][];
+            outputs: components["schemas"]["TxOutputDescription"][];
+        };
+        TxInputDescription: {
+            txid: string;
+            vout: number;
+            valueSats: components["schemas"]["AtomicSats"];
+            signaturePresent?: boolean;
+            sighashType?: string;
+        };
+        TxOutputDescription: {
+            scriptHex: string;
+            valueSats: components["schemas"]["AtomicSats"];
+        };
+        /**
+         * @description The operation the desk will execute.
+         * @enum {string}
+         */
+        SafeOpsOperationKind: "BTC_BATCH_SEND" | "ORDINAL_BATCH_TRANSFER" | "RUNE_BATCH_TRANSFER" | "CARDINAL_CONSOLIDATION" | "SPLIT_AND_POSTAGE" | "RECOVERY" | "RBF_REPLACE" | "CPFP_CHILD";
+        /** @description One exact inventory for one outpoint, resolved from the protocol authorities. Unexamined inputs fail closed. */
+        SafeOpsInventory: {
+            examined: boolean;
+            confirmed?: boolean;
+            inscriptions?: {
+                [key: string]: unknown;
+            }[];
+            runeAllocations?: {
+                [key: string]: unknown;
+            }[];
+            counterpartyAssets?: {
+                [key: string]: unknown;
+            }[];
+            rareSatRanges?: {
+                [key: string]: unknown;
+            }[];
+            unknownClaims?: string[];
+        };
+        SafeOpsPlanInput: {
+            outpoint: components["schemas"]["Outpoint"];
+            valueSats: components["schemas"]["AtomicSats"];
+            inventory: components["schemas"]["SafeOpsInventory"];
+        };
+        SafeOpsPlanOutput: {
+            scriptHex: string;
+            valueSats: components["schemas"]["AtomicSats"];
+            /** @enum {string} */
+            role: "recipient" | "change" | "preserve";
+            explanation?: string;
+        };
+        SafeOpsAssetTransition: {
+            /** @enum {string} */
+            assetType: "ORDINAL" | "RARE_SAT" | "RUNE" | "COUNTERPARTY";
+            assetId: string;
+            fromInput: number;
+            toOutput: number;
+        };
+        /** @description The complete, verifiable plan for one SafeOps operation. Verify it with the SDK before any wallet opens. */
+        SafeOpsPlan: {
+            /** @constant */
+            schema: "ordex.safeops-plan/v1";
+            protocolVersion: string;
+            network: components["schemas"]["Network"];
+            operationKind: components["schemas"]["SafeOpsOperationKind"];
+            createdAtHeight?: number;
+            expiryHeight: number;
+            checkpoint: components["schemas"]["Checkpoint"];
+            inputs: components["schemas"]["SafeOpsPlanInput"][];
+            outputs: components["schemas"]["SafeOpsPlanOutput"][];
+            assetTransitions: components["schemas"]["SafeOpsAssetTransition"][];
+            fee: {
+                feeSats: components["schemas"]["AtomicSats"];
+                maxFeeSats: components["schemas"]["AtomicSats"];
+                feeRateSatsPerVb?: components["schemas"]["AtomicSats"];
+            };
+            signing: {
+                requiredIndexes: number[];
+                sighashType?: string;
+            };
+            findings: {
+                [key: string]: unknown;
+            }[];
+            digest: string;
+        };
+        SafeOpsPlanRequest: {
+            operationKind: components["schemas"]["SafeOpsOperationKind"];
+            network?: components["schemas"]["Network"];
+            recipients?: {
+                address: string;
+                valueSats: components["schemas"]["AtomicSats"];
+                assetType?: string;
+                assetId?: string;
+            }[];
+            inputs: components["schemas"]["Outpoint"][];
+            feeRateSatsPerVb?: components["schemas"]["AtomicSats"];
+            expiryBlocks?: number;
+        };
+        SafeOpsPlanResult: {
+            plan: components["schemas"]["SafeOpsPlan"];
+            verification: components["schemas"]["VerificationView"];
+            /** @description When one transaction cannot carry the operation, the deterministic standard partitions. */
+            partition?: {
+                transactions?: {
+                    [key: string]: unknown;
+                }[];
+            };
+        };
+        /** @description The signed result to reverify immediately before broadcast, with the digest the user agreed to. */
+        ShieldRequest: {
+            planDigest: string;
+            signedResult?: components["schemas"]["SafeOpsSignedResult"];
+        };
+        ShieldResult: {
+            /** @description True when every input, protocol claim, and fee estimate still matches the plan. */
+            fresh: boolean;
+            verdict: components["schemas"]["VerificationView"];
+            changed?: string[];
+            replacementRequired?: boolean;
+            conflictingSpend?: components["schemas"]["Outpoint"];
+            rbfEligible?: boolean;
+            cpfpEligible?: boolean;
+        };
+        SafeOpsSignedResult: {
+            /** @constant */
+            schema: "ordex.safeops-signed-result/v1";
+            planDigest: string;
+            tx: components["schemas"]["TxDescription"];
+        };
+        /** @description A fully signed transaction the user explicitly asked to relay. The gateway verifies, preflights, then relays. */
+        BroadcastRequest: {
+            /** @description The complete signed transaction, hex encoded. */
+            signedTx: string;
+            artifactDigest?: string;
+            /** @enum {string} */
+            context?: "safeops" | "swap" | "order" | "offer" | "heritage";
+        };
+        BroadcastReceipt: {
+            txid: string;
+            accepted: boolean;
+            refusalCode?: string;
+            reason?: string;
+            checkpoint?: components["schemas"]["Checkpoint"];
+        };
+        /** @description Post broadcast monitoring for one operation: mempool state, conflicts, confirmations, and reorg reconciliation. */
+        OperationStatus: {
+            txid: string;
+            /** @enum {string} */
+            state: "MEMPOOL" | "CONFIRMED" | "DROPPED" | "REPLACED" | "REORGED";
+            confirmations?: number;
+            replacedByTxid?: string;
+            conflicts?: string[];
+            checkpoint: components["schemas"]["Checkpoint"];
+            events?: components["schemas"]["OrdexEvent"][];
+        };
+        SafeOpsRbfRequest: {
+            txid: string;
+            newFeeRateSatsPerVb?: components["schemas"]["AtomicSats"];
+        };
+        SafeOpsRbfResult: {
+            plan: components["schemas"]["SafeOpsPlan"];
+            oldFeeSats?: components["schemas"]["AtomicSats"];
+            newFeeSats?: components["schemas"]["AtomicSats"];
+            incrementalFeeSats?: components["schemas"]["AtomicSats"];
+            allowed?: boolean;
+            refusalCode?: string;
+        };
+        SafeOpsCpfpRequest: {
+            parentTxid: string;
+            targetFeeRateSatsPerVb?: components["schemas"]["AtomicSats"];
+        };
+        SafeOpsCpfpResult: {
+            plan: components["schemas"]["SafeOpsPlan"];
+            packageFeeRateSatsPerVb?: components["schemas"]["AtomicSats"];
+            allowed?: boolean;
+            refusalCode?: string;
+        };
+        SwapAsset: {
+            /** @enum {string} */
+            assetType: "BTC" | "ORDINAL" | "RARE_SAT" | "RUNE" | "COUNTERPARTY";
+            assetId?: string;
+            inscriptionId?: string;
+            quantitySats?: components["schemas"]["AtomicSats"];
+        };
+        /** @description A BIP-322 proof that the maker controls the intent address. The gateway verifies the signature before publishing. */
+        MakerIdentityProof: {
+            /** @constant */
+            kind: "bip322";
+            address: string;
+            signature: string;
+        };
+        /** @description A signed statement of what the maker gives and requires. Verify with the SDK, then resolve every outpoint independently. */
+        SwapIntentDocument: {
+            /** @constant */
+            schema: "ordex.swap-intent/v1";
+            protocolVersion: string;
+            network: components["schemas"]["Network"];
+            /** @enum {string} */
+            visibility: "PUBLIC" | "PRIVATE";
+            makerReceiveScriptHex: string;
+            gives: {
+                assetType: string;
+                outpoint: components["schemas"]["Outpoint"];
+                quantitySats: components["schemas"]["AtomicSats"];
+                assetId?: string;
+            }[];
+            requires: {
+                assetType: string;
+                assetId?: string;
+                inscriptionId?: string;
+                minQuantitySats: components["schemas"]["AtomicSats"];
+            }[];
+            maxMakerFeeSats: components["schemas"]["AtomicSats"];
+            expiryHeight: number;
+            nonce: string;
+            createdAtHeight?: number;
+            checkpoint: components["schemas"]["Checkpoint"];
+            takerBinding?: {
+                address?: string;
+            };
+            adapterVersions: {
+                [key: string]: unknown;
+            }[];
+            makerIdentityProof: components["schemas"]["MakerIdentityProof"];
+            digest: string;
+        };
+        /** @enum {string} */
+        SwapIntentState: "DRAFT" | "LIVE" | "PRIVATE" | "MATCHING" | "AWAITING_MAKER_SIGNATURE" | "AWAITING_TAKER_SIGNATURE" | "READY_FOR_PREFLIGHT" | "READY_FOR_BROADCAST" | "MEMPOOL" | "CONFIRMED" | "EXPIRED" | "WITHDRAWN" | "CONFLICTED" | "INVALIDATED" | "REORGED";
+        SwapIntentView: {
+            intent: components["schemas"]["SwapIntentDocument"];
+            state: components["schemas"]["SwapIntentState"];
+            /** @enum {string} */
+            actionability: "REVIEW_ONLY" | "HANDOFF_READY" | "BLOCKED";
+            freshness?: {
+                [key: string]: unknown;
+            };
+            outpointStates?: {
+                [key: string]: unknown;
+            }[];
+            checkpoint: components["schemas"]["Checkpoint"];
+        };
+        SwapIntentPage: {
+            items: components["schemas"]["SwapIntentView"][];
+            nextCursor: string | null;
+        };
+        SwapIntentPublishRequest: {
+            intent: components["schemas"]["SwapIntentDocument"];
+        };
+        SwapAcceptancePlanRequest: {
+            takerInputs: components["schemas"]["Outpoint"][];
+            takerReceiveScriptHex?: string;
+            maxTakerFeeSats?: components["schemas"]["AtomicSats"];
+        };
+        SwapAcceptancePlanDocument: {
+            /** @constant */
+            schema: "ordex.swap-acceptance-plan/v1";
+            intentDigest: string;
+            network: components["schemas"]["Network"];
+            tx: {
+                inputs: {
+                    outpoint: components["schemas"]["Outpoint"];
+                    /** @enum {string} */
+                    party: "maker" | "taker";
+                    valueSats: components["schemas"]["AtomicSats"];
+                    assets?: components["schemas"]["SwapAsset"][];
+                }[];
+                outputs: {
+                    scriptHex: string;
+                    valueSats: components["schemas"]["AtomicSats"];
+                    /** @enum {string} */
+                    role: "makerConsideration" | "takerAsset" | "makerChange" | "takerChange" | "preserve";
+                }[];
+            };
+            assetTransitions: {
+                [key: string]: unknown;
+            }[];
+            fee: {
+                feeSats: components["schemas"]["AtomicSats"];
+                makerFeeSats: components["schemas"]["AtomicSats"];
+                takerFeeSats: components["schemas"]["AtomicSats"];
+            };
+            signing: {
+                /** @constant */
+                sighashPolicy: "ALL";
+            };
+        };
+        SwapSession: {
+            sessionId: string;
+            intent: components["schemas"]["SwapIntentDocument"];
+            acceptancePlan?: components["schemas"]["SwapAcceptancePlanDocument"];
+            state: components["schemas"]["SwapIntentState"];
+            makerSigned?: boolean;
+            takerSigned?: boolean;
+            preflight?: components["schemas"]["VerificationView"];
+            /** Format: date-time */
+            updatedAt: string;
+            /** @description The current unsigned or partially signed PSBT, base64. */
+            psbt?: string;
+        };
+        SwapSignatureSubmission: {
+            /** @description The PSBT after this party signed, base64. */
+            psbt: string;
+            /** @enum {string} */
+            party?: "maker" | "taker";
+        };
+        /** @description Encrypted private swap storage. The server only ever sees ciphertext and routing metadata. */
+        PrivateSwapStoreRequest: {
+            /** @description AEAD ciphertext of the intent, encrypted client side. */
+            ciphertext: string;
+            /** @constant */
+            contentVersion?: "ordex.private-swap/v1";
+            /** Format: date-time */
+            expiresAt: string;
+        };
+        PrivateSwapEnvelope: {
+            privateId: string;
+            ciphertext: string;
+            /** Format: date-time */
+            expiresAt: string;
+            destroyed?: boolean;
+        };
+        /** @description One immutable event envelope. Reversals are explicit reverted events that name the event they reverse. */
+        OrdexEvent: {
+            /** Format: uuid */
+            id: string;
+            /** @example ordex.order.published */
+            type: string;
+            /** @constant */
+            schemaVersion: "1";
+            network: components["schemas"]["Network"];
+            /** @description Monotonic per network. Replay resumes from this key. */
+            sequence: number;
+            aggregate: {
+                type: string;
+                id: string;
+                version: number;
+            };
+            /** Format: date-time */
+            observedAt: string;
+            checkpoint: components["schemas"]["Checkpoint"];
+            /** @enum {string} */
+            status: "canonical" | "reverted";
+            /** Format: uuid */
+            revertedEventId?: string;
+            payload: {
+                [key: string]: unknown;
+            };
+            artifactDigests?: string[];
+            traceId: string;
+        };
+        EventPage: {
+            items: components["schemas"]["OrdexEvent"][];
+            nextCursor: string | null;
+        };
+        EventStreamCheckpoint: {
+            network: components["schemas"]["Network"];
+            sequence: number;
+            chainHeight: number;
+            lagEvents?: number;
+        };
+        WebhookSubscription: {
+            subscriptionId: string;
+            /** Format: uri */
+            url: string;
+            eventTypes: string[];
+            network?: components["schemas"]["Network"];
+            /** @enum {string} */
+            status: "PENDING_VERIFICATION" | "ACTIVE" | "PAUSED" | "FAILED";
+            /** @description The last four characters only. The full secret is shown once at creation. */
+            secretHint?: string;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        WebhookSubscriptionCreateRequest: {
+            /** Format: uri */
+            url: string;
+            eventTypes: string[];
+            network?: components["schemas"]["Network"];
+        };
+        WebhookSubscriptionUpdateRequest: {
+            /** Format: uri */
+            url?: string;
+            eventTypes?: string[];
+            paused?: boolean;
+        };
+        WebhookSecretReveal: {
+            subscriptionId: string;
+            /** @description Shown exactly once. */
+            secret: string;
+        };
+        WebhookDelivery: {
+            deliveryId: string;
+            subscriptionId: string;
+            eventId: string;
+            attempt: number;
+            /** @enum {string} */
+            state: "PENDING" | "DELIVERED" | "RETRYING" | "DEAD";
+            responseStatus?: number;
+            lastError?: string;
+            /** Format: date-time */
+            nextAttemptAt?: string | null;
+            /** @description The exact X-Ordex-Signature value that was or will be sent. */
+            signatureHeader?: string;
+        };
+        WebhookDeliveryPage: {
+            items: components["schemas"]["WebhookDelivery"][];
+            nextCursor: string | null;
+        };
+        /** @description A creator-signed collection manifest. A creator declaration of rights is metadata, never a legal guarantee. */
+        CollectionManifestDocument: {
+            /** @constant */
+            schema: "ordex.collection-manifest/v1";
+            protocolVersion: string;
+            network: components["schemas"]["Network"];
+            /** @enum {string} */
+            protocol: "ordinals" | "runes" | "stamps" | "counterparty" | "multi";
+            collectionId: string;
+            displayName: string;
+            description?: string;
+            creatorAddress: string;
+            /** @enum {string} */
+            memberIdentityType: "inscriptionId" | "output" | "assetId" | "satpoint";
+            members: string[];
+            membershipRoot: string;
+            metadataSchemaHash?: string;
+            traitSchemaHash?: string;
+            mediaDigests?: string[];
+            supplyStatement: {
+                /** @enum {string} */
+                kind: "FIXED" | "OPEN";
+                declared: string;
+            };
+            parentCollectionId?: string;
+            rightsDeclaration?: string;
+            royaltyDeclaration?: {
+                [key: string]: unknown;
+            };
+            createdAtHeight: number;
+            version: number;
+            previousManifestDigest?: string;
+            supersededManifestDigest?: string;
+            anchor?: {
+                txid?: string;
+                inscriptionId?: string;
+            };
+            /** @enum {string} */
+            status: "DRAFT" | "CREATOR_SIGNED" | "ANCHOR_PENDING" | "ANCHORED" | "SUPERSEDED" | "REVOKED" | "SIGNATURE_INVALID" | "MEMBERSHIP_INVALID" | "ANCHOR_CONFLICTED" | "REORGED";
+            creatorSignature: components["schemas"]["MakerIdentityProof"];
+            digest: string;
+        };
+        CollectionManifestPage: {
+            items: components["schemas"]["CollectionManifestDocument"][];
+            nextCursor: string | null;
+        };
+        /** @description Everything needed to prove membership offline: the manifest, the member identity, and the Merkle proof. */
+        MembershipProofResponse: {
+            manifest: components["schemas"]["CollectionManifestDocument"];
+            memberIdentity: string;
+            proof: {
+                sibling: string;
+                /** @enum {string} */
+                position: "left" | "right";
+            }[];
+            valid: boolean;
+        };
+        CollectionRevisionRequest: {
+            /** @enum {string} */
+            kind: "SUPERSEDE" | "REVOKE";
+            /** @description The signed new manifest or the signed revocation. */
+            document: {
+                [key: string]: unknown;
+            };
+        };
+        CollectionProvenance: {
+            collectionId: string;
+            /** @description Separate claims. A badge never hides which claim was proven. */
+            labels: {
+                /** @enum {string} */
+                cryptographic?: "NONE" | "CREATOR_SIGNED" | "INVALID";
+                /** @enum {string} */
+                onChainAnchor?: "NONE" | "PENDING" | "ANCHORED" | "CONFLICTED" | "REORGED";
+                /** @enum {string} */
+                universeCuration?: "NONE" | "FEATURED";
+                /** @enum {string} */
+                thirdPartyCuration?: "NONE" | "LISTED";
+                communityReports?: number;
+            };
+            versions: components["schemas"]["CollectionManifestDocument"][];
+        };
+        /** @description Whether the self hosted Counterparty authority currently proves ownership. The market fails closed when it does not. */
+        HeritageReadiness: {
+            ready: boolean;
+            network: components["schemas"]["Network"];
+            serverReady?: boolean;
+            checkpoint: components["schemas"]["Checkpoint"];
+            ledgerHash?: string;
+            lagBlocks?: number;
+            reason?: string;
+        };
+        HeritageAttachmentRecord: {
+            /** @constant */
+            schema: "ordex.counterparty-utxo-asset/v1";
+            network: components["schemas"]["Network"];
+            asset: {
+                name: string;
+                assetId: string;
+                divisible: boolean;
+                quantitySats: components["schemas"]["AtomicSats"];
+                issuer?: string;
+            };
+            outpoint: components["schemas"]["Outpoint"];
+            address: string;
+            sourceValueSats: components["schemas"]["AtomicSats"];
+            coTravelingAssets?: {
+                [key: string]: unknown;
+            }[];
+            checkpoint: {
+                height: number;
+                blockHash: string;
+                ledgerHash: string;
+            };
+            authority: {
+                /** @constant */
+                kind: "counterparty-core";
+                ready: boolean;
+            };
+            attached: boolean;
+        };
+        HeritageAsset: {
+            asset: {
+                [key: string]: unknown;
+            };
+            supply: {
+                [key: string]: unknown;
+            };
+            holderCount?: number;
+            attachedUtxos?: components["schemas"]["HeritageAttachmentRecord"][];
+            issuanceHistory?: {
+                [key: string]: unknown;
+            }[];
+            readiness: components["schemas"]["HeritageReadiness"];
+        };
+        HeritageComposeRequest: {
+            address: string;
+            assetName: string;
+            quantitySats: string;
+            /** @description The target UTXO or output the attachment moves to. */
+            destination: string;
+            feeRateSatsPerVb?: components["schemas"]["AtomicSats"];
+        };
+        HeritageComposeResult: {
+            /** @description The unsigned composition for the user wallet to sign. */
+            psbt: string;
+            /** @description What moves, what it costs, and what would also travel. */
+            explanation: {
+                [key: string]: unknown;
+            };
+            xcpGasSats?: components["schemas"]["AtomicSats"];
+            minerFeeSats?: components["schemas"]["AtomicSats"];
+        };
+        /** @description What the signer will see, in human readable and machine verifiable form, before any signature is requested. */
+        ExpectedTransactionManifest: {
+            /** @constant */
+            schema: "ordex.expected-transaction-manifest/v1";
+            network: components["schemas"]["Network"];
+            purpose: string;
+            watchOnly: boolean;
+            account?: {
+                descriptor?: string;
+            };
+            unsignedTx: {
+                inputs: {
+                    txid: string;
+                    vout: number;
+                    valueSats: components["schemas"]["AtomicSats"];
+                    scriptPubKeyHex: string;
+                    controlledByUser: boolean;
+                    sighashType?: string;
+                    explanation: string;
+                }[];
+                outputs: {
+                    scriptHex: string;
+                    valueSats: components["schemas"]["AtomicSats"];
+                    role: string;
+                    explanation: string;
+                    expectedAssets?: {
+                        [key: string]: unknown;
+                    }[];
+                }[];
+            };
+            fee: {
+                feeSats: components["schemas"]["AtomicSats"];
+                maxFeeSats: components["schemas"]["AtomicSats"];
+            };
+            digest: string;
+        };
+        SigningSession: {
+            sessionId: string;
+            manifest: components["schemas"]["ExpectedTransactionManifest"];
+            /** @enum {string} */
+            state: "AWAITING_EXPORT" | "AWAITING_SIGNATURE" | "SIGNED_VERIFIED" | "REJECTED" | "BROADCAST";
+            signedResult?: {
+                [key: string]: unknown;
+            };
+            rejection?: {
+                [key: string]: unknown;
+            };
+        };
+        SignedResultSubmission: {
+            /** @constant */
+            schema: "ordex.offline-signing-session/v1";
+            manifestDigest: string;
+            tx: components["schemas"]["TxDescription"];
+            carriedAssets?: {
+                [key: string]: unknown;
+            }[];
+            unknownCriticalFields?: string[];
+        };
+        SigningVerificationResult: {
+            ok: boolean;
+            code?: string;
+            reason?: string;
+            state?: string;
         };
     };
     responses: {
@@ -2037,6 +3538,1155 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             404: components["responses"]["NotFound"];
             429: components["responses"]["RateLimited"];
+            default: components["responses"]["Error"];
+        };
+    };
+    createSafeOpsPlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The result. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SafeOpsPlanResult"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    getSafeOpsPlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The plan identifier returned at creation. */
+                planId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The result. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SafeOpsPlanResult"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    refreshExecutionShield: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The plan identifier. */
+                planId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The result. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShieldResult"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    broadcastSafeOpsTransaction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The result. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BroadcastReceipt"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    getSafeOpsOperation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The transaction id of the operation. */
+                txid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The result. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OperationStatus"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    planSafeOpsRbf: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The result. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SafeOpsRbfResult"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    planSafeOpsCpfp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The result. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SafeOpsCpfpResult"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    listSwapIntents: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The result. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SwapIntentPage"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    publishSwapIntent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The result. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SwapIntentView"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    getSwapIntent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The intent identifier. */
+                intentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The result. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SwapIntentView"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    withdrawSwapIntent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The intent identifier. */
+                intentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The result. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SwapIntentView"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    buildSwapAcceptancePlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The intent identifier. */
+                intentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The result. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SwapSession"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    getSwapSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The session identifier. */
+                sessionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The result. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SwapSession"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    submitSwapSignature: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The session identifier. */
+                sessionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The result. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SwapSession"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    preflightSwapSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The session identifier. */
+                sessionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The result. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VerificationView"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    broadcastSwapSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The session identifier. */
+                sessionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The result. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BroadcastReceipt"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    listPrivateSwaps: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The result. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrivateSwapEnvelope"][];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    storePrivateSwap: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The result. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrivateSwapEnvelope"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    getPrivateSwap: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The private envelope identifier. */
+                privateId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The result. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrivateSwapEnvelope"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    destroyPrivateSwap: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The private envelope identifier. */
+                privateId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The result. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        destroyed: boolean;
+                    };
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    listOrdexEvents: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The result. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventPage"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    streamOrdexEvents: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description An SSE stream of ordex-event/v1 envelopes with id, event, and data fields. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": string;
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    getEventStreamCheckpoint: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The result. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventStreamCheckpoint"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    listWebhookSubscriptions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The result. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookSubscription"][];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    createWebhookSubscription: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The subscription with its one time secret. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookSubscription"] & {
+                        secret: string;
+                    };
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    getWebhookSubscription: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The subscription identifier. */
+                subscriptionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The result. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookSubscription"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    deleteWebhookSubscription: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The subscription identifier. */
+                subscriptionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The result. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        deleted: boolean;
+                    };
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    updateWebhookSubscription: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The subscription identifier. */
+                subscriptionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The result. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookSubscription"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    rotateWebhookSecret: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The subscription identifier. */
+                subscriptionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The result. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookSecretReveal"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    verifyWebhookEndpoint: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The subscription identifier. */
+                subscriptionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The result. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookSubscription"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    testWebhookSubscription: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The subscription identifier. */
+                subscriptionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The result. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookDelivery"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    listWebhookDeliveries: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The result. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookDeliveryPage"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    replayWebhookDelivery: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The delivery identifier. */
+                deliveryId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The result. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookDelivery"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    listCollectionManifests: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The result. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CollectionManifestPage"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    publishCollectionManifest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The result. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CollectionManifestDocument"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    getCollectionManifest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The manifest digest or its published identifier. */
+                manifestId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The result. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CollectionManifestDocument"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    getCollectionMembershipProof: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The manifest identifier. */
+                manifestId: string;
+                /** @description The member identity. */
+                memberIdentity: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The result. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipProofResponse"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    reviseCollectionManifest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The manifest the revision applies to. */
+                manifestId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The result. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        manifest: components["schemas"]["CollectionManifestDocument"];
+                        revocation: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    getCollectionProvenance: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The stable collection identifier. */
+                collectionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The result. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CollectionProvenance"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    getHeritageReadiness: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The result. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HeritageReadiness"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    getHeritageAsset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The numeric Counterparty asset id or its exact long name. */
+                assetId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The result. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HeritageAsset"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    listHeritageAssetUtxos: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The numeric Counterparty asset id or its exact long name. */
+                assetId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The result. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HeritageAttachmentRecord"][];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    listHeritageAddressAssets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The Bitcoin address. */
+                address: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The result. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    }[];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    buildHeritageAttach: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The result. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HeritageComposeResult"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    buildHeritageDetach: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The result. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HeritageComposeResult"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    listSigningSessions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The result. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SigningSession"][];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    openSigningSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The result. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SigningSession"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    getSigningSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The session identifier. */
+                sessionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The result. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SigningSession"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    submitSignedResult: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The session identifier. */
+                sessionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The result. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SigningVerificationResult"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    verifySigningArtifacts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The result. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SigningVerificationResult"];
+                };
+            };
             default: components["responses"]["Error"];
         };
     };

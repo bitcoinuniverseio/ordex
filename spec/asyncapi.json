@@ -1,0 +1,151 @@
+{
+  "asyncapi": "3.0.0",
+  "info": {
+    "title": "Ordex realtime events",
+    "version": "1.2.0",
+    "summary": "Every state change as one verifiable envelope, over SSE, WebSocket, and signed webhooks.",
+    "description": "The streaming contract for ordex-event/v1 envelopes. Envelopes are produced from the transactional outbox at the database commit that changed the aggregate, so replay is deterministic and reversal is explicit. Consumers resume from the last event id or cursor, never from an offset. Retention is at least seven days. There are no silent gaps: a gap is a bug, and reconnection replays from the acknowledged id.",
+    "license": { "name": "MIT", "identifier": "MIT" }
+  },
+  "servers": {
+    "production": {
+      "host": "bitcoinuniverse.io",
+      "pathname": "/api/ordex",
+      "protocol": "https",
+      "description": "The production gateway. SSE at /events/stream, WebSocket at the streaming gateway path below."
+    },
+    "selfHosted": {
+      "host": "127.0.0.1:3001",
+      "pathname": "/api/ordex",
+      "protocol": "http",
+      "description": "A self hosted gateway."
+    }
+  },
+  "channels": {
+    "eventsStream": {
+      "address": "/events/stream",
+      "messages": {
+        "ordexEvent": { "$ref": "#/components/messages/ordexEvent" },
+        "heartbeat": {
+          "payload": { "type": "string", "const": ": heartbeat" },
+          "description": "A comment line at least every 15 seconds so proxies never close an idle stream."
+        }
+      },
+      "description": "Server sent events. The SSE id field carries the event id; sending Last-Event-ID resumes exactly after it. Filters: network, type, aggregateType, aggregateId, protocol, collectionId."
+    },
+    "eventsSocket": {
+      "address": "/events/ws",
+      "messages": {
+        "subscribe": {
+          "payload": {
+            "type": "object",
+            "required": ["op"],
+            "properties": {
+              "op": { "type": "string", "const": "subscribe" },
+              "filters": { "type": "object", "additionalProperties": true },
+              "cursor": { "type": "string", "description": "Resume from this event sequence and id." }
+            }
+          },
+          "description": "Multiplex many filters over one connection."
+        },
+        "ordexEvent": { "$ref": "#/components/messages/ordexEvent" }
+      },
+      "description": "WebSocket for high volume consumers. One connection, many subscriptions, cursor resumption, bounded buffers, slow consumer disconnect with a resumable cursor."
+    },
+    "webhookDelivery": {
+      "address": "{subscriberUrl}",
+      "messages": { "ordexEvent": { "$ref": "#/components/messages/ordexEvent" } },
+      "description": "HTTP POST of one envelope per delivery, signed with the X-Ordex-Signature header: t=<unix>,d=<deliveryId>,v1=<hmac-sha256 over timestamp.deliveryId.sha256(body)>. Verify with the SDK enforcer or verifier/events.js."
+    }
+  },
+  "operations": {
+    "receiveEventsStream": {
+      "action": "receive",
+      "channel": { "$ref": "#/channels/eventsStream" },
+      "messages": [{ "$ref": "#/channels/eventsStream/messages/ordexEvent" }],
+      "reply": { "address": { "location": "$message.header#/id" }, "messages": [{ "$ref": "#/components/messages/ordexEvent" }] }
+    },
+    "receiveEventsSocket": {
+      "action": "receive",
+      "channel": { "$ref": "#/channels/eventsSocket" },
+      "messages": [{ "$ref": "#/channels/eventsSocket/messages/ordexEvent" }]
+    },
+    "receiveWebhookDelivery": {
+      "action": "receive",
+      "channel": { "$ref": "#/channels/webhookDelivery" },
+      "messages": [{ "$ref": "#/channels/webhookDelivery/messages/ordexEvent" }]
+    }
+  },
+  "components": {
+    "messages": {
+      "ordexEvent": {
+        "name": "ordexEvent",
+        "title": "One ordex-event/v1 envelope",
+        "contentType": "application/json",
+        "payload": {
+          "type": "object",
+          "required": ["id", "type", "schemaVersion", "network", "sequence", "aggregate", "observedAt", "checkpoint", "status", "payload", "traceId"],
+          "properties": {
+            "id": { "type": "string", "format": "uuid" },
+            "type": { "type": "string", "examples": ["ordex.order.published", "ordex.swap.settled", "ordex.safeops.confirmed", "ordex.counterparty.attachment", "ordex.collection.manifestPublished", "ordex.chain.checkpoint", "ordex.authority.readiness"] },
+            "schemaVersion": { "type": "string", "const": "1" },
+            "network": { "type": "string", "enum": ["mainnet", "testnet", "signet", "regtest"] },
+            "sequence": { "type": "integer", "minimum": 1, "description": "Monotonic per network. The replay cursor." },
+            "aggregate": {
+              "type": "object",
+              "required": ["type", "id", "version"],
+              "properties": { "type": { "type": "string" }, "id": { "type": "string" }, "version": { "type": "integer", "minimum": 1 } }
+            },
+            "observedAt": { "type": "string", "format": "date-time" },
+            "checkpoint": {
+              "type": "object",
+              "required": ["height", "blockHash"],
+              "properties": { "height": { "type": "integer" }, "blockHash": { "type": "string", "pattern": "^[0-9a-f]{64}$" } }
+            },
+            "status": { "type": "string", "enum": ["canonical", "reverted"] },
+            "revertedEventId": { "type": "string", "format": "uuid" },
+            "payload": { "type": "object", "additionalProperties": true },
+            "artifactDigests": { "type": "array", "items": { "type": "string", "pattern": "^[0-9a-f]{64}$" } },
+            "traceId": { "type": "string" }
+          }
+        },
+        "examples": [
+          {
+            "name": "orderSettled",
+            "payload": {
+              "id": "0f1e2d3c-4b5a-4978-8796-a5b4c3d2e1f0",
+              "type": "ordex.order.settled",
+              "schemaVersion": "1",
+              "network": "mainnet",
+              "sequence": 42001,
+              "aggregate": { "type": "order", "id": "01J8ZQ0V2M3N4P5Q6R7S8T9UVW", "version": 4 },
+              "observedAt": "2026-09-02T12:00:00Z",
+              "checkpoint": { "height": 900001, "blockHash": "0000000000000000000111111111111111111111111111111111111111111112" },
+              "status": "canonical",
+              "payload": { "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc" },
+              "artifactDigests": ["0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"],
+              "traceId": "trace-1a2b3c4d"
+            }
+          },
+          {
+            "name": "orderReorged",
+            "payload": {
+              "id": "1f1e2d3c-4b5a-4978-8796-a5b4c3d2e1f0",
+              "type": "ordex.order.reorged",
+              "schemaVersion": "1",
+              "network": "mainnet",
+              "sequence": 42002,
+              "aggregate": { "type": "order", "id": "01J8ZQ0V2M3N4P5Q6R7S8T9UVW", "version": 5 },
+              "observedAt": "2026-09-02T12:10:00Z",
+              "checkpoint": { "height": 900000, "blockHash": "0000000000000000000111111111111111111111111111111111111111111112" },
+              "status": "reverted",
+              "revertedEventId": "0f1e2d3c-4b5a-4978-8796-a5b4c3d2e1f0",
+              "payload": { "depth": 1 },
+              "traceId": "trace-1a2b3c4e"
+            }
+          }
+        ]
+      }
+    }
+  }
+}
