@@ -1,6 +1,6 @@
 {
   "name": "@bitcoinuniverse/ordex-sdk",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Typed client for the Ordex gateway API, generated from the OpenAPI 3.1 contract in this repository.",
   "license": "MIT",
   "type": "module",
