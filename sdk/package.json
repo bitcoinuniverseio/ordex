@@ -19,7 +19,7 @@
   "scripts": {
     "generate": "openapi-typescript ../spec/openapi.json -o src/schema.ts",
     "build": "tsc -p tsconfig.json",
-    "test": "node --test test/purchase.test.js test/client.test.js test/runes.test.js",
+    "test": "node --test test/purchase.test.js test/offers.test.js test/client.test.js test/runes.test.js",
     "check": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {

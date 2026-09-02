@@ -1,0 +1,1039 @@
+{
+  "protocolVersion": "1.1",
+  "note": "Shared conformance vectors for offers v1. verifier/offers.js and sdk/src/offers.ts must both answer every case exactly as recorded here.",
+  "termsHash": "0f3a4504589332bc4026dbf61fb6dac64458b3e16140d55206dd53b8efcb9562",
+  "cases": [
+    {
+      "name": "a valid ITEM offer verifies and carries its hash",
+      "kind": "terms",
+      "terms": {
+        "schema": "ordex.offer-terms/v1",
+        "protocolVersion": "1.1",
+        "network": "signet",
+        "offerKind": "ITEM",
+        "collectionId": "forked-felines",
+        "collectionRoot": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "itemInscriptionId": "c0ffee0000000000000000000000000000000000000000000000000000000000i0",
+        "criteriaHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "buyerReceiveScriptHex": "5120cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "priceSats": "90000",
+        "maxNetworkFeeSats": "1000",
+        "expiryHeight": 120000,
+        "buyerRecoveryKeyHex": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      },
+      "expected": {
+        "ok": true,
+        "offerTermsHash": "0f3a4504589332bc4026dbf61fb6dac64458b3e16140d55206dd53b8efcb9562"
+      }
+    },
+    {
+      "name": "a changed price changes the hash",
+      "kind": "terms",
+      "terms": {
+        "schema": "ordex.offer-terms/v1",
+        "protocolVersion": "1.1",
+        "network": "signet",
+        "offerKind": "ITEM",
+        "collectionId": "forked-felines",
+        "collectionRoot": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "itemInscriptionId": "c0ffee0000000000000000000000000000000000000000000000000000000000i0",
+        "criteriaHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "buyerReceiveScriptHex": "5120cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "priceSats": "95000",
+        "maxNetworkFeeSats": "1000",
+        "expiryHeight": 120000,
+        "buyerRecoveryKeyHex": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      },
+      "expected": {
+        "ok": true,
+        "offerTermsHash": "3aa9298d5474cbcbc53bbf925b74374d0701441fef9f5e12fb229681af45d105"
+      }
+    },
+    {
+      "name": "an unknown field is refused",
+      "kind": "terms",
+      "terms": {
+        "schema": "ordex.offer-terms/v1",
+        "protocolVersion": "1.1",
+        "network": "signet",
+        "offerKind": "ITEM",
+        "collectionId": "forked-felines",
+        "collectionRoot": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "itemInscriptionId": "c0ffee0000000000000000000000000000000000000000000000000000000000i0",
+        "criteriaHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "buyerReceiveScriptHex": "5120cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "priceSats": "90000",
+        "maxNetworkFeeSats": "1000",
+        "expiryHeight": 120000,
+        "buyerRecoveryKeyHex": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "buyerNote": "hi"
+      },
+      "expected": {
+        "ok": false,
+        "code": "MALFORMED_TERMS"
+      }
+    },
+    {
+      "name": "a wrong schema is refused",
+      "kind": "terms",
+      "terms": {
+        "schema": "ordex.offer-terms/v2",
+        "protocolVersion": "1.1",
+        "network": "signet",
+        "offerKind": "ITEM",
+        "collectionId": "forked-felines",
+        "collectionRoot": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "itemInscriptionId": "c0ffee0000000000000000000000000000000000000000000000000000000000i0",
+        "criteriaHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "buyerReceiveScriptHex": "5120cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "priceSats": "90000",
+        "maxNetworkFeeSats": "1000",
+        "expiryHeight": 120000,
+        "buyerRecoveryKeyHex": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      },
+      "expected": {
+        "ok": false,
+        "code": "TERMS_SCHEMA_UNSUPPORTED"
+      }
+    },
+    {
+      "name": "protocol 1.0 terms are refused",
+      "kind": "terms",
+      "terms": {
+        "schema": "ordex.offer-terms/v1",
+        "protocolVersion": "1.0",
+        "network": "signet",
+        "offerKind": "ITEM",
+        "collectionId": "forked-felines",
+        "collectionRoot": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "itemInscriptionId": "c0ffee0000000000000000000000000000000000000000000000000000000000i0",
+        "criteriaHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "buyerReceiveScriptHex": "5120cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "priceSats": "90000",
+        "maxNetworkFeeSats": "1000",
+        "expiryHeight": 120000,
+        "buyerRecoveryKeyHex": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      },
+      "expected": {
+        "ok": false,
+        "code": "TERMS_PROTOCOL_UNSUPPORTED"
+      }
+    },
+    {
+      "name": "an ITEM offer without an inscription is refused",
+      "kind": "terms",
+      "terms": {
+        "schema": "ordex.offer-terms/v1",
+        "protocolVersion": "1.1",
+        "network": "signet",
+        "offerKind": "ITEM",
+        "collectionId": "forked-felines",
+        "collectionRoot": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "criteriaHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "buyerReceiveScriptHex": "5120cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "priceSats": "90000",
+        "maxNetworkFeeSats": "1000",
+        "expiryHeight": 120000,
+        "buyerRecoveryKeyHex": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      },
+      "expected": {
+        "ok": false,
+        "code": "TERMS_SCOPE_FIELDS"
+      }
+    },
+    {
+      "name": "a TRAIT offer without a value is refused",
+      "kind": "terms",
+      "terms": {
+        "schema": "ordex.offer-terms/v1",
+        "protocolVersion": "1.1",
+        "network": "signet",
+        "offerKind": "TRAIT",
+        "collectionId": "forked-felines",
+        "collectionRoot": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "criteriaHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "buyerReceiveScriptHex": "5120cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "priceSats": "90000",
+        "maxNetworkFeeSats": "1000",
+        "expiryHeight": 120000,
+        "buyerRecoveryKeyHex": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "traitName": "eyes"
+      },
+      "expected": {
+        "ok": false,
+        "code": "TERMS_SCOPE_FIELDS"
+      }
+    },
+    {
+      "name": "a COLLECTION offer must not scope a trait",
+      "kind": "terms",
+      "terms": {
+        "schema": "ordex.offer-terms/v1",
+        "protocolVersion": "1.1",
+        "network": "signet",
+        "offerKind": "COLLECTION",
+        "collectionId": "forked-felines",
+        "collectionRoot": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "itemInscriptionId": "c0ffee0000000000000000000000000000000000000000000000000000000000i0",
+        "criteriaHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "buyerReceiveScriptHex": "5120cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "priceSats": "90000",
+        "maxNetworkFeeSats": "1000",
+        "expiryHeight": 120000,
+        "buyerRecoveryKeyHex": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "traitName": "eyes"
+      },
+      "expected": {
+        "ok": false,
+        "code": "TERMS_SCOPE_FIELDS"
+      }
+    },
+    {
+      "name": "a malformed root is refused",
+      "kind": "terms",
+      "terms": {
+        "schema": "ordex.offer-terms/v1",
+        "protocolVersion": "1.1",
+        "network": "signet",
+        "offerKind": "ITEM",
+        "collectionId": "forked-felines",
+        "collectionRoot": "ZZ",
+        "itemInscriptionId": "c0ffee0000000000000000000000000000000000000000000000000000000000i0",
+        "criteriaHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "buyerReceiveScriptHex": "5120cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "priceSats": "90000",
+        "maxNetworkFeeSats": "1000",
+        "expiryHeight": 120000,
+        "buyerRecoveryKeyHex": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      },
+      "expected": {
+        "ok": false,
+        "code": "TERMS_ROOT_INVALID"
+      }
+    },
+    {
+      "name": "a fractional price is refused",
+      "kind": "terms",
+      "terms": {
+        "schema": "ordex.offer-terms/v1",
+        "protocolVersion": "1.1",
+        "network": "signet",
+        "offerKind": "ITEM",
+        "collectionId": "forked-felines",
+        "collectionRoot": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "itemInscriptionId": "c0ffee0000000000000000000000000000000000000000000000000000000000i0",
+        "criteriaHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "buyerReceiveScriptHex": "5120cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "priceSats": "1.5",
+        "maxNetworkFeeSats": "1000",
+        "expiryHeight": 120000,
+        "buyerRecoveryKeyHex": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      },
+      "expected": {
+        "ok": false,
+        "code": "TERMS_AMOUNT_INVALID"
+      }
+    },
+    {
+      "name": "an unrepresentable expiry is refused",
+      "kind": "terms",
+      "terms": {
+        "schema": "ordex.offer-terms/v1",
+        "protocolVersion": "1.1",
+        "network": "signet",
+        "offerKind": "ITEM",
+        "collectionId": "forked-felines",
+        "collectionRoot": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "itemInscriptionId": "c0ffee0000000000000000000000000000000000000000000000000000000000i0",
+        "criteriaHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "buyerReceiveScriptHex": "5120cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "priceSats": "90000",
+        "maxNetworkFeeSats": "1000",
+        "expiryHeight": 2147483648,
+        "buyerRecoveryKeyHex": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      },
+      "expected": {
+        "ok": false,
+        "code": "TERMS_EXPIRY_INVALID"
+      }
+    },
+    {
+      "name": "a malformed recovery key is refused",
+      "kind": "terms",
+      "terms": {
+        "schema": "ordex.offer-terms/v1",
+        "protocolVersion": "1.1",
+        "network": "signet",
+        "offerKind": "ITEM",
+        "collectionId": "forked-felines",
+        "collectionRoot": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "itemInscriptionId": "c0ffee0000000000000000000000000000000000000000000000000000000000i0",
+        "criteriaHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "buyerReceiveScriptHex": "5120cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "priceSats": "90000",
+        "maxNetworkFeeSats": "1000",
+        "expiryHeight": 120000,
+        "buyerRecoveryKeyHex": "dd"
+      },
+      "expected": {
+        "ok": false,
+        "code": "TERMS_RECOVERY_KEY_INVALID"
+      }
+    },
+    {
+      "name": "a valid acceptance passes",
+      "kind": "acceptance",
+      "acceptance": {
+        "inputs": [
+          {
+            "txid": "4444444444444444444444444444444444444444444444444444444444444444",
+            "vout": 0,
+            "valueSats": "1000"
+          },
+          {
+            "txid": "4444444444444444444444444444444444444444444444444444444444444444",
+            "vout": 1,
+            "valueSats": "1000"
+          },
+          {
+            "txid": "2222222222222222222222222222222222222222222222222222222222222222",
+            "vout": 0,
+            "valueSats": "600"
+          },
+          {
+            "txid": "1111111111111111111111111111111111111111111111111111111111111111",
+            "vout": 1,
+            "valueSats": "92000"
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "00141111111111111111111111111111111111111111",
+            "valueSats": "2000"
+          },
+          {
+            "scriptHex": "5120cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "valueSats": "600"
+          },
+          {
+            "scriptHex": "51203333333333333333333333333333333333333333333333333333333333333333",
+            "valueSats": "90000"
+          },
+          {
+            "scriptHex": "00141111111111111111111111111111111111111111",
+            "valueSats": "1000"
+          }
+        ],
+        "policySignatureCount": 2,
+        "acceptanceLeafScriptHex": "200f3a4504589332bc4026dbf61fb6dac64458b3e16140d55206dd53b8efcb95627520ababababababababababababababababababababababababababababababababac20efefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefac5287"
+      },
+      "offer": {
+        "offerOutpoint": {
+          "txid": "1111111111111111111111111111111111111111111111111111111111111111",
+          "vout": 1
+        },
+        "felineOutpoint": {
+          "txid": "2222222222222222222222222222222222222222222222222222222222222222",
+          "vout": 0
+        },
+        "offerTermsHash": "0f3a4504589332bc4026dbf61fb6dac64458b3e16140d55206dd53b8efcb9562",
+        "sellerPaymentScriptHex": "51203333333333333333333333333333333333333333333333333333333333333333",
+        "priceSats": "90000",
+        "maxNetworkFeeSats": "1000",
+        "buyerReceiveScriptHex": "5120cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "expiryHeight": 120000,
+        "currentHeight": 119000
+      },
+      "expected": {
+        "ok": true,
+        "sharedIndex": 2
+      }
+    },
+    {
+      "name": "one policy signature is not an acceptance",
+      "kind": "acceptance",
+      "acceptance": {
+        "inputs": [
+          {
+            "txid": "4444444444444444444444444444444444444444444444444444444444444444",
+            "vout": 0,
+            "valueSats": "1000"
+          },
+          {
+            "txid": "4444444444444444444444444444444444444444444444444444444444444444",
+            "vout": 1,
+            "valueSats": "1000"
+          },
+          {
+            "txid": "2222222222222222222222222222222222222222222222222222222222222222",
+            "vout": 0,
+            "valueSats": "600"
+          },
+          {
+            "txid": "1111111111111111111111111111111111111111111111111111111111111111",
+            "vout": 1,
+            "valueSats": "92000"
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "00141111111111111111111111111111111111111111",
+            "valueSats": "2000"
+          },
+          {
+            "scriptHex": "5120cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "valueSats": "600"
+          },
+          {
+            "scriptHex": "51203333333333333333333333333333333333333333333333333333333333333333",
+            "valueSats": "90000"
+          },
+          {
+            "scriptHex": "00141111111111111111111111111111111111111111",
+            "valueSats": "1000"
+          }
+        ],
+        "policySignatureCount": 1,
+        "acceptanceLeafScriptHex": "200f3a4504589332bc4026dbf61fb6dac64458b3e16140d55206dd53b8efcb95627520ababababababababababababababababababababababababababababababababac20efefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefac5287"
+      },
+      "offer": {
+        "offerOutpoint": {
+          "txid": "1111111111111111111111111111111111111111111111111111111111111111",
+          "vout": 1
+        },
+        "felineOutpoint": {
+          "txid": "2222222222222222222222222222222222222222222222222222222222222222",
+          "vout": 0
+        },
+        "offerTermsHash": "0f3a4504589332bc4026dbf61fb6dac64458b3e16140d55206dd53b8efcb9562",
+        "sellerPaymentScriptHex": "51203333333333333333333333333333333333333333333333333333333333333333",
+        "priceSats": "90000",
+        "maxNetworkFeeSats": "1000",
+        "buyerReceiveScriptHex": "5120cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "expiryHeight": 120000,
+        "currentHeight": 119000
+      },
+      "expected": {
+        "ok": false,
+        "code": "POLICY_SIGNATURES_MISSING"
+      }
+    },
+    {
+      "name": "a leaf that commits to different terms is refused",
+      "kind": "acceptance",
+      "acceptance": {
+        "inputs": [
+          {
+            "txid": "4444444444444444444444444444444444444444444444444444444444444444",
+            "vout": 0,
+            "valueSats": "1000"
+          },
+          {
+            "txid": "4444444444444444444444444444444444444444444444444444444444444444",
+            "vout": 1,
+            "valueSats": "1000"
+          },
+          {
+            "txid": "2222222222222222222222222222222222222222222222222222222222222222",
+            "vout": 0,
+            "valueSats": "600"
+          },
+          {
+            "txid": "1111111111111111111111111111111111111111111111111111111111111111",
+            "vout": 1,
+            "valueSats": "92000"
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "00141111111111111111111111111111111111111111",
+            "valueSats": "2000"
+          },
+          {
+            "scriptHex": "5120cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "valueSats": "600"
+          },
+          {
+            "scriptHex": "51203333333333333333333333333333333333333333333333333333333333333333",
+            "valueSats": "90000"
+          },
+          {
+            "scriptHex": "00141111111111111111111111111111111111111111",
+            "valueSats": "1000"
+          }
+        ],
+        "policySignatureCount": 2,
+        "acceptanceLeafScriptHex": "20eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee7520ababababababababababababababababababababababababababababababababac20efefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefac5287"
+      },
+      "offer": {
+        "offerOutpoint": {
+          "txid": "1111111111111111111111111111111111111111111111111111111111111111",
+          "vout": 1
+        },
+        "felineOutpoint": {
+          "txid": "2222222222222222222222222222222222222222222222222222222222222222",
+          "vout": 0
+        },
+        "offerTermsHash": "0f3a4504589332bc4026dbf61fb6dac64458b3e16140d55206dd53b8efcb9562",
+        "sellerPaymentScriptHex": "51203333333333333333333333333333333333333333333333333333333333333333",
+        "priceSats": "90000",
+        "maxNetworkFeeSats": "1000",
+        "buyerReceiveScriptHex": "5120cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "expiryHeight": 120000,
+        "currentHeight": 119000
+      },
+      "expected": {
+        "ok": false,
+        "code": "TERMS_HASH_NOT_COMMITTED"
+      }
+    },
+    {
+      "name": "acceptance after expiry is refused",
+      "kind": "acceptance",
+      "acceptance": {
+        "inputs": [
+          {
+            "txid": "4444444444444444444444444444444444444444444444444444444444444444",
+            "vout": 0,
+            "valueSats": "1000"
+          },
+          {
+            "txid": "4444444444444444444444444444444444444444444444444444444444444444",
+            "vout": 1,
+            "valueSats": "1000"
+          },
+          {
+            "txid": "2222222222222222222222222222222222222222222222222222222222222222",
+            "vout": 0,
+            "valueSats": "600"
+          },
+          {
+            "txid": "1111111111111111111111111111111111111111111111111111111111111111",
+            "vout": 1,
+            "valueSats": "92000"
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "00141111111111111111111111111111111111111111",
+            "valueSats": "2000"
+          },
+          {
+            "scriptHex": "5120cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "valueSats": "600"
+          },
+          {
+            "scriptHex": "51203333333333333333333333333333333333333333333333333333333333333333",
+            "valueSats": "90000"
+          },
+          {
+            "scriptHex": "00141111111111111111111111111111111111111111",
+            "valueSats": "1000"
+          }
+        ],
+        "policySignatureCount": 2,
+        "acceptanceLeafScriptHex": "200f3a4504589332bc4026dbf61fb6dac64458b3e16140d55206dd53b8efcb95627520ababababababababababababababababababababababababababababababababac20efefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefac5287"
+      },
+      "offer": {
+        "offerOutpoint": {
+          "txid": "1111111111111111111111111111111111111111111111111111111111111111",
+          "vout": 1
+        },
+        "felineOutpoint": {
+          "txid": "2222222222222222222222222222222222222222222222222222222222222222",
+          "vout": 0
+        },
+        "offerTermsHash": "0f3a4504589332bc4026dbf61fb6dac64458b3e16140d55206dd53b8efcb9562",
+        "sellerPaymentScriptHex": "51203333333333333333333333333333333333333333333333333333333333333333",
+        "priceSats": "90000",
+        "maxNetworkFeeSats": "1000",
+        "buyerReceiveScriptHex": "5120cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "expiryHeight": 120000,
+        "currentHeight": 120000
+      },
+      "expected": {
+        "ok": false,
+        "code": "OFFER_EXPIRED"
+      }
+    },
+    {
+      "name": "a changed seller payment is refused",
+      "kind": "acceptance",
+      "acceptance": {
+        "inputs": [
+          {
+            "txid": "4444444444444444444444444444444444444444444444444444444444444444",
+            "vout": 0,
+            "valueSats": "1000"
+          },
+          {
+            "txid": "4444444444444444444444444444444444444444444444444444444444444444",
+            "vout": 1,
+            "valueSats": "1000"
+          },
+          {
+            "txid": "2222222222222222222222222222222222222222222222222222222222222222",
+            "vout": 0,
+            "valueSats": "600"
+          },
+          {
+            "txid": "1111111111111111111111111111111111111111111111111111111111111111",
+            "vout": 1,
+            "valueSats": "92000"
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "00141111111111111111111111111111111111111111",
+            "valueSats": "2000"
+          },
+          {
+            "scriptHex": "5120cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "valueSats": "600"
+          },
+          {
+            "scriptHex": "51203333333333333333333333333333333333333333333333333333333333333333",
+            "valueSats": "80000"
+          },
+          {
+            "scriptHex": "00141111111111111111111111111111111111111111",
+            "valueSats": "1000"
+          }
+        ],
+        "policySignatureCount": 2,
+        "acceptanceLeafScriptHex": "200f3a4504589332bc4026dbf61fb6dac64458b3e16140d55206dd53b8efcb95627520ababababababababababababababababababababababababababababababababac20efefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefac5287"
+      },
+      "offer": {
+        "offerOutpoint": {
+          "txid": "1111111111111111111111111111111111111111111111111111111111111111",
+          "vout": 1
+        },
+        "felineOutpoint": {
+          "txid": "2222222222222222222222222222222222222222222222222222222222222222",
+          "vout": 0
+        },
+        "offerTermsHash": "0f3a4504589332bc4026dbf61fb6dac64458b3e16140d55206dd53b8efcb9562",
+        "sellerPaymentScriptHex": "51203333333333333333333333333333333333333333333333333333333333333333",
+        "priceSats": "90000",
+        "maxNetworkFeeSats": "1000",
+        "buyerReceiveScriptHex": "5120cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "expiryHeight": 120000,
+        "currentHeight": 119000
+      },
+      "expected": {
+        "ok": false,
+        "code": "SELLER_VALUE_MISMATCH"
+      }
+    },
+    {
+      "name": "a Feline sat range that reaches the payment is refused",
+      "kind": "acceptance",
+      "acceptance": {
+        "inputs": [
+          {
+            "txid": "4444444444444444444444444444444444444444444444444444444444444444",
+            "vout": 0,
+            "valueSats": "1000"
+          },
+          {
+            "txid": "4444444444444444444444444444444444444444444444444444444444444444",
+            "vout": 1,
+            "valueSats": "1000"
+          },
+          {
+            "txid": "2222222222222222222222222222222222222222222222222222222222222222",
+            "vout": 0,
+            "valueSats": "600"
+          },
+          {
+            "txid": "1111111111111111111111111111111111111111111111111111111111111111",
+            "vout": 1,
+            "valueSats": "92000"
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "00141111111111111111111111111111111111111111",
+            "valueSats": "2000"
+          },
+          {
+            "scriptHex": "5120cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "valueSats": "500"
+          },
+          {
+            "scriptHex": "51203333333333333333333333333333333333333333333333333333333333333333",
+            "valueSats": "90000"
+          },
+          {
+            "scriptHex": "00141111111111111111111111111111111111111111",
+            "valueSats": "10100"
+          }
+        ],
+        "policySignatureCount": 2,
+        "acceptanceLeafScriptHex": "200f3a4504589332bc4026dbf61fb6dac64458b3e16140d55206dd53b8efcb95627520ababababababababababababababababababababababababababababababababac20efefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefac5287"
+      },
+      "offer": {
+        "offerOutpoint": {
+          "txid": "1111111111111111111111111111111111111111111111111111111111111111",
+          "vout": 1
+        },
+        "felineOutpoint": {
+          "txid": "2222222222222222222222222222222222222222222222222222222222222222",
+          "vout": 0
+        },
+        "offerTermsHash": "0f3a4504589332bc4026dbf61fb6dac64458b3e16140d55206dd53b8efcb9562",
+        "sellerPaymentScriptHex": "51203333333333333333333333333333333333333333333333333333333333333333",
+        "priceSats": "90000",
+        "maxNetworkFeeSats": "1000",
+        "buyerReceiveScriptHex": "5120cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "expiryHeight": 120000,
+        "currentHeight": 119000
+      },
+      "expected": {
+        "ok": false,
+        "code": "SAT_FLOW_SHORTFALL"
+      }
+    },
+    {
+      "name": "a fee over the committed maximum is refused",
+      "kind": "acceptance",
+      "acceptance": {
+        "inputs": [
+          {
+            "txid": "4444444444444444444444444444444444444444444444444444444444444444",
+            "vout": 0,
+            "valueSats": "1000"
+          },
+          {
+            "txid": "4444444444444444444444444444444444444444444444444444444444444444",
+            "vout": 1,
+            "valueSats": "1000"
+          },
+          {
+            "txid": "2222222222222222222222222222222222222222222222222222222222222222",
+            "vout": 0,
+            "valueSats": "600"
+          },
+          {
+            "txid": "1111111111111111111111111111111111111111111111111111111111111111",
+            "vout": 1,
+            "valueSats": "92000"
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "00141111111111111111111111111111111111111111",
+            "valueSats": "2000"
+          },
+          {
+            "scriptHex": "5120cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "valueSats": "600"
+          },
+          {
+            "scriptHex": "51203333333333333333333333333333333333333333333333333333333333333333",
+            "valueSats": "90000"
+          },
+          {
+            "scriptHex": "00141111111111111111111111111111111111111111",
+            "valueSats": "900"
+          }
+        ],
+        "policySignatureCount": 2,
+        "acceptanceLeafScriptHex": "200f3a4504589332bc4026dbf61fb6dac64458b3e16140d55206dd53b8efcb95627520ababababababababababababababababababababababababababababababababac20efefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefac5287"
+      },
+      "offer": {
+        "offerOutpoint": {
+          "txid": "1111111111111111111111111111111111111111111111111111111111111111",
+          "vout": 1
+        },
+        "felineOutpoint": {
+          "txid": "2222222222222222222222222222222222222222222222222222222222222222",
+          "vout": 0
+        },
+        "offerTermsHash": "0f3a4504589332bc4026dbf61fb6dac64458b3e16140d55206dd53b8efcb9562",
+        "sellerPaymentScriptHex": "51203333333333333333333333333333333333333333333333333333333333333333",
+        "priceSats": "90000",
+        "maxNetworkFeeSats": "1000",
+        "buyerReceiveScriptHex": "5120cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "expiryHeight": 120000,
+        "currentHeight": 119000
+      },
+      "expected": {
+        "ok": false,
+        "code": "FEE_OVER_MAXIMUM"
+      }
+    },
+    {
+      "name": "the buyer asset output must sit ahead of the payment",
+      "kind": "acceptance",
+      "acceptance": {
+        "inputs": [
+          {
+            "txid": "4444444444444444444444444444444444444444444444444444444444444444",
+            "vout": 0,
+            "valueSats": "1000"
+          },
+          {
+            "txid": "4444444444444444444444444444444444444444444444444444444444444444",
+            "vout": 1,
+            "valueSats": "1000"
+          },
+          {
+            "txid": "2222222222222222222222222222222222222222222222222222222222222222",
+            "vout": 0,
+            "valueSats": "600"
+          },
+          {
+            "txid": "1111111111111111111111111111111111111111111111111111111111111111",
+            "vout": 1,
+            "valueSats": "92000"
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "00141111111111111111111111111111111111111111",
+            "valueSats": "2000"
+          },
+          {
+            "scriptHex": "00141111111111111111111111111111111111111111",
+            "valueSats": "600"
+          },
+          {
+            "scriptHex": "51203333333333333333333333333333333333333333333333333333333333333333",
+            "valueSats": "90000"
+          },
+          {
+            "scriptHex": "00141111111111111111111111111111111111111111",
+            "valueSats": "1000"
+          }
+        ],
+        "policySignatureCount": 2,
+        "acceptanceLeafScriptHex": "200f3a4504589332bc4026dbf61fb6dac64458b3e16140d55206dd53b8efcb95627520ababababababababababababababababababababababababababababababababac20efefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefac5287"
+      },
+      "offer": {
+        "offerOutpoint": {
+          "txid": "1111111111111111111111111111111111111111111111111111111111111111",
+          "vout": 1
+        },
+        "felineOutpoint": {
+          "txid": "2222222222222222222222222222222222222222222222222222222222222222",
+          "vout": 0
+        },
+        "offerTermsHash": "0f3a4504589332bc4026dbf61fb6dac64458b3e16140d55206dd53b8efcb9562",
+        "sellerPaymentScriptHex": "51203333333333333333333333333333333333333333333333333333333333333333",
+        "priceSats": "90000",
+        "maxNetworkFeeSats": "1000",
+        "buyerReceiveScriptHex": "5120cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "expiryHeight": 120000,
+        "currentHeight": 119000
+      },
+      "expected": {
+        "ok": false,
+        "code": "BUYER_ASSET_OUTPUT_MISSING"
+      }
+    },
+    {
+      "name": "acceptance without the Feline input is refused",
+      "kind": "acceptance",
+      "acceptance": {
+        "inputs": [
+          {
+            "txid": "4444444444444444444444444444444444444444444444444444444444444444",
+            "vout": 0,
+            "valueSats": "1000"
+          },
+          {
+            "txid": "4444444444444444444444444444444444444444444444444444444444444444",
+            "vout": 1,
+            "valueSats": "1000"
+          },
+          {
+            "txid": "1111111111111111111111111111111111111111111111111111111111111111",
+            "vout": 1,
+            "valueSats": "92000"
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "00141111111111111111111111111111111111111111",
+            "valueSats": "2000"
+          },
+          {
+            "scriptHex": "5120cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "valueSats": "600"
+          },
+          {
+            "scriptHex": "51203333333333333333333333333333333333333333333333333333333333333333",
+            "valueSats": "0"
+          },
+          {
+            "scriptHex": "00141111111111111111111111111111111111111111",
+            "valueSats": "1000"
+          }
+        ],
+        "policySignatureCount": 2,
+        "acceptanceLeafScriptHex": "200f3a4504589332bc4026dbf61fb6dac64458b3e16140d55206dd53b8efcb95627520ababababababababababababababababababababababababababababababababac20efefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefac5287"
+      },
+      "offer": {
+        "offerOutpoint": {
+          "txid": "1111111111111111111111111111111111111111111111111111111111111111",
+          "vout": 1
+        },
+        "felineOutpoint": {
+          "txid": "2222222222222222222222222222222222222222222222222222222222222222",
+          "vout": 0
+        },
+        "offerTermsHash": "0f3a4504589332bc4026dbf61fb6dac64458b3e16140d55206dd53b8efcb9562",
+        "sellerPaymentScriptHex": "51203333333333333333333333333333333333333333333333333333333333333333",
+        "priceSats": "90000",
+        "maxNetworkFeeSats": "1000",
+        "buyerReceiveScriptHex": "5120cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "expiryHeight": 120000,
+        "currentHeight": 119000
+      },
+      "expected": {
+        "ok": false,
+        "code": "FELINE_OUTPOINT_MISSING"
+      }
+    },
+    {
+      "name": "a valid recovery after expiry passes",
+      "kind": "recovery",
+      "recovery": {
+        "inputs": [
+          {
+            "txid": "1111111111111111111111111111111111111111111111111111111111111111",
+            "vout": 1,
+            "valueSats": "92000",
+            "sequence": 4294967293
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "5120cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "valueSats": "91000"
+          }
+        ],
+        "nLockTime": 120000,
+        "recoveryLeafScriptHex": "040001d4c0b17520ddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddac"
+      },
+      "offer": {
+        "offerOutpoint": {
+          "txid": "1111111111111111111111111111111111111111111111111111111111111111",
+          "vout": 1
+        },
+        "buyerRecoveryKeyHex": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "buyerReceiveScriptHex": "5120cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "expiryHeight": 120000
+      },
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "name": "a recovery before expiry is refused",
+      "kind": "recovery",
+      "recovery": {
+        "inputs": [
+          {
+            "txid": "1111111111111111111111111111111111111111111111111111111111111111",
+            "vout": 1,
+            "valueSats": "92000",
+            "sequence": 4294967293
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "5120cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "valueSats": "91000"
+          }
+        ],
+        "nLockTime": 119999,
+        "recoveryLeafScriptHex": "040001d4c0b17520ddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddac"
+      },
+      "offer": {
+        "offerOutpoint": {
+          "txid": "1111111111111111111111111111111111111111111111111111111111111111",
+          "vout": 1
+        },
+        "buyerRecoveryKeyHex": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "buyerReceiveScriptHex": "5120cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "expiryHeight": 120000
+      },
+      "expected": {
+        "ok": false,
+        "code": "RECOVERY_BEFORE_EXPIRY"
+      }
+    },
+    {
+      "name": "a recovery paying elsewhere is refused",
+      "kind": "recovery",
+      "recovery": {
+        "inputs": [
+          {
+            "txid": "1111111111111111111111111111111111111111111111111111111111111111",
+            "vout": 1,
+            "valueSats": "92000",
+            "sequence": 4294967293
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "00141111111111111111111111111111111111111111",
+            "valueSats": "91000"
+          }
+        ],
+        "nLockTime": 120000,
+        "recoveryLeafScriptHex": "040001d4c0b17520ddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddac"
+      },
+      "offer": {
+        "offerOutpoint": {
+          "txid": "1111111111111111111111111111111111111111111111111111111111111111",
+          "vout": 1
+        },
+        "buyerRecoveryKeyHex": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "buyerReceiveScriptHex": "5120cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "expiryHeight": 120000
+      },
+      "expected": {
+        "ok": false,
+        "code": "RECOVERY_OUTPUT_WRONG"
+      }
+    },
+    {
+      "name": "a leaf without the recovery key is refused",
+      "kind": "recovery",
+      "recovery": {
+        "inputs": [
+          {
+            "txid": "1111111111111111111111111111111111111111111111111111111111111111",
+            "vout": 1,
+            "valueSats": "92000",
+            "sequence": 4294967293
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "5120cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "valueSats": "91000"
+          }
+        ],
+        "nLockTime": 120000,
+        "recoveryLeafScriptHex": "0120b175209999999999999999999999999999999999999999999999999999999999999999ac"
+      },
+      "offer": {
+        "offerOutpoint": {
+          "txid": "1111111111111111111111111111111111111111111111111111111111111111",
+          "vout": 1
+        },
+        "buyerRecoveryKeyHex": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "buyerReceiveScriptHex": "5120cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "expiryHeight": 120000
+      },
+      "expected": {
+        "ok": false,
+        "code": "RECOVERY_LEAF_MISMATCH"
+      }
+    }
+  ]
+}
