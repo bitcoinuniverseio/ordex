@@ -1,0 +1,26 @@
+---
+import { OrdexExperienceShell } from '../../components/experience/OrdexExperienceShell.js';
+import { TourGuide } from '../../components/experience/TourGuide.js';
+import '../../styles/design-system.css';
+import '../../styles/experience-tokens.css';
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Guided Product Tours | Ordex</title>
+    <meta name="description" content="Deterministic visual walkthroughs and guided tours for Ordex marketplace integration, artifact inspection, and failure diagnostics." />
+    <link rel="icon" type="image/svg+xml" href={`${base}/favicon.svg`} />
+    <link rel="manifest" href={`${base}/manifest.webmanifest`} />
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+    <OrdexExperienceShell client:load currentRoute="/tour/" pageTitle="Guided Tours" basePath={base}>
+      <TourGuide client:load basePath={base} />
+    </OrdexExperienceShell>
+  </body>
+</html>

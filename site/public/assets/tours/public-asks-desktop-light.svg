@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="800" viewBox="0 0 1280 800">
+    <rect width="1280" height="800" fill="#f8f9fa" />
+    <!-- Header bar -->
+    <rect width="1280" height="56" fill="#ffffff" stroke="#dee2e6" stroke-width="1" />
+    <rect x="20" y="14" width="28" height="28" rx="6" fill="#1a1d20" />
+    <path d="M34 20 L40 24 V30 L34 34 L28 30 V24 Z" stroke="#f7931a" stroke-width="2" fill="none" />
+    <text x="56" y="33" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="16" font-weight="700" fill="#1a1d20">Ordex</text>
+    <text x="1160" y="33" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="12" fill="#6c757d">v1.2 (Prod)</text>
+
+    <!-- Main stage card -->
+    <rect x="60" y="80" width="1160" height="680" rx="8" fill="#ffffff" stroke="#dee2e6" stroke-width="1" />
+    
+    <text x="90" y="130" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="24" font-weight="800" fill="#1a1d20">Publish & Settle Public Asks</text>
+    <text x="90" y="165" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="13" fill="#6c757d">Walk through how a seller lists an inscription and a buyer funds the purchase without custodian escrow.</text>
+
+    <!-- Simulated UI Controls -->
+    <rect x="90" y="200" width="1100" height="60" rx="6" fill="#f1f3f5" />
+    <text x="110" y="235" font-family="monospace" font-size="12" fill="#f7931a">Invariants 1 &amp; 2 Verified Locally in Web Worker • Fail-Closed</text>
+  </svg>
