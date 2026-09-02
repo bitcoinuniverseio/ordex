@@ -6679,7 +6679,7 @@
           "status": {
             "type": "string",
             "enum": [
-              "canonical",
+              "current",
               "reverted"
             ]
           },
