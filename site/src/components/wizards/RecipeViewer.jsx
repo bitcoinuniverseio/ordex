@@ -1,6 +1,7 @@
 import { h } from 'preact';
 import { useState } from 'preact/hooks';
 import operationsData from '../../data/operations.json';
+import { resolveUrl } from '../../lib/base-url.js';
 
 export function RecipeViewer({ recipeId = 'publish-and-purchase' }) {
   const [activeTab, setActiveTab] = useState('sdk'); // sdk, ts, fetch, curl
@@ -197,7 +198,7 @@ console.log(data);`;
                       {isDone ? '✓ Completed' : 'Mark Complete'}
                     </button>
                     <a
-                      href={`/reference/api/#${st.operationId}`}
+                      href={resolveUrl(`/reference/api/#${st.operationId}`)}
                       class="btn btn-secondary"
                       style="font-size: 0.75rem; min-height: 28px; padding: 0.15rem 0.5rem;"
                     >
@@ -235,7 +236,7 @@ console.log(data);`;
                       {st.refusalExplanation}
                     </p>
                     <a
-                      href={`/reference/refusal-codes/#${st.refusalCode}`}
+                      href={resolveUrl(`/reference/refusal-codes/#${st.refusalCode}`)}
                       style="display: inline-block; margin-top: 0.35rem; font-size: 0.75rem; color: var(--color-danger); font-weight: 600;"
                     >
                       View Refusal Specification →

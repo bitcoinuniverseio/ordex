@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { FeedbackWidget } from '../../components/feedback/FeedbackWidget.jsx';
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 ---
 
 <BaseLayout
@@ -17,7 +18,7 @@ import { FeedbackWidget } from '../../components/feedback/FeedbackWidget.jsx';
     </div>
 
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem;">
-      <a href="/reference/api" class="panel" style="text-decoration: none; color: inherit;">
+      <a href={`${base}/reference/api`} class="panel" style="text-decoration: none; color: inherit;">
         <div style="font-size: 1.8rem; margin-bottom: 0.5rem;">📡</div>
         <h2 style="margin: 0 0 0.25rem 0; font-size: 1.2rem; color: var(--color-brand);">OpenAPI 3.1 Reference (78 Operations)</h2>
         <p style="margin: 0; font-size: 0.85rem; color: var(--color-text-secondary); line-height: 1.4;">
@@ -25,7 +26,7 @@ import { FeedbackWidget } from '../../components/feedback/FeedbackWidget.jsx';
         </p>
       </a>
 
-      <a href="/reference/refusal-codes" class="panel" style="text-decoration: none; color: inherit;">
+      <a href={`${base}/reference/refusal-codes`} class="panel" style="text-decoration: none; color: inherit;">
         <div style="font-size: 1.8rem; margin-bottom: 0.5rem;">🛑</div>
         <h2 style="margin: 0 0 0.25rem 0; font-size: 1.2rem; color: var(--color-danger);">Refusal Codes Catalog (172 Codes)</h2>
         <p style="margin: 0; font-size: 0.85rem; color: var(--color-text-secondary); line-height: 1.4;">
@@ -33,7 +34,7 @@ import { FeedbackWidget } from '../../components/feedback/FeedbackWidget.jsx';
         </p>
       </a>
 
-      <a href="/reference/specifications" class="panel" style="text-decoration: none; color: inherit;">
+      <a href={`${base}/reference/specifications`} class="panel" style="text-decoration: none; color: inherit;">
         <div style="font-size: 1.8rem; margin-bottom: 0.5rem;">📐</div>
         <h2 style="margin: 0 0 0.25rem 0; font-size: 1.2rem; color: var(--color-focus);">Protocol Specifications (13 Specs)</h2>
         <p style="margin: 0; font-size: 0.85rem; color: var(--color-text-secondary); line-height: 1.4;">
@@ -41,7 +42,7 @@ import { FeedbackWidget } from '../../components/feedback/FeedbackWidget.jsx';
         </p>
       </a>
 
-      <a href="/verify" class="panel" style="text-decoration: none; color: inherit;">
+      <a href={`${base}/verify`} class="panel" style="text-decoration: none; color: inherit;">
         <div style="font-size: 1.8rem; margin-bottom: 0.5rem;">⚖️</div>
         <h2 style="margin: 0 0 0.25rem 0; font-size: 1.2rem; color: var(--color-success);">Conformance Vectors (151 Cases)</h2>
         <p style="margin: 0; font-size: 0.85rem; color: var(--color-text-secondary); line-height: 1.4;">
