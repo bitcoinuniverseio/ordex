@@ -1,0 +1,585 @@
+{
+  "version": 1,
+  "protocolVersion": "1.2",
+  "description": "Collection manifest, revocation, and membership proof vectors.",
+  "cases": [
+    {
+      "name": "a creator signed manifest is accepted",
+      "manifest": {
+        "schema": "ordex.collection-manifest/v1",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "protocol": "ordinals",
+        "collectionId": "heritage-demo-collection",
+        "displayName": "Heritage Demo Collection",
+        "creatorAddress": "bc1qcreator0000000000000000000000000000000000",
+        "memberIdentityType": "inscriptionId",
+        "members": [
+          "000000000000000000000000000000000000000000000000000000000000i0",
+          "111111111111111111111111111111111111111111111111111111111111i1",
+          "222222222222222222222222222222222222222222222222222222222222i2"
+        ],
+        "supplyStatement": {
+          "kind": "FIXED",
+          "declared": "3"
+        },
+        "createdAtHeight": 900000,
+        "version": 1,
+        "status": "CREATOR_SIGNED",
+        "membershipRoot": "f125582820675a5b25de1959ece82d4ec63daec09dc9348b3a4185f551df05a1",
+        "creatorSignature": {
+          "kind": "bip322",
+          "address": "bc1qcreator0000000000000000000000000000000000",
+          "signature": "MEUCIQ=="
+        },
+        "digest": "66e9b14e3d241a6a0b61f2219f75bd45fdf8bfc6b8ded14b6b483c11f958d416"
+      },
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "name": "an unsorted member list is refused",
+      "manifest": {
+        "schema": "ordex.collection-manifest/v1",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "protocol": "ordinals",
+        "collectionId": "heritage-demo-collection",
+        "displayName": "Heritage Demo Collection",
+        "creatorAddress": "bc1qcreator0000000000000000000000000000000000",
+        "memberIdentityType": "inscriptionId",
+        "members": [
+          "111111111111111111111111111111111111111111111111111111111111i1",
+          "000000000000000000000000000000000000000000000000000000000000i0",
+          "222222222222222222222222222222222222222222222222222222222222i2"
+        ],
+        "supplyStatement": {
+          "kind": "FIXED",
+          "declared": "3"
+        },
+        "createdAtHeight": 900000,
+        "version": 1,
+        "status": "CREATOR_SIGNED",
+        "membershipRoot": "f125582820675a5b25de1959ece82d4ec63daec09dc9348b3a4185f551df05a1",
+        "creatorSignature": {
+          "kind": "bip322",
+          "address": "bc1qcreator0000000000000000000000000000000000",
+          "signature": "MEUCIQ=="
+        },
+        "digest": "2e353b8659de8f87d7d1787ac786eb3e477c62bbc5e2d27a9751fb83d712f251"
+      },
+      "expected": {
+        "ok": false,
+        "code": "MEMBERS_UNSORTED"
+      }
+    },
+    {
+      "name": "a duplicated member is refused",
+      "manifest": {
+        "schema": "ordex.collection-manifest/v1",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "protocol": "ordinals",
+        "collectionId": "heritage-demo-collection",
+        "displayName": "Heritage Demo Collection",
+        "creatorAddress": "bc1qcreator0000000000000000000000000000000000",
+        "memberIdentityType": "inscriptionId",
+        "members": [
+          "000000000000000000000000000000000000000000000000000000000000i0",
+          "000000000000000000000000000000000000000000000000000000000000i0",
+          "111111111111111111111111111111111111111111111111111111111111i1"
+        ],
+        "supplyStatement": {
+          "kind": "FIXED",
+          "declared": "3"
+        },
+        "createdAtHeight": 900000,
+        "version": 1,
+        "status": "CREATOR_SIGNED",
+        "membershipRoot": "8f9dd89bffb129988fc3203d3a4fa431eaeda1a28292a13cf4bd165402f27a7e",
+        "creatorSignature": {
+          "kind": "bip322",
+          "address": "bc1qcreator0000000000000000000000000000000000",
+          "signature": "MEUCIQ=="
+        },
+        "digest": "e63f69287d453d5784b44cbf8f56cec058e3a96e7443092fe53084f78b6b0381"
+      },
+      "expected": {
+        "ok": false,
+        "code": "MEMBERS_DUPLICATED"
+      }
+    },
+    {
+      "name": "a membership root that does not match the members is refused",
+      "manifest": {
+        "schema": "ordex.collection-manifest/v1",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "protocol": "ordinals",
+        "collectionId": "heritage-demo-collection",
+        "displayName": "Heritage Demo Collection",
+        "creatorAddress": "bc1qcreator0000000000000000000000000000000000",
+        "memberIdentityType": "inscriptionId",
+        "members": [
+          "000000000000000000000000000000000000000000000000000000000000i0",
+          "111111111111111111111111111111111111111111111111111111111111i1",
+          "222222222222222222222222222222222222222222222222222222222222i2"
+        ],
+        "supplyStatement": {
+          "kind": "FIXED",
+          "declared": "3"
+        },
+        "createdAtHeight": 900000,
+        "version": 1,
+        "status": "CREATOR_SIGNED",
+        "membershipRoot": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "creatorSignature": {
+          "kind": "bip322",
+          "address": "bc1qcreator0000000000000000000000000000000000",
+          "signature": "MEUCIQ=="
+        },
+        "digest": "d59f0d415e94c040a7315fde3a490691f397e2334645c810f363d2f781b41d09"
+      },
+      "expected": {
+        "ok": false,
+        "code": "MEMBERSHIP_ROOT_MISMATCH"
+      }
+    },
+    {
+      "name": "a fixed supply that disagrees with the member count is refused",
+      "manifest": {
+        "schema": "ordex.collection-manifest/v1",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "protocol": "ordinals",
+        "collectionId": "heritage-demo-collection",
+        "displayName": "Heritage Demo Collection",
+        "creatorAddress": "bc1qcreator0000000000000000000000000000000000",
+        "memberIdentityType": "inscriptionId",
+        "members": [
+          "000000000000000000000000000000000000000000000000000000000000i0",
+          "111111111111111111111111111111111111111111111111111111111111i1",
+          "222222222222222222222222222222222222222222222222222222222222i2"
+        ],
+        "supplyStatement": {
+          "kind": "FIXED",
+          "declared": "4"
+        },
+        "createdAtHeight": 900000,
+        "version": 1,
+        "status": "CREATOR_SIGNED",
+        "membershipRoot": "f125582820675a5b25de1959ece82d4ec63daec09dc9348b3a4185f551df05a1",
+        "creatorSignature": {
+          "kind": "bip322",
+          "address": "bc1qcreator0000000000000000000000000000000000",
+          "signature": "MEUCIQ=="
+        },
+        "digest": "26a597a00470c4e2713a74f73cf7fa19157142d33dea8fdec7f2e9855492fa7b"
+      },
+      "expected": {
+        "ok": false,
+        "code": "SUPPLY_MISMATCH"
+      }
+    },
+    {
+      "name": "a version 2 manifest without a previous digest is refused",
+      "manifest": {
+        "schema": "ordex.collection-manifest/v1",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "protocol": "ordinals",
+        "collectionId": "heritage-demo-collection",
+        "displayName": "Heritage Demo Collection",
+        "creatorAddress": "bc1qcreator0000000000000000000000000000000000",
+        "memberIdentityType": "inscriptionId",
+        "members": [
+          "000000000000000000000000000000000000000000000000000000000000i0",
+          "111111111111111111111111111111111111111111111111111111111111i1",
+          "222222222222222222222222222222222222222222222222222222222222i2"
+        ],
+        "supplyStatement": {
+          "kind": "FIXED",
+          "declared": "3"
+        },
+        "createdAtHeight": 900000,
+        "version": 2,
+        "status": "CREATOR_SIGNED",
+        "membershipRoot": "f125582820675a5b25de1959ece82d4ec63daec09dc9348b3a4185f551df05a1",
+        "creatorSignature": {
+          "kind": "bip322",
+          "address": "bc1qcreator0000000000000000000000000000000000",
+          "signature": "MEUCIQ=="
+        },
+        "digest": "691f06b49abefe2cd5caa5b45eeac5cc04959c7687133b2fafbd13bdda8bf43a"
+      },
+      "expected": {
+        "ok": false,
+        "code": "PREVIOUS_DIGEST_REQUIRED"
+      }
+    },
+    {
+      "name": "a manifest edited after signing no longer matches its digest",
+      "manifest": {
+        "schema": "ordex.collection-manifest/v1",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "protocol": "ordinals",
+        "collectionId": "heritage-demo-collection",
+        "displayName": "Renamed After Signing",
+        "creatorAddress": "bc1qcreator0000000000000000000000000000000000",
+        "memberIdentityType": "inscriptionId",
+        "members": [
+          "000000000000000000000000000000000000000000000000000000000000i0",
+          "111111111111111111111111111111111111111111111111111111111111i1",
+          "222222222222222222222222222222222222222222222222222222222222i2"
+        ],
+        "supplyStatement": {
+          "kind": "FIXED",
+          "declared": "3"
+        },
+        "createdAtHeight": 900000,
+        "version": 1,
+        "status": "CREATOR_SIGNED",
+        "membershipRoot": "f125582820675a5b25de1959ece82d4ec63daec09dc9348b3a4185f551df05a1",
+        "creatorSignature": {
+          "kind": "bip322",
+          "address": "bc1qcreator0000000000000000000000000000000000",
+          "signature": "MEUCIQ=="
+        },
+        "digest": "66e9b14e3d241a6a0b61f2219f75bd45fdf8bfc6b8ded14b6b483c11f958d416"
+      },
+      "expected": {
+        "ok": false,
+        "code": "DIGEST_MISMATCH"
+      }
+    },
+    {
+      "name": "a signature by an address that is not the creator is refused",
+      "manifest": {
+        "schema": "ordex.collection-manifest/v1",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "protocol": "ordinals",
+        "collectionId": "heritage-demo-collection",
+        "displayName": "Heritage Demo Collection",
+        "creatorAddress": "bc1qcreator0000000000000000000000000000000000",
+        "memberIdentityType": "inscriptionId",
+        "members": [
+          "000000000000000000000000000000000000000000000000000000000000i0",
+          "111111111111111111111111111111111111111111111111111111111111i1",
+          "222222222222222222222222222222222222222222222222222222222222i2"
+        ],
+        "supplyStatement": {
+          "kind": "FIXED",
+          "declared": "3"
+        },
+        "createdAtHeight": 900000,
+        "version": 1,
+        "status": "CREATOR_SIGNED",
+        "membershipRoot": "f125582820675a5b25de1959ece82d4ec63daec09dc9348b3a4185f551df05a1",
+        "creatorSignature": {
+          "kind": "bip322",
+          "address": "bc1qnotcreator000000000000000000000000000000",
+          "signature": "MEUCIQ=="
+        },
+        "digest": "66e9b14e3d241a6a0b61f2219f75bd45fdf8bfc6b8ded14b6b483c11f958d416"
+      },
+      "expected": {
+        "ok": false,
+        "code": "SIGNER_IDENTITY_MISMATCH"
+      }
+    },
+    {
+      "name": "a revocation signed by the creator is accepted",
+      "revocation": {
+        "schema": "ordex.collection-manifest-revocation/v1",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "collectionId": "heritage-demo-collection",
+        "manifestDigest": "66e9b14e3d241a6a0b61f2219f75bd45fdf8bfc6b8ded14b6b483c11f958d416",
+        "reason": "Creator asked to retire this manifest version.",
+        "creatorSignature": {
+          "kind": "bip322",
+          "address": "bc1qcreator0000000000000000000000000000000000",
+          "signature": "MEUCIQ=="
+        },
+        "digest": "057ec19340aeea50f0c6db103a05ac75ae41fdc1a242d502da7c8591791745d3"
+      },
+      "manifest": {
+        "schema": "ordex.collection-manifest/v1",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "protocol": "ordinals",
+        "collectionId": "heritage-demo-collection",
+        "displayName": "Heritage Demo Collection",
+        "creatorAddress": "bc1qcreator0000000000000000000000000000000000",
+        "memberIdentityType": "inscriptionId",
+        "members": [
+          "000000000000000000000000000000000000000000000000000000000000i0",
+          "111111111111111111111111111111111111111111111111111111111111i1",
+          "222222222222222222222222222222222222222222222222222222222222i2"
+        ],
+        "supplyStatement": {
+          "kind": "FIXED",
+          "declared": "3"
+        },
+        "createdAtHeight": 900000,
+        "version": 1,
+        "status": "CREATOR_SIGNED",
+        "membershipRoot": "f125582820675a5b25de1959ece82d4ec63daec09dc9348b3a4185f551df05a1",
+        "creatorSignature": {
+          "kind": "bip322",
+          "address": "bc1qcreator0000000000000000000000000000000000",
+          "signature": "MEUCIQ=="
+        },
+        "digest": "66e9b14e3d241a6a0b61f2219f75bd45fdf8bfc6b8ded14b6b483c11f958d416"
+      },
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "name": "a revocation naming a different manifest is refused",
+      "manifest": {
+        "schema": "ordex.collection-manifest/v1",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "protocol": "ordinals",
+        "collectionId": "heritage-demo-collection",
+        "displayName": "Heritage Demo Collection",
+        "creatorAddress": "bc1qcreator0000000000000000000000000000000000",
+        "memberIdentityType": "inscriptionId",
+        "members": [
+          "000000000000000000000000000000000000000000000000000000000000i0",
+          "111111111111111111111111111111111111111111111111111111111111i1",
+          "222222222222222222222222222222222222222222222222222222222222i2"
+        ],
+        "supplyStatement": {
+          "kind": "FIXED",
+          "declared": "3"
+        },
+        "createdAtHeight": 900000,
+        "version": 1,
+        "status": "CREATOR_SIGNED",
+        "membershipRoot": "f125582820675a5b25de1959ece82d4ec63daec09dc9348b3a4185f551df05a1",
+        "creatorSignature": {
+          "kind": "bip322",
+          "address": "bc1qcreator0000000000000000000000000000000000",
+          "signature": "MEUCIQ=="
+        },
+        "digest": "66e9b14e3d241a6a0b61f2219f75bd45fdf8bfc6b8ded14b6b483c11f958d416"
+      },
+      "revocation": {
+        "schema": "ordex.collection-manifest-revocation/v1",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "collectionId": "heritage-demo-collection",
+        "manifestDigest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "reason": "Wrong target.",
+        "creatorSignature": {
+          "kind": "bip322",
+          "address": "bc1qcreator0000000000000000000000000000000000",
+          "signature": "MEUCIQ=="
+        },
+        "digest": "462419abcbf175a16afe8ded11de87867e2cc6a0d5efb001c43423e96abc0bc1"
+      },
+      "expected": {
+        "ok": false,
+        "code": "MANIFEST_DIGEST_MISMATCH"
+      }
+    },
+    {
+      "name": "a revocation signed by a non creator is refused",
+      "manifest": {
+        "schema": "ordex.collection-manifest/v1",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "protocol": "ordinals",
+        "collectionId": "heritage-demo-collection",
+        "displayName": "Heritage Demo Collection",
+        "creatorAddress": "bc1qcreator0000000000000000000000000000000000",
+        "memberIdentityType": "inscriptionId",
+        "members": [
+          "000000000000000000000000000000000000000000000000000000000000i0",
+          "111111111111111111111111111111111111111111111111111111111111i1",
+          "222222222222222222222222222222222222222222222222222222222222i2"
+        ],
+        "supplyStatement": {
+          "kind": "FIXED",
+          "declared": "3"
+        },
+        "createdAtHeight": 900000,
+        "version": 1,
+        "status": "CREATOR_SIGNED",
+        "membershipRoot": "f125582820675a5b25de1959ece82d4ec63daec09dc9348b3a4185f551df05a1",
+        "creatorSignature": {
+          "kind": "bip322",
+          "address": "bc1qcreator0000000000000000000000000000000000",
+          "signature": "MEUCIQ=="
+        },
+        "digest": "66e9b14e3d241a6a0b61f2219f75bd45fdf8bfc6b8ded14b6b483c11f958d416"
+      },
+      "revocation": {
+        "schema": "ordex.collection-manifest-revocation/v1",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "collectionId": "heritage-demo-collection",
+        "manifestDigest": "66e9b14e3d241a6a0b61f2219f75bd45fdf8bfc6b8ded14b6b483c11f958d416",
+        "reason": "Not the creator.",
+        "creatorSignature": {
+          "kind": "bip322",
+          "address": "bc1qnotcreator000000000000000000000000000000",
+          "signature": "MEUCIQ=="
+        },
+        "digest": "2e8fcb81d62272d555e4d65ccf5aae77a68cd4c359022fce80dec0cbca93aae5"
+      },
+      "expected": {
+        "ok": false,
+        "code": "SIGNER_IDENTITY_MISMATCH"
+      }
+    },
+    {
+      "name": "a membership proof resolves for a real member",
+      "manifest": {
+        "schema": "ordex.collection-manifest/v1",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "protocol": "ordinals",
+        "collectionId": "heritage-demo-collection",
+        "displayName": "Heritage Demo Collection",
+        "creatorAddress": "bc1qcreator0000000000000000000000000000000000",
+        "memberIdentityType": "inscriptionId",
+        "members": [
+          "000000000000000000000000000000000000000000000000000000000000i0",
+          "111111111111111111111111111111111111111111111111111111111111i1",
+          "222222222222222222222222222222222222222222222222222222222222i2"
+        ],
+        "supplyStatement": {
+          "kind": "FIXED",
+          "declared": "3"
+        },
+        "createdAtHeight": 900000,
+        "version": 1,
+        "status": "CREATOR_SIGNED",
+        "membershipRoot": "f125582820675a5b25de1959ece82d4ec63daec09dc9348b3a4185f551df05a1",
+        "creatorSignature": {
+          "kind": "bip322",
+          "address": "bc1qcreator0000000000000000000000000000000000",
+          "signature": "MEUCIQ=="
+        },
+        "digest": "66e9b14e3d241a6a0b61f2219f75bd45fdf8bfc6b8ded14b6b483c11f958d416"
+      },
+      "membership": {
+        "memberIdentity": "111111111111111111111111111111111111111111111111111111111111i1",
+        "proof": [
+          {
+            "sibling": "340b27d89fca4f78d091df9dec9ad3fc37c4e91a68d3ac2c9aaed8bc7855de42",
+            "position": "right"
+          },
+          {
+            "sibling": "f131c8c808e27e66ee0c7cef675f74e843c09ced03bf0a45177e68abc45e7a31",
+            "position": "right"
+          }
+        ]
+      },
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "name": "a membership proof for a stranger does not resolve",
+      "manifest": {
+        "schema": "ordex.collection-manifest/v1",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "protocol": "ordinals",
+        "collectionId": "heritage-demo-collection",
+        "displayName": "Heritage Demo Collection",
+        "creatorAddress": "bc1qcreator0000000000000000000000000000000000",
+        "memberIdentityType": "inscriptionId",
+        "members": [
+          "000000000000000000000000000000000000000000000000000000000000i0",
+          "111111111111111111111111111111111111111111111111111111111111i1",
+          "222222222222222222222222222222222222222222222222222222222222i2"
+        ],
+        "supplyStatement": {
+          "kind": "FIXED",
+          "declared": "3"
+        },
+        "createdAtHeight": 900000,
+        "version": 1,
+        "status": "CREATOR_SIGNED",
+        "membershipRoot": "f125582820675a5b25de1959ece82d4ec63daec09dc9348b3a4185f551df05a1",
+        "creatorSignature": {
+          "kind": "bip322",
+          "address": "bc1qcreator0000000000000000000000000000000000",
+          "signature": "MEUCIQ=="
+        },
+        "digest": "66e9b14e3d241a6a0b61f2219f75bd45fdf8bfc6b8ded14b6b483c11f958d416"
+      },
+      "membership": {
+        "memberIdentity": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzi999",
+        "proof": [
+          {
+            "sibling": "340b27d89fca4f78d091df9dec9ad3fc37c4e91a68d3ac2c9aaed8bc7855de42",
+            "position": "right"
+          },
+          {
+            "sibling": "f131c8c808e27e66ee0c7cef675f74e843c09ced03bf0a45177e68abc45e7a31",
+            "position": "right"
+          }
+        ]
+      },
+      "expected": {
+        "ok": false,
+        "code": "MEMBER_NOT_PROVEN"
+      }
+    },
+    {
+      "name": "a tampered proof step does not resolve",
+      "manifest": {
+        "schema": "ordex.collection-manifest/v1",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "protocol": "ordinals",
+        "collectionId": "heritage-demo-collection",
+        "displayName": "Heritage Demo Collection",
+        "creatorAddress": "bc1qcreator0000000000000000000000000000000000",
+        "memberIdentityType": "inscriptionId",
+        "members": [
+          "000000000000000000000000000000000000000000000000000000000000i0",
+          "111111111111111111111111111111111111111111111111111111111111i1",
+          "222222222222222222222222222222222222222222222222222222222222i2"
+        ],
+        "supplyStatement": {
+          "kind": "FIXED",
+          "declared": "3"
+        },
+        "createdAtHeight": 900000,
+        "version": 1,
+        "status": "CREATOR_SIGNED",
+        "membershipRoot": "f125582820675a5b25de1959ece82d4ec63daec09dc9348b3a4185f551df05a1",
+        "creatorSignature": {
+          "kind": "bip322",
+          "address": "bc1qcreator0000000000000000000000000000000000",
+          "signature": "MEUCIQ=="
+        },
+        "digest": "66e9b14e3d241a6a0b61f2219f75bd45fdf8bfc6b8ded14b6b483c11f958d416"
+      },
+      "membership": {
+        "memberIdentity": "000000000000000000000000000000000000000000000000000000000000i0",
+        "proof": [
+          {
+            "sibling": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "position": "left"
+          }
+        ]
+      },
+      "expected": {
+        "ok": false,
+        "code": "MEMBER_NOT_PROVEN"
+      }
+    }
+  ]
+}
