@@ -1,0 +1,25 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { InternalInsights } from '../components/insights/InternalInsights.jsx';
+import { FeedbackWidget } from '../components/feedback/FeedbackWidget.jsx';
+---
+
+<BaseLayout
+  title="Documentation Insights & Telemetry: Privacy-First Intelligence"
+  description="Aggregated documentation performance metrics, search trends, refusal lookups, and reader feedback."
+  currentNav="releases"
+>
+  <div style="display: flex; flex-direction: column; gap: 2rem;">
+    <div>
+      <span class="badge badge-verification">First-Party Telemetry</span>
+      <h1 style="margin: 0.25rem 0 0.5rem 0; font-size: 2.2rem; font-weight: 800;">Documentation Insights & Telemetry</h1>
+      <p style="margin: 0; font-size: 1.1rem; color: var(--color-text-secondary);">
+        Aggregated documentation performance without cookies, cross-site trackers, or IP storage.
+      </p>
+    </div>
+
+    <InternalInsights client:load />
+
+    <FeedbackWidget client:load route="/insights" heading="Documentation Insights" />
+  </div>
+</BaseLayout>

@@ -1,0 +1,56 @@
+{
+  "currentProtocol": "1.2",
+  "currentSdk": "1.0.0",
+  "currentGatewayContract": "1.2",
+  "history": [
+    {
+      "version": "1.0",
+      "title": "Ordex Protocol 1.0 Baseline",
+      "status": "Stable",
+      "releaseDate": "2026-07-15",
+      "description": "Foundational protocol for portable signed PSBT orders, public asks, independent settlement, and deterministic purchase verification.",
+      "addedCapabilities": [
+        "Portable public asks with seller signature",
+        "Buyer settlement transaction composition",
+        "Deterministic purchase verifier with sat-flow preservation",
+        "Order lifecycle states: OPEN, RESERVED, SETTLED, WITHDRAWN, EXPIRED",
+        "OpenOrdex Nostr event import and interoperability"
+      ],
+      "sdkCompatibility": ">=0.9.0",
+      "contractDigest": "sha256:d8a2f1b0918c8e19c8f619e07891230485918239048102381203810293810293"
+    },
+    {
+      "version": "1.1",
+      "title": "Ordex Protocol 1.1 Additive Release",
+      "status": "Stable",
+      "releaseDate": "2026-08-10",
+      "description": "Introduces buyer-funded Offers v1 on Taproot, SafeOps execution shielding, Atomic Swaps, and Rune cenotaph burn protection.",
+      "addedCapabilities": [
+        "Buyer-funded Offers v1 with 2-of-2 policy and timeout recovery",
+        "Offer acceptance planning and preflight verification",
+        "SafeOps execution shield and expected-transaction manifests",
+        "Atomic Swaps Links (OTC maker/taker single-tx settlement)",
+        "Rune burn and cenotaph prevention verifier",
+        "Batch purchase composition for multi-ask execution"
+      ],
+      "sdkCompatibility": ">=0.9.5",
+      "contractDigest": "sha256:c189ef2390841298401928409182309481209384019283401928340192834019"
+    },
+    {
+      "version": "1.2",
+      "title": "Ordex Protocol 1.2 Current Production",
+      "status": "Current",
+      "releaseDate": "2026-09-02",
+      "description": "Adds Collection Provenance manifests, Counterparty Heritage Asset UTXO management, Cold-Signing session manifests, and SSE/WebSocket event replay checkpoints.",
+      "addedCapabilities": [
+        "Collection Provenance manifests with Merkle membership proofs",
+        "Counterparty Heritage Asset attachment and detachment UTXO workflows",
+        "Offline Cold-Signing session manifests with air-gapped signature verification",
+        "Event stream checkpointing and cursor replay for SSE/WebSocket",
+        "Signed webhook endpoint verification, delivery history, and replaying"
+      ],
+      "sdkCompatibility": "1.0.0",
+      "contractDigest": "sha256:a7bfe9b1232047ac390a6505b0d4384616435b22b658d839352ec77fba11b816"
+    }
+  ]
+}

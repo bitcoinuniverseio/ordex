@@ -1,0 +1,55 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { FeedbackWidget } from '../../components/feedback/FeedbackWidget.jsx';
+---
+
+<BaseLayout
+  title="Reference: Contracts, Schemas, Operations & Refusal Codes"
+  description="Authoritative reference material for Ordex OpenAPI 3.1, AsyncAPI 3.0, specifications, SDK exports, and refusal codes."
+  currentNav="reference"
+>
+  <div style="display: flex; flex-direction: column; gap: 2rem;">
+    <div>
+      <h1 style="margin: 0 0 0.5rem 0; font-size: 2.2rem; font-weight: 800;">Technical Reference</h1>
+      <p style="margin: 0; font-size: 1.1rem; color: var(--color-text-secondary);">
+        Authoritative contracts, wire specifications, error catalogs, and conformance definitions.
+      </p>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem;">
+      <a href="/reference/api" class="panel" style="text-decoration: none; color: inherit;">
+        <div style="font-size: 1.8rem; margin-bottom: 0.5rem;">📡</div>
+        <h2 style="margin: 0 0 0.25rem 0; font-size: 1.2rem; color: var(--color-brand);">OpenAPI 3.1 Reference (78 Operations)</h2>
+        <p style="margin: 0; font-size: 0.85rem; color: var(--color-text-secondary); line-height: 1.4;">
+          Comprehensive parameter schemas, request bodies, response envelopes, and embedded playground.
+        </p>
+      </a>
+
+      <a href="/reference/refusal-codes" class="panel" style="text-decoration: none; color: inherit;">
+        <div style="font-size: 1.8rem; margin-bottom: 0.5rem;">🛑</div>
+        <h2 style="margin: 0 0 0.25rem 0; font-size: 1.2rem; color: var(--color-danger);">Refusal Codes Catalog (172 Codes)</h2>
+        <p style="margin: 0; font-size: 0.85rem; color: var(--color-text-secondary); line-height: 1.4;">
+          Exhaustive encyclopedia of protocol refusal codes, verifier assertions, and remediation steps.
+        </p>
+      </a>
+
+      <a href="/reference/specifications" class="panel" style="text-decoration: none; color: inherit;">
+        <div style="font-size: 1.8rem; margin-bottom: 0.5rem;">📐</div>
+        <h2 style="margin: 0 0 0.25rem 0; font-size: 1.2rem; color: var(--color-focus);">Protocol Specifications (13 Specs)</h2>
+        <p style="margin: 0; font-size: 0.85rem; color: var(--color-text-secondary); line-height: 1.4;">
+          Authoritative Markdown wire specifications covering orders, offers, safeops, swaps, and manifests.
+        </p>
+      </a>
+
+      <a href="/verify" class="panel" style="text-decoration: none; color: inherit;">
+        <div style="font-size: 1.8rem; margin-bottom: 0.5rem;">⚖️</div>
+        <h2 style="margin: 0 0 0.25rem 0; font-size: 1.2rem; color: var(--color-success);">Conformance Vectors (151 Cases)</h2>
+        <p style="margin: 0; font-size: 0.85rem; color: var(--color-text-secondary); line-height: 1.4;">
+          Deterministic positive and negative test cases verifying reference implementations.
+        </p>
+      </a>
+    </div>
+
+    <FeedbackWidget client:load route="/reference" heading="Technical Reference" />
+  </div>
+</BaseLayout>

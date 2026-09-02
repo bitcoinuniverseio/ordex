@@ -1,0 +1,586 @@
+[
+  {
+    "file": "api.md",
+    "id": "api",
+    "title": "The Ordex gateway API",
+    "headings": [
+      {
+        "level": 1,
+        "title": "The Ordex gateway API",
+        "anchor": "the-ordex-gateway-api"
+      },
+      {
+        "level": 2,
+        "title": "Reads",
+        "anchor": "reads"
+      },
+      {
+        "level": 2,
+        "title": "Paging is keyset, never offset",
+        "anchor": "paging-is-keyset-never-offset"
+      },
+      {
+        "level": 2,
+        "title": "Filters",
+        "anchor": "filters"
+      },
+      {
+        "level": 2,
+        "title": "Writes",
+        "anchor": "writes"
+      },
+      {
+        "level": 2,
+        "title": "`POST /orders/:id/quote`",
+        "anchor": "-post-orders-id-quote-"
+      },
+      {
+        "level": 2,
+        "title": "`POST /orders/:id/preflight`",
+        "anchor": "-post-orders-id-preflight-"
+      }
+    ],
+    "rawLength": 7083
+  },
+  {
+    "file": "batch-purchase.md",
+    "id": "batch-purchase",
+    "title": "Buying several asks in one transaction",
+    "headings": [
+      {
+        "level": 1,
+        "title": "Buying several asks in one transaction",
+        "anchor": "buying-several-asks-in-one-transaction"
+      },
+      {
+        "level": 2,
+        "title": "The arrangement",
+        "anchor": "the-arrangement"
+      },
+      {
+        "level": 2,
+        "title": "What Ordex refuses before composing",
+        "anchor": "what-ordex-refuses-before-composing"
+      },
+      {
+        "level": 2,
+        "title": "What Ordex refuses before handing the result over",
+        "anchor": "what-ordex-refuses-before-handing-the-result-over"
+      },
+      {
+        "level": 2,
+        "title": "No partial result",
+        "anchor": "no-partial-result"
+      }
+    ],
+    "rawLength": 4081
+  },
+  {
+    "file": "cold-signing.md",
+    "id": "cold-signing",
+    "title": "Cold signing and watch-only mode v1",
+    "headings": [
+      {
+        "level": 1,
+        "title": "Cold signing and watch-only mode v1",
+        "anchor": "cold-signing-and-watch-only-mode-v1"
+      },
+      {
+        "level": 2,
+        "title": "The SignerAdapter contract",
+        "anchor": "the-signeradapter-contract"
+      },
+      {
+        "level": 2,
+        "title": "The expected transaction manifest",
+        "anchor": "the-expected-transaction-manifest"
+      },
+      {
+        "level": 2,
+        "title": "The nine refusals",
+        "anchor": "the-nine-refusals"
+      },
+      {
+        "level": 2,
+        "title": "The stepper",
+        "anchor": "the-stepper"
+      },
+      {
+        "level": 2,
+        "title": "Watch-only profiles",
+        "anchor": "watch-only-profiles"
+      },
+      {
+        "level": 2,
+        "title": "Blind signing is prohibited",
+        "anchor": "blind-signing-is-prohibited"
+      }
+    ],
+    "rawLength": 4568
+  },
+  {
+    "file": "collection-manifest.md",
+    "id": "collection-manifest",
+    "title": "Collection provenance registry v1",
+    "headings": [
+      {
+        "level": 1,
+        "title": "Collection provenance registry v1",
+        "anchor": "collection-provenance-registry-v1"
+      },
+      {
+        "level": 2,
+        "title": "The manifest",
+        "anchor": "the-manifest"
+      },
+      {
+        "level": 2,
+        "title": "Membership proofs",
+        "anchor": "membership-proofs"
+      },
+      {
+        "level": 2,
+        "title": "Publication, versioning, revocation",
+        "anchor": "publication-versioning-revocation"
+      },
+      {
+        "level": 2,
+        "title": "Verification states",
+        "anchor": "verification-states"
+      },
+      {
+        "level": 2,
+        "title": "Compatibility",
+        "anchor": "compatibility"
+      },
+      {
+        "level": 2,
+        "title": "Gates",
+        "anchor": "gates"
+      }
+    ],
+    "rawLength": 4635
+  },
+  {
+    "file": "counterparty-utxo-asset.md",
+    "id": "counterparty-utxo-asset",
+    "title": "Counterparty heritage assets v1",
+    "headings": [
+      {
+        "level": 1,
+        "title": "Counterparty heritage assets v1",
+        "anchor": "counterparty-heritage-assets-v1"
+      },
+      {
+        "level": 2,
+        "title": "Identity",
+        "anchor": "identity"
+      },
+      {
+        "level": 2,
+        "title": "The authority",
+        "anchor": "the-authority"
+      },
+      {
+        "level": 2,
+        "title": "The attachment record",
+        "anchor": "the-attachment-record"
+      },
+      {
+        "level": 2,
+        "title": "Attachment follows the spend",
+        "anchor": "attachment-follows-the-spend"
+      },
+      {
+        "level": 2,
+        "title": "Attach and detach",
+        "anchor": "attach-and-detach"
+      },
+      {
+        "level": 2,
+        "title": "Protection everywhere",
+        "anchor": "protection-everywhere"
+      },
+      {
+        "level": 2,
+        "title": "Trading path",
+        "anchor": "trading-path"
+      },
+      {
+        "level": 2,
+        "title": "Readiness gates",
+        "anchor": "readiness-gates"
+      }
+    ],
+    "rawLength": 4327
+  },
+  {
+    "file": "events.md",
+    "id": "events",
+    "title": "Realtime events and signed webhooks v1",
+    "headings": [
+      {
+        "level": 1,
+        "title": "Realtime events and signed webhooks v1",
+        "anchor": "realtime-events-and-signed-webhooks-v1"
+      },
+      {
+        "level": 2,
+        "title": "The envelope",
+        "anchor": "the-envelope"
+      },
+      {
+        "level": 2,
+        "title": "Event families",
+        "anchor": "event-families"
+      },
+      {
+        "level": 2,
+        "title": "Streaming",
+        "anchor": "streaming"
+      },
+      {
+        "level": 2,
+        "title": "Signed webhooks",
+        "anchor": "signed-webhooks"
+      },
+      {
+        "level": 2,
+        "title": "Historical APIs",
+        "anchor": "historical-apis"
+      }
+    ],
+    "rawLength": 4617
+  },
+  {
+    "file": "interoperability.md",
+    "id": "interoperability",
+    "title": "Portable orders: import, export, and OpenOrdex",
+    "headings": [
+      {
+        "level": 1,
+        "title": "Portable orders: import, export, and OpenOrdex",
+        "anchor": "portable-orders-import-export-and-openordex"
+      },
+      {
+        "level": 2,
+        "title": "Identity is the artifact, not the venue",
+        "anchor": "identity-is-the-artifact-not-the-venue"
+      },
+      {
+        "level": 2,
+        "title": "Import: `POST /api/ordex/orders/import`",
+        "anchor": "import-post-api-ordex-orders-import-"
+      },
+      {
+        "level": 2,
+        "title": "OpenOrdex events: `POST /api/ordex/orders/openordex-event`",
+        "anchor": "openordex-events-post-api-ordex-orders-openordex-event-"
+      },
+      {
+        "level": 2,
+        "title": "Export: the envelope and the artifact",
+        "anchor": "export-the-envelope-and-the-artifact"
+      },
+      {
+        "level": 2,
+        "title": "What a source may never do",
+        "anchor": "what-a-source-may-never-do"
+      }
+    ],
+    "rawLength": 4495
+  },
+  {
+    "file": "lifecycle.md",
+    "id": "lifecycle",
+    "title": "Order lifecycle",
+    "headings": [
+      {
+        "level": 1,
+        "title": "Order lifecycle",
+        "anchor": "order-lifecycle"
+      },
+      {
+        "level": 2,
+        "title": "States",
+        "anchor": "states"
+      },
+      {
+        "level": 2,
+        "title": "Actionability",
+        "anchor": "actionability"
+      },
+      {
+        "level": 2,
+        "title": "Withdrawal is discovery, not cancellation",
+        "anchor": "withdrawal-is-discovery-not-cancellation"
+      },
+      {
+        "level": 2,
+        "title": "The activity log",
+        "anchor": "the-activity-log"
+      }
+    ],
+    "rawLength": 3102
+  },
+  {
+    "file": "offers.md",
+    "id": "offers",
+    "title": "Offers v1",
+    "headings": [
+      {
+        "level": 1,
+        "title": "Offers v1",
+        "anchor": "offers-v1"
+      },
+      {
+        "level": 2,
+        "title": "The three offer kinds",
+        "anchor": "the-three-offer-kinds"
+      },
+      {
+        "level": 2,
+        "title": "Offer terms",
+        "anchor": "offer-terms"
+      },
+      {
+        "level": 2,
+        "title": "The funded offer output",
+        "anchor": "the-funded-offer-output"
+      },
+      {
+        "level": 3,
+        "title": "Acceptance leaf",
+        "anchor": "acceptance-leaf"
+      },
+      {
+        "level": 3,
+        "title": "Recovery leaf",
+        "anchor": "recovery-leaf"
+      },
+      {
+        "level": 3,
+        "title": "The policy signers",
+        "anchor": "the-policy-signers"
+      },
+      {
+        "level": 2,
+        "title": "Acceptance",
+        "anchor": "acceptance"
+      },
+      {
+        "level": 2,
+        "title": "Recovery",
+        "anchor": "recovery"
+      },
+      {
+        "level": 2,
+        "title": "Offer lifecycle",
+        "anchor": "offer-lifecycle"
+      },
+      {
+        "level": 2,
+        "title": "What Ordex never does",
+        "anchor": "what-ordex-never-does"
+      }
+    ],
+    "rawLength": 12840
+  },
+  {
+    "file": "purchase.md",
+    "id": "purchase",
+    "title": "Completing a public ask",
+    "headings": [
+      {
+        "level": 1,
+        "title": "Completing a public ask",
+        "anchor": "completing-a-public-ask"
+      },
+      {
+        "level": 2,
+        "title": "The seller half",
+        "anchor": "the-seller-half"
+      },
+      {
+        "level": 2,
+        "title": "Rule one: the indexes must match",
+        "anchor": "rule-one-the-indexes-must-match"
+      },
+      {
+        "level": 2,
+        "title": "Rule two: that index cannot be zero",
+        "anchor": "rule-two-that-index-cannot-be-zero"
+      },
+      {
+        "level": 2,
+        "title": "The arrangement Ordex builds",
+        "anchor": "the-arrangement-ordex-builds"
+      },
+      {
+        "level": 2,
+        "title": "What Ordex refuses",
+        "anchor": "what-ordex-refuses"
+      },
+      {
+        "level": 2,
+        "title": "What Ordex never does",
+        "anchor": "what-ordex-never-does"
+      },
+      {
+        "level": 2,
+        "title": "A public ask can be raced",
+        "anchor": "a-public-ask-can-be-raced"
+      }
+    ],
+    "rawLength": 6188
+  },
+  {
+    "file": "runes.md",
+    "id": "runes",
+    "title": "Not burning the runes a purchase spends",
+    "headings": [
+      {
+        "level": 1,
+        "title": "Not burning the runes a purchase spends",
+        "anchor": "not-burning-the-runes-a-purchase-spends"
+      },
+      {
+        "level": 2,
+        "title": "Where a rune balance lives",
+        "anchor": "where-a-rune-balance-lives"
+      },
+      {
+        "level": 2,
+        "title": "The cenotaph",
+        "anchor": "the-cenotaph"
+      },
+      {
+        "level": 2,
+        "title": "Reading the runestone",
+        "anchor": "reading-the-runestone"
+      },
+      {
+        "level": 2,
+        "title": "What makes it a cenotaph",
+        "anchor": "what-makes-it-a-cenotaph"
+      },
+      {
+        "level": 2,
+        "title": "The rule a client must apply",
+        "anchor": "the-rule-a-client-must-apply"
+      },
+      {
+        "level": 2,
+        "title": "Conformance",
+        "anchor": "conformance"
+      }
+    ],
+    "rawLength": 4899
+  },
+  {
+    "file": "safeops.md",
+    "id": "safeops",
+    "title": "SafeOps v1",
+    "headings": [
+      {
+        "level": 1,
+        "title": "SafeOps v1",
+        "anchor": "safeops-v1"
+      },
+      {
+        "level": 2,
+        "title": "Who does what",
+        "anchor": "who-does-what"
+      },
+      {
+        "level": 2,
+        "title": "Inventory resolution",
+        "anchor": "inventory-resolution"
+      },
+      {
+        "level": 2,
+        "title": "The plan",
+        "anchor": "the-plan"
+      },
+      {
+        "level": 2,
+        "title": "Asset safety rules",
+        "anchor": "asset-safety-rules"
+      },
+      {
+        "level": 2,
+        "title": "Partitioning at scale",
+        "anchor": "partitioning-at-scale"
+      },
+      {
+        "level": 2,
+        "title": "The execution shield",
+        "anchor": "the-execution-shield"
+      },
+      {
+        "level": 2,
+        "title": "Signed results",
+        "anchor": "signed-results"
+      },
+      {
+        "level": 2,
+        "title": "RBF and CPFP",
+        "anchor": "rbf-and-cpfp"
+      },
+      {
+        "level": 2,
+        "title": "Monitoring",
+        "anchor": "monitoring"
+      }
+    ],
+    "rawLength": 6462
+  },
+  {
+    "file": "swaps.md",
+    "id": "swaps",
+    "title": "Atomic swap links and the OTC desk v1",
+    "headings": [
+      {
+        "level": 1,
+        "title": "Atomic swap links and the OTC desk v1",
+        "anchor": "atomic-swap-links-and-the-otc-desk-v1"
+      },
+      {
+        "level": 2,
+        "title": "The two stage model",
+        "anchor": "the-two-stage-model"
+      },
+      {
+        "level": 2,
+        "title": "The intent",
+        "anchor": "the-intent"
+      },
+      {
+        "level": 2,
+        "title": "Private encrypted links",
+        "anchor": "private-encrypted-links"
+      },
+      {
+        "level": 2,
+        "title": "The acceptance plan",
+        "anchor": "the-acceptance-plan"
+      },
+      {
+        "level": 2,
+        "title": "Lifecycle",
+        "anchor": "lifecycle"
+      },
+      {
+        "level": 2,
+        "title": "Settlement cohort",
+        "anchor": "settlement-cohort"
+      },
+      {
+        "level": 2,
+        "title": "Adversarial coverage",
+        "anchor": "adversarial-coverage"
+      }
+    ],
+    "rawLength": 5683
+  }
+]

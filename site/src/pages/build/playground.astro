@@ -1,0 +1,39 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { ApiPlayground } from '../../components/playground/ApiPlayground.jsx';
+import { EventPlayground } from '../../components/playground/EventPlayground.jsx';
+import { FeedbackWidget } from '../../components/feedback/FeedbackWidget.jsx';
+---
+
+<BaseLayout
+  title="API & Event Playground: Live & Mock Interactive Testing"
+  description="Execute OpenAPI 3.1 operations and stream AsyncAPI 3.0 event channels with Deterministic Mock, Gateway Read, and Gateway Mutation modes."
+  currentNav="build"
+>
+  <div style="display: flex; flex-direction: column; gap: 2.5rem;">
+    <div>
+      <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+        <span class="badge badge-verification">OpenAPI 3.1 & AsyncAPI 3.0</span>
+        <span class="badge badge-example">Deterministic Mock Included</span>
+      </div>
+      <h1 style="margin: 0 0 0.5rem 0; font-size: 2.2rem; font-weight: 800;">API & Real-Time Playground</h1>
+      <p style="margin: 0; font-size: 1.1rem; color: var(--color-text-secondary);">
+        Test all 78 operations and 3 event channels directly from your browser. Switch seamlessly between offline mock fixtures and live gateway endpoints.
+      </p>
+    </div>
+
+    {/* Section 1: REST API Operations */}
+    <div>
+      <h2 style="margin: 0 0 1rem 0; font-size: 1.4rem;">REST API Operations (78 Operations)</h2>
+      <ApiPlayground client:load />
+    </div>
+
+    {/* Section 2: Real-Time Event & Webhook Channels */}
+    <div>
+      <h2 style="margin: 0 0 1rem 0; font-size: 1.4rem;">Real-Time Events & Webhooks (3 Channels)</h2>
+      <EventPlayground client:load />
+    </div>
+
+    <FeedbackWidget client:load route="/build/playground" heading="API & Event Playground" />
+  </div>
+</BaseLayout>

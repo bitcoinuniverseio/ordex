@@ -1,0 +1,62 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { FeedbackWidget } from '../../components/feedback/FeedbackWidget.jsx';
+import refusalsData from '../../data/refusals.json';
+---
+
+<BaseLayout
+  title="Refusal Codes Encyclopedia: Ordex Reference Verifier Errors"
+  description="Authoritative catalog of all 172 Ordex refusal codes across purchase, offers, runes, SafeOps, swaps, and manifest verifiers."
+  currentNav="reference"
+>
+  <div style="display: flex; flex-direction: column; gap: 2rem;">
+    <div>
+      <span class="badge badge-verification">172 Refusal Codes</span>
+      <h1 style="margin: 0.25rem 0 0.5rem 0; font-size: 2.2rem; font-weight: 800;">Refusal Codes Catalog</h1>
+      <p style="margin: 0; font-size: 1.1rem; color: var(--color-text-secondary);">
+        Ordex verifiers fail closed and return deterministic machine-readable codes. Never rely on generic error strings.
+      </p>
+    </div>
+
+    {/* Refusals Table */}
+    <div class="panel" style="padding: 0; overflow: hidden;">
+      <div style="padding: 1rem 1.25rem; background: var(--color-bg-subtle); border-bottom: 1px solid var(--color-border); display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-weight: 700;">All Reference Verifier Refusal Codes</span>
+        <span style="font-size: 0.8rem; color: var(--color-text-muted);">Matches verifier/*.js implementations</span>
+      </div>
+
+      <div style="overflow-x: auto; max-height: 700px; overflow-y: auto;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+          <thead>
+            <tr style="border-bottom: 2px solid var(--color-border); text-align: left; background: var(--color-bg-surface);">
+              <th style="padding: 0.6rem 1rem;">Refusal Code</th>
+              <th style="padding: 0.6rem 1rem;">Category</th>
+              <th style="padding: 0.6rem 1rem;">Explanation</th>
+              <th style="padding: 0.6rem 1rem;">Remediation</th>
+            </tr>
+          </thead>
+          <tbody>
+            {refusalsData.map((ref) => (
+              <tr key={ref.code} id={ref.code} style="border-bottom: 1px solid var(--color-border);">
+                <td style="padding: 0.6rem 1rem; font-family: var(--font-mono); font-weight: 700; color: var(--color-danger);">
+                  {ref.code}
+                </td>
+                <td style="padding: 0.6rem 1rem;">
+                  <span class="badge badge-observation">{ref.category}</span>
+                </td>
+                <td style="padding: 0.6rem 1rem; color: var(--color-text-primary);">
+                  {ref.explanation}
+                </td>
+                <td style="padding: 0.6rem 1rem; color: var(--color-text-secondary); font-size: 0.8em;">
+                  {ref.remediation}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <FeedbackWidget client:load route="/reference/refusal-codes" heading="Refusal Codes Catalog" />
+  </div>
+</BaseLayout>
