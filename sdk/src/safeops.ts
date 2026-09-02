@@ -440,7 +440,7 @@ export type SafeOpsSignedResultVerdict =
   | { ok: false; code: SafeOpsPlanRefusalCode | SafeOpsSignedResultRefusalCode; reason: string };
 
 const refuseSigned = (
-  code: SafeOpsPlanRefusalCode | SafeOpsSignedResultRefusalCode,
+  code: SafeOpsSignedResultRefusalCode,
   reason: string,
 ): SafeOpsSignedResultVerdict => ({ ok: false, code, reason });
 
