@@ -47,8 +47,8 @@ Sitemap: https://bitcoinuniverseio.github.io/ordex/sitemap.xml
 await writeFile(resolve(dist, 'client', 'robots.txt'), robots);
 await writeFile(resolve(root, 'docs', 'robots.txt'), robots);
 
-// llms.txt & llms-full.txt
-for (const name of ['docs.manifest.json', 'llms.txt']) {
+// llms.txt & llms-full.txt & .nojekyll
+for (const name of ['docs.manifest.json', 'llms.txt', '.nojekyll']) {
   await cp(resolve(root, name), resolve(root, 'docs', name));
   await cp(resolve(root, name), resolve(dist, 'client', name));
 }

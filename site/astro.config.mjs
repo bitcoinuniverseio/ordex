@@ -5,6 +5,9 @@ export default defineConfig({
   site: 'https://bitcoinuniverseio.github.io',
   base: '/ordex',
   output: 'static',
+  build: {
+    assets: 'assets'
+  },
   integrations: [preact()],
   outDir: '../dist/client'
 });
