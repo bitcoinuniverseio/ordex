@@ -1,0 +1,62 @@
+[
+  {
+    "name": "eventsStream",
+    "address": "/events/stream",
+    "description": "Server sent events. The SSE id field carries the event id; sending Last-Event-ID resumes exactly after it. Filters: network, type, aggregateType, aggregateId, protocol, collectionId.",
+    "messages": {
+      "ordexEvent": {
+        "$ref": "#/components/messages/ordexEvent"
+      },
+      "heartbeat": {
+        "payload": {
+          "type": "string",
+          "const": ": heartbeat"
+        },
+        "description": "A comment line at least every 15 seconds so proxies never close an idle stream."
+      }
+    }
+  },
+  {
+    "name": "eventsSocket",
+    "address": "/events/ws",
+    "description": "WebSocket for high volume consumers. One connection, many subscriptions, cursor resumption, bounded buffers, slow consumer disconnect with a resumable cursor.",
+    "messages": {
+      "subscribe": {
+        "payload": {
+          "type": "object",
+          "required": [
+            "op"
+          ],
+          "properties": {
+            "op": {
+              "type": "string",
+              "const": "subscribe"
+            },
+            "filters": {
+              "type": "object",
+              "additionalProperties": true
+            },
+            "cursor": {
+              "type": "string",
+              "description": "Resume from this event sequence and id."
+            }
+          }
+        },
+        "description": "Multiplex many filters over one connection."
+      },
+      "ordexEvent": {
+        "$ref": "#/components/messages/ordexEvent"
+      }
+    }
+  },
+  {
+    "name": "webhookDelivery",
+    "address": "{subscriberUrl}",
+    "description": "HTTP POST of one envelope per delivery, signed with the X-Ordex-Signature header: t=<unix>,d=<deliveryId>,v1=<hmac-sha256 over timestamp.deliveryId.sha256(body)>. Verify with the SDK enforcer or verifier/events.js.",
+    "messages": {
+      "ordexEvent": {
+        "$ref": "#/components/messages/ordexEvent"
+      }
+    }
+  }
+]
