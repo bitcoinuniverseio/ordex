@@ -64,8 +64,8 @@ export function VersionDiff() {
             <p style="font-size: 0.85rem; color: var(--color-text-secondary); margin: 0 0 1rem 0;">
               {baseObj.description}
             </p>
-            <div style="font-size: 0.8rem; font-family: var(--font-mono); margin-bottom: 0.5rem;">
-              Contract Digest: {baseObj.contractDigest.slice(0, 20)}...
+            <div style="font-size: 0.8rem; font-family: var(--font-mono); margin-bottom: 0.5rem; word-break: break-all;">
+              Contract Digest: {baseObj.contractDigest}
             </div>
             <div>
               <strong style="font-size: 0.8rem; text-transform: uppercase; color: var(--color-text-muted);">
@@ -88,8 +88,8 @@ export function VersionDiff() {
             <p style="font-size: 0.85rem; color: var(--color-text-secondary); margin: 0 0 1rem 0;">
               {targetObj.description}
             </p>
-            <div style="font-size: 0.8rem; font-family: var(--font-mono); margin-bottom: 0.5rem;">
-              Contract Digest: {targetObj.contractDigest.slice(0, 20)}...
+            <div style="font-size: 0.8rem; font-family: var(--font-mono); margin-bottom: 0.5rem; word-break: break-all;">
+              Contract Digest: {targetObj.contractDigest}
             </div>
             <div>
               <strong style="font-size: 0.8rem; text-transform: uppercase; color: var(--color-brand);">

@@ -176,7 +176,7 @@ export function GatewayDoctor() {
             <div style="font-weight: 800; font-size: 1.2rem; color: report.success ? 'var(--color-success)' : 'var(--color-danger)';">
               {report.success ? '✓ GATEWAY COMPLIANCE VERIFIED (Self-Test Report)' : '✖ GATEWAY NON-COMPLIANCE DETECTED'}
             </div>
-            <span class="badge badge-verification">Digest: {report.digest.slice(0, 15)}...</span>
+            <span class="badge badge-verification" style="word-break: break-all;">Digest: {report.digest}</span>
           </div>
           <p style="margin: 0; font-size: 0.85rem;">
             Target origin: <code>{report.origin}</code>. Passed {report.passed}/{report.total} requirements in {report.durationMs}ms.

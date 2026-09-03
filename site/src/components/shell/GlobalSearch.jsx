@@ -344,7 +344,7 @@ export function GlobalSearch() {
                               {res.title}
                             </span>
                           </div>
-                          <div style="font-size: 0.8rem; color: var(--color-text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                          <div style="font-size: 0.8rem; color: var(--color-text-secondary); word-break: break-word; line-height: 1.35;">
                             {res.subtitle}
                           </div>
                         </div>
