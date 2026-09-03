@@ -59,7 +59,7 @@ export function SatFlowDiagram({ transaction, order, onSelectElement }) {
                   <span>Input #{idx} {isOffered ? '🏷️ [Seller Asset]' : '💰 [Buyer Funding]'}</span>
                   <span>{inp.valueSats || '0'} sats</span>
                 </div>
-                <div style="font-size: 0.75rem; font-family: var(--font-mono); color: var(--color-text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                <div style="font-size: 0.75rem; font-family: var(--font-mono); color: var(--color-text-muted); word-break: break-all;">
                   {inp.txid}:{inp.vout}
                 </div>
               </div>
@@ -103,8 +103,8 @@ export function SatFlowDiagram({ transaction, order, onSelectElement }) {
                   </span>
                   <span>{out.valueSats || '0'} sats</span>
                 </div>
-                <div style="font-size: 0.75rem; font-family: var(--font-mono); color: var(--color-text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                  script: {out.scriptHex?.slice(0, 24)}...
+                <div style="font-size: 0.75rem; font-family: var(--font-mono); color: var(--color-text-muted); word-break: break-all;">
+                  script: {out.scriptHex}
                 </div>
               </div>
             );
