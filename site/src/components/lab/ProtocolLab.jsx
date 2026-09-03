@@ -157,7 +157,7 @@ export function ProtocolLab() {
               style="font-size: 0.75rem; min-height: 28px; padding: 0.15rem 0.5rem;"
               onClick={() => loadExample(v)}
             >
-              [{v.family}] {v.title?.slice(0, 24)}...
+              [{v.family}] {v.title || v.name}
             </button>
           ))}
         </div>

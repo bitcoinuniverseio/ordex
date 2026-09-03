@@ -27,7 +27,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
           </div>
           <h3 style="margin: 0 0 0.5rem 0; font-size: 1.1rem;">{s.title}</h3>
           <div style="font-size: 0.8rem; color: var(--color-text-secondary); margin-bottom: 1rem;">
-            Sections: {s.headings.map((h) => h.title).slice(0, 3).join(', ')}...
+            Sections: {s.headings.map((h) => h.title).join(', ')}
           </div>
           <div style="display: flex; gap: 0.5rem;">
             <a href={`https://github.com/bitcoinuniverseio/ordex/blob/main/spec/${s.file}`} target="_blank" rel="noreferrer" class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.2rem 0.5rem;">

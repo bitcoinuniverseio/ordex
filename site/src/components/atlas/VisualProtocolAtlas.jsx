@@ -133,27 +133,34 @@ export function VisualProtocolAtlas({ initialDiagramId = null }) {
                     stroke-dasharray="4"
                   />
                   {/* Actor Box */}
-                  <rect
-                    x={x - 65}
-                    y={10}
-                    width={130}
-                    height={35}
-                    rx={6}
-                    fill={isFrom || isTo ? 'var(--color-brand)' : 'var(--color-bg-surface)'}
-                    stroke={isFrom || isTo ? 'var(--color-brand)' : 'var(--color-border)'}
-                    stroke-width="2"
-                  />
-                  <text
-                    x={x}
-                    y={32}
-                    text-anchor="middle"
-                    fill={isFrom || isTo ? '#ffffff' : 'var(--color-text-primary)'}
-                    font-size="12"
-                    font-weight="700"
-                    font-family="system-ui"
-                  >
-                    {actor}
-                  </text>
+                  {(() => {
+                    const actorBoxWidth = Math.max(120, actor.length * 7.2 + 16);
+                    return (
+                      <g>
+                        <rect
+                          x={x - actorBoxWidth / 2}
+                          y={10}
+                          width={actorBoxWidth}
+                          height={35}
+                          rx={6}
+                          fill={isFrom || isTo ? 'var(--color-brand)' : 'var(--color-bg-surface)'}
+                          stroke={isFrom || isTo ? 'var(--color-brand)' : 'var(--color-border)'}
+                          stroke-width="2"
+                        />
+                        <text
+                          x={x}
+                          y={32}
+                          text-anchor="middle"
+                          fill={isFrom || isTo ? '#ffffff' : 'var(--color-text-primary)'}
+                          font-size="11"
+                          font-weight="700"
+                          font-family="system-ui"
+                        >
+                          {actor}
+                        </text>
+                      </g>
+                    );
+                  })()}
                 </g>
               );
             })}
@@ -164,46 +171,71 @@ export function VisualProtocolAtlas({ initialDiagramId = null }) {
               const toIdx = diagram.actors.indexOf(activeStepObj.to);
               if (fromIdx === -1 || toIdx === -1) return null;
 
-              const x1 = 75 + fromIdx * (750 / Math.max(1, diagram.actors.length - 1));
-              const x2 = 75 + toIdx * (750 / Math.max(1, diagram.actors.length - 1));
+              const totalActors = Math.max(1, diagram.actors.length - 1);
+              const x1 = 75 + fromIdx * (750 / totalActors);
+              const x2 = 75 + toIdx * (750 / totalActors);
               const y = 110;
+              const isSelf = fromIdx === toIdx;
+
+              const fullLabel = `Step ${activeStepObj.step}: ${activeStepObj.label}`;
+              const textWidth = fullLabel.length * 6.8;
+              const boxWidth = Math.min(840, Math.max(220, textWidth + 28));
+              const midX = isSelf ? x1 : (x1 + x2) / 2;
+              const boxX = Math.max(10, Math.min(890 - boxWidth, midX - boxWidth / 2));
+              const textX = boxX + boxWidth / 2;
 
               return (
                 <g>
-                  <line
-                    x1={x1}
-                    y1={y}
-                    x2={x2}
-                    y2={y}
-                    stroke="var(--color-brand)"
-                    stroke-width="3"
-                  />
+                  {isSelf ? (
+                    <path
+                      d={`M ${x1 - 25},${y} C ${x1 - 55},${y + 40} ${x1 + 55},${y + 40} ${x1 + 20},${y + 4}`}
+                      fill="none"
+                      stroke="var(--color-brand)"
+                      stroke-width="3"
+                    />
+                  ) : (
+                    <line
+                      x1={x1}
+                      y1={y}
+                      x2={x2}
+                      y2={y}
+                      stroke="var(--color-brand)"
+                      stroke-width="3"
+                    />
+                  )}
                   {/* Arrowhead */}
-                  <polygon
-                    points={x1 < x2 ? `${x2},${y} ${x2 - 10},${y - 5} ${x2 - 10},${y + 5}` : `${x2},${y} ${x2 + 10},${y - 5} ${x2 + 10},${y + 5}`}
-                    fill="var(--color-brand)"
-                  />
+                  {isSelf ? (
+                    <polygon
+                      points={`${x1 + 20},${y} ${x1 + 30},${y + 8} ${x1 + 10},${y + 8}`}
+                      fill="var(--color-brand)"
+                    />
+                  ) : (
+                    <polygon
+                      points={x1 < x2 ? `${x2},${y} ${x2 - 10},${y - 5} ${x2 - 10},${y + 5}` : `${x2},${y} ${x2 + 10},${y - 5} ${x2 + 10},${y + 5}`}
+                      fill="var(--color-brand)"
+                    />
+                  )}
                   {/* Step Label Box */}
                   <rect
-                    x={Math.min(x1, x2) + Math.abs(x1 - x2) / 2 - 140}
-                    y={y - 30}
-                    width={280}
-                    height={24}
-                    rx={4}
+                    x={boxX}
+                    y={y - 32}
+                    width={boxWidth}
+                    height={26}
+                    rx={5}
                     fill="var(--color-bg-surface)"
                     stroke="var(--color-brand)"
                     stroke-width="1.5"
                   />
                   <text
-                    x={Math.min(x1, x2) + Math.abs(x1 - x2) / 2}
-                    y={y - 14}
+                    x={textX}
+                    y={y - 15}
                     text-anchor="middle"
                     fill="var(--color-text-primary)"
                     font-size="11"
                     font-weight="600"
                     font-family="system-ui"
                   >
-                    Step {activeStepObj.step}: {activeStepObj.label.slice(0, 38)}
+                    {fullLabel}
                   </text>
                 </g>
               );
