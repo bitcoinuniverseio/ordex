@@ -1396,6 +1396,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/ordex/operations/{operationId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The receipt a mutation committed under an idempotency key
+         * @description Lets a caller that lost a reply learn what the gateway committed under the operation id it sent, instead of repeating the mutation. Unknown ids answer 404 so a lost request is distinguishable from a lost reply.
+         */
+        get: operations["getOperation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1622,6 +1642,9 @@ export interface components {
             observedAt: string;
             /** Format: date-time */
             expiresAt: string;
+            feePolicy: components["schemas"]["FeePolicyReference"];
+            /** @description Every fee or royalty output the composed transaction carries. Empty under a zero policy; a zero is stated as an empty list, never omitted. */
+            feeOutputs: components["schemas"]["FeeOutput"][];
         };
         /** @description Either the final transaction hex or the signed PSBT a wallet actually answers with. */
         PreflightRequest: {
@@ -1789,6 +1812,29 @@ export interface components {
                 /** @constant */
                 ingestion: "publish-only";
                 note: string;
+            };
+            /** @description The exact protocol version this gateway implements. */
+            protocolVersion: string;
+            /** @description Same value as protocolVersion, kept for consumers that pinned `version`. */
+            version: string;
+            network: components["schemas"]["Network"];
+            capabilities: components["schemas"]["GatewayCapabilities"];
+            /** @description For every capability that is false, the exact prerequisites still missing, so a consumer can report them instead of guessing. */
+            prerequisites: {
+                [key: string]: string[];
+            };
+            feePolicy: components["schemas"]["FeePolicy"];
+            implementation: {
+                name: string;
+                /** @description The source revision the gateway runs, when the deployment states it. Consumers key capability caches to it. */
+                revision: string | null;
+            };
+            operationReceipts: {
+                /** @constant */
+                header: "idempotency-key";
+                /** @constant */
+                route: "/api/ordex/operations/{operationId}";
+                operations: ("PUBLISH_ASK" | "WITHDRAW" | "REPLACE")[];
             };
         };
         /**
@@ -1989,18 +2035,41 @@ export interface components {
                 sellerPaymentOutputIndex: number;
                 buyerAssetOutputIndex: number;
                 /** @description This ask's exact price. */
-                priceSats?: components["schemas"]["AtomicSats"];
+                priceSats: components["schemas"]["AtomicSats"];
+                /** @description The buyer output that returns this ask's two padding inputs. */
+                paddingMergeOutputIndex: number;
+                /** @description The exact value of the offered output, which the buyer asset output carries whole. */
+                assetValueSats: components["schemas"]["AtomicSats"];
+                sellerPaymentScriptHex: string;
+                assetOutpoint: components["schemas"]["Outpoint"];
             }[];
             totals: {
                 /** @description Every price, every fee, and every padding sat, stated once. */
                 totalBuyerCostSats: components["schemas"]["AtomicSats"];
                 networkFeeSats: components["schemas"]["AtomicSats"];
+                totalPriceSats: components["schemas"]["AtomicSats"];
+                paddingSats: components["schemas"]["AtomicSats"];
+                changeSats: components["schemas"]["AtomicSats"];
             };
             /**
              * Format: date-time
              * @description How long the composed batch stays composable before at least one ask can no longer be proved.
              */
             expiresAt: string;
+            /** @description The identifier batch-preflight names. */
+            batchId: string;
+            network: components["schemas"]["Network"];
+            feePolicy: components["schemas"]["FeePolicyReference"];
+            feeOutputs: components["schemas"]["FeeOutput"][];
+            inputOutpoints: components["schemas"]["Outpoint"][];
+            outputScriptsHex: string[];
+            outputValuesSats: components["schemas"]["AtomicSats"][];
+            checkpoint: {
+                heightAtomic: components["schemas"]["AtomicSats"];
+                blockHash: string;
+            };
+            /** Format: date-time */
+            observedAt: string;
         };
         BatchRefusal: {
             /** @description The refused ask. */
@@ -2021,6 +2090,8 @@ export interface components {
             signedPsbt?: string;
             /** @description Or the exact final bytes, when already finalized. */
             finalTxHex?: string;
+            /** @description The asks the batch settles, in the order the batch-purchase answer placed them. Optional: a gateway derives them from the inputs when absent, but naming them lets a caller that holds the batch bind the preflight to exactly those orders. */
+            orderIds?: string[];
         };
         BatchPreflightResult: {
             allowed: boolean;
@@ -2041,6 +2112,8 @@ export interface components {
             };
             /** Format: date-time */
             checkedAt: string;
+            /** @description The batch id the request named, echoed back. */
+            batchId?: string | null;
         };
         /** @description The error envelope every route answers with. Rate limited requests additionally carry `code: ORDEX_RATE_LIMITED`. */
         ErrorResponse: {
@@ -2681,6 +2754,70 @@ export interface components {
             reason?: string;
             state?: string;
         };
+        /** @description What this gateway build actually serves. True means the route, its verification, and its full execution contract exist; readiness of the node and the index is reported by `/health`, never here. */
+        GatewayCapabilities: {
+            browse: boolean;
+            createListing: boolean;
+            withdraw: boolean;
+            replace: boolean;
+            purchase: boolean;
+            batchPurchase: boolean;
+            fundedOffers: boolean;
+            offerAcceptance: boolean;
+            operationReceipts: boolean;
+        };
+        /** @description The fee policy a quote or batch was priced under. Basis points of the seller price, as decimal strings; fees round down to whole sats. */
+        FeePolicyReference: {
+            /** @description The policy document version every fee output refers to. */
+            version: string;
+            marketplaceFeeBps: components["schemas"]["AtomicSats"];
+            creatorRoyaltyBps: components["schemas"]["AtomicSats"];
+        };
+        FeePolicy: {
+            /** @description Approved fee destinations, one per role. Empty when the policy takes nothing, so a consumer refuses any fee output under a zero policy. */
+            destinations: {
+                /** @enum {string} */
+                role: "MARKETPLACE_FEE" | "CREATOR_ROYALTY";
+                scriptHex: string;
+            }[];
+            /**
+             * @description Whether a fee is added to the buyer's cost or already inside the seller-approved amount.
+             * @enum {string}
+             */
+            basis: "ADDED_TO_BUYER_COST" | "INSIDE_SELLER_AMOUNT";
+            note: string;
+        } & components["schemas"]["FeePolicyReference"];
+        /** @description One fee or royalty output inside a composed transaction. A consumer proves it exists at its index with its exact script and value, that its script is an approved destination for its role, and that every role's total equals the policy arithmetic on the seller price. */
+        FeeOutput: {
+            /** @enum {string} */
+            role: "MARKETPLACE_FEE" | "CREATOR_ROYALTY";
+            outputIndex: number;
+            scriptHex: string;
+            valueSats: components["schemas"]["AtomicSats"];
+            policyVersion: string;
+        };
+        /** @description The receipt a mutation committed under the caller's `idempotency-key`. The same id with the same request fingerprint replays this receipt; the same id with a different request is a 409; a rejected mutation is recorded and replayed as its rejection; an id the gateway never recorded is a 404, which tells a caller that lost a reply that the request itself was lost. */
+        OperationReceipt: {
+            operationId: string;
+            /** @enum {string} */
+            operation: "PUBLISH_ASK" | "WITHDRAW" | "REPLACE";
+            network: components["schemas"]["Network"];
+            /** @description SHA-256 over the operation kind, the network, and the exact request. */
+            requestFingerprint: string;
+            /** @enum {string} */
+            status: "COMMITTED" | "REJECTED";
+            /** @description The order the operation created, withdrew, or made live. */
+            resourceId: string | null;
+            /** @description The exact JSON the mutation answered, replayed on retry. Null when rejected. */
+            receipt: unknown;
+            rejection: {
+                status: number;
+                code: string;
+                message: string;
+            } | null;
+            /** Format: date-time */
+            createdAt: string;
+        };
     };
     responses: {
         /** @description The request failed. The envelope states the status, a human readable message, and the request id. */
@@ -2725,6 +2862,9 @@ export interface components {
         OrderId: string;
         /** @description The gateway offer identifier. */
         OfferId: string;
+        /** @description The caller's operation id for this mutation. The gateway commits the order change and a receipt under this id in one transaction; the same id with the same request replays the receipt, the same id with a different request is a 409, and the receipt is readable at `GET /operations/{operationId}`. */
+        IdempotencyKey: string;
+        OperationId: string;
     };
     requestBodies: never;
     headers: never;
@@ -3009,7 +3149,10 @@ export interface operations {
     publishAsk: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description The caller's operation id for this mutation. The gateway commits the order change and a receipt under this id in one transaction; the same id with the same request replays the receipt, the same id with a different request is a 409, and the receipt is readable at `GET /operations/{operationId}`. */
+                "idempotency-key"?: components["parameters"]["IdempotencyKey"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -3029,6 +3172,13 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description The operation id was already used for a different request, or the replacement conflicts with the book. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             429: components["responses"]["RateLimited"];
             default: components["responses"]["Error"];
         };
@@ -3061,7 +3211,10 @@ export interface operations {
     withdrawOrder: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description The caller's operation id for this mutation. The gateway commits the order change and a receipt under this id in one transaction; the same id with the same request replays the receipt, the same id with a different request is a 409, and the receipt is readable at `GET /operations/{operationId}`. */
+                "idempotency-key"?: components["parameters"]["IdempotencyKey"];
+            };
             path: {
                 /** @description The order id. */
                 id: components["parameters"]["OrderId"];
@@ -3085,6 +3238,13 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             404: components["responses"]["NotFound"];
+            /** @description The operation id was already used for a different request, or the replacement conflicts with the book. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             429: components["responses"]["RateLimited"];
             default: components["responses"]["Error"];
         };
@@ -3245,7 +3405,10 @@ export interface operations {
     replaceOrder: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description The caller's operation id for this mutation. The gateway commits the order change and a receipt under this id in one transaction; the same id with the same request replays the receipt, the same id with a different request is a 409, and the receipt is readable at `GET /operations/{operationId}`. */
+                "idempotency-key"?: components["parameters"]["IdempotencyKey"];
+            };
             path: {
                 /** @description The order id. */
                 id: components["parameters"]["OrderId"];
@@ -3269,6 +3432,13 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             404: components["responses"]["NotFound"];
+            /** @description The operation id was already used for a different request, or the replacement conflicts with the book. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             429: components["responses"]["RateLimited"];
             default: components["responses"]["Error"];
         };
@@ -4687,6 +4857,31 @@ export interface operations {
                     "application/json": components["schemas"]["SigningVerificationResult"];
                 };
             };
+            default: components["responses"]["Error"];
+        };
+    };
+    getOperation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                operationId: components["parameters"]["OperationId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The committed or rejected receipt. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OperationReceipt"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["RateLimited"];
             default: components["responses"]["Error"];
         };
     };

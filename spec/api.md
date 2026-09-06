@@ -24,6 +24,7 @@ batch purchase arrived at `1.1` without changing any `1.0` operation.
 | `GET /orders/:id` | One order. |
 | `GET /activity` | The appended lifecycle log, newest first. |
 | `GET /orders/:id/ownership-challenge` | The message a listing owner signs before managing it. |
+| `GET /operations/:operationId` | The receipt a mutation committed under an `idempotency-key`, or 404 when the gateway never recorded that id. |
 | `GET /orders/:id/nostr-envelope` | The unsigned kind 802 event announcing this listing, for the seller's own NIP-07 signer. |
 
 `GET /orders/:id/artifact` is separate on purpose. A browse response carrying
@@ -88,6 +89,45 @@ book.
 | `POST /offers/:id/preflight` | Verifies a built acceptance, policy signatures included, and asks the node whether it would accept it. |
 
 Every write is rate limited.
+
+## The protocol contract is checkable
+
+`GET /protocol` is the consumer's first call, and it has to carry enough to
+refuse a gateway that cannot keep the consumer's promises. Since 1.2.1 it
+states the exact `protocolVersion` (and the same value as `version`), the
+`network`, a boolean per gateway capability (`browse`, `createListing`,
+`withdraw`, `replace`, `purchase`, `batchPurchase`, `fundedOffers`,
+`offerAcceptance`, `operationReceipts`), the `prerequisites` still missing for
+every capability that is false, the versioned `feePolicy`, and the
+`implementation` name and source revision. A capability is true only when the
+route, its verification, and its full execution contract exist in the build;
+whether Core and ord are answering right now is `/health`. A consumer pins the
+version, refuses a different network, refuses a missing capability, and keys
+its cached answer to the implementation revision so a redeployed gateway is
+re-verified before it is trusted.
+
+## Fees are proved, not trusted
+
+Every quote and every batch carries the `feePolicy` it was priced under and
+the exact `feeOutputs` the composed transaction contains: role, output index,
+script, value, and policy version. The consumer recomputes each role's total
+as the seller price times the policy's basis points, rounded down to whole
+sats, checks every declared output against the transaction bytes and against
+the policy's approved destinations, and refuses any output the policy does
+not describe. Under a zero policy the only valid answer is an empty list; a
+zero is stated, never omitted, and never guessed.
+
+## Lost replies are recovered, never repeated
+
+`POST /orders/publish`, `POST /orders/:id/withdraw`, and
+`POST /orders/:id/replace` accept an `idempotency-key`: the caller's own
+operation id. The gateway commits the order change and a receipt under that id
+in one transaction. The same id with the same request replays the receipt; the
+same id with a different request is a `409`; a mutation the gateway rejected
+is recorded and replays as the same rejection. `GET /operations/:operationId`
+reads the receipt back, and an id the gateway never recorded is a `404`, which
+is how a caller tells a lost request from a lost reply: the first is safe to
+send once more under the same id, the second is already done.
 
 One further route exists outside the public surface:
 `POST /admin/orders/:id/withdraw` removes a listing as operator moderation. It
