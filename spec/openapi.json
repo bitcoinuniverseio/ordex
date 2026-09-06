@@ -2,9 +2,9 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Ordex gateway API",
-    "version": "1.2.0",
+    "version": "1.2.1",
     "summary": "Portable Bitcoin orders, verified before you act.",
-    "description": "The HTTP contract an Ordex gateway serves under `/api/ordex`. Amounts and protocol quantities are atomic integers carried as decimal strings, never as floating point numbers. Reads answer 200. Writes answer 201 and are rate limited. Errors use the envelope in `ErrorResponse`. The gateway composes and verifies transactions; it never signs, never holds or contributes funds, and never broadcasts on its own initiative: every relay of a signed transaction happens only after an explicit user broadcast action on a fully signed transaction. Version 1.1 added offers v1, ask replacement, and batch purchase. Version 1.2 adds, additively: SafeOps plans with an execution shield (safeops), atomic swap links and the OTC desk (swaps), the realtime event stream and signed webhooks (events, webhooks), the collection provenance registry (provenance), the Counterparty heritage market authority (heritage), and offline signing sessions (signing). Every 1.0 and 1.1 operation is unchanged.",
+    "description": "The HTTP contract an Ordex gateway serves under `/api/ordex`. Amounts and protocol quantities are atomic integers carried as decimal strings, never as floating point numbers. Reads answer 200. Writes answer 201 and are rate limited. Errors use the envelope in `ErrorResponse`. The gateway composes and verifies transactions; it never signs, never holds or contributes funds, and never broadcasts on its own initiative: every relay of a signed transaction happens only after an explicit user broadcast action on a fully signed transaction. Version 1.1 added offers v1, ask replacement, and batch purchase. Version 1.2 adds, additively: SafeOps plans with an execution shield (safeops), atomic swap links and the OTC desk (swaps), the realtime event stream and signed webhooks (events, webhooks), the collection provenance registry (provenance), the Counterparty heritage market authority (heritage), and offline signing sessions (signing). Every 1.0 and 1.1 operation is unchanged. Version 1.2.1 makes the protocol contract machine-checkable: `GET /protocol` states the exact protocol version, the network, a boolean per gateway capability with the prerequisites of every missing one, the versioned fee policy, and the implementation identity; every quote and batch carries `feePolicy` and `feeOutputs` so a buyer proves every fee output against the published policy; and the mutating order routes accept an `idempotency-key` whose receipt `GET /operations/{operationId}` replays, so a reply lost after the gateway committed is recovered instead of repeated.",
     "license": {
       "name": "MIT",
       "identifier": "MIT"
@@ -616,13 +616,21 @@
           "400": {
             "$ref": "#/components/responses/BadRequest"
           },
+          "409": {
+            "description": "The operation id was already used for a different request, or the replacement conflicts with the book."
+          },
           "429": {
             "$ref": "#/components/responses/RateLimited"
           },
           "default": {
             "$ref": "#/components/responses/Error"
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ]
       }
     },
     "/api/ordex/orders/{id}/ownership-challenge": {
@@ -668,6 +676,9 @@
         "parameters": [
           {
             "$ref": "#/components/parameters/OrderId"
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
           }
         ],
         "requestBody": {
@@ -696,6 +707,9 @@
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "The operation id was already used for a different request, or the replacement conflicts with the book."
           },
           "429": {
             "$ref": "#/components/responses/RateLimited"
@@ -945,6 +959,9 @@
         "parameters": [
           {
             "$ref": "#/components/parameters/OrderId"
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
           }
         ],
         "requestBody": {
@@ -973,6 +990,9 @@
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "The operation id was already used for a different request, or the replacement conflicts with the book."
           },
           "429": {
             "$ref": "#/components/responses/RateLimited"
@@ -3082,6 +3102,42 @@
           }
         }
       }
+    },
+    "/api/ordex/operations/{operationId}": {
+      "get": {
+        "tags": [
+          "status"
+        ],
+        "operationId": "getOperation",
+        "summary": "The receipt a mutation committed under an idempotency key",
+        "description": "Lets a caller that lost a reply learn what the gateway committed under the operation id it sent, instead of repeating the mutation. Unknown ids answer 404 so a lost request is distinguishable from a lost reply.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/OperationId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The committed or rejected receipt.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperationReceipt"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -3110,6 +3166,25 @@
           "type": "string"
         },
         "description": "The gateway offer identifier."
+      },
+      "IdempotencyKey": {
+        "name": "idempotency-key",
+        "in": "header",
+        "required": false,
+        "description": "The caller's operation id for this mutation. The gateway commits the order change and a receipt under this id in one transaction; the same id with the same request replays the receipt, the same id with a different request is a 409, and the receipt is readable at `GET /operations/{operationId}`.",
+        "schema": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._:-]{1,128}$"
+        }
+      },
+      "OperationId": {
+        "name": "operationId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._:-]{1,128}$"
+        }
       }
     },
     "responses": {
@@ -3857,7 +3932,9 @@
           "outputValuesSats",
           "checkpoint",
           "observedAt",
-          "expiresAt"
+          "expiresAt",
+          "feePolicy",
+          "feeOutputs"
         ],
         "properties": {
           "orderId": {
@@ -3967,6 +4044,17 @@
           "expiresAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "feePolicy": {
+            "$ref": "#/components/schemas/FeePolicyReference"
+          },
+          "feeOutputs": {
+            "type": "array",
+            "maxItems": 8,
+            "items": {
+              "$ref": "#/components/schemas/FeeOutput"
+            },
+            "description": "Every fee or royalty output the composed transaction carries. Empty under a zero policy; a zero is stated as an empty list, never omitted."
           }
         }
       },
@@ -4518,7 +4606,15 @@
           "supportedProfiles",
           "orderTemplates",
           "safety",
-          "nostr"
+          "nostr",
+          "protocolVersion",
+          "version",
+          "network",
+          "capabilities",
+          "prerequisites",
+          "feePolicy",
+          "implementation",
+          "operationReceipts"
         ],
         "properties": {
           "name": {
@@ -4586,6 +4682,82 @@
               },
               "note": {
                 "type": "string"
+              }
+            }
+          },
+          "protocolVersion": {
+            "type": "string",
+            "pattern": "^\\d+\\.\\d+(\\.\\d+)?$",
+            "description": "The exact protocol version this gateway implements."
+          },
+          "version": {
+            "type": "string",
+            "pattern": "^\\d+\\.\\d+(\\.\\d+)?$",
+            "description": "Same value as protocolVersion, kept for consumers that pinned `version`."
+          },
+          "network": {
+            "$ref": "#/components/schemas/Network"
+          },
+          "capabilities": {
+            "$ref": "#/components/schemas/GatewayCapabilities"
+          },
+          "prerequisites": {
+            "type": "object",
+            "description": "For every capability that is false, the exact prerequisites still missing, so a consumer can report them instead of guessing.",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "feePolicy": {
+            "$ref": "#/components/schemas/FeePolicy"
+          },
+          "implementation": {
+            "type": "object",
+            "required": [
+              "name",
+              "revision"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "revision": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "pattern": "^[0-9a-f]{40}$",
+                "description": "The source revision the gateway runs, when the deployment states it. Consumers key capability caches to it."
+              }
+            }
+          },
+          "operationReceipts": {
+            "type": "object",
+            "required": [
+              "header",
+              "route",
+              "operations"
+            ],
+            "properties": {
+              "header": {
+                "const": "idempotency-key"
+              },
+              "route": {
+                "const": "/api/ordex/operations/{operationId}"
+              },
+              "operations": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "PUBLISH_ASK",
+                    "WITHDRAW",
+                    "REPLACE"
+                  ]
+                }
               }
             }
           }
@@ -5187,7 +5359,16 @@
           "psbt",
           "placements",
           "totals",
-          "expiresAt"
+          "expiresAt",
+          "batchId",
+          "network",
+          "feePolicy",
+          "feeOutputs",
+          "inputOutpoints",
+          "outputScriptsHex",
+          "outputValuesSats",
+          "checkpoint",
+          "observedAt"
         ],
         "properties": {
           "psbt": {
@@ -5205,7 +5386,12 @@
                 "orderId",
                 "sellerInputIndex",
                 "sellerPaymentOutputIndex",
-                "buyerAssetOutputIndex"
+                "buyerAssetOutputIndex",
+                "paddingMergeOutputIndex",
+                "priceSats",
+                "assetValueSats",
+                "sellerPaymentScriptHex",
+                "assetOutpoint"
               ],
               "properties": {
                 "orderId": {
@@ -5230,6 +5416,26 @@
                     }
                   ],
                   "description": "This ask's exact price."
+                },
+                "paddingMergeOutputIndex": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "The buyer output that returns this ask's two padding inputs."
+                },
+                "assetValueSats": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/AtomicSats"
+                    }
+                  ],
+                  "description": "The exact value of the offered output, which the buyer asset output carries whole."
+                },
+                "sellerPaymentScriptHex": {
+                  "type": "string",
+                  "pattern": "^([0-9a-f]{2})+$"
+                },
+                "assetOutpoint": {
+                  "$ref": "#/components/schemas/Outpoint"
                 }
               }
             }
@@ -5239,7 +5445,10 @@
             "additionalProperties": false,
             "required": [
               "totalBuyerCostSats",
-              "networkFeeSats"
+              "networkFeeSats",
+              "totalPriceSats",
+              "paddingSats",
+              "changeSats"
             ],
             "properties": {
               "totalBuyerCostSats": {
@@ -5252,6 +5461,15 @@
               },
               "networkFeeSats": {
                 "$ref": "#/components/schemas/AtomicSats"
+              },
+              "totalPriceSats": {
+                "$ref": "#/components/schemas/AtomicSats"
+              },
+              "paddingSats": {
+                "$ref": "#/components/schemas/AtomicSats"
+              },
+              "changeSats": {
+                "$ref": "#/components/schemas/AtomicSats"
               }
             }
           },
@@ -5259,6 +5477,60 @@
             "type": "string",
             "format": "date-time",
             "description": "How long the composed batch stays composable before at least one ask can no longer be proved."
+          },
+          "batchId": {
+            "type": "string",
+            "description": "The identifier batch-preflight names."
+          },
+          "network": {
+            "$ref": "#/components/schemas/Network"
+          },
+          "feePolicy": {
+            "$ref": "#/components/schemas/FeePolicyReference"
+          },
+          "feeOutputs": {
+            "type": "array",
+            "maxItems": 8,
+            "items": {
+              "$ref": "#/components/schemas/FeeOutput"
+            }
+          },
+          "inputOutpoints": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Outpoint"
+            }
+          },
+          "outputScriptsHex": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "outputValuesSats": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AtomicSats"
+            }
+          },
+          "checkpoint": {
+            "type": "object",
+            "required": [
+              "heightAtomic",
+              "blockHash"
+            ],
+            "properties": {
+              "heightAtomic": {
+                "$ref": "#/components/schemas/AtomicSats"
+              },
+              "blockHash": {
+                "type": "string"
+              }
+            }
+          },
+          "observedAt": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },
@@ -5321,6 +5593,15 @@
             "type": "string",
             "pattern": "^[0-9a-f]+$",
             "description": "Or the exact final bytes, when already finalized."
+          },
+          "orderIds": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 8,
+            "items": {
+              "type": "string"
+            },
+            "description": "The asks the batch settles, in the order the batch-purchase answer placed them. Optional: a gateway derives them from the inputs when absent, but naming them lets a caller that holds the batch bind the preflight to exactly those orders."
           }
         }
       },
@@ -5380,6 +5661,13 @@
           "checkedAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "batchId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The batch id the request named, echoed back."
           }
         }
       },
@@ -7682,6 +7970,235 @@
           },
           "state": {
             "type": "string"
+          }
+        }
+      },
+      "GatewayCapabilities": {
+        "type": "object",
+        "description": "What this gateway build actually serves. True means the route, its verification, and its full execution contract exist; readiness of the node and the index is reported by `/health`, never here.",
+        "required": [
+          "browse",
+          "createListing",
+          "withdraw",
+          "replace",
+          "purchase",
+          "batchPurchase",
+          "fundedOffers",
+          "offerAcceptance",
+          "operationReceipts"
+        ],
+        "properties": {
+          "browse": {
+            "type": "boolean"
+          },
+          "createListing": {
+            "type": "boolean"
+          },
+          "withdraw": {
+            "type": "boolean"
+          },
+          "replace": {
+            "type": "boolean"
+          },
+          "purchase": {
+            "type": "boolean"
+          },
+          "batchPurchase": {
+            "type": "boolean"
+          },
+          "fundedOffers": {
+            "type": "boolean"
+          },
+          "offerAcceptance": {
+            "type": "boolean"
+          },
+          "operationReceipts": {
+            "type": "boolean"
+          }
+        }
+      },
+      "FeePolicyReference": {
+        "type": "object",
+        "description": "The fee policy a quote or batch was priced under. Basis points of the seller price, as decimal strings; fees round down to whole sats.",
+        "required": [
+          "version",
+          "marketplaceFeeBps",
+          "creatorRoyaltyBps"
+        ],
+        "properties": {
+          "version": {
+            "type": "string",
+            "description": "The policy document version every fee output refers to."
+          },
+          "marketplaceFeeBps": {
+            "$ref": "#/components/schemas/AtomicSats"
+          },
+          "creatorRoyaltyBps": {
+            "$ref": "#/components/schemas/AtomicSats"
+          }
+        }
+      },
+      "FeePolicy": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/FeePolicyReference"
+          }
+        ],
+        "type": "object",
+        "required": [
+          "destinations",
+          "basis",
+          "note"
+        ],
+        "properties": {
+          "destinations": {
+            "type": "array",
+            "description": "Approved fee destinations, one per role. Empty when the policy takes nothing, so a consumer refuses any fee output under a zero policy.",
+            "items": {
+              "type": "object",
+              "required": [
+                "role",
+                "scriptHex"
+              ],
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": [
+                    "MARKETPLACE_FEE",
+                    "CREATOR_ROYALTY"
+                  ]
+                },
+                "scriptHex": {
+                  "type": "string",
+                  "pattern": "^([0-9a-f]{2})+$"
+                }
+              }
+            }
+          },
+          "basis": {
+            "type": "string",
+            "enum": [
+              "ADDED_TO_BUYER_COST",
+              "INSIDE_SELLER_AMOUNT"
+            ],
+            "description": "Whether a fee is added to the buyer's cost or already inside the seller-approved amount."
+          },
+          "note": {
+            "type": "string"
+          }
+        }
+      },
+      "FeeOutput": {
+        "type": "object",
+        "description": "One fee or royalty output inside a composed transaction. A consumer proves it exists at its index with its exact script and value, that its script is an approved destination for its role, and that every role's total equals the policy arithmetic on the seller price.",
+        "required": [
+          "role",
+          "outputIndex",
+          "scriptHex",
+          "valueSats",
+          "policyVersion"
+        ],
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "MARKETPLACE_FEE",
+              "CREATOR_ROYALTY"
+            ]
+          },
+          "outputIndex": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "scriptHex": {
+            "type": "string",
+            "pattern": "^([0-9a-f]{2})+$"
+          },
+          "valueSats": {
+            "$ref": "#/components/schemas/AtomicSats"
+          },
+          "policyVersion": {
+            "type": "string"
+          }
+        }
+      },
+      "OperationReceipt": {
+        "type": "object",
+        "description": "The receipt a mutation committed under the caller's `idempotency-key`. The same id with the same request fingerprint replays this receipt; the same id with a different request is a 409; a rejected mutation is recorded and replayed as its rejection; an id the gateway never recorded is a 404, which tells a caller that lost a reply that the request itself was lost.",
+        "required": [
+          "operationId",
+          "operation",
+          "network",
+          "requestFingerprint",
+          "status",
+          "resourceId",
+          "receipt",
+          "rejection",
+          "createdAt"
+        ],
+        "properties": {
+          "operationId": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9._:-]{1,128}$"
+          },
+          "operation": {
+            "type": "string",
+            "enum": [
+              "PUBLISH_ASK",
+              "WITHDRAW",
+              "REPLACE"
+            ]
+          },
+          "network": {
+            "$ref": "#/components/schemas/Network"
+          },
+          "requestFingerprint": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "description": "SHA-256 over the operation kind, the network, and the exact request."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "COMMITTED",
+              "REJECTED"
+            ]
+          },
+          "resourceId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The order the operation created, withdrew, or made live."
+          },
+          "receipt": {
+            "description": "The exact JSON the mutation answered, replayed on retry. Null when rejected."
+          },
+          "rejection": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "required": [
+              "status",
+              "code",
+              "message"
+            ],
+            "properties": {
+              "status": {
+                "type": "integer"
+              },
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       }
