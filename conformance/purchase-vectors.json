@@ -6,231 +6,803 @@
       "name": "arrangement-ordex-builds",
       "description": "The exact arrangement the gateway composes: two padding inputs, the offered output at index 2, funding behind it, and outputs that absorb padding plus the offered value ahead of the seller payment. The invariant holds with equality.",
       "order": {
-        "offeredOutpoint": { "txid": "aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11", "vout": 0 },
+        "offeredOutpoint": {
+          "txid": "aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11",
+          "vout": 0
+        },
         "sellerPaymentScriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
         "sellerPaymentValueSats": "250000"
       },
       "transaction": {
         "inputs": [
-          { "txid": "b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1", "vout": 0, "valueSats": "600" },
-          { "txid": "b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2", "vout": 1, "valueSats": "600" },
-          { "txid": "aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11", "vout": 0, "valueSats": "546" },
-          { "txid": "b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3", "vout": 2, "valueSats": "300000" }
+          {
+            "txid": "b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1",
+            "vout": 0,
+            "valueSats": "600"
+          },
+          {
+            "txid": "b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
+            "vout": 1,
+            "valueSats": "600"
+          },
+          {
+            "txid": "aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11",
+            "vout": 0,
+            "valueSats": "546"
+          },
+          {
+            "txid": "b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3",
+            "vout": 2,
+            "valueSats": "300000"
+          }
         ],
         "outputs": [
-          { "scriptHex": "0014aaaa0000aaaa0000aaaa0000aaaa0000aaaa0000", "valueSats": "1200" },
-          { "scriptHex": "0014bbbb0000bbbb0000bbbb0000bbbb0000bbbb0000", "valueSats": "546" },
-          { "scriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d", "valueSats": "250000" },
-          { "scriptHex": "0014aaaa0000aaaa0000aaaa0000aaaa0000aaaa0000", "valueSats": "48000" }
+          {
+            "scriptHex": "0014aaaa0000aaaa0000aaaa0000aaaa0000aaaa0000",
+            "valueSats": "1200"
+          },
+          {
+            "scriptHex": "0014bbbb0000bbbb0000bbbb0000bbbb0000bbbb0000",
+            "valueSats": "546"
+          },
+          {
+            "scriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
+            "valueSats": "250000"
+          },
+          {
+            "scriptHex": "0014aaaa0000aaaa0000aaaa0000aaaa0000aaaa0000",
+            "valueSats": "48000"
+          }
         ]
       },
-      "expected": { "ok": true, "sharedIndex": 2 }
+      "expected": {
+        "ok": true,
+        "sharedIndex": 2
+      }
     },
     {
       "name": "surplus-ahead-of-payment",
       "description": "Outputs ahead of the payment absorb more than the offered range. Wasteful, but the asset still lands in a buyer output, so it verifies.",
       "order": {
-        "offeredOutpoint": { "txid": "aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11", "vout": 0 },
+        "offeredOutpoint": {
+          "txid": "aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11",
+          "vout": 0
+        },
         "sellerPaymentScriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
         "sellerPaymentValueSats": "250000"
       },
       "transaction": {
         "inputs": [
-          { "txid": "b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1", "vout": 0, "valueSats": "600" },
-          { "txid": "aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11", "vout": 0, "valueSats": "546" },
-          { "txid": "b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3", "vout": 2, "valueSats": "300000" }
+          {
+            "txid": "b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1",
+            "vout": 0,
+            "valueSats": "600"
+          },
+          {
+            "txid": "aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11",
+            "vout": 0,
+            "valueSats": "546"
+          },
+          {
+            "txid": "b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3",
+            "vout": 2,
+            "valueSats": "300000"
+          }
         ],
         "outputs": [
-          { "scriptHex": "0014bbbb0000bbbb0000bbbb0000bbbb0000bbbb0000", "valueSats": "2000" },
-          { "scriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d", "valueSats": "250000" },
-          { "scriptHex": "0014aaaa0000aaaa0000aaaa0000aaaa0000aaaa0000", "valueSats": "47000" }
+          {
+            "scriptHex": "0014bbbb0000bbbb0000bbbb0000bbbb0000bbbb0000",
+            "valueSats": "2000"
+          },
+          {
+            "scriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
+            "valueSats": "250000"
+          },
+          {
+            "scriptHex": "0014aaaa0000aaaa0000aaaa0000aaaa0000aaaa0000",
+            "valueSats": "47000"
+          }
         ]
       },
-      "expected": { "ok": true, "sharedIndex": 1 }
+      "expected": {
+        "ok": true,
+        "sharedIndex": 1
+      }
     },
     {
       "name": "offered-input-first",
       "description": "The offered output is the first input, so its sats are the first paid out and they land inside the payment returning to the seller. Valid to a node, and the buyer receives nothing.",
       "order": {
-        "offeredOutpoint": { "txid": "aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11", "vout": 0 },
+        "offeredOutpoint": {
+          "txid": "aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11",
+          "vout": 0
+        },
         "sellerPaymentScriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
         "sellerPaymentValueSats": "250000"
       },
       "transaction": {
         "inputs": [
-          { "txid": "aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11", "vout": 0, "valueSats": "546" },
-          { "txid": "b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3", "vout": 2, "valueSats": "300000" }
+          {
+            "txid": "aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11",
+            "vout": 0,
+            "valueSats": "546"
+          },
+          {
+            "txid": "b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3",
+            "vout": 2,
+            "valueSats": "300000"
+          }
         ],
         "outputs": [
-          { "scriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d", "valueSats": "250000" },
-          { "scriptHex": "0014aaaa0000aaaa0000aaaa0000aaaa0000aaaa0000", "valueSats": "48000" }
+          {
+            "scriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
+            "valueSats": "250000"
+          },
+          {
+            "scriptHex": "0014aaaa0000aaaa0000aaaa0000aaaa0000aaaa0000",
+            "valueSats": "48000"
+          }
         ]
       },
-      "expected": { "ok": false, "code": "SAT_FLOW_SHORTFALL" }
+      "expected": {
+        "ok": false,
+        "code": "SAT_FLOW_SHORTFALL"
+      }
     },
     {
       "name": "shortfall-by-one-sat",
       "description": "The outputs ahead of the payment fall one sat short of the offered range. The last sat of the asset's output, and whatever rides on it, would reach the seller.",
       "order": {
-        "offeredOutpoint": { "txid": "aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11", "vout": 0 },
+        "offeredOutpoint": {
+          "txid": "aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11",
+          "vout": 0
+        },
         "sellerPaymentScriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
         "sellerPaymentValueSats": "250000"
       },
       "transaction": {
         "inputs": [
-          { "txid": "b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1", "vout": 0, "valueSats": "600" },
-          { "txid": "b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2", "vout": 1, "valueSats": "600" },
-          { "txid": "aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11", "vout": 0, "valueSats": "546" },
-          { "txid": "b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3", "vout": 2, "valueSats": "300000" }
+          {
+            "txid": "b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1",
+            "vout": 0,
+            "valueSats": "600"
+          },
+          {
+            "txid": "b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
+            "vout": 1,
+            "valueSats": "600"
+          },
+          {
+            "txid": "aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11",
+            "vout": 0,
+            "valueSats": "546"
+          },
+          {
+            "txid": "b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3",
+            "vout": 2,
+            "valueSats": "300000"
+          }
         ],
         "outputs": [
-          { "scriptHex": "0014aaaa0000aaaa0000aaaa0000aaaa0000aaaa0000", "valueSats": "1200" },
-          { "scriptHex": "0014bbbb0000bbbb0000bbbb0000bbbb0000bbbb0000", "valueSats": "545" },
-          { "scriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d", "valueSats": "250000" },
-          { "scriptHex": "0014aaaa0000aaaa0000aaaa0000aaaa0000aaaa0000", "valueSats": "48001" }
+          {
+            "scriptHex": "0014aaaa0000aaaa0000aaaa0000aaaa0000aaaa0000",
+            "valueSats": "1200"
+          },
+          {
+            "scriptHex": "0014bbbb0000bbbb0000bbbb0000bbbb0000bbbb0000",
+            "valueSats": "545"
+          },
+          {
+            "scriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
+            "valueSats": "250000"
+          },
+          {
+            "scriptHex": "0014aaaa0000aaaa0000aaaa0000aaaa0000aaaa0000",
+            "valueSats": "48001"
+          }
         ]
       },
-      "expected": { "ok": false, "code": "SAT_FLOW_SHORTFALL" }
+      "expected": {
+        "ok": false,
+        "code": "SAT_FLOW_SHORTFALL"
+      }
     },
     {
       "name": "payment-at-wrong-index",
       "description": "The seller payment output exists, but not at the index the seller's input occupies. The signature commits to the output at its own index, so this transaction carries an invalid signature and, were it valid, would misroute the sats.",
       "order": {
-        "offeredOutpoint": { "txid": "aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11", "vout": 0 },
+        "offeredOutpoint": {
+          "txid": "aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11",
+          "vout": 0
+        },
         "sellerPaymentScriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
         "sellerPaymentValueSats": "250000"
       },
       "transaction": {
         "inputs": [
-          { "txid": "b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1", "vout": 0, "valueSats": "600" },
-          { "txid": "aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11", "vout": 0, "valueSats": "546" },
-          { "txid": "b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3", "vout": 2, "valueSats": "300000" }
+          {
+            "txid": "b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1",
+            "vout": 0,
+            "valueSats": "600"
+          },
+          {
+            "txid": "aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11",
+            "vout": 0,
+            "valueSats": "546"
+          },
+          {
+            "txid": "b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3",
+            "vout": 2,
+            "valueSats": "300000"
+          }
         ],
         "outputs": [
-          { "scriptHex": "0014aaaa0000aaaa0000aaaa0000aaaa0000aaaa0000", "valueSats": "1146" },
-          { "scriptHex": "0014bbbb0000bbbb0000bbbb0000bbbb0000bbbb0000", "valueSats": "546" },
-          { "scriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d", "valueSats": "250000" }
+          {
+            "scriptHex": "0014aaaa0000aaaa0000aaaa0000aaaa0000aaaa0000",
+            "valueSats": "1146"
+          },
+          {
+            "scriptHex": "0014bbbb0000bbbb0000bbbb0000bbbb0000bbbb0000",
+            "valueSats": "546"
+          },
+          {
+            "scriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
+            "valueSats": "250000"
+          }
         ]
       },
-      "expected": { "ok": false, "code": "SELLER_SCRIPT_MISMATCH" }
+      "expected": {
+        "ok": false,
+        "code": "SELLER_SCRIPT_MISMATCH"
+      }
     },
     {
       "name": "underpaid-seller",
       "description": "The output at the shared index pays the right script but one sat below the asking price. The seller's signature does not commit to it.",
       "order": {
-        "offeredOutpoint": { "txid": "aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11", "vout": 0 },
+        "offeredOutpoint": {
+          "txid": "aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11",
+          "vout": 0
+        },
         "sellerPaymentScriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
         "sellerPaymentValueSats": "250000"
       },
       "transaction": {
         "inputs": [
-          { "txid": "b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1", "vout": 0, "valueSats": "600" },
-          { "txid": "b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2", "vout": 1, "valueSats": "600" },
-          { "txid": "aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11", "vout": 0, "valueSats": "546" }
+          {
+            "txid": "b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1",
+            "vout": 0,
+            "valueSats": "600"
+          },
+          {
+            "txid": "b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
+            "vout": 1,
+            "valueSats": "600"
+          },
+          {
+            "txid": "aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11",
+            "vout": 0,
+            "valueSats": "546"
+          }
         ],
         "outputs": [
-          { "scriptHex": "0014aaaa0000aaaa0000aaaa0000aaaa0000aaaa0000", "valueSats": "1200" },
-          { "scriptHex": "0014bbbb0000bbbb0000bbbb0000bbbb0000bbbb0000", "valueSats": "546" },
-          { "scriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d", "valueSats": "249999" }
+          {
+            "scriptHex": "0014aaaa0000aaaa0000aaaa0000aaaa0000aaaa0000",
+            "valueSats": "1200"
+          },
+          {
+            "scriptHex": "0014bbbb0000bbbb0000bbbb0000bbbb0000bbbb0000",
+            "valueSats": "546"
+          },
+          {
+            "scriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
+            "valueSats": "249999"
+          }
         ]
       },
-      "expected": { "ok": false, "code": "SELLER_VALUE_MISMATCH" }
+      "expected": {
+        "ok": false,
+        "code": "SELLER_VALUE_MISMATCH"
+      }
     },
     {
       "name": "offered-outpoint-missing",
       "description": "No input spends the offered output. Whatever this transaction is, it does not complete this ask.",
       "order": {
-        "offeredOutpoint": { "txid": "aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11", "vout": 0 },
+        "offeredOutpoint": {
+          "txid": "aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11",
+          "vout": 0
+        },
         "sellerPaymentScriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
         "sellerPaymentValueSats": "250000"
       },
       "transaction": {
         "inputs": [
-          { "txid": "b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1", "vout": 0, "valueSats": "600" }
+          {
+            "txid": "b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1",
+            "vout": 0,
+            "valueSats": "600"
+          }
         ],
         "outputs": [
-          { "scriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d", "valueSats": "250000" }
+          {
+            "scriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
+            "valueSats": "250000"
+          }
         ]
       },
-      "expected": { "ok": false, "code": "OFFERED_OUTPOINT_MISSING" }
+      "expected": {
+        "ok": false,
+        "code": "OFFERED_OUTPOINT_MISSING"
+      }
     },
     {
       "name": "offered-outpoint-duplicated",
       "description": "The offered outpoint appears at two indexes. One signature would answer for two positions, so the transaction is refused before any further reasoning.",
       "order": {
-        "offeredOutpoint": { "txid": "aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11", "vout": 0 },
+        "offeredOutpoint": {
+          "txid": "aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11",
+          "vout": 0
+        },
         "sellerPaymentScriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
         "sellerPaymentValueSats": "250000"
       },
       "transaction": {
         "inputs": [
-          { "txid": "aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11", "vout": 0, "valueSats": "546" },
-          { "txid": "aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11", "vout": 0, "valueSats": "546" }
+          {
+            "txid": "aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11",
+            "vout": 0,
+            "valueSats": "546"
+          },
+          {
+            "txid": "aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11",
+            "vout": 0,
+            "valueSats": "546"
+          }
         ],
         "outputs": [
-          { "scriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d", "valueSats": "250000" }
+          {
+            "scriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
+            "valueSats": "250000"
+          }
         ]
       },
-      "expected": { "ok": false, "code": "OFFERED_OUTPOINT_DUPLICATED" }
+      "expected": {
+        "ok": false,
+        "code": "OFFERED_OUTPOINT_DUPLICATED"
+      }
     },
     {
       "name": "no-output-at-shared-index",
       "description": "The offered input sits at an index past the last output, so no output can carry the payment the signature commits to.",
       "order": {
-        "offeredOutpoint": { "txid": "aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11", "vout": 0 },
+        "offeredOutpoint": {
+          "txid": "aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11",
+          "vout": 0
+        },
         "sellerPaymentScriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
         "sellerPaymentValueSats": "250000"
       },
       "transaction": {
         "inputs": [
-          { "txid": "b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1", "vout": 0, "valueSats": "600" },
-          { "txid": "aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11", "vout": 0, "valueSats": "546" }
+          {
+            "txid": "b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1",
+            "vout": 0,
+            "valueSats": "600"
+          },
+          {
+            "txid": "aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11",
+            "vout": 0,
+            "valueSats": "546"
+          }
         ],
         "outputs": [
-          { "scriptHex": "0014aaaa0000aaaa0000aaaa0000aaaa0000aaaa0000", "valueSats": "1146" }
+          {
+            "scriptHex": "0014aaaa0000aaaa0000aaaa0000aaaa0000aaaa0000",
+            "valueSats": "1146"
+          }
         ]
       },
-      "expected": { "ok": false, "code": "SELLER_OUTPUT_MISSING" }
+      "expected": {
+        "ok": false,
+        "code": "SELLER_OUTPUT_MISSING"
+      }
     },
     {
       "name": "unreadable-input-value",
       "description": "The value of an input ahead of the offered one could not be read. The invariant cannot be evaluated, and unknown is refused rather than guessed.",
       "order": {
-        "offeredOutpoint": { "txid": "aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11", "vout": 0 },
+        "offeredOutpoint": {
+          "txid": "aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11",
+          "vout": 0
+        },
         "sellerPaymentScriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
         "sellerPaymentValueSats": "250000"
       },
       "transaction": {
         "inputs": [
-          { "txid": "b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1", "vout": 0, "valueSats": null },
-          { "txid": "aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11", "vout": 0, "valueSats": "546" }
+          {
+            "txid": "b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1",
+            "vout": 0,
+            "valueSats": null
+          },
+          {
+            "txid": "aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11",
+            "vout": 0,
+            "valueSats": "546"
+          }
         ],
         "outputs": [
-          { "scriptHex": "0014aaaa0000aaaa0000aaaa0000aaaa0000aaaa0000", "valueSats": "1146" },
-          { "scriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d", "valueSats": "250000" }
+          {
+            "scriptHex": "0014aaaa0000aaaa0000aaaa0000aaaa0000aaaa0000",
+            "valueSats": "1146"
+          },
+          {
+            "scriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
+            "valueSats": "250000"
+          }
         ]
       },
-      "expected": { "ok": false, "code": "INPUT_VALUE_UNKNOWN" }
+      "expected": {
+        "ok": false,
+        "code": "INPUT_VALUE_UNKNOWN"
+      }
     },
     {
       "name": "fractional-value-refused",
       "description": "An amount written as a fraction is not an atomic integer. It is refused as unreadable rather than rounded.",
       "order": {
-        "offeredOutpoint": { "txid": "aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11", "vout": 0 },
+        "offeredOutpoint": {
+          "txid": "aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11",
+          "vout": 0
+        },
         "sellerPaymentScriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
         "sellerPaymentValueSats": "250000"
       },
       "transaction": {
         "inputs": [
-          { "txid": "b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1", "vout": 0, "valueSats": "600.5" },
-          { "txid": "aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11", "vout": 0, "valueSats": "546" }
+          {
+            "txid": "b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1",
+            "vout": 0,
+            "valueSats": "600.5"
+          },
+          {
+            "txid": "aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11",
+            "vout": 0,
+            "valueSats": "546"
+          }
         ],
         "outputs": [
-          { "scriptHex": "0014aaaa0000aaaa0000aaaa0000aaaa0000aaaa0000", "valueSats": "1147" },
-          { "scriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d", "valueSats": "250000" }
+          {
+            "scriptHex": "0014aaaa0000aaaa0000aaaa0000aaaa0000aaaa0000",
+            "valueSats": "1147"
+          },
+          {
+            "scriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
+            "valueSats": "250000"
+          }
         ]
       },
-      "expected": { "ok": false, "code": "INPUT_VALUE_UNKNOWN" }
+      "expected": {
+        "ok": false,
+        "code": "INPUT_VALUE_UNKNOWN"
+      }
+    },
+    {
+      "name": "arrangement-core-native-single-dummy",
+      "description": "Core's native Ordinals purchase layout: one buyer dummy input ahead of the seller's asset, the receiver output absorbing dummy plus asset, then the seller payout, service fee and change. The shared index is 1, not 2 - the rule is the seller's own index, never a fixed position.",
+      "order": {
+        "offeredOutpoint": {
+          "txid": "aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11",
+          "vout": 0
+        },
+        "sellerPaymentScriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
+        "sellerPaymentValueSats": "11820"
+      },
+      "transaction": {
+        "inputs": [
+          {
+            "txid": "e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1",
+            "vout": 0,
+            "valueSats": "1000"
+          },
+          {
+            "txid": "aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11",
+            "vout": 0,
+            "valueSats": "1000"
+          },
+          {
+            "txid": "f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1",
+            "vout": 1,
+            "valueSats": "15000"
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "0014cccc0000cccc0000cccc0000cccc0000cccc0000",
+            "valueSats": "2000"
+          },
+          {
+            "scriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
+            "valueSats": "11820"
+          },
+          {
+            "scriptHex": "0014dddd0000dddd0000dddd0000dddd0000dddd0000",
+            "valueSats": "360"
+          },
+          {
+            "scriptHex": "0014aaaa0000aaaa0000aaaa0000aaaa0000aaaa0000",
+            "valueSats": "2320"
+          }
+        ]
+      },
+      "expected": {
+        "ok": true,
+        "sharedIndex": 1
+      }
+    },
+    {
+      "name": "core-native-receiver-one-sat-short",
+      "description": "The same Core layout with a receiver output one sat below the dummy plus asset total. The last sat of the offered range would land in the seller's payment, so the buyer would not receive the whole inscription's output.",
+      "order": {
+        "offeredOutpoint": {
+          "txid": "aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11",
+          "vout": 0
+        },
+        "sellerPaymentScriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
+        "sellerPaymentValueSats": "11820"
+      },
+      "transaction": {
+        "inputs": [
+          {
+            "txid": "e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1",
+            "vout": 0,
+            "valueSats": "1000"
+          },
+          {
+            "txid": "aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11",
+            "vout": 0,
+            "valueSats": "1000"
+          },
+          {
+            "txid": "f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1",
+            "vout": 1,
+            "valueSats": "15000"
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "0014cccc0000cccc0000cccc0000cccc0000cccc0000",
+            "valueSats": "1999"
+          },
+          {
+            "scriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
+            "valueSats": "11820"
+          },
+          {
+            "scriptHex": "0014dddd0000dddd0000dddd0000dddd0000dddd0000",
+            "valueSats": "360"
+          },
+          {
+            "scriptHex": "0014aaaa0000aaaa0000aaaa0000aaaa0000aaaa0000",
+            "valueSats": "2321"
+          }
+        ]
+      },
+      "expected": {
+        "ok": false,
+        "code": "SAT_FLOW_SHORTFALL"
+      }
+    },
+    {
+      "name": "nonzero-asset-offset-inside-offered-output",
+      "description": "The inscription sits part way into the offered output rather than on its first sat. The rule does not need to know the offset: absorbing the whole offered range ahead of the payment carries the asset wherever inside that range it sits.",
+      "order": {
+        "offeredOutpoint": {
+          "txid": "aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11",
+          "vout": 0
+        },
+        "sellerPaymentScriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
+        "sellerPaymentValueSats": "250000"
+      },
+      "transaction": {
+        "inputs": [
+          {
+            "txid": "b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1",
+            "vout": 0,
+            "valueSats": "600"
+          },
+          {
+            "txid": "b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
+            "vout": 1,
+            "valueSats": "600"
+          },
+          {
+            "txid": "aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11",
+            "vout": 0,
+            "valueSats": "10000"
+          },
+          {
+            "txid": "b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3",
+            "vout": 2,
+            "valueSats": "300000"
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "0014aaaa0000aaaa0000aaaa0000aaaa0000aaaa0000",
+            "valueSats": "1200"
+          },
+          {
+            "scriptHex": "0014cccc0000cccc0000cccc0000cccc0000cccc0000",
+            "valueSats": "10000"
+          },
+          {
+            "scriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
+            "valueSats": "250000"
+          },
+          {
+            "scriptHex": "0014aaaa0000aaaa0000aaaa0000aaaa0000aaaa0000",
+            "valueSats": "48000"
+          }
+        ]
+      },
+      "expected": {
+        "ok": true,
+        "sharedIndex": 2
+      }
+    },
+    {
+      "name": "insufficient-padding-ahead-of-offered-input",
+      "description": "The Ordex two-padding layout with padding outputs too small to absorb the padding inputs plus the offered output. Part of the offered range would reach the seller payment.",
+      "order": {
+        "offeredOutpoint": {
+          "txid": "aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11",
+          "vout": 0
+        },
+        "sellerPaymentScriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
+        "sellerPaymentValueSats": "250000"
+      },
+      "transaction": {
+        "inputs": [
+          {
+            "txid": "b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1",
+            "vout": 0,
+            "valueSats": "600"
+          },
+          {
+            "txid": "b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
+            "vout": 1,
+            "valueSats": "600"
+          },
+          {
+            "txid": "aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11",
+            "vout": 0,
+            "valueSats": "546"
+          },
+          {
+            "txid": "b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3",
+            "vout": 2,
+            "valueSats": "300000"
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "0014bbbb0000bbbb0000bbbb0000bbbb0000bbbb0000",
+            "valueSats": "600"
+          },
+          {
+            "scriptHex": "0014cccc0000cccc0000cccc0000cccc0000cccc0000",
+            "valueSats": "546"
+          },
+          {
+            "scriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
+            "valueSats": "250000"
+          },
+          {
+            "scriptHex": "0014aaaa0000aaaa0000aaaa0000aaaa0000aaaa0000",
+            "valueSats": "48600"
+          }
+        ]
+      },
+      "expected": {
+        "ok": false,
+        "code": "SAT_FLOW_SHORTFALL"
+      }
+    },
+    {
+      "name": "seller-payout-raised-above-the-ask",
+      "description": "A payout altered upwards is refused exactly like one altered downwards: the seller's signature commits to the asking price, and any other value is a different transaction than the one they signed.",
+      "order": {
+        "offeredOutpoint": {
+          "txid": "aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11",
+          "vout": 0
+        },
+        "sellerPaymentScriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
+        "sellerPaymentValueSats": "250000"
+      },
+      "transaction": {
+        "inputs": [
+          {
+            "txid": "b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1",
+            "vout": 0,
+            "valueSats": "600"
+          },
+          {
+            "txid": "b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
+            "vout": 1,
+            "valueSats": "600"
+          },
+          {
+            "txid": "aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11",
+            "vout": 0,
+            "valueSats": "546"
+          },
+          {
+            "txid": "b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3",
+            "vout": 2,
+            "valueSats": "300000"
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "0014bbbb0000bbbb0000bbbb0000bbbb0000bbbb0000",
+            "valueSats": "1200"
+          },
+          {
+            "scriptHex": "0014cccc0000cccc0000cccc0000cccc0000cccc0000",
+            "valueSats": "546"
+          },
+          {
+            "scriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
+            "valueSats": "250001"
+          },
+          {
+            "scriptHex": "0014aaaa0000aaaa0000aaaa0000aaaa0000aaaa0000",
+            "valueSats": "47999"
+          }
+        ]
+      },
+      "expected": {
+        "ok": false,
+        "code": "SELLER_VALUE_MISMATCH"
+      }
+    },
+    {
+      "name": "malformed-input-entry-ahead-of-offered",
+      "description": "An input entry ahead of the offered index is not an object at all. The verifier answers with a verdict rather than throwing, because a caller handing it an unparsed or hostile transaction must get a refusal it can act on.",
+      "order": {
+        "offeredOutpoint": {
+          "txid": "aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11",
+          "vout": 0
+        },
+        "sellerPaymentScriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
+        "sellerPaymentValueSats": "250000"
+      },
+      "transaction": {
+        "inputs": [
+          null,
+          {
+            "txid": "aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11aa11",
+            "vout": 0,
+            "valueSats": "546"
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "0014bbbb0000bbbb0000bbbb0000bbbb0000bbbb0000",
+            "valueSats": "600"
+          },
+          {
+            "scriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
+            "valueSats": "250000"
+          }
+        ]
+      },
+      "expected": {
+        "ok": false,
+        "code": "INPUT_VALUE_UNKNOWN"
+      }
     }
   ]
 }

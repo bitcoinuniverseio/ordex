@@ -55,6 +55,32 @@ const refuse = (code: PurchaseRefusalCode, reason: string): PurchaseVerdict => (
  * Verify a final public ask completion. See spec/purchase.md for the two
  * rules and the sat flow invariant this enforces.
  */
+/*
+ * IMPLEMENTATION-HANDOFF [ORD-11] [A024]
+ * Preparation only: executable behavior unchanged; remove only after evidenced implementation.
+ * Coverage: ORD-11-01, ORD-11-02, ORD-11-03, ORD-11-04, ORD-11-05, ORD-11-06, ORD-11-07, ORD-11-08.
+ * Defects/gaps: U01.
+ * Current evidence (NOT TESTED): The hub List control sends users to
+ * /ordex/orders?intent=listing&protocol=ordinals&side=ASK. Core pins Ordex
+ * d7d1378cecdc833a96b9a2b542acf0dc4463934b while the separate checkout and remote branches have later
+ * work. The public-ask sat-flow verifier exists; no Ordex end-to-end pass was performed in this
+ * preparation.
+ * Sources: R-ORDEX, R-TAPROOT, R-ORD in the bundled RESEARCH.md.
+ * Prerequisites: ORD-04, ORD-05, ORD-09, ORD-10. Local implementation:
+ * 1. Keep byte-for-byte semantic parity with verifier/purchase.js for the Core integration vectors
+ * from ORD-11; use exact bigint amounts and preserve the public order terms.
+ * 2. Add SDK tests for both valid Core native and Ordex padding arrangements and all invalid sat-flow
+ * vectors. Do not update Core's gitlink until verifier, SDK and Core integration tests agree at an
+ * accepted revision.
+ * Tests: Ordex node --test verifier/purchase.test.js; SDK purchase parity suite; Core Ordex
+ * authority/listing/purchase suites; real Signet public-ask round trip.
+ * Acceptance: The actual List entry creates a usable signed ask; purchase preserves seller
+ * input/output pairing and moves the full offered sat range to the receiver. The UI reports public-ask
+ * races honestly and never claims a non-reserved public artifact is exclusively reserved.
+ * Migration/rollback: Do not bump the Core gitlink to an unreviewed branch. Merge accepted Ordex
+ * changes first, pin that exact commit in Core, and preserve all outstanding signed artifacts and
+ * order provenance during rollout.
+ */
 export function verifyPublicAskCompletion(
   transaction: PurchaseTransaction,
   order: PurchaseOrderTerms,
