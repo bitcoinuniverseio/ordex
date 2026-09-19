@@ -96,7 +96,10 @@ export function verifyPublicAskCompletion(transaction, order) {
   const matches = [];
   for (let i = 0; i < transaction.inputs.length; i += 1) {
     const input = transaction.inputs[i];
-    if (input.txid === offered.txid && input.vout === offered.vout) matches.push(i);
+    // A malformed entry is refused below, never dereferenced here: this
+    // function answers with a verdict and must not throw on hostile input.
+    if (input && input.txid === offered.txid && input.vout === offered.vout)
+      matches.push(i);
   }
   if (matches.length === 0) {
     return refuse('OFFERED_OUTPOINT_MISSING', 'No input spends the offered output.');
@@ -138,7 +141,7 @@ export function verifyPublicAskCompletion(transaction, order) {
   // refusal, never a guess.
   let inputsAhead = 0n;
   for (let i = 0; i < n; i += 1) {
-    const value = parseSats(transaction.inputs[i].valueSats);
+    const value = parseSats(transaction.inputs[i] && transaction.inputs[i].valueSats);
     if (value === null) {
       return refuse(
         'INPUT_VALUE_UNKNOWN',
@@ -147,7 +150,9 @@ export function verifyPublicAskCompletion(transaction, order) {
     }
     inputsAhead += value;
   }
-  const offeredValue = parseSats(transaction.inputs[n].valueSats);
+  const offeredValue = parseSats(
+    transaction.inputs[n] && transaction.inputs[n].valueSats,
+  );
   if (offeredValue === null) {
     return refuse(
       'INPUT_VALUE_UNKNOWN',
