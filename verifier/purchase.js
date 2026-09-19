@@ -40,6 +40,36 @@ const refuse = (code, reason) => ({ ok: false, code, reason });
  * Answers { ok: true, sharedIndex } or { ok: false, code, reason }.
  * Codes are stable and machine readable; reasons are for people.
  */
+/*
+ * IMPLEMENTATION-HANDOFF [ORD-11] [A023]
+ * Preparation only: executable behavior unchanged; remove only after evidenced implementation.
+ * Coverage: ORD-11-01, ORD-11-02, ORD-11-03, ORD-11-04, ORD-11-05, ORD-11-06, ORD-11-07, ORD-11-08.
+ * Defects/gaps: U01.
+ * Current evidence (NOT TESTED): The hub List control sends users to
+ * /ordex/orders?intent=listing&protocol=ordinals&side=ASK. Core pins Ordex
+ * d7d1378cecdc833a96b9a2b542acf0dc4463934b while the separate checkout and remote branches have later
+ * work. The public-ask sat-flow verifier exists; no Ordex end-to-end pass was performed in this
+ * preparation.
+ * Sources: R-ORDEX, R-TAPROOT, R-ORD in the bundled RESEARCH.md.
+ * Prerequisites: ORD-04, ORD-05, ORD-09, ORD-10. Local implementation:
+ * 1. Keep seller input and payment at the same index and verify the complete offered sat range is
+ * absorbed before the seller payout. The Core native single-dummy layout and Ordex two-padding layout
+ * need separate vectors, not one hardcoded index assertion.
+ * 2. Add or connect cross-repository vectors produced by Core Ordinals construction for nonzero asset
+ * offsets, duplicate offered outpoints, insufficient padding, altered seller payout and unknown
+ * funding values. Reject invalid flows before network send.
+ * 3. Mirror any legitimate verifier change in sdk/src/purchase.ts and its tests; retain public-ask
+ * race semantics and no-sign/no-funds authority boundaries. Existing verifier is not classified
+ * defective without a failing vector.
+ * Tests: Ordex node --test verifier/purchase.test.js; SDK purchase parity suite; Core Ordex
+ * authority/listing/purchase suites; real Signet public-ask round trip.
+ * Acceptance: The actual List entry creates a usable signed ask; purchase preserves seller
+ * input/output pairing and moves the full offered sat range to the receiver. The UI reports public-ask
+ * races honestly and never claims a non-reserved public artifact is exclusively reserved.
+ * Migration/rollback: Do not bump the Core gitlink to an unreviewed branch. Merge accepted Ordex
+ * changes first, pin that exact commit in Core, and preserve all outstanding signed artifacts and
+ * order provenance during rollout.
+ */
 export function verifyPublicAskCompletion(transaction, order) {
   if (!transaction || !Array.isArray(transaction.inputs) || !Array.isArray(transaction.outputs)) {
     return refuse('MALFORMED_TRANSACTION', 'Expected inputs and outputs arrays.');
@@ -66,7 +96,10 @@ export function verifyPublicAskCompletion(transaction, order) {
   const matches = [];
   for (let i = 0; i < transaction.inputs.length; i += 1) {
     const input = transaction.inputs[i];
-    if (input.txid === offered.txid && input.vout === offered.vout) matches.push(i);
+    // A malformed entry is refused below, never dereferenced here: this
+    // function answers with a verdict and must not throw on hostile input.
+    if (input && input.txid === offered.txid && input.vout === offered.vout)
+      matches.push(i);
   }
   if (matches.length === 0) {
     return refuse('OFFERED_OUTPOINT_MISSING', 'No input spends the offered output.');
@@ -108,7 +141,7 @@ export function verifyPublicAskCompletion(transaction, order) {
   // refusal, never a guess.
   let inputsAhead = 0n;
   for (let i = 0; i < n; i += 1) {
-    const value = parseSats(transaction.inputs[i].valueSats);
+    const value = parseSats(transaction.inputs[i] && transaction.inputs[i].valueSats);
     if (value === null) {
       return refuse(
         'INPUT_VALUE_UNKNOWN',
@@ -117,7 +150,9 @@ export function verifyPublicAskCompletion(transaction, order) {
     }
     inputsAhead += value;
   }
-  const offeredValue = parseSats(transaction.inputs[n].valueSats);
+  const offeredValue = parseSats(
+    transaction.inputs[n] && transaction.inputs[n].valueSats,
+  );
   if (offeredValue === null) {
     return refuse(
       'INPUT_VALUE_UNKNOWN',
