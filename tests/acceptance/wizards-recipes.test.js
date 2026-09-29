@@ -3,7 +3,8 @@ import { test, before, after } from 'node:test';
 import { readFile, mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
 import { symlinkSync } from 'node:fs';
 import { createServer } from 'node:http';
-import { execFileSync } from 'node:child_process';
+import { execFile, execFileSync } from 'node:child_process';
+import { promisify } from 'node:util';
 import { dirname, join } from 'node:path';
 import ts from 'typescript';
 import { startStaticServer, launch, openPage, ROOT } from '../e2e/harness.mjs';
@@ -25,6 +26,8 @@ const wizardRows = rowsOf('Guided Wizards');
 const recipeRows = rowsOf('Recipes');
 const recipeRow = (prefix) => recipeRows.find((r) => r.operation.startsWith(prefix)).id;
 const rec = rowRecorder('tests/acceptance/wizards-recipes.test.js');
+// The loopback gateway runs in this process, so programs that call it must run asynchronously.
+const run = promisify(execFile);
 
 let site;
 let browser;
@@ -195,7 +198,7 @@ test('Recipe rows', { timeout: 600000 }, async () => {
           const file = join(dir, `${id}-${kind}.mjs`);
           await writeFile(file, `${js}\nexport {};\n`);
           const start = seen.length;
-          execFileSync(process.execPath, [file], { cwd: dir, env: { ...process.env, ORDEX_GATEWAY_ORIGIN: gateway.origin, SELLER_SIGNED_PSBT: 'cHNidP8BAAoCAAAAAAAAAAAAAAAA', BUYER_SIGNED_PSBT: 'cHNidP8BAAoCAAAAAAAAAAAAAAAA' }, encoding: 'utf8' });
+          await run(process.execPath, [file], { cwd: dir, timeout: 60000, env: { ...process.env, ORDEX_GATEWAY_ORIGIN: gateway.origin, SELLER_SIGNED_PSBT: 'cHNidP8BAAoCAAAAAAAAAAAAAAAA', BUYER_SIGNED_PSBT: 'cHNidP8BAAoCAAAAAAAAAAAAAAAA' }, encoding: 'utf8' });
           const reqs = seen.slice(start);
           for (const r of reqs) expect(r.problems.length === 0, `${id}/${kind} ${r.method} ${r.path}: ${r.problems.join('; ')}`);
           runs[`${id}/${kind}`] = reqs.map((r) => r.operationId);
@@ -225,7 +228,7 @@ test('Recipe rows', { timeout: 600000 }, async () => {
         const out = {};
         for (const id of Object.keys(code)) {
           const start = seen.length;
-          execFileSync('bash', ['-euo', 'pipefail', '-c', code[id].curl], { cwd: dir, env: { ...process.env, ORDEX_GATEWAY_ORIGIN: gateway.origin, SELLER_SIGNED_PSBT: 'cHNidP8BAAoCAAAAAAAAAAAAAAAA', BUYER_SIGNED_PSBT: 'cHNidP8BAAoCAAAAAAAAAAAAAAAA' }, encoding: 'utf8' });
+          await run('bash', ['-euo', 'pipefail', '-c', code[id].curl], { cwd: dir, timeout: 60000, env: { ...process.env, ORDEX_GATEWAY_ORIGIN: gateway.origin, SELLER_SIGNED_PSBT: 'cHNidP8BAAoCAAAAAAAAAAAAAAAA', BUYER_SIGNED_PSBT: 'cHNidP8BAAoCAAAAAAAAAAAAAAAA' }, encoding: 'utf8' });
           const reqs = seen.slice(start);
           for (const r of reqs) expect(r.problems.length === 0, `${id} ${r.method} ${r.path}: ${r.problems.join('; ')}`);
           out[id] = reqs.map((r) => r.operationId);

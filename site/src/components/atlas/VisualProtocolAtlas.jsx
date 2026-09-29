@@ -332,7 +332,7 @@ export function VisualProtocolAtlas({ initialDiagramId = null }) {
                     </>
                   ) : activeStepObj.ref?.path ? (
                     <>
-                      <strong>Specification:</strong> <a href={resolveUrl(`/reference/specifications/#spec-${activeStepObj.ref.path.replace(/^spec\//, '').replace(/\.md$/, '')}`)}>{activeStepObj.ref.path}</a>, section <em>{activeStepObj.ref.heading}</em>
+                      <strong>Specification:</strong> <a style="text-decoration: underline;" href={resolveUrl(`/reference/specifications/#spec-${activeStepObj.ref.path.replace(/^spec\//, '').replace(/\.md$/, '')}`)}>{activeStepObj.ref.path}</a>, section <em>{activeStepObj.ref.heading}</em>
                     </>
                   ) : (
                     <span>No source is recorded for this step.</span>
