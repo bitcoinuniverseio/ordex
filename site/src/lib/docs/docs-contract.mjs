@@ -163,3 +163,38 @@ export function docsApiUrl(base, path) {
   const b = typeof base === 'string' ? base.replace(/\/+$/, '') : '';
   return `${b}${path}`;
 }
+
+/**
+ * OX-S11: the extractive retrieval the docs service and the page's local fallback share. Only
+ * sections of the requested protocol version are scored; a section in the current page gets a
+ * small boost. Returns at most `limit` corpus sections, best first.
+ */
+export function rankCorpus(corpus, { query, protocolVersion, pageContext }, limit = 4) {
+  const lowered = String(query).toLowerCase();
+  const terms = lowered.split(/[^a-z0-9_]+/).filter((w) => w.length > 2);
+  if (terms.length === 0) return [];
+  return corpus
+    .filter((c) => c.protocolVersion === protocolVersion)
+    .map((chunk) => {
+      const title = chunk.title.toLowerCase();
+      const text = chunk.content.toLowerCase();
+      let score = 0;
+      for (const t of terms) score += (title.includes(t) ? 5 : 0) + (text.includes(t) ? 1 : 0);
+      if (score > 0 && pageContext && chunk.docUrl.startsWith(pageContext.replace(/\/$/, ''))) score += 2;
+      return { chunk, score };
+    })
+    .filter((x) => x.score > 0)
+    .sort((a, b) => b.score - a.score || a.chunk.id.localeCompare(b.chunk.id))
+    .slice(0, limit)
+    .map((x) => x.chunk);
+}
+
+/** Checks an ask response from the docs service before the page shows it. */
+export function validateAskResponse(data) {
+  if (!data || typeof data !== 'object' || data.ok !== true || typeof data.refused !== 'boolean' || !Array.isArray(data.citations)) return 'The response is not a docs service answer.';
+  for (const c of data.citations) {
+    if (!c || typeof c.title !== 'string' || typeof c.docUrl !== 'string' || !c.docUrl.startsWith('/') || c.docUrl.startsWith('//')) return 'A citation has no usable page link.';
+  }
+  if (!data.refused && !data.noSources && (!Array.isArray(data.extracts) || data.extracts.length !== data.citations.length)) return 'The answer extracts do not match its citations.';
+  return null;
+}

@@ -27,7 +27,13 @@ export function KitGenerator() {
   const urlRef = useRef(null);
 
   // Start from the network and gateway chosen in Settings (OX-S03); the page never writes them.
+  // OX-S11: a wizard can preselect ?runtime=, ?capabilities= and ?mode=; unknown values are ignored.
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (KIT_RUNTIMES.some((r) => r.id === params.get('runtime'))) setRuntime(params.get('runtime'));
+    const caps = (params.get('capabilities') || '').split(',').filter((c) => KIT_CAPABILITIES.some((k) => k.id === c));
+    if (caps.length) setCapabilities(caps);
+    if (KIT_MODES.some((m) => m.id === params.get('mode'))) setMode(params.get('mode'));
     let live = true;
     journeyStore
       .getSettings()

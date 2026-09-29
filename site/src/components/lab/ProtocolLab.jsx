@@ -94,7 +94,13 @@ export function ProtocolLab() {
     const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
     const code = params?.get('reproduce');
     const first = allVectors.find((v) => v.family === 'purchase' && v.case?.expected?.ok === true) || allVectors[0];
-    if (!(code && loadReproducer(code, params.get('family'))) && first) loadVector(first);
+    const familyParam = params?.get('family');
+    if (code && loadReproducer(code, familyParam)) {
+      // opened on a reproducer
+    } else if (familyParam && FAMILY_REGISTRY[familyParam]) {
+      const example = examplesFor(familyParam, variantsOf(familyParam)[0])[0];
+      if (example) loadVector(example);
+    } else if (first) loadVector(first);
     return () => abortRef.current?.abort();
   }, []);
 

@@ -74,7 +74,11 @@ const TOOL_GATES = {
   '/kits/': 'kits.test.js',
   '/build/playground/': 'api-playground.test.js',
   '/workspace/': 'missions.test.js',
-  '/tour/': 'tours.test.js'
+  '/tour/': 'tours.test.js',
+  '/ask/': 'docs-services.test.js',
+  '/insights/': 'docs-services.test.js',
+  '/build/wizards/': 'wizards.test.js',
+  '/build/recipes/': 'wizards.test.js'
 };
 for (const [route, file] of Object.entries(TOOL_GATES)) {
   const ok = exists('tests', 'e2e', file) && read('tests', 'e2e', file).includes(route.replace(/\/$/, ''));

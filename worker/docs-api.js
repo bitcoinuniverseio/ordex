@@ -7,7 +7,7 @@
 
 import corpusData from '../site/src/data/corpus.json' with { type: 'json' };
 import wizardsData from '../site/src/data/wizards.json' with { type: 'json' };
-import { validateAsk, validateFeedback, validateEvent, PROTOCOL_VERSIONS, DOCS_API_VERSION } from '../site/src/lib/docs/docs-contract.mjs';
+import { validateAsk, validateFeedback, validateEvent, rankCorpus, PROTOCOL_VERSIONS, DOCS_API_VERSION } from '../site/src/lib/docs/docs-contract.mjs';
 import { detectSecrets } from '../site/src/lib/security/sanitizer.ts';
 import { json, readBody } from './http.js';
 
@@ -62,20 +62,7 @@ export async function handleAsk(request, env, origin) {
     const trust = corpusData.find((c) => c.sourcePath === 'spec/lifecycle.md') || corpusData[0];
     return refusal('SAFETY', 'Ordex documentation tools never handle private keys or seed phrases and never sign or broadcast. Signing happens in your own wallet.', [citation(trust, basePath)]);
   }
-  const terms = lowered.split(/[^a-z0-9_]+/).filter((w) => w.length > 2);
-  const scored = corpusData
-    .filter((c) => c.protocolVersion === protocolVersion)
-    .map((chunk) => {
-      const title = chunk.title.toLowerCase();
-      const text = chunk.content.toLowerCase();
-      let score = 0;
-      for (const t of terms) score += (title.includes(t) ? 5 : 0) + (text.includes(t) ? 1 : 0);
-      if (score > 0 && pageContext && chunk.docUrl.startsWith(pageContext.replace(/\/$/, ''))) score += 2;
-      return { chunk, score };
-    })
-    .filter((x) => x.score > 0)
-    .sort((a, b) => b.score - a.score || a.chunk.id.localeCompare(b.chunk.id))
-    .slice(0, 4);
+  const scored = rankCorpus(corpusData, { query, protocolVersion, pageContext }).map((chunk) => ({ chunk }));
   if (scored.length === 0) {
     return json({ ok: true, api: DOCS_API_VERSION, mode: 'extractive', refused: false, noSources: true, answer: null, citations: [], protocolVersion }, 200, origin);
   }
