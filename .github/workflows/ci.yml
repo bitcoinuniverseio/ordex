@@ -155,7 +155,7 @@ jobs:
       github.event_name != 'pull_request' ||
       github.event.pull_request.head.repo.full_name == github.repository
     runs-on: [self-hosted, linux, x64, universe-super]
-    timeout-minutes: 90
+    timeout-minutes: 150
     steps:
       - name: Check out exact source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -176,5 +176,72 @@ jobs:
       - name: Install the pinned Chromium for the browser gates
         run: npx playwright install chromium
 
-      - name: Run the documentation acceptance rows
-        run: npm run test:acceptance
+      - name: Acceptance rows, navigator
+        if: ${{ !cancelled() }}
+        timeout-minutes: 30
+        run: npx tsx --test --test-force-exit tests/acceptance/navigator.test.js
+
+      - name: Acceptance rows, playground
+        if: ${{ !cancelled() }}
+        timeout-minutes: 15
+        run: npx tsx --test --test-force-exit tests/acceptance/playground.test.js
+
+      - name: Acceptance rows, missions
+        if: ${{ !cancelled() }}
+        timeout-minutes: 30
+        run: npx tsx --test --test-force-exit tests/acceptance/missions.test.js
+
+      - name: Acceptance rows, sandbox
+        if: ${{ !cancelled() }}
+        timeout-minutes: 15
+        run: npx tsx --test --test-force-exit tests/acceptance/sandbox.test.js
+
+      - name: Acceptance rows, lens
+        if: ${{ !cancelled() }}
+        timeout-minutes: 15
+        run: npx tsx --test --test-force-exit tests/acceptance/lens.test.js
+
+      - name: Acceptance rows, lab-studio
+        if: ${{ !cancelled() }}
+        timeout-minutes: 15
+        run: npx tsx --test --test-force-exit tests/acceptance/lab-studio.test.js
+
+      - name: Acceptance rows, agents
+        if: ${{ !cancelled() }}
+        timeout-minutes: 15
+        run: npx tsx --test --test-force-exit tests/acceptance/agents.test.js
+
+      - name: Acceptance rows, kits
+        if: ${{ !cancelled() }}
+        timeout-minutes: 15
+        run: npx tsx --test --test-force-exit tests/acceptance/kits.test.js
+
+      - name: Acceptance rows, docs-services
+        if: ${{ !cancelled() }}
+        timeout-minutes: 15
+        run: npx tsx --test --test-force-exit tests/acceptance/docs-services.test.js
+
+      - name: Acceptance rows, wizards-recipes
+        if: ${{ !cancelled() }}
+        timeout-minutes: 15
+        run: npx tsx --test --test-force-exit tests/acceptance/wizards-recipes.test.js
+
+      - name: Acceptance rows, atlas
+        if: ${{ !cancelled() }}
+        timeout-minutes: 15
+        run: npx tsx --test --test-force-exit tests/acceptance/atlas.test.js
+
+      - name: Acceptance rows, tours
+        if: ${{ !cancelled() }}
+        timeout-minutes: 30
+        run: npx tsx --test --test-force-exit tests/acceptance/tours.test.js
+
+      - name: Acceptance rows, offline
+        if: ${{ !cancelled() }}
+        timeout-minutes: 15
+        run: npx tsx --test --test-force-exit tests/acceptance/offline.test.js
+
+      - name: Acceptance rows, shared-ui
+        if: ${{ !cancelled() }}
+        timeout-minutes: 30
+        run: npx tsx --test --test-force-exit tests/acceptance/shared-ui.test.js

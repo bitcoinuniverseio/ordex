@@ -75,9 +75,9 @@ export function ProtocolLab() {
 
   // OX-S09: /lab/?reproduce=CODE&family=F opens the Failure Navigator's reproducer for that
   // refusal as an edited candidate: the base vector with the reproducer's changes applied.
-  const loadReproducer = (code, familyHint) => {
+  const loadReproducer = (code, familyHint, coversHint = null) => {
     const list = reproducerFile.reproducers[code] || [];
-    const repro = list.find((r) => r.family === familyHint) || list[0];
+    const repro = list.find((r) => r.family === familyHint && (r.covers || null) === coversHint) || list.find((r) => r.family === familyHint) || list[0];
     const base = repro && allVectors.find((v) => v.id === repro.base);
     if (!repro || !base) return false;
     setFamily(repro.family);
@@ -129,7 +129,7 @@ export function ProtocolLab() {
     const code = params?.get('reproduce');
     const first = allVectors.find((v) => v.family === 'purchase' && v.case?.expected?.ok === true) || allVectors[0];
     const familyParam = params?.get('family');
-    if (code && loadReproducer(code, familyParam)) {
+    if (code && loadReproducer(code, familyParam, params?.get('covers') || null)) {
       // opened on a reproducer
     } else if (familyParam && FAMILY_REGISTRY[familyParam]) {
       const example = examplesFor(familyParam, variantsOf(familyParam)[0])[0];

@@ -225,8 +225,11 @@ test('Documentation Feedback and Insights rows', { timeout: 300000 }, async () =
   for (const [prefix, label, range] of [['24h', 'Last 24 hours', '24h'], ['7d', 'Last 7 days', '7d'], ['30d', 'Last 30 days', '30d']]) {
     await rec.check(pick(insights, prefix), `/insights ${label} equals the database aggregate`, async () => {
       const { page, context } = await openPage(browser, site.url('/insights/'));
-      await page.getByRole('group', { name: 'Time window' }).getByRole('button', { name: label }).click();
       await page.getByText(/^Since /).waitFor({ timeout: 15000 });
+      const pressed = await page.getByRole('group', { name: 'Time window' }).getByRole('button', { name: label }).getAttribute('aria-pressed');
+      if (pressed !== 'true') await Promise.all([page.waitForResponse((r) => r.url().includes(`/api/docs/insights?range=${range}`)), page.getByRole('group', { name: 'Time window' }).getByRole('button', { name: label }).click()]);
+      await page.waitForFunction((r) => document.querySelector('main')?.innerText.includes('Since '), range);
+      await page.waitForTimeout(200);
       const days = { '24h': 1, '7d': 7, '30d': 30 }[range];
       const rows = db.prepare('SELECT category, COUNT(*) AS n FROM docs_feedback WHERE created_at >= ? GROUP BY category').all(Math.floor(Date.now() / 1000) - days * 86400);
       const text = await page.locator('main').innerText();

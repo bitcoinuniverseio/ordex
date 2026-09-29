@@ -41,7 +41,7 @@ async function decode(page, text) {
   await page.getByLabel(/Artifact A/).fill(text);
   await page.getByRole('button', { name: 'Decode', exact: true }).click();
 }
-const tile = async (page, label) => (await page.locator('div', { has: page.locator(`div:text-is("${label}")`) }).last().innerText()).replace(label, '').trim();
+const tile = async (page, label) => (await page.locator(`div:text-is("${label}")`).first().locator('xpath=following-sibling::div[1]').innerText()).trim();
 const banner = (page) => page.locator('[role="alert"], [role="status"]').filter({ hasText: /Decoded as|Malformed|Unsupported|exceeds/ }).first();
 
 test('Artifact Lens rows', { timeout: 300000 }, async () => {

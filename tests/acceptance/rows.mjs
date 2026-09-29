@@ -24,13 +24,18 @@ export function rowRecorder(file) {
   return {
     rows,
     /** Run `fn` for the rows it proves; its return value is the observed result. */
-    async check(ids, operation, fn, { evidenceClass = 'browser-gate' } = {}) {
+    async check(ids, operation, fn, { evidenceClass = 'browser-gate', timeoutMs = 600000 } = {}) {
       const list = Array.isArray(ids) ? ids : [ids];
+      console.log(`ORDEX-ROW-START ${list.join(',')} ${operation}`);
+      let timer;
       try {
-        const actual = await fn();
+        // A check that stops making progress fails its rows instead of stalling the run.
+        const actual = await Promise.race([fn(), new Promise((_, reject) => (timer = setTimeout(() => reject(new Error(`no result within ${timeoutMs / 1000} s`)), timeoutMs)))]);
+        clearTimeout(timer);
         for (const id of list) emit({ id, status: 'PASS', evidenceClass, operation, actual: actual ?? null });
         return actual;
       } catch (err) {
+        clearTimeout(timer);
         for (const id of list) emit({ id, status: 'FAIL', evidenceClass, operation, error: String(err?.message || err).slice(0, 2000) });
         return undefined;
       }

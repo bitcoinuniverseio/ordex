@@ -30,6 +30,15 @@ const card = { padding: '1.25rem', borderRadius: 'var(--ox-radius-lg)', backgrou
 const heading = { fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--ox-text-secondary)', margin: '0 0 0.35rem' } as const;
 const linkBtn = { padding: '0.45rem 0.875rem', borderRadius: 'var(--ox-radius-md)', backgroundColor: 'var(--ox-surface-subtle)', border: '1px solid var(--ox-border-default)', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--ox-text-primary)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.375rem' } as const;
 
+// One family can reproduce a code twice: through its own branch and through a shared helper
+// it reaches (covers). Runs and file names are told apart by both.
+const reproducerKey = (code: string, r: DiagnosticReproducer) => `${code}|${r.family}|${r.covers || r.family}`;
+function reproducerFile(code: string, rule: DiagnosticRule, r: DiagnosticReproducer) {
+  if (rule.reproducers.length === 1) return `reproduce-${code}.mjs`;
+  const sameFamily = rule.reproducers.filter((x) => x.family === r.family).length > 1;
+  return `reproduce-${code}-${r.family}${sameFamily && r.covers ? `-via-${r.covers}` : ''}.mjs`;
+}
+
 export function FailureNavigator({ initialCode = '', basePath = '/ordex' }: NavigatorProps): JSX.Element {
   const [inputText, setInputText] = useState<string>(initialCode);
   const [detection, setDetection] = useState<DetectionResult>(detectFailureInput(initialCode));
@@ -80,7 +89,7 @@ export function FailureNavigator({ initialCode = '', basePath = '/ordex' }: Navi
 
   const runReproducer = async (rule: DiagnosticRule, r: DiagnosticReproducer) => {
     const code = rule.exactCodes[0];
-    const key = `${code}|${r.family}`;
+    const key = reproducerKey(code, r);
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
@@ -332,10 +341,10 @@ export function FailureNavigator({ initialCode = '', basePath = '/ordex' }: Navi
             <h3 style={heading} data-tour="diagnose-reproduce">Reproduce it</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               {rule.reproducers.map((r) => {
-                const key = `${code}|${r.family}`;
+                const key = reproducerKey(code, r);
                 const run = runs[key] || { status: 'idle' };
                 const matched = run.actual && run.actual.state === 'refused' && run.actual.code === code;
-                const file = `reproduce-${code}${rule.reproducers.length > 1 ? `-${r.family}` : ''}.mjs`;
+                const file = reproducerFile(code, rule, r);
                 return (
                   <div key={key} style={{ padding: '0.75rem', borderRadius: 'var(--ox-radius-md)', border: '1px solid var(--ox-border-subtle)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                     <div style={{ fontSize: '0.8125rem' }}>
