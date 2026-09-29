@@ -1031,6 +1031,143 @@ const offlineCases = (() => {
   ];
 })();
 
+// Rune burn and allocation vectors. The first 25 cases predate OX-P04 and are
+// kept verbatim. The rest are ord 0.29.0 parity and allocation cases; their
+// deciphered fields and allocations are checked against the pinned ord oracle
+// in conformance/ord-differential by verifier/runes.ord-parity.test.js.
+const LEGACY_RUNE_CASES = [
+  {"name":"no-runestone","description":"A purchase with no runestone output. Unallocated runes go to the first non-OP_RETURN output, so nothing burns.","outputScriptsHex":["00141111111111111111111111111111111111111111","00141111111111111111111111111111111111111111"],"inputs":[{"indexed":true,"runes":1}],"expected":{"safe":true,"runestone":"NONE"}},
+  {"name":"plain-op-return","description":"An OP_RETURN that is not a runestone is not read as one.","outputScriptsHex":["6a0401020304","00141111111111111111111111111111111111111111"],"inputs":[{"indexed":true,"runes":1}],"expected":{"safe":true,"runestone":"NONE"}},
+  {"name":"single-edict","description":"A readable transfer of 500 units of rune 840000:1 to output 1.","outputScriptsHex":["6a5d0800c0a23301f40301","00141111111111111111111111111111111111111111"],"inputs":[{"indexed":true,"runes":1}],"expected":{"safe":true,"runestone":"RUNESTONE"}},
+  {"name":"edict-split-across-all","description":"An edict addressed to the output count means split across every non-OP_RETURN output.","outputScriptsHex":["6a5d0800c0a23301f40302","00141111111111111111111111111111111111111111"],"inputs":[{"indexed":true,"runes":1}],"expected":{"safe":true,"runestone":"RUNESTONE"}},
+  {"name":"pointer-in-range","description":"A pointer that addresses a real output is consumed as a pointer.","outputScriptsHex":["6a5d0a160100c0a23301f40301","00141111111111111111111111111111111111111111"],"inputs":[{"indexed":true,"runes":1}],"expected":{"safe":true,"runestone":"RUNESTONE"}},
+  {"name":"unrecognized-odd-tag","description":"Tag 127 is the reserved nop. Odd tags stay ignorable so the format can grow without burning balances held by older readers.","outputScriptsHex":["6a5d0a7f6300c0a23301f40301","00141111111111111111111111111111111111111111"],"inputs":[{"indexed":true,"runes":1}],"expected":{"safe":true,"runestone":"RUNESTONE"}},
+  {"name":"op-0-is-an-empty-push","description":"OP_0 is an empty push to the protocol, not an opcode.","outputScriptsHex":["6a5d000800c0a23301f40301","00141111111111111111111111111111111111111111"],"inputs":[{"indexed":true,"runes":1}],"expected":{"safe":true,"runestone":"RUNESTONE"}},
+  {"name":"cenotaph-clean-inputs","description":"Malformed, but every input is indexed and holds no runes, so there is no balance to destroy.","outputScriptsHex":["6a5d027e01","00141111111111111111111111111111111111111111"],"inputs":[{"indexed":true,"runes":0}],"expected":{"safe":true,"runestone":"CENOTAPH"}},
+  {"name":"unrecognized-even-tag","description":"Tag 126 is even and unrecognized, the shortest cenotaph there is.","outputScriptsHex":["6a5d077e000001010200","00141111111111111111111111111111111111111111"],"inputs":[{"indexed":true,"runes":1}],"expected":{"safe":false,"runestone":"CENOTAPH","code":"CENOTAPH_BURNS_BALANCE","flaw":"UNRECOGNIZED_EVEN_TAG"}},
+  {"name":"unrecognized-flag","description":"A flag bit outside Etching, Terms and Turbo stays set after the protocol consumes what it knows.","outputScriptsHex":["6a5d1902808080808080808080808080808080808080020001010200","00141111111111111111111111111111111111111111"],"inputs":[{"indexed":true,"runes":1}],"expected":{"safe":false,"runestone":"CENOTAPH","code":"CENOTAPH_BURNS_BALANCE","flaw":"UNRECOGNIZED_FLAG"}},
+  {"name":"terms-without-etching","description":"Terms is read only when Etching is set, so on its own its bit stays standing.","outputScriptsHex":["6a5d0a020200c0a23301f40301","00141111111111111111111111111111111111111111"],"inputs":[{"indexed":true,"runes":1}],"expected":{"safe":false,"runestone":"CENOTAPH","code":"CENOTAPH_BURNS_BALANCE","flaw":"UNRECOGNIZED_FLAG"}},
+  {"name":"pointer-out-of-range","description":"A pointer addressing no output is never consumed, leaving even tag 22 in the field map.","outputScriptsHex":["6a5d0a160700c0a23301f40301","00141111111111111111111111111111111111111111"],"inputs":[{"indexed":true,"runes":1}],"expected":{"safe":false,"runestone":"CENOTAPH","code":"CENOTAPH_BURNS_BALANCE","flaw":"UNRECOGNIZED_EVEN_TAG"}},
+  {"name":"truncated-field","description":"A tag with no value following it.","outputScriptsHex":["6a5d03020102","00141111111111111111111111111111111111111111"],"inputs":[{"indexed":true,"runes":1}],"expected":{"safe":false,"runestone":"CENOTAPH","code":"CENOTAPH_BURNS_BALANCE","flaw":"TRUNCATED_FIELD"}},
+  {"name":"trailing-integers","description":"The body carries a partial edict: edicts come in groups of four.","outputScriptsHex":["6a5d06000101020000","00141111111111111111111111111111111111111111"],"inputs":[{"indexed":true,"runes":1}],"expected":{"safe":false,"runestone":"CENOTAPH","code":"CENOTAPH_BURNS_BALANCE","flaw":"TRAILING_INTEGERS"}},
+  {"name":"edict-output-over-max","description":"An edict addressed beyond the output count.","outputScriptsHex":["6a5d050001010202"],"outputCount":1,"inputs":[{"indexed":true,"runes":1}],"expected":{"safe":false,"runestone":"CENOTAPH","code":"CENOTAPH_BURNS_BALANCE","flaw":"EDICT_OUTPUT"}},
+  {"name":"edict-rune-id-zero-block","description":"Block 0 with a nonzero tx is not a rune any block ever produced.","outputScriptsHex":["6a5d050000010200"],"outputCount":1,"inputs":[{"indexed":true,"runes":1}],"expected":{"safe":false,"runestone":"CENOTAPH","code":"CENOTAPH_BURNS_BALANCE","flaw":"EDICT_RUNE_ID"}},
+  {"name":"edict-block-delta-overflow","description":"A block delta that carries the rune id past a u64.","outputScriptsHex":["6a5d120001000000ffffffffffffffffff01000000"],"outputCount":1,"inputs":[{"indexed":true,"runes":1}],"expected":{"safe":false,"runestone":"CENOTAPH","code":"CENOTAPH_BURNS_BALANCE","flaw":"EDICT_RUNE_ID"}},
+  {"name":"edict-tx-delta-overflow","description":"A tx delta that carries the rune id past a u32.","outputScriptsHex":["6a5d12000101000000ffffffffffffffffff010000"],"outputCount":1,"inputs":[{"indexed":true,"runes":1}],"expected":{"safe":false,"runestone":"CENOTAPH","code":"CENOTAPH_BURNS_BALANCE","flaw":"EDICT_RUNE_ID"}},
+  {"name":"varint-unterminated","description":"Every byte sets the continuation bit and the payload ends.","outputScriptsHex":["6a5d03808080","00141111111111111111111111111111111111111111"],"inputs":[{"indexed":true,"runes":1}],"expected":{"safe":false,"runestone":"CENOTAPH","code":"CENOTAPH_BURNS_BALANCE","flaw":"VARINT"}},
+  {"name":"varint-overlong","description":"More than nineteen groups.","outputScriptsHex":["6a5d148080808080808080808080808080808080808080","00141111111111111111111111111111111111111111"],"inputs":[{"indexed":true,"runes":1}],"expected":{"safe":false,"runestone":"CENOTAPH","code":"CENOTAPH_BURNS_BALANCE","flaw":"VARINT"}},
+  {"name":"varint-overflows-u128","description":"Nineteen groups are permitted, but the last carries only two bits.","outputScriptsHex":["6a5d1380808080808080808080808080808080808040","00141111111111111111111111111111111111111111"],"inputs":[{"indexed":true,"runes":1}],"expected":{"safe":false,"runestone":"CENOTAPH","code":"CENOTAPH_BURNS_BALANCE","flaw":"VARINT"}},
+  {"name":"opcode-in-payload","description":"OP_1 after the magic number is an opcode, not a push.","outputScriptsHex":["6a5d51","00141111111111111111111111111111111111111111"],"inputs":[{"indexed":true,"runes":1}],"expected":{"safe":false,"runestone":"CENOTAPH","code":"CENOTAPH_BURNS_BALANCE","flaw":"OPCODE"}},
+  {"name":"push-past-end-of-script","description":"A push claiming more bytes than the script carries.","outputScriptsHex":["6a5d200102","00141111111111111111111111111111111111111111"],"inputs":[{"indexed":true,"runes":1}],"expected":{"safe":false,"runestone":"CENOTAPH","code":"CENOTAPH_BURNS_BALANCE","flaw":"INVALID_SCRIPT"}},
+  {"name":"first-runestone-wins","description":"A later readable runestone does not rescue an earlier malformed one.","outputScriptsHex":["6a5d027e01","6a5d0800c0a23301f40301","00141111111111111111111111111111111111111111"],"inputs":[{"indexed":true,"runes":1}],"expected":{"safe":false,"runestone":"CENOTAPH","code":"CENOTAPH_BURNS_BALANCE","flaw":"UNRECOGNIZED_EVEN_TAG"}},
+  {"name":"cenotaph-unindexed-input","description":"Malformed, and the index has not examined an input, so it cannot be proven to hold no runes.","outputScriptsHex":["6a5d027e01","00141111111111111111111111111111111111111111"],"inputs":[{"indexed":false,"runes":0}],"expected":{"safe":false,"runestone":"CENOTAPH","code":"CENOTAPH_WITH_UNPROVEN_INPUT","flaw":"UNRECOGNIZED_EVEN_TAG"}},
+];
+const RUNE_SPEND_1 = '0014' + '11'.repeat(20);
+const RUNE_SPEND_2 = '0014' + '22'.repeat(20);
+const RUNE_SPEND_3 = '0014' + '33'.repeat(20);
+const U128_MAX = (1n << 128n) - 1n;
+
+function runeVarint(value) {
+  let n = BigInt(value);
+  const bytes = [];
+  while (n >> 7n > 0n) {
+    bytes.push(Number(n & 0x7fn) | 0x80);
+    n >>= 7n;
+  }
+  bytes.push(Number(n));
+  return bytes;
+}
+
+/** OP_RETURN OP_13 followed by one data push of the varint-encoded integers. */
+function runestoneScript(integers) {
+  const payload = integers.flatMap(runeVarint);
+  const hex = (bytes) => bytes.map((b) => b.toString(16).padStart(2, '0')).join('');
+  if (payload.length === 0) return '6a5d';
+  if (payload.length <= 75) return '6a5d' + hex([payload.length, ...payload]);
+  return '6a5d' + hex([0x4c, payload.length, ...payload]);
+}
+
+const counted = [{ indexed: true, runes: 1 }];
+const held = (...balances) => [{ indexed: true, balances: balances.map(([runeId, amount]) => ({ runeId, amount })) }];
+const refused = (runestone, code, flaw) => ({ safe: false, runestone, code, ...(flaw ? { flaw } : {}) });
+const accepted = (runestone) => ({ safe: true, runestone });
+const cenotaph = (flaw) => refused('CENOTAPH', 'CENOTAPH_BURNS_BALANCE', flaw);
+
+function runeCase(name, description, outputScriptsHex, inputs, expected, extra = {}) {
+  return { name, description, outputScriptsHex, inputs, ...extra, expected };
+}
+
+const runeParityCases = [
+  runeCase('duplicate-pointer-is-a-cenotaph', 'P-R05: tag 22 twice. Tag::take consumes one pointer and the second stays behind as an even field.', ['6a5d0416011601', '51'], counted, cenotaph('UNRECOGNIZED_EVEN_TAG')),
+  runeCase('premine-without-etching-is-a-cenotaph', 'P-R06: premine is consumed only inside an etching, so without the Etching flag tag 6 stays behind.', ['6a5d020601', '51'], counted, cenotaph('UNRECOGNIZED_EVEN_TAG')),
+  runeCase('incomplete-mint-is-a-cenotaph', 'P-R07: Mint takes two values. One value is never consumed.', ['6a5d021401', '51'], counted, cenotaph('UNRECOGNIZED_EVEN_TAG')),
+  runeCase('pointer-to-its-own-op-return-burns', 'P-R08: a readable runestone whose pointer is its own OP_RETURN sends every unallocated balance there.', ['6a5d021600', '51'], counted, refused('RUNESTONE', 'ALLOCATION_BURNS_BALANCE')),
+  runeCase('pointer-to-its-own-op-return-burns-exact', 'P-R08 with exact balances: the whole balance of 840000:1 lands on the OP_RETURN.', ['6a5d021600', '51'], held(['840000:1', '1000']), refused('RUNESTONE', 'ALLOCATION_BURNS_BALANCE')),
+  runeCase('duplicate-flags-is-a-cenotaph', 'Flags are taken once. A second flags value stays behind as tag 2.', [runestoneScript([2, 1, 2, 1]), RUNE_SPEND_1], counted, cenotaph('UNRECOGNIZED_EVEN_TAG')),
+  runeCase('duplicate-mint-is-a-cenotaph', 'Two complete mint pairs: one is consumed, the other stays behind. The cenotaph still names the mint.', [runestoneScript([20, 840000, 20, 1, 20, 840000, 20, 1]), RUNE_SPEND_1], counted, cenotaph('UNRECOGNIZED_EVEN_TAG')),
+  runeCase('mint-with-zero-block-and-nonzero-tx', 'RuneId::new refuses block 0 with a nonzero tx, so the mint is never consumed.', [runestoneScript([20, 0, 20, 1]), RUNE_SPEND_1], counted, cenotaph('UNRECOGNIZED_EVEN_TAG')),
+  runeCase('mint-tx-beyond-u32', 'A mint tx that does not fit a u32 is never consumed.', [runestoneScript([20, 840000, 20, 2n ** 32n]), RUNE_SPEND_1], counted, cenotaph('UNRECOGNIZED_EVEN_TAG')),
+  runeCase('mint-block-beyond-u64', 'A mint block that does not fit a u64 is never consumed.', [runestoneScript([20, 2n ** 64n, 20, 1]), RUNE_SPEND_1], counted, cenotaph('UNRECOGNIZED_EVEN_TAG')),
+  runeCase('valid-mint', 'A complete mint is consumed and the runestone is readable.', [runestoneScript([20, 840000, 20, 3]), RUNE_SPEND_1], counted, accepted('RUNESTONE')),
+  runeCase('etching-flag-alone', 'An etching with no fields is readable.', [runestoneScript([2, 1]), RUNE_SPEND_1], counted, accepted('RUNESTONE')),
+  runeCase('etching-with-every-field', 'Every etching, terms and turbo field consumed together with a pointer, a mint and an edict.', [runestoneScript([2, 7, 4, 4, 1, 1, 3, 5, 5, 97, 18, 2, 10, 3, 6, 8, 8, 9, 22, 1, 20, 1, 20, 1, 0, 1, 1, 2, 1]), RUNE_SPEND_1], counted, accepted('RUNESTONE')),
+  runeCase('turbo-flag-without-etching', 'Turbo is read only inside an etching. Alone it is an unrecognized flag.', [runestoneScript([2, 4]), RUNE_SPEND_1], counted, cenotaph('UNRECOGNIZED_FLAG')),
+  runeCase('unknown-flag-bit', 'Bit 3 is no flag the protocol consumes.', [runestoneScript([2, 8]), RUNE_SPEND_1], counted, cenotaph('UNRECOGNIZED_FLAG')),
+  runeCase('cenotaph-flag-bit-127', 'The reserved cenotaph flag, bit 127, carried by a 19-byte varint.', [runestoneScript([2, 2n ** 127n]), RUNE_SPEND_1], counted, cenotaph('UNRECOGNIZED_FLAG')),
+  runeCase('cap-without-terms-flag', 'Cap is consumed only when Terms is set.', [runestoneScript([2, 1, 8, 0]), RUNE_SPEND_1], counted, cenotaph('UNRECOGNIZED_EVEN_TAG')),
+  runeCase('offset-end-beyond-u64', 'A term that does not fit a u64 is never consumed.', [runestoneScript([2, 3, 18, 2n ** 64n]), RUNE_SPEND_1], counted, cenotaph('UNRECOGNIZED_EVEN_TAG')),
+  runeCase('supply-at-u128-max-is-readable', 'cap 1 times amount u128::MAX fits exactly.', [runestoneScript([2, 3, 8, 1, 10, U128_MAX]), RUNE_SPEND_1], counted, accepted('RUNESTONE')),
+  runeCase('supply-overflow-cap-times-amount', 'cap 2 times amount u128::MAX overflows the supply.', [runestoneScript([2, 3, 8, 2, 10, U128_MAX]), RUNE_SPEND_1], counted, cenotaph('SUPPLY_OVERFLOW')),
+  runeCase('supply-overflow-premine-plus-terms', 'premine 1 plus cap 1 times u128::MAX overflows the supply.', [runestoneScript([2, 3, 6, 1, 8, 1, 10, U128_MAX]), RUNE_SPEND_1], counted, cenotaph('SUPPLY_OVERFLOW')),
+  runeCase('divisibility-above-max-is-ignored', 'Divisibility 39 is refused by Tag::take, and tag 1 is odd, so it is simply ignored.', [runestoneScript([2, 1, 1, 39]), RUNE_SPEND_1], counted, accepted('RUNESTONE')),
+  runeCase('invalid-odd-fields-without-etching-are-ignored', 'Odd tags left unconsumed never make a cenotaph.', [runestoneScript([1, U128_MAX, 3, U128_MAX, 5, U128_MAX]), RUNE_SPEND_1], counted, accepted('RUNESTONE')),
+  runeCase('symbol-surrogate-is-ignored', 'A surrogate code point is no char, so the symbol is left unconsumed.', [runestoneScript([2, 1, 5, 0xd800]), RUNE_SPEND_1], counted, accepted('RUNESTONE')),
+  runeCase('symbol-above-max-is-ignored', 'A value above char::MAX is no symbol.', [runestoneScript([2, 1, 5, 0x110000]), RUNE_SPEND_1], counted, accepted('RUNESTONE')),
+  runeCase('spacers-above-max-are-ignored', 'Spacers above Etching::MAX_SPACERS are left unconsumed.', [runestoneScript([2, 1, 3, 0x0800_0000]), RUNE_SPEND_1], counted, accepted('RUNESTONE')),
+  runeCase('max-rune-name', 'Rune u128::MAX is a readable 19-byte varint.', [runestoneScript([2, 1, 4, U128_MAX]), RUNE_SPEND_1], counted, accepted('RUNESTONE')),
+  runeCase('pointer-u128-max-is-a-cenotaph', 'A pointer that fits no u32 is never consumed.', [runestoneScript([22, U128_MAX]), RUNE_SPEND_1], counted, cenotaph('UNRECOGNIZED_EVEN_TAG')),
+  runeCase('tag-values-are-not-read-as-tags', 'A value of 0 after tag 1 is a divisibility, not the body.', [runestoneScript([2, 1, 1, 0, 0, 1, 1, 2, 1]), RUNE_SPEND_1], counted, accepted('RUNESTONE')),
+  runeCase('multiple-edicts-delta-encoded', 'A block delta of 0 continues the tx counter: 840000:1 then 840000:4.', [runestoneScript([0, 840000, 1, 2, 1, 0, 3, 5, 1]), RUNE_SPEND_1], counted, accepted('RUNESTONE')),
+  runeCase('edict-output-beyond-u32', 'An edict output that does not fit a u32.', [runestoneScript([0, 1, 1, 1, 2n ** 32n]), RUNE_SPEND_1], counted, cenotaph('EDICT_OUTPUT')),
+  runeCase('edict-block-u128-max', 'A block delta of u128::MAX cannot be a rune id.', [runestoneScript([0, 1, 1, 2, 1, U128_MAX, 1, 0, 0]), RUNE_SPEND_1], counted, cenotaph('EDICT_RUNE_ID')),
+  runeCase('tag-without-value', 'The second flags tag has no value.', [runestoneScript([2, 1, 2]), RUNE_SPEND_1], counted, cenotaph('TRUNCATED_FIELD')),
+  runeCase('pushdata1-missing-length', 'OP_PUSHDATA1 with no length byte.', ['6a5d4c', RUNE_SPEND_1], counted, cenotaph('INVALID_SCRIPT')),
+  runeCase('pushdata2-truncated-length', 'OP_PUSHDATA2 with one length byte.', ['6a5d4d01', RUNE_SPEND_1], counted, cenotaph('INVALID_SCRIPT')),
+  runeCase('pushdata4-length-past-end', 'OP_PUSHDATA4 claiming five bytes with one present.', ['6a5d4e0500000001', RUNE_SPEND_1], counted, cenotaph('INVALID_SCRIPT')),
+  runeCase('non-minimal-pushdata1-is-a-push', 'A non-minimal push is still a push: one zero byte, the empty body.', ['6a5d4c0100', RUNE_SPEND_1], counted, accepted('RUNESTONE')),
+  runeCase('op-1negate-is-an-opcode', 'OP_1NEGATE is an opcode, not a push.', ['6a5d4f', RUNE_SPEND_1], counted, cenotaph('OPCODE')),
+  runeCase('op-reserved-is-an-opcode', 'OP_RESERVED is an opcode, not a push.', ['6a5d50', RUNE_SPEND_1], counted, cenotaph('OPCODE')),
+  runeCase('empty-runestone', 'OP_RETURN OP_13 alone is an empty, readable runestone.', ['6a5d', RUNE_SPEND_1], counted, accepted('RUNESTONE')),
+  runeCase('truncated-push-before-magic-is-skipped', 'An OP_RETURN whose second instruction fails to parse is not a runestone, so the next output is read.', ['6a095d04', runestoneScript([20, 840000, 20, 1]), RUNE_SPEND_1], counted, accepted('RUNESTONE')),
+  runeCase('runestone-after-plain-op-return', 'A plain OP_RETURN before the runestone is skipped.', ['6a03464f4f', runestoneScript([0, 840000, 1, 5, 2]), RUNE_SPEND_1], counted, accepted('RUNESTONE')),
+  runeCase('truncated-push-after-magic', 'A push after the magic number that runs past the script.', ['6a5d04', RUNE_SPEND_1], counted, cenotaph('INVALID_SCRIPT')),
+  runeCase('bare-op-return-is-not-a-runestone', 'OP_RETURN with no magic number carries no runestone.', ['6a', RUNE_SPEND_1], counted, accepted('NONE')),
+  runeCase('odd-tag-127-is-ignored', 'The Nop tag is odd and ignored.', [runestoneScript([127, 100, 0, 840000, 1, 2, 1]), RUNE_SPEND_1], counted, accepted('RUNESTONE')),
+];
+
+const runeAllocationCases = [
+  runeCase('edict-to-op-return-burns', 'An edict sends 400 of 840000:1 to the runestone output itself; the rest falls to output 1.', [runestoneScript([0, 840000, 1, 400, 0]), RUNE_SPEND_1], held(['840000:1', '1000']), refused('RUNESTONE', 'ALLOCATION_BURNS_BALANCE')),
+  runeCase('edict-zero-amount-to-op-return-burns-all', 'Amount 0 means the whole balance, here sent to the OP_RETURN.', [runestoneScript([0, 840000, 1, 0, 0]), RUNE_SPEND_1], held(['840000:1', '1000']), refused('RUNESTONE', 'ALLOCATION_BURNS_BALANCE')),
+  runeCase('edict-for-unheld-rune-is-skipped', 'An edict to the OP_RETURN for a rune no input carries allocates nothing, so nothing burns.', [runestoneScript([0, 840000, 2, 400, 0]), RUNE_SPEND_1], held(['840000:1', '1000']), accepted('RUNESTONE')),
+  runeCase('split-zero-amount-across-spendable-outputs', 'Output count with amount 0 divides the balance, remainder to the first outputs: 334, 333, 333.', [runestoneScript([0, 840000, 1, 0, 4]), RUNE_SPEND_1, RUNE_SPEND_2, RUNE_SPEND_3], held(['840000:1', '1000']), accepted('RUNESTONE')),
+  runeCase('split-fixed-amount-until-exhausted', 'Output count with amount 400 gives 400, 400, then the 200 left.', [runestoneScript([0, 840000, 1, 400, 4]), RUNE_SPEND_1, RUNE_SPEND_2, RUNE_SPEND_3], held(['840000:1', '1000']), accepted('RUNESTONE')),
+  runeCase('no-runestone-and-no-spendable-output-burns', 'Without a runestone the balance falls to the first non-OP_RETURN output, and there is none.', ['6a0401020304', '6a'], held(['840000:1', '1000']), refused('NONE', 'ALLOCATION_BURNS_BALANCE')),
+  runeCase('no-spendable-output-burns-counted', 'The same loss is certain from a count alone, because nothing is allocated elsewhere.', ['6a0401020304', '6a'], counted, refused('NONE', 'ALLOCATION_BURNS_BALANCE')),
+  runeCase('pointer-takes-the-leftover', 'An edict sends 300 to output 1 and the pointer sends the other 700 to output 2.', [runestoneScript([22, 2, 0, 840000, 1, 300, 1]), RUNE_SPEND_1, RUNE_SPEND_2], held(['840000:1', '1000']), accepted('RUNESTONE')),
+  runeCase('cenotaph-burns-exact-balances', 'A cenotaph burns the exact balances listed.', [runestoneScript([126, 1]), RUNE_SPEND_1], held(['840000:1', '1000']), cenotaph('UNRECOGNIZED_EVEN_TAG')),
+  runeCase('mint-of-held-rune-needs-the-mint-result', 'The runestone mints a rune the input also carries and its pointer is the OP_RETURN, so the burn depends on the minted amount.', [runestoneScript([20, 840000, 20, 1, 22, 0, 0, 840000, 1, 500, 1]), RUNE_SPEND_1], held(['840000:1', '1000']), refused('RUNESTONE', 'RUNE_MINT_UNRESOLVED'), { mint: { runeId: '840000:1', amount: '0' } }),
+  runeCase('two-runes-one-left-for-an-op-return-pointer', 'Two inputs carry 840000:1 and 840000:2. The edict moves all of 840000:1; 840000:2 falls to the OP_RETURN pointer.', [runestoneScript([22, 0, 0, 840000, 1, 1000, 1]), RUNE_SPEND_1], [{ indexed: true, balances: [{ runeId: '840000:1', amount: '600' }] }, { indexed: true, balances: [{ runeId: '840000:1', amount: '400' }, { runeId: '840000:2', amount: '50' }] }], refused('RUNESTONE', 'ALLOCATION_BURNS_BALANCE')),
+  runeCase('edicts-cover-everything-before-an-op-return-pointer', 'The edict moves the whole balance, so the OP_RETURN pointer receives nothing.', [runestoneScript([22, 0, 0, 840000, 1, 1000, 1]), RUNE_SPEND_1], held(['840000:1', '1000']), accepted('RUNESTONE')),
+  runeCase('op-return-pointer-with-edicts-needs-balances', 'From counts alone it cannot be known whether the edicts leave anything for the OP_RETURN pointer.', [runestoneScript([22, 0, 0, 840000, 1, 1000, 1]), RUNE_SPEND_1], counted, refused('RUNESTONE', 'RUNE_BALANCES_REQUIRED')),
+  runeCase('unindexed-input-with-a-burn-path', 'The pointer is the OP_RETURN and an input was never examined.', [runestoneScript([22, 0]), RUNE_SPEND_1], [{ indexed: false, runes: 0 }], refused('RUNESTONE', 'BURN_PATH_WITH_UNPROVEN_INPUT')),
+  runeCase('unindexed-input-without-a-burn-path', 'Every allocation lands on a spendable output, so an unexamined input cannot lose a balance to a burn.', [runestoneScript([0, 840000, 1, 5, 1]), RUNE_SPEND_1], [{ indexed: false, runes: 0 }], accepted('RUNESTONE')),
+  runeCase('counted-edict-to-op-return-needs-balances', 'An edict names the OP_RETURN, and a count does not say which runes an input holds.', [runestoneScript([0, 840000, 1, 5, 0]), RUNE_SPEND_1], counted, refused('RUNESTONE', 'RUNE_BALANCES_REQUIRED')),
+  runeCase('outputs-incomplete', 'Only one of three outputs was supplied, so the runestone and its allocation cannot be read.', [RUNE_SPEND_1], counted, refused('NONE', 'RUNE_OUTPUTS_INCOMPLETE'), { outputCount: 3 }),
+  runeCase('contradictory-count-and-balances', 'An input claims no runes while listing one.', [RUNE_SPEND_1], [{ indexed: true, runes: 0, balances: [{ runeId: '840000:1', amount: '5' }] }], refused('NONE', 'MALFORMED_RUNE_BALANCE')),
+];
+
+const runeCases = [...LEGACY_RUNE_CASES, ...runeParityCases, ...runeAllocationCases];
+
 function writeVectors(path, document) {
   writeFileSync(new URL(path, import.meta.url), `${JSON.stringify(document, null, 2)}\n`);
 }
@@ -1080,6 +1217,13 @@ writeVectors('../conformance/offline-signing-vectors.json', {
   version: 1,
   description: 'Expected transaction manifest and signed result comparison vectors.',
   cases: offlineCases,
+});
+
+writeVectors('../conformance/rune-burn-vectors.json', {
+  version: 1,
+  description:
+    'Conformance vectors for the Ordex rune burn rule. Each case names the output scripts of a final transaction, what the rune index reports about each input being spent, and the exact verdict a compatible verifier must reach. Deciphered fields and allocations match ord 0.29.0 (commit 7e37a3bd), checked by conformance/ord-differential. The rules verified here are stated in spec/runes.md.',
+  cases: runeCases,
 });
 
 console.log('conformance vectors regenerated');

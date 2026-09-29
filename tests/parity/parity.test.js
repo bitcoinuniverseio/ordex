@@ -7,9 +7,9 @@ import { runAllVectors } from '../../site/src/lib/conformance-engine.mjs';
 // single-dummy layout and its one-sat shortfall, a nonzero asset offset,
 // insufficient padding, a payout raised above the ask, and a malformed input
 // entry that must produce a verdict rather than a thrown error.
-test('157/157 official protocol vectors pass deterministically against reference verifiers', () => {
+test('220/220 official protocol vectors pass deterministically against reference verifiers', () => {
   const result = runAllVectors();
-  assert.equal(result.total, 157, `Expected 157 vectors, ran ${result.total}`);
+  assert.equal(result.total, 220, `Expected 220 vectors, ran ${result.total}`);
   assert.equal(result.failed, 0, `Expected 0 failures, had ${result.failed}`);
-  assert.equal(result.passed, 157, `Expected 157 passed, had ${result.passed}`);
+  assert.equal(result.passed, 220, `Expected 220 passed, had ${result.passed}`);
 });

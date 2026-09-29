@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "description": "Conformance vectors for the Ordex rune burn rule. Each case names the output scripts of a final transaction, what the rune index reports about each input being spent, and the exact verdict a compatible verifier must reach. The rules verified here are stated in spec/runes.md.",
+  "description": "Conformance vectors for the Ordex rune burn rule. Each case names the output scripts of a final transaction, what the rune index reports about each input being spent, and the exact verdict a compatible verifier must reach. Deciphered fields and allocations match ord 0.29.0 (commit 7e37a3bd), checked by conformance/ord-differential. The rules verified here are stated in spec/runes.md.",
   "cases": [
     {
       "name": "no-runestone",
@@ -485,6 +485,1294 @@
         "runestone": "CENOTAPH",
         "code": "CENOTAPH_WITH_UNPROVEN_INPUT",
         "flaw": "UNRECOGNIZED_EVEN_TAG"
+      }
+    },
+    {
+      "name": "duplicate-pointer-is-a-cenotaph",
+      "description": "P-R05: tag 22 twice. Tag::take consumes one pointer and the second stays behind as an even field.",
+      "outputScriptsHex": [
+        "6a5d0416011601",
+        "51"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "runes": 1
+        }
+      ],
+      "expected": {
+        "safe": false,
+        "runestone": "CENOTAPH",
+        "code": "CENOTAPH_BURNS_BALANCE",
+        "flaw": "UNRECOGNIZED_EVEN_TAG"
+      }
+    },
+    {
+      "name": "premine-without-etching-is-a-cenotaph",
+      "description": "P-R06: premine is consumed only inside an etching, so without the Etching flag tag 6 stays behind.",
+      "outputScriptsHex": [
+        "6a5d020601",
+        "51"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "runes": 1
+        }
+      ],
+      "expected": {
+        "safe": false,
+        "runestone": "CENOTAPH",
+        "code": "CENOTAPH_BURNS_BALANCE",
+        "flaw": "UNRECOGNIZED_EVEN_TAG"
+      }
+    },
+    {
+      "name": "incomplete-mint-is-a-cenotaph",
+      "description": "P-R07: Mint takes two values. One value is never consumed.",
+      "outputScriptsHex": [
+        "6a5d021401",
+        "51"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "runes": 1
+        }
+      ],
+      "expected": {
+        "safe": false,
+        "runestone": "CENOTAPH",
+        "code": "CENOTAPH_BURNS_BALANCE",
+        "flaw": "UNRECOGNIZED_EVEN_TAG"
+      }
+    },
+    {
+      "name": "pointer-to-its-own-op-return-burns",
+      "description": "P-R08: a readable runestone whose pointer is its own OP_RETURN sends every unallocated balance there.",
+      "outputScriptsHex": [
+        "6a5d021600",
+        "51"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "runes": 1
+        }
+      ],
+      "expected": {
+        "safe": false,
+        "runestone": "RUNESTONE",
+        "code": "ALLOCATION_BURNS_BALANCE"
+      }
+    },
+    {
+      "name": "pointer-to-its-own-op-return-burns-exact",
+      "description": "P-R08 with exact balances: the whole balance of 840000:1 lands on the OP_RETURN.",
+      "outputScriptsHex": [
+        "6a5d021600",
+        "51"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "balances": [
+            {
+              "runeId": "840000:1",
+              "amount": "1000"
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "safe": false,
+        "runestone": "RUNESTONE",
+        "code": "ALLOCATION_BURNS_BALANCE"
+      }
+    },
+    {
+      "name": "duplicate-flags-is-a-cenotaph",
+      "description": "Flags are taken once. A second flags value stays behind as tag 2.",
+      "outputScriptsHex": [
+        "6a5d0402010201",
+        "00141111111111111111111111111111111111111111"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "runes": 1
+        }
+      ],
+      "expected": {
+        "safe": false,
+        "runestone": "CENOTAPH",
+        "code": "CENOTAPH_BURNS_BALANCE",
+        "flaw": "UNRECOGNIZED_EVEN_TAG"
+      }
+    },
+    {
+      "name": "duplicate-mint-is-a-cenotaph",
+      "description": "Two complete mint pairs: one is consumed, the other stays behind. The cenotaph still names the mint.",
+      "outputScriptsHex": [
+        "6a5d0c14c0a233140114c0a2331401",
+        "00141111111111111111111111111111111111111111"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "runes": 1
+        }
+      ],
+      "expected": {
+        "safe": false,
+        "runestone": "CENOTAPH",
+        "code": "CENOTAPH_BURNS_BALANCE",
+        "flaw": "UNRECOGNIZED_EVEN_TAG"
+      }
+    },
+    {
+      "name": "mint-with-zero-block-and-nonzero-tx",
+      "description": "RuneId::new refuses block 0 with a nonzero tx, so the mint is never consumed.",
+      "outputScriptsHex": [
+        "6a5d0414001401",
+        "00141111111111111111111111111111111111111111"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "runes": 1
+        }
+      ],
+      "expected": {
+        "safe": false,
+        "runestone": "CENOTAPH",
+        "code": "CENOTAPH_BURNS_BALANCE",
+        "flaw": "UNRECOGNIZED_EVEN_TAG"
+      }
+    },
+    {
+      "name": "mint-tx-beyond-u32",
+      "description": "A mint tx that does not fit a u32 is never consumed.",
+      "outputScriptsHex": [
+        "6a5d0a14c0a233148080808010",
+        "00141111111111111111111111111111111111111111"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "runes": 1
+        }
+      ],
+      "expected": {
+        "safe": false,
+        "runestone": "CENOTAPH",
+        "code": "CENOTAPH_BURNS_BALANCE",
+        "flaw": "UNRECOGNIZED_EVEN_TAG"
+      }
+    },
+    {
+      "name": "mint-block-beyond-u64",
+      "description": "A mint block that does not fit a u64 is never consumed.",
+      "outputScriptsHex": [
+        "6a5d0d14808080808080808080021401",
+        "00141111111111111111111111111111111111111111"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "runes": 1
+        }
+      ],
+      "expected": {
+        "safe": false,
+        "runestone": "CENOTAPH",
+        "code": "CENOTAPH_BURNS_BALANCE",
+        "flaw": "UNRECOGNIZED_EVEN_TAG"
+      }
+    },
+    {
+      "name": "valid-mint",
+      "description": "A complete mint is consumed and the runestone is readable.",
+      "outputScriptsHex": [
+        "6a5d0614c0a2331403",
+        "00141111111111111111111111111111111111111111"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "runes": 1
+        }
+      ],
+      "expected": {
+        "safe": true,
+        "runestone": "RUNESTONE"
+      }
+    },
+    {
+      "name": "etching-flag-alone",
+      "description": "An etching with no fields is readable.",
+      "outputScriptsHex": [
+        "6a5d020201",
+        "00141111111111111111111111111111111111111111"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "runes": 1
+        }
+      ],
+      "expected": {
+        "safe": true,
+        "runestone": "RUNESTONE"
+      }
+    },
+    {
+      "name": "etching-with-every-field",
+      "description": "Every etching, terms and turbo field consumed together with a pointer, a mint and an edict.",
+      "outputScriptsHex": [
+        "6a5d1d0207040401010305056112020a03060808091601140114010001010201",
+        "00141111111111111111111111111111111111111111"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "runes": 1
+        }
+      ],
+      "expected": {
+        "safe": true,
+        "runestone": "RUNESTONE"
+      }
+    },
+    {
+      "name": "turbo-flag-without-etching",
+      "description": "Turbo is read only inside an etching. Alone it is an unrecognized flag.",
+      "outputScriptsHex": [
+        "6a5d020204",
+        "00141111111111111111111111111111111111111111"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "runes": 1
+        }
+      ],
+      "expected": {
+        "safe": false,
+        "runestone": "CENOTAPH",
+        "code": "CENOTAPH_BURNS_BALANCE",
+        "flaw": "UNRECOGNIZED_FLAG"
+      }
+    },
+    {
+      "name": "unknown-flag-bit",
+      "description": "Bit 3 is no flag the protocol consumes.",
+      "outputScriptsHex": [
+        "6a5d020208",
+        "00141111111111111111111111111111111111111111"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "runes": 1
+        }
+      ],
+      "expected": {
+        "safe": false,
+        "runestone": "CENOTAPH",
+        "code": "CENOTAPH_BURNS_BALANCE",
+        "flaw": "UNRECOGNIZED_FLAG"
+      }
+    },
+    {
+      "name": "cenotaph-flag-bit-127",
+      "description": "The reserved cenotaph flag, bit 127, carried by a 19-byte varint.",
+      "outputScriptsHex": [
+        "6a5d140280808080808080808080808080808080808002",
+        "00141111111111111111111111111111111111111111"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "runes": 1
+        }
+      ],
+      "expected": {
+        "safe": false,
+        "runestone": "CENOTAPH",
+        "code": "CENOTAPH_BURNS_BALANCE",
+        "flaw": "UNRECOGNIZED_FLAG"
+      }
+    },
+    {
+      "name": "cap-without-terms-flag",
+      "description": "Cap is consumed only when Terms is set.",
+      "outputScriptsHex": [
+        "6a5d0402010800",
+        "00141111111111111111111111111111111111111111"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "runes": 1
+        }
+      ],
+      "expected": {
+        "safe": false,
+        "runestone": "CENOTAPH",
+        "code": "CENOTAPH_BURNS_BALANCE",
+        "flaw": "UNRECOGNIZED_EVEN_TAG"
+      }
+    },
+    {
+      "name": "offset-end-beyond-u64",
+      "description": "A term that does not fit a u64 is never consumed.",
+      "outputScriptsHex": [
+        "6a5d0d02031280808080808080808002",
+        "00141111111111111111111111111111111111111111"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "runes": 1
+        }
+      ],
+      "expected": {
+        "safe": false,
+        "runestone": "CENOTAPH",
+        "code": "CENOTAPH_BURNS_BALANCE",
+        "flaw": "UNRECOGNIZED_EVEN_TAG"
+      }
+    },
+    {
+      "name": "supply-at-u128-max-is-readable",
+      "description": "cap 1 times amount u128::MAX fits exactly.",
+      "outputScriptsHex": [
+        "6a5d18020308010affffffffffffffffffffffffffffffffffff03",
+        "00141111111111111111111111111111111111111111"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "runes": 1
+        }
+      ],
+      "expected": {
+        "safe": true,
+        "runestone": "RUNESTONE"
+      }
+    },
+    {
+      "name": "supply-overflow-cap-times-amount",
+      "description": "cap 2 times amount u128::MAX overflows the supply.",
+      "outputScriptsHex": [
+        "6a5d18020308020affffffffffffffffffffffffffffffffffff03",
+        "00141111111111111111111111111111111111111111"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "runes": 1
+        }
+      ],
+      "expected": {
+        "safe": false,
+        "runestone": "CENOTAPH",
+        "code": "CENOTAPH_BURNS_BALANCE",
+        "flaw": "SUPPLY_OVERFLOW"
+      }
+    },
+    {
+      "name": "supply-overflow-premine-plus-terms",
+      "description": "premine 1 plus cap 1 times u128::MAX overflows the supply.",
+      "outputScriptsHex": [
+        "6a5d1a0203060108010affffffffffffffffffffffffffffffffffff03",
+        "00141111111111111111111111111111111111111111"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "runes": 1
+        }
+      ],
+      "expected": {
+        "safe": false,
+        "runestone": "CENOTAPH",
+        "code": "CENOTAPH_BURNS_BALANCE",
+        "flaw": "SUPPLY_OVERFLOW"
+      }
+    },
+    {
+      "name": "divisibility-above-max-is-ignored",
+      "description": "Divisibility 39 is refused by Tag::take, and tag 1 is odd, so it is simply ignored.",
+      "outputScriptsHex": [
+        "6a5d0402010127",
+        "00141111111111111111111111111111111111111111"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "runes": 1
+        }
+      ],
+      "expected": {
+        "safe": true,
+        "runestone": "RUNESTONE"
+      }
+    },
+    {
+      "name": "invalid-odd-fields-without-etching-are-ignored",
+      "description": "Odd tags left unconsumed never make a cenotaph.",
+      "outputScriptsHex": [
+        "6a5d3c01ffffffffffffffffffffffffffffffffffff0303ffffffffffffffffffffffffffffffffffff0305ffffffffffffffffffffffffffffffffffff03",
+        "00141111111111111111111111111111111111111111"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "runes": 1
+        }
+      ],
+      "expected": {
+        "safe": true,
+        "runestone": "RUNESTONE"
+      }
+    },
+    {
+      "name": "symbol-surrogate-is-ignored",
+      "description": "A surrogate code point is no char, so the symbol is left unconsumed.",
+      "outputScriptsHex": [
+        "6a5d0602010580b003",
+        "00141111111111111111111111111111111111111111"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "runes": 1
+        }
+      ],
+      "expected": {
+        "safe": true,
+        "runestone": "RUNESTONE"
+      }
+    },
+    {
+      "name": "symbol-above-max-is-ignored",
+      "description": "A value above char::MAX is no symbol.",
+      "outputScriptsHex": [
+        "6a5d06020105808044",
+        "00141111111111111111111111111111111111111111"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "runes": 1
+        }
+      ],
+      "expected": {
+        "safe": true,
+        "runestone": "RUNESTONE"
+      }
+    },
+    {
+      "name": "spacers-above-max-are-ignored",
+      "description": "Spacers above Etching::MAX_SPACERS are left unconsumed.",
+      "outputScriptsHex": [
+        "6a5d0702010380808040",
+        "00141111111111111111111111111111111111111111"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "runes": 1
+        }
+      ],
+      "expected": {
+        "safe": true,
+        "runestone": "RUNESTONE"
+      }
+    },
+    {
+      "name": "max-rune-name",
+      "description": "Rune u128::MAX is a readable 19-byte varint.",
+      "outputScriptsHex": [
+        "6a5d16020104ffffffffffffffffffffffffffffffffffff03",
+        "00141111111111111111111111111111111111111111"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "runes": 1
+        }
+      ],
+      "expected": {
+        "safe": true,
+        "runestone": "RUNESTONE"
+      }
+    },
+    {
+      "name": "pointer-u128-max-is-a-cenotaph",
+      "description": "A pointer that fits no u32 is never consumed.",
+      "outputScriptsHex": [
+        "6a5d1416ffffffffffffffffffffffffffffffffffff03",
+        "00141111111111111111111111111111111111111111"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "runes": 1
+        }
+      ],
+      "expected": {
+        "safe": false,
+        "runestone": "CENOTAPH",
+        "code": "CENOTAPH_BURNS_BALANCE",
+        "flaw": "UNRECOGNIZED_EVEN_TAG"
+      }
+    },
+    {
+      "name": "tag-values-are-not-read-as-tags",
+      "description": "A value of 0 after tag 1 is a divisibility, not the body.",
+      "outputScriptsHex": [
+        "6a5d09020101000001010201",
+        "00141111111111111111111111111111111111111111"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "runes": 1
+        }
+      ],
+      "expected": {
+        "safe": true,
+        "runestone": "RUNESTONE"
+      }
+    },
+    {
+      "name": "multiple-edicts-delta-encoded",
+      "description": "A block delta of 0 continues the tx counter: 840000:1 then 840000:4.",
+      "outputScriptsHex": [
+        "6a5d0b00c0a23301020100030501",
+        "00141111111111111111111111111111111111111111"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "runes": 1
+        }
+      ],
+      "expected": {
+        "safe": true,
+        "runestone": "RUNESTONE"
+      }
+    },
+    {
+      "name": "edict-output-beyond-u32",
+      "description": "An edict output that does not fit a u32.",
+      "outputScriptsHex": [
+        "6a5d09000101018080808010",
+        "00141111111111111111111111111111111111111111"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "runes": 1
+        }
+      ],
+      "expected": {
+        "safe": false,
+        "runestone": "CENOTAPH",
+        "code": "CENOTAPH_BURNS_BALANCE",
+        "flaw": "EDICT_OUTPUT"
+      }
+    },
+    {
+      "name": "edict-block-u128-max",
+      "description": "A block delta of u128::MAX cannot be a rune id.",
+      "outputScriptsHex": [
+        "6a5d1b0001010201ffffffffffffffffffffffffffffffffffff03010000",
+        "00141111111111111111111111111111111111111111"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "runes": 1
+        }
+      ],
+      "expected": {
+        "safe": false,
+        "runestone": "CENOTAPH",
+        "code": "CENOTAPH_BURNS_BALANCE",
+        "flaw": "EDICT_RUNE_ID"
+      }
+    },
+    {
+      "name": "tag-without-value",
+      "description": "The second flags tag has no value.",
+      "outputScriptsHex": [
+        "6a5d03020102",
+        "00141111111111111111111111111111111111111111"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "runes": 1
+        }
+      ],
+      "expected": {
+        "safe": false,
+        "runestone": "CENOTAPH",
+        "code": "CENOTAPH_BURNS_BALANCE",
+        "flaw": "TRUNCATED_FIELD"
+      }
+    },
+    {
+      "name": "pushdata1-missing-length",
+      "description": "OP_PUSHDATA1 with no length byte.",
+      "outputScriptsHex": [
+        "6a5d4c",
+        "00141111111111111111111111111111111111111111"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "runes": 1
+        }
+      ],
+      "expected": {
+        "safe": false,
+        "runestone": "CENOTAPH",
+        "code": "CENOTAPH_BURNS_BALANCE",
+        "flaw": "INVALID_SCRIPT"
+      }
+    },
+    {
+      "name": "pushdata2-truncated-length",
+      "description": "OP_PUSHDATA2 with one length byte.",
+      "outputScriptsHex": [
+        "6a5d4d01",
+        "00141111111111111111111111111111111111111111"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "runes": 1
+        }
+      ],
+      "expected": {
+        "safe": false,
+        "runestone": "CENOTAPH",
+        "code": "CENOTAPH_BURNS_BALANCE",
+        "flaw": "INVALID_SCRIPT"
+      }
+    },
+    {
+      "name": "pushdata4-length-past-end",
+      "description": "OP_PUSHDATA4 claiming five bytes with one present.",
+      "outputScriptsHex": [
+        "6a5d4e0500000001",
+        "00141111111111111111111111111111111111111111"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "runes": 1
+        }
+      ],
+      "expected": {
+        "safe": false,
+        "runestone": "CENOTAPH",
+        "code": "CENOTAPH_BURNS_BALANCE",
+        "flaw": "INVALID_SCRIPT"
+      }
+    },
+    {
+      "name": "non-minimal-pushdata1-is-a-push",
+      "description": "A non-minimal push is still a push: one zero byte, the empty body.",
+      "outputScriptsHex": [
+        "6a5d4c0100",
+        "00141111111111111111111111111111111111111111"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "runes": 1
+        }
+      ],
+      "expected": {
+        "safe": true,
+        "runestone": "RUNESTONE"
+      }
+    },
+    {
+      "name": "op-1negate-is-an-opcode",
+      "description": "OP_1NEGATE is an opcode, not a push.",
+      "outputScriptsHex": [
+        "6a5d4f",
+        "00141111111111111111111111111111111111111111"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "runes": 1
+        }
+      ],
+      "expected": {
+        "safe": false,
+        "runestone": "CENOTAPH",
+        "code": "CENOTAPH_BURNS_BALANCE",
+        "flaw": "OPCODE"
+      }
+    },
+    {
+      "name": "op-reserved-is-an-opcode",
+      "description": "OP_RESERVED is an opcode, not a push.",
+      "outputScriptsHex": [
+        "6a5d50",
+        "00141111111111111111111111111111111111111111"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "runes": 1
+        }
+      ],
+      "expected": {
+        "safe": false,
+        "runestone": "CENOTAPH",
+        "code": "CENOTAPH_BURNS_BALANCE",
+        "flaw": "OPCODE"
+      }
+    },
+    {
+      "name": "empty-runestone",
+      "description": "OP_RETURN OP_13 alone is an empty, readable runestone.",
+      "outputScriptsHex": [
+        "6a5d",
+        "00141111111111111111111111111111111111111111"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "runes": 1
+        }
+      ],
+      "expected": {
+        "safe": true,
+        "runestone": "RUNESTONE"
+      }
+    },
+    {
+      "name": "truncated-push-before-magic-is-skipped",
+      "description": "An OP_RETURN whose second instruction fails to parse is not a runestone, so the next output is read.",
+      "outputScriptsHex": [
+        "6a095d04",
+        "6a5d0614c0a2331401",
+        "00141111111111111111111111111111111111111111"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "runes": 1
+        }
+      ],
+      "expected": {
+        "safe": true,
+        "runestone": "RUNESTONE"
+      }
+    },
+    {
+      "name": "runestone-after-plain-op-return",
+      "description": "A plain OP_RETURN before the runestone is skipped.",
+      "outputScriptsHex": [
+        "6a03464f4f",
+        "6a5d0700c0a233010502",
+        "00141111111111111111111111111111111111111111"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "runes": 1
+        }
+      ],
+      "expected": {
+        "safe": true,
+        "runestone": "RUNESTONE"
+      }
+    },
+    {
+      "name": "truncated-push-after-magic",
+      "description": "A push after the magic number that runs past the script.",
+      "outputScriptsHex": [
+        "6a5d04",
+        "00141111111111111111111111111111111111111111"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "runes": 1
+        }
+      ],
+      "expected": {
+        "safe": false,
+        "runestone": "CENOTAPH",
+        "code": "CENOTAPH_BURNS_BALANCE",
+        "flaw": "INVALID_SCRIPT"
+      }
+    },
+    {
+      "name": "bare-op-return-is-not-a-runestone",
+      "description": "OP_RETURN with no magic number carries no runestone.",
+      "outputScriptsHex": [
+        "6a",
+        "00141111111111111111111111111111111111111111"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "runes": 1
+        }
+      ],
+      "expected": {
+        "safe": true,
+        "runestone": "NONE"
+      }
+    },
+    {
+      "name": "odd-tag-127-is-ignored",
+      "description": "The Nop tag is odd and ignored.",
+      "outputScriptsHex": [
+        "6a5d097f6400c0a233010201",
+        "00141111111111111111111111111111111111111111"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "runes": 1
+        }
+      ],
+      "expected": {
+        "safe": true,
+        "runestone": "RUNESTONE"
+      }
+    },
+    {
+      "name": "edict-to-op-return-burns",
+      "description": "An edict sends 400 of 840000:1 to the runestone output itself; the rest falls to output 1.",
+      "outputScriptsHex": [
+        "6a5d0800c0a23301900300",
+        "00141111111111111111111111111111111111111111"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "balances": [
+            {
+              "runeId": "840000:1",
+              "amount": "1000"
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "safe": false,
+        "runestone": "RUNESTONE",
+        "code": "ALLOCATION_BURNS_BALANCE"
+      }
+    },
+    {
+      "name": "edict-zero-amount-to-op-return-burns-all",
+      "description": "Amount 0 means the whole balance, here sent to the OP_RETURN.",
+      "outputScriptsHex": [
+        "6a5d0700c0a233010000",
+        "00141111111111111111111111111111111111111111"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "balances": [
+            {
+              "runeId": "840000:1",
+              "amount": "1000"
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "safe": false,
+        "runestone": "RUNESTONE",
+        "code": "ALLOCATION_BURNS_BALANCE"
+      }
+    },
+    {
+      "name": "edict-for-unheld-rune-is-skipped",
+      "description": "An edict to the OP_RETURN for a rune no input carries allocates nothing, so nothing burns.",
+      "outputScriptsHex": [
+        "6a5d0800c0a23302900300",
+        "00141111111111111111111111111111111111111111"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "balances": [
+            {
+              "runeId": "840000:1",
+              "amount": "1000"
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "safe": true,
+        "runestone": "RUNESTONE"
+      }
+    },
+    {
+      "name": "split-zero-amount-across-spendable-outputs",
+      "description": "Output count with amount 0 divides the balance, remainder to the first outputs: 334, 333, 333.",
+      "outputScriptsHex": [
+        "6a5d0700c0a233010004",
+        "00141111111111111111111111111111111111111111",
+        "00142222222222222222222222222222222222222222",
+        "00143333333333333333333333333333333333333333"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "balances": [
+            {
+              "runeId": "840000:1",
+              "amount": "1000"
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "safe": true,
+        "runestone": "RUNESTONE"
+      }
+    },
+    {
+      "name": "split-fixed-amount-until-exhausted",
+      "description": "Output count with amount 400 gives 400, 400, then the 200 left.",
+      "outputScriptsHex": [
+        "6a5d0800c0a23301900304",
+        "00141111111111111111111111111111111111111111",
+        "00142222222222222222222222222222222222222222",
+        "00143333333333333333333333333333333333333333"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "balances": [
+            {
+              "runeId": "840000:1",
+              "amount": "1000"
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "safe": true,
+        "runestone": "RUNESTONE"
+      }
+    },
+    {
+      "name": "no-runestone-and-no-spendable-output-burns",
+      "description": "Without a runestone the balance falls to the first non-OP_RETURN output, and there is none.",
+      "outputScriptsHex": [
+        "6a0401020304",
+        "6a"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "balances": [
+            {
+              "runeId": "840000:1",
+              "amount": "1000"
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "safe": false,
+        "runestone": "NONE",
+        "code": "ALLOCATION_BURNS_BALANCE"
+      }
+    },
+    {
+      "name": "no-spendable-output-burns-counted",
+      "description": "The same loss is certain from a count alone, because nothing is allocated elsewhere.",
+      "outputScriptsHex": [
+        "6a0401020304",
+        "6a"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "runes": 1
+        }
+      ],
+      "expected": {
+        "safe": false,
+        "runestone": "NONE",
+        "code": "ALLOCATION_BURNS_BALANCE"
+      }
+    },
+    {
+      "name": "pointer-takes-the-leftover",
+      "description": "An edict sends 300 to output 1 and the pointer sends the other 700 to output 2.",
+      "outputScriptsHex": [
+        "6a5d0a160200c0a23301ac0201",
+        "00141111111111111111111111111111111111111111",
+        "00142222222222222222222222222222222222222222"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "balances": [
+            {
+              "runeId": "840000:1",
+              "amount": "1000"
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "safe": true,
+        "runestone": "RUNESTONE"
+      }
+    },
+    {
+      "name": "cenotaph-burns-exact-balances",
+      "description": "A cenotaph burns the exact balances listed.",
+      "outputScriptsHex": [
+        "6a5d027e01",
+        "00141111111111111111111111111111111111111111"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "balances": [
+            {
+              "runeId": "840000:1",
+              "amount": "1000"
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "safe": false,
+        "runestone": "CENOTAPH",
+        "code": "CENOTAPH_BURNS_BALANCE",
+        "flaw": "UNRECOGNIZED_EVEN_TAG"
+      }
+    },
+    {
+      "name": "mint-of-held-rune-needs-the-mint-result",
+      "description": "The runestone mints a rune the input also carries and its pointer is the OP_RETURN, so the burn depends on the minted amount.",
+      "outputScriptsHex": [
+        "6a5d1014c0a2331401160000c0a23301f40301",
+        "00141111111111111111111111111111111111111111"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "balances": [
+            {
+              "runeId": "840000:1",
+              "amount": "1000"
+            }
+          ]
+        }
+      ],
+      "mint": {
+        "runeId": "840000:1",
+        "amount": "0"
+      },
+      "expected": {
+        "safe": false,
+        "runestone": "RUNESTONE",
+        "code": "RUNE_MINT_UNRESOLVED"
+      }
+    },
+    {
+      "name": "two-runes-one-left-for-an-op-return-pointer",
+      "description": "Two inputs carry 840000:1 and 840000:2. The edict moves all of 840000:1; 840000:2 falls to the OP_RETURN pointer.",
+      "outputScriptsHex": [
+        "6a5d0a160000c0a23301e80701",
+        "00141111111111111111111111111111111111111111"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "balances": [
+            {
+              "runeId": "840000:1",
+              "amount": "600"
+            }
+          ]
+        },
+        {
+          "indexed": true,
+          "balances": [
+            {
+              "runeId": "840000:1",
+              "amount": "400"
+            },
+            {
+              "runeId": "840000:2",
+              "amount": "50"
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "safe": false,
+        "runestone": "RUNESTONE",
+        "code": "ALLOCATION_BURNS_BALANCE"
+      }
+    },
+    {
+      "name": "edicts-cover-everything-before-an-op-return-pointer",
+      "description": "The edict moves the whole balance, so the OP_RETURN pointer receives nothing.",
+      "outputScriptsHex": [
+        "6a5d0a160000c0a23301e80701",
+        "00141111111111111111111111111111111111111111"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "balances": [
+            {
+              "runeId": "840000:1",
+              "amount": "1000"
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "safe": true,
+        "runestone": "RUNESTONE"
+      }
+    },
+    {
+      "name": "op-return-pointer-with-edicts-needs-balances",
+      "description": "From counts alone it cannot be known whether the edicts leave anything for the OP_RETURN pointer.",
+      "outputScriptsHex": [
+        "6a5d0a160000c0a23301e80701",
+        "00141111111111111111111111111111111111111111"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "runes": 1
+        }
+      ],
+      "expected": {
+        "safe": false,
+        "runestone": "RUNESTONE",
+        "code": "RUNE_BALANCES_REQUIRED"
+      }
+    },
+    {
+      "name": "unindexed-input-with-a-burn-path",
+      "description": "The pointer is the OP_RETURN and an input was never examined.",
+      "outputScriptsHex": [
+        "6a5d021600",
+        "00141111111111111111111111111111111111111111"
+      ],
+      "inputs": [
+        {
+          "indexed": false,
+          "runes": 0
+        }
+      ],
+      "expected": {
+        "safe": false,
+        "runestone": "RUNESTONE",
+        "code": "BURN_PATH_WITH_UNPROVEN_INPUT"
+      }
+    },
+    {
+      "name": "unindexed-input-without-a-burn-path",
+      "description": "Every allocation lands on a spendable output, so an unexamined input cannot lose a balance to a burn.",
+      "outputScriptsHex": [
+        "6a5d0700c0a233010501",
+        "00141111111111111111111111111111111111111111"
+      ],
+      "inputs": [
+        {
+          "indexed": false,
+          "runes": 0
+        }
+      ],
+      "expected": {
+        "safe": true,
+        "runestone": "RUNESTONE"
+      }
+    },
+    {
+      "name": "counted-edict-to-op-return-needs-balances",
+      "description": "An edict names the OP_RETURN, and a count does not say which runes an input holds.",
+      "outputScriptsHex": [
+        "6a5d0700c0a233010500",
+        "00141111111111111111111111111111111111111111"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "runes": 1
+        }
+      ],
+      "expected": {
+        "safe": false,
+        "runestone": "RUNESTONE",
+        "code": "RUNE_BALANCES_REQUIRED"
+      }
+    },
+    {
+      "name": "outputs-incomplete",
+      "description": "Only one of three outputs was supplied, so the runestone and its allocation cannot be read.",
+      "outputScriptsHex": [
+        "00141111111111111111111111111111111111111111"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "runes": 1
+        }
+      ],
+      "outputCount": 3,
+      "expected": {
+        "safe": false,
+        "runestone": "NONE",
+        "code": "RUNE_OUTPUTS_INCOMPLETE"
+      }
+    },
+    {
+      "name": "contradictory-count-and-balances",
+      "description": "An input claims no runes while listing one.",
+      "outputScriptsHex": [
+        "00141111111111111111111111111111111111111111"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "runes": 0,
+          "balances": [
+            {
+              "runeId": "840000:1",
+              "amount": "5"
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "safe": false,
+        "runestone": "NONE",
+        "code": "MALFORMED_RUNE_BALANCE"
       }
     }
   ]

@@ -1,0 +1,16 @@
+# Differential oracle for conformance/rune-burn-vectors.json. It runs the pinned
+# ord 0.29.0 ordinals crate (commit 7e37a3bd3391044b39f5f11f20dfdb8b3764cd0e)
+# Runestone::decipher and the rune_updater.rs allocation loop. Run it through
+# run.mjs; it is not part of the npm test path because it needs a Rust toolchain.
+[package]
+name = "ordex-rune-differential"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[workspace]
+
+[dependencies]
+ordinals = { git = "https://github.com/ordinals/ord", rev = "7e37a3bd3391044b39f5f11f20dfdb8b3764cd0e" }
+bitcoin = "0.32.5"
+serde_json = "1.0.81"

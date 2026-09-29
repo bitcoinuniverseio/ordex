@@ -25,10 +25,13 @@ for (const vector of vectors.cases) {
       assert.equal(verdict.code, undefined);
     } else {
       assert.equal(verdict.code, vector.expected.code, verdict.reason || '');
-      assert.ok(
-        verdict.flaws.includes(vector.expected.flaw),
-        `expected flaw ${vector.expected.flaw}, got ${verdict.flaws.join(', ')}`
-      );
+      // Only a cenotaph has flaws; an allocation burn is a readable runestone.
+      if (vector.expected.flaw) {
+        assert.ok(
+          verdict.flaws.includes(vector.expected.flaw),
+          `expected flaw ${vector.expected.flaw}, got ${verdict.flaws.join(', ')}`
+        );
+      }
     }
   });
 }

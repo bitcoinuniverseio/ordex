@@ -17,7 +17,16 @@ test('the vector file covers every refusal code the verifier can return', () => 
   const codes = new Set(vectors.cases.map((c) => c.expected.code).filter(Boolean));
   assert.deepEqual(
     [...codes].sort(),
-    ['CENOTAPH_BURNS_BALANCE', 'CENOTAPH_WITH_UNPROVEN_INPUT']
+    [
+      'ALLOCATION_BURNS_BALANCE',
+      'BURN_PATH_WITH_UNPROVEN_INPUT',
+      'CENOTAPH_BURNS_BALANCE',
+      'CENOTAPH_WITH_UNPROVEN_INPUT',
+      'MALFORMED_RUNE_BALANCE',
+      'RUNE_BALANCES_REQUIRED',
+      'RUNE_MINT_UNRESOLVED',
+      'RUNE_OUTPUTS_INCOMPLETE',
+    ]
   );
 });
 
@@ -34,10 +43,13 @@ for (const vector of vectors.cases) {
       assert.equal(verdict.code, undefined);
     } else {
       assert.equal(verdict.code, vector.expected.code, verdict.reason || '');
-      assert.ok(
-        verdict.flaws.includes(vector.expected.flaw),
-        `expected flaw ${vector.expected.flaw}, got ${verdict.flaws.join(', ')}`
-      );
+      // Only a cenotaph has flaws; an allocation burn is a readable runestone.
+      if (vector.expected.flaw) {
+        assert.ok(
+          verdict.flaws.includes(vector.expected.flaw),
+          `expected flaw ${vector.expected.flaw}, got ${verdict.flaws.join(', ')}`
+        );
+      }
     }
   });
 }
