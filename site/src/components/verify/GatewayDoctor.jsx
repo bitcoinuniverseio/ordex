@@ -112,7 +112,7 @@ export function GatewayDoctor() {
             {running && <button class="btn btn-outline" type="button" onClick={cancel}>Cancel</button>}
           </div>
         </div>
-        <label for="doctor-origin" style="display: block; font-size: 0.85rem; font-weight: 600; margin-top: 0.5rem;">Gateway origin</label>
+        <label for="doctor-origin" style="display: block; font-size: 0.85rem; font-weight: 600; margin-top: 0.5rem;">Gateway to check</label>
         <input
           id="doctor-origin"
           type="url"
