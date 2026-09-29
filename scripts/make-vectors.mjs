@@ -1334,7 +1334,7 @@ const collectionCases = (() => {
       name: 'a revocation signed by the creator is accepted',
       revocation: makeRevocation(manifest),
       manifest,
-      expected: { ok: true },
+      expected: { ok: true, scope: 'TARGET_BOUND' },
     },
     {
       name: 'a revocation naming a different manifest is refused',
@@ -1350,6 +1350,36 @@ const collectionCases = (() => {
         creatorSignature: { kind: 'bip322', address: 'bc1qnotcreator000000000000000000000000000000', signature: 'MEUCIQ==' },
       }),
       expected: { ok: false, code: 'SIGNER_IDENTITY_MISMATCH' },
+    },
+    // OX-P09: a revocation binds the exact network and collection of its target.
+    {
+      name: 'a revocation naming another network is refused',
+      manifest,
+      revocation: makeRevocation(manifest, { network: 'signet', reason: 'Replayed on another network.' }),
+      expected: { ok: false, code: 'REVOCATION_CONTEXT_MISMATCH' },
+    },
+    {
+      name: 'a revocation naming another collection is refused',
+      manifest,
+      revocation: makeRevocation(manifest, { collectionId: 'unrelated', reason: 'Replayed on another collection.' }),
+      expected: { ok: false, code: 'REVOCATION_CONTEXT_MISMATCH' },
+    },
+    {
+      name: 'a revocation checked without its manifest is structure only',
+      revocation: makeRevocation(manifest),
+      expected: { ok: true, scope: 'STRUCTURE_ONLY' },
+    },
+    {
+      name: 'a revocation without signature material is refused',
+      manifest,
+      revocation: makeRevocation(manifest, { creatorSignature: { kind: 'bip322', address: manifest.creatorAddress } }),
+      expected: { ok: false, code: 'CREATOR_SIGNATURE_INVALID' },
+    },
+    {
+      name: 'a revocation signature that is not base64 is refused',
+      manifest,
+      revocation: makeRevocation(manifest, { creatorSignature: { kind: 'bip322', address: manifest.creatorAddress, signature: 'not base64!' } }),
+      expected: { ok: false, code: 'CREATOR_SIGNATURE_INVALID' },
     },
     {
       name: 'a membership proof resolves for a real member',

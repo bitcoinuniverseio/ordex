@@ -15,6 +15,8 @@
 import { createHash } from 'node:crypto';
 
 const HEX64 = /^[0-9a-f]{64}$/;
+const BASE64 = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
+const MAX_SIGNATURE_LENGTH = 10000;
 const NETWORKS = ['mainnet', 'testnet', 'signet', 'regtest'];
 const IDENTITY_TYPES = ['inscriptionId', 'output', 'assetId', 'satpoint'];
 const PROTOCOLS = ['ordinals', 'runes', 'stamps', 'counterparty', 'multi'];
@@ -439,12 +441,19 @@ export type CollectionRevocationRefusalCode =
   | 'MANIFEST_DIGEST_INVALID'
   | 'REASON_REQUIRED'
   | 'CREATOR_SIGNATURE_INVALID'
+  | 'REVOCATION_CONTEXT_MISMATCH'
   | 'SIGNER_IDENTITY_MISMATCH'
   | 'MANIFEST_DIGEST_MISMATCH'
   | 'DIGEST_MISMATCH';
 
+/**
+ * TARGET_BOUND: checked against the manifest it revokes. STRUCTURE_ONLY:
+ * checked without it, so it proves nothing about which manifest it may revoke.
+ */
+export type CollectionRevocationScope = 'TARGET_BOUND' | 'STRUCTURE_ONLY';
+
 export type CollectionRevocationVerdict =
-  | { ok: true; digest: string }
+  | { ok: true; digest: string; scope: CollectionRevocationScope }
   | { ok: false; code: CollectionRevocationRefusalCode | CollectionManifestRefusalCode; reason: string };
 
 const refuseRevocation = (
@@ -455,46 +464,15 @@ const refuseRevocation = (
 /**
  * Verify a signed revocation of a manifest.
  *
- * revocation: { schema, protocolVersion, network, collectionId,
- *   manifestDigest, reason, creatorSignature { kind, address, signature },
- *   digest }
+ * With the target manifest, the revocation must name exactly its network,
+ * collection, digest and creator, and the verdict carries scope
+ * TARGET_BOUND. Without it the verdict carries scope STRUCTURE_ONLY. Registry
+ * state changes only on a TARGET_BOUND verdict together with an independent
+ * BIP-322 verification of creatorSignature over `digest`.
  */
-/*
- * IMPLEMENTATION-HANDOFF [OX-P09] Preparation only; functional status FAIL, repair NOT IMPLEMENTED.
- * Coverage: OX-P-C044. Evidence: P-R17 in handoff/evidence.
- * Verified cause: verifyManifestRevocation checks manifest digest and signer address but never
- * compares revocation network or collectionId to supplied manifest; contradictory revocation passes.
- * Actual BIP322 proof remains integrator's responsibility.
- * Required behavior: Bind collection revocation to exact network, collection and signer context.
- * Governing refs: P-S15 (Ordex1.2 collection-manifest/v1); P-S16 (BIP322 version2.0.0 Complete;
- * blob66fd047f6783c76e9e6ec938218349f4fb967c60); complete URLs in reports/protocol.md.
- * Prerequisites/order: none; establish strict contracts first. Related files:
- * verifier/collection-manifest.js, spec/collection-manifest.md; Core
- * backend/src/ordex-v12/ordex-v12.module.ts and corresponding registry/heritage/webhook service.
- * 1. When target manifest supplied require revocation.network===manifest.network and
- * collectionId===manifest.collectionId before digest/signature acceptance; require exact
- * schema-version compatibility and signature material shape.
- * 2. Require a validated target manifest for state-changing revocation; a structural offline check
- * without target must report its limited scope and never authorize registry state.
- * 3. Verify BIP322 signature over the canonical domain-bound revocation through trusted verifier,
- * store signed revocation immutably, and project lifecycle status outside immutable creator document;
- * preserve history and distinguish anchored state.
- * 4. Mirror reference/SDK/spec and test cross-network/cross-collection replay, wrong creator, null
- * target fields, supersession and repeated revocation.
- * Validation (PROPOSED NEW tests, commands unverified until implemented):
- * verifier/collection-revocation-context.test.js, sdk/test/collection-revocation-context.test.js. node
- * --test verifier/collection-manifest.test.js verifier/collection-revocation-context.test.js; npm
- * --prefix sdk run build; node --test sdk/test/collection-manifest.test.js
- * sdk/test/collection-revocation-context.test.js.
- * Assertions/evidence: Same digest/wrong collection/network refuses before state mutation; Valid
- * creator-signed revocation applies exactly once; signature verified independently; Membership/history
- * remains reproducible for old versions; no unsigned status change rewrites creator digest. Offline
- * probes are not end-to-end PASS; require actual Signet transaction and indexed/consumer readback
- * where applicable.
- * Rollback: Append corrected context validation with schema compatibility; retain immutable prior
- * signed records and record invalid contextual documents without pretending them valid. Reproject
- * state from verified events, never delete history.
- */
+// OX-P09: P-R17 accepted a revocation naming another network and collection
+// because only the digest and signer were compared. The context is now checked
+// first, and a check without the target states that it proves no target.
 export function verifyManifestRevocation(
   revocation: unknown,
   manifest?: unknown,
@@ -524,19 +502,29 @@ export function verifyManifestRevocation(
   const signature = r.creatorSignature;
   if (
     !signature ||
+    typeof signature !== 'object' ||
     signature.kind !== 'bip322' ||
     typeof signature.address !== 'string' ||
-    signature.address.length === 0
+    signature.address.length === 0 ||
+    typeof signature.signature !== 'string' ||
+    signature.signature.length === 0 ||
+    signature.signature.length > MAX_SIGNATURE_LENGTH ||
+    !BASE64.test(signature.signature)
   ) {
-    return refuseRevocation('CREATOR_SIGNATURE_INVALID', 'The revocation must carry a bip322 creator signature.');
+    return refuseRevocation('CREATOR_SIGNATURE_INVALID', 'The revocation must carry a bip322 creator signature: an address and a base64 signature.');
   }
-  if (manifest) {
+  const bound = manifest !== undefined && manifest !== null;
+  if (bound) {
     const manifestVerdict = verifyCollectionManifest(manifest);
     if (!manifestVerdict.ok) return manifestVerdict;
+    const m = manifest as CollectionManifest;
+    if (r.network !== m.network || r.collectionId !== m.collectionId) {
+      return refuseRevocation('REVOCATION_CONTEXT_MISMATCH', 'The revocation names a different network or collection than the manifest it revokes.');
+    }
     if (manifestVerdict.digest !== r.manifestDigest) {
       return refuseRevocation('MANIFEST_DIGEST_MISMATCH', 'The revocation names a different manifest than the one supplied.');
     }
-    if (signature.address !== (manifest as CollectionManifest).creatorAddress) {
+    if (signature.address !== m.creatorAddress) {
       return refuseRevocation('SIGNER_IDENTITY_MISMATCH', 'The revocation was signed by an address that never created the manifest.');
     }
   }
@@ -544,5 +532,5 @@ export function verifyManifestRevocation(
   if (r.digest !== digest) {
     return refuseRevocation('DIGEST_MISMATCH', 'The revocation digest does not match its content.');
   }
-  return { ok: true, digest };
+  return { ok: true, digest, scope: bound ? 'TARGET_BOUND' : 'STRUCTURE_ONLY' };
 }

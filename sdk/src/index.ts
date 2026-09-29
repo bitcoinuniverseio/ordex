@@ -231,6 +231,7 @@ export {
   type CollectionManifestRevocation,
   type CollectionManifestVerdict,
   type CollectionRevocationRefusalCode,
+  type CollectionRevocationScope,
   type CollectionRevocationVerdict,
   type MembershipProofStep,
   type MembershipRefusalCode,
