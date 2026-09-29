@@ -177,6 +177,14 @@ test('prompts list and get, with required arguments enforced', () => {
   assert.equal(rpc('prompts/get', { name: 'nope' }).error.code, JSONRPC.INVALID_PARAMS);
 });
 
+test('every list result carries a cache lifetime and scope (Claude Code 2.1.281 rejects a list without them)', () => {
+  for (const method of ['tools/list', 'resources/list', 'prompts/list']) {
+    const { result } = rpc(method);
+    assert.equal(typeof result.ttlMs, 'number', `${method} ttlMs`);
+    assert.ok(['public', 'private'].includes(result.cacheScope), `${method} cacheScope`);
+  }
+});
+
 test('stdio transport bounds lines whether an oversized line arrives whole or in pieces', async () => {
   const { PassThrough } = await import('node:stream');
   const { runStdio } = await import('../../scripts/mcp/stdio-host.mjs');

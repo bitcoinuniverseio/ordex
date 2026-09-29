@@ -448,6 +448,9 @@ export function checkRequestMeta(params: unknown): string {
 type JsonRpcId = string | number;
 export type JsonRpcResponse = { jsonrpc: '2.0'; id: JsonRpcId | null; result?: unknown; error?: { code: number; message: string; data?: unknown } };
 
+// Revision 2026-07-28 list results carry a cache lifetime and scope; clients reject a list without them.
+const LIST_CACHE = { ttlMs: 3600000, cacheScope: 'public' } as const;
+
 const withServerMeta = (result: Record<string, unknown>) => ({
   resultType: 'complete',
   ...result,
@@ -483,17 +486,17 @@ export function dispatchMessage(message: unknown): JsonRpcResponse | null {
       case 'server/discover':
         return { jsonrpc: '2.0', id, result: discoverResult() };
       case 'tools/list':
-        return { jsonrpc: '2.0', id, result: withServerMeta({ tools: MCP_TOOLS, ttlMs: 3600000, cacheScope: 'public' }) };
+        return { jsonrpc: '2.0', id, result: withServerMeta({ tools: MCP_TOOLS, ...LIST_CACHE }) };
       case 'tools/call':
         return { jsonrpc: '2.0', id, result: withServerMeta(callTool(params.name, params.arguments) as unknown as Record<string, unknown>) };
       case 'resources/list':
-        return { jsonrpc: '2.0', id, result: withServerMeta({ resources: MCP_RESOURCES.map(({ read, ...r }) => r) }) };
+        return { jsonrpc: '2.0', id, result: withServerMeta({ resources: MCP_RESOURCES.map(({ read, ...r }) => r), ...LIST_CACHE }) };
       case 'resources/read': {
         const { contents } = readResource(params.uri);
         return { jsonrpc: '2.0', id, result: withServerMeta({ contents }) };
       }
       case 'prompts/list':
-        return { jsonrpc: '2.0', id, result: withServerMeta({ prompts: MCP_PROMPTS.map(({ missionId, ...p }) => p) }) };
+        return { jsonrpc: '2.0', id, result: withServerMeta({ prompts: MCP_PROMPTS.map(({ missionId, ...p }) => p), ...LIST_CACHE }) };
       case 'prompts/get':
         return { jsonrpc: '2.0', id, result: withServerMeta(getPrompt(params.name, params.arguments)) };
       default:
