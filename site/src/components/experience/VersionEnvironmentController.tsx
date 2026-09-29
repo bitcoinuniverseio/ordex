@@ -1,46 +1,86 @@
 import type { JSX } from 'preact';
-import { useState } from 'preact/hooks';
+import { useState, useRef, useEffect } from 'preact/hooks';
+import versions from '../../data/versions.json';
+import { NETWORKS, normalizeGatewayOrigin, type UserSettings } from '../../lib/session/journey-schema.js';
+import type { StorageState } from '../../lib/session/journey-store.js';
 
 interface ControllerProps {
-  version: string;
-  onVersionChange: (version: string) => void;
-  environment: string;
-  onEnvironmentChange: (env: string) => void;
-  buildCommit?: string;
+  settings: UserSettings;
+  onChange: (patch: Partial<UserSettings>) => Promise<void> | void;
+  buildRevision: string;
+  storageState?: StorageState;
 }
 
-export function VersionEnvironmentController({
-  version,
-  onVersionChange,
-  environment,
-  onEnvironmentChange,
-  buildCommit = 'f6df565'
-}: ControllerProps): JSX.Element {
-  /* IMPLEMENTATION-HANDOFF [OX-S03]
-   * Defect OX-S-D03; coverage OX-S-C082..OX-S-C089. Menu always says Bitcoin Mainnet and build f6df565 while
-   * changing environment only saves an unused setting; SafeOps/swaps are mislabeled as1.1 despite their1.2 spec.
-   * 1. Consume validated shared network/origin/version/build state from OX-S03; expose required configured
-   * gateway origin and capability/readiness evidence. The displayed network must reflect the selected verified
-   * endpoint or explicit fixture, never a fixed label.
-   * 2. Filter operations/missions by protocol capabilities and propagate settings to every tool via
-   * subscription. Network/origin changes invalidate stale runs and require refreshed evidence without changing
-   * production defaults.
-   * 3. Generate release labels from spec/version registry and actual build; resolve local/Signet/testnet/mainnet
-   * separately from read-only/write permission. Apply OX-S10 accessible popup focus/Escape/close behavior.
-   * 4. Browser checks: change every version/environment, traverse all tools, reload and reopen menu, verify
-   * exact consistency and blocked wrong-network requests. Test cross-tab updates and stale stored settings.
-   * Dependencies: OX-S03 journey store, OX-S05 request guard, protocol network contract. Rollback settings
-   * schema and UI together, preserving saved context but not trusting stale evidence.
-   */
+const NETWORK_LABEL: Record<string, string> = {
+  mainnet: 'Bitcoin Mainnet',
+  signet: 'Signet',
+  testnet4: 'Testnet4',
+  regtest: 'Regtest (local)'
+};
+
+// OX-S03: the controller shows and edits the shared settings every tool reads: network,
+// gateway origin, read-only or write mode and protocol version, plus the real build. The
+// label reflects what is configured; with no gateway origin, tools run locally only.
+export function VersionEnvironmentController({ settings, onChange, buildRevision, storageState }: ControllerProps): JSX.Element {
   const [isOpen, setIsOpen] = useState(false);
+  const [originDraft, setOriginDraft] = useState(settings.gatewayOrigin);
+  const [originError, setOriginError] = useState<string | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => setOriginDraft(settings.gatewayOrigin), [settings.gatewayOrigin]);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    dialogRef.current?.querySelector<HTMLElement>('select, input, button')?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        close();
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [isOpen]);
+
+  const close = () => {
+    setIsOpen(false);
+    triggerRef.current?.focus();
+  };
+
+  const applyOrigin = async () => {
+    const r = normalizeGatewayOrigin(originDraft);
+    if (!r.ok) {
+      setOriginError(r.error);
+      return;
+    }
+    setOriginError(null);
+    setOriginDraft(r.origin);
+    await onChange({ gatewayOrigin: r.origin });
+  };
+
+  const where = settings.gatewayOrigin ? new URL(settings.gatewayOrigin).host : 'local only';
+  const fieldStyle = {
+    width: '100%',
+    padding: '0.375rem',
+    borderRadius: 'var(--ox-radius-sm)',
+    border: '1px solid var(--ox-border-default)',
+    background: 'var(--ox-surface-panel)',
+    color: 'var(--ox-text-primary)',
+    fontSize: '0.8125rem'
+  };
+  const labelStyle = { display: 'block', fontWeight: 600, color: 'var(--ox-text-primary)', marginBottom: '0.25rem' };
 
   return (
     <div style={{ position: 'relative', display: 'inline-block' }}>
       <button
+        ref={triggerRef}
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => (isOpen ? close() : setIsOpen(true))}
         aria-expanded={isOpen}
-        aria-label="Protocol Version and Environment Settings"
+        aria-haspopup="dialog"
+        data-tour="environment"
+        aria-label={`Settings: protocol ${settings.protocolVersion}, ${NETWORK_LABEL[settings.network]}, ${where}, ${settings.mode}`}
         style={{
           display: 'inline-flex',
           alignItems: 'center',
@@ -55,27 +95,24 @@ export function VersionEnvironmentController({
           cursor: 'pointer'
         }}
       >
-        <span
-          style={{
-            width: '6px',
-            height: '6px',
-            borderRadius: '50%',
-            backgroundColor: environment === 'deterministic' ? 'var(--ox-status-success-text)' : 'var(--ox-bitcoin-orange)'
-          }}
-        />
-        <span>v{version}</span>
-        <span style={{ color: 'var(--ox-text-muted)' }}>({environment})</span>
+        <span aria-hidden="true" style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: settings.gatewayOrigin ? 'var(--ox-bitcoin-orange)' : 'var(--ox-status-success-text)' }} />
+        <span>v{settings.protocolVersion}</span>
+        <span style={{ color: 'var(--ox-text-secondary)' }}>
+          {NETWORK_LABEL[settings.network]} ({where})
+        </span>
       </button>
 
       {isOpen && (
         <div
+          ref={dialogRef}
           role="dialog"
-          aria-label="Version and Environment Context"
+          aria-modal="false"
+          aria-label="Network, gateway and protocol settings"
           style={{
             position: 'absolute',
             top: 'calc(100% + 4px)',
             right: 0,
-            width: '280px',
+            width: 'min(320px, calc(100vw - 32px))',
             backgroundColor: 'var(--ox-surface-panel)',
             border: '1px solid var(--ox-border-strong)',
             borderRadius: 'var(--ox-radius-lg)',
@@ -89,99 +126,68 @@ export function VersionEnvironmentController({
           }}
         >
           <div>
-            <label
-              htmlFor="ox-version-select"
-              style={{
-                display: 'block',
-                fontWeight: 600,
-                color: 'var(--ox-text-primary)',
-                marginBottom: '0.25rem'
-              }}
-            >
-              Protocol Version
-            </label>
-            <select
-              id="ox-version-select"
-              value={version}
-              onChange={(e) => onVersionChange((e.target as HTMLSelectElement).value)}
-              style={{
-                width: '100%',
-                padding: '0.375rem',
-                borderRadius: 'var(--ox-radius-sm)',
-                border: '1px solid var(--ox-border-default)',
-                background: 'var(--ox-surface-panel)',
-                color: 'var(--ox-text-primary)',
-                fontSize: '0.8125rem'
-              }}
-            >
-              <option value="1.2">v1.2 (Current Production: Provenance, Heritage, Cold-Signing)</option>
-              <option value="1.1">v1.1 (Stable: Offers v1, SafeOps, Swaps, Runes)</option>
-              <option value="1.0">v1.0 (Baseline: Public Asks, Purchase Verifier)</option>
+            <label htmlFor="ox-network-select" style={labelStyle}>Network</label>
+            <select id="ox-network-select" value={settings.network} onChange={(e) => onChange({ network: (e.target as HTMLSelectElement).value as UserSettings['network'] })} style={fieldStyle}>
+              {NETWORKS.map((n) => (
+                <option key={n} value={n}>{NETWORK_LABEL[n]}</option>
+              ))}
             </select>
           </div>
 
           <div>
-            <label
-              htmlFor="ox-env-select"
-              style={{
-                display: 'block',
-                fontWeight: 600,
-                color: 'var(--ox-text-primary)',
-                marginBottom: '0.25rem'
-              }}
-            >
-              Execution Environment
-            </label>
-            <select
-              id="ox-env-select"
-              value={environment}
-              onChange={(e) => onEnvironmentChange((e.target as HTMLSelectElement).value)}
-              style={{
-                width: '100%',
-                padding: '0.375rem',
-                borderRadius: 'var(--ox-radius-sm)',
-                border: '1px solid var(--ox-border-default)',
-                background: 'var(--ox-surface-panel)',
-                color: 'var(--ox-text-primary)',
-                fontSize: '0.8125rem'
-              }}
-            >
-              <option value="deterministic">Deterministic example (Browser isolated)</option>
-              <option value="local">Offline / local mock</option>
-              <option value="custom-readonly">Custom gateway (Read-only)</option>
-              <option value="custom-write">Custom gateway (Explicit confirmation)</option>
+            <label htmlFor="ox-gateway-origin" style={labelStyle}>Gateway origin</label>
+            <div style={{ display: 'flex', gap: '0.35rem' }}>
+              <input
+                id="ox-gateway-origin"
+                type="url"
+                inputMode="url"
+                placeholder="https://gateway.example (empty: local only)"
+                value={originDraft}
+                aria-invalid={originError ? 'true' : 'false'}
+                aria-describedby={originError ? 'ox-gateway-origin-error' : 'ox-gateway-origin-help'}
+                onInput={(e) => setOriginDraft((e.target as HTMLInputElement).value)}
+                onKeyDown={(e) => e.key === 'Enter' && applyOrigin()}
+                style={{ ...fieldStyle, flex: 1 }}
+              />
+              <button type="button" onClick={applyOrigin} style={{ ...fieldStyle, width: 'auto', cursor: 'pointer', fontWeight: 600 }}>
+                Save
+              </button>
+            </div>
+            {originError ? (
+              <div id="ox-gateway-origin-error" role="alert" style={{ color: 'var(--ox-status-refusal-text)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{originError}</div>
+            ) : (
+              <div id="ox-gateway-origin-help" style={{ color: 'var(--ox-text-secondary)', fontSize: '0.75rem', marginTop: '0.25rem' }}>
+                The API Playground, Event Playground and Gateway Doctor use this origin. Changing it or the network makes earlier runs stale.
+              </div>
+            )}
+          </div>
+
+          <div>
+            <label htmlFor="ox-mode-select" style={labelStyle}>Request mode</label>
+            <select id="ox-mode-select" value={settings.mode} onChange={(e) => onChange({ mode: (e.target as HTMLSelectElement).value as UserSettings['mode'] })} style={fieldStyle}>
+              <option value="read-only">Read-only (no request with an effect is sent)</option>
+              <option value="write">Write (each effect needs explicit confirmation)</option>
             </select>
           </div>
 
-          <div
-            style={{
-              paddingTop: '0.5rem',
-              borderTop: '1px solid var(--ox-border-subtle)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '0.25rem',
-              fontSize: '0.6875rem',
-              color: 'var(--ox-text-muted)'
-            }}
-          >
-            <div>Network: <strong>Bitcoin Mainnet</strong></div>
-            <div>Build Commit: <code>{buildCommit}</code></div>
-            <div>Trust Boundary: Local Web Workers, zero private key custody</div>
+          <div>
+            <label htmlFor="ox-version-select" style={labelStyle}>Protocol version</label>
+            <select id="ox-version-select" value={settings.protocolVersion} onChange={(e) => onChange({ protocolVersion: (e.target as HTMLSelectElement).value })} style={fieldStyle}>
+              {[...versions.history].reverse().map((v) => (
+                <option key={v.version} value={v.version}>
+                  v{v.version} ({v.status})
+                </option>
+              ))}
+            </select>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setIsOpen(false)}
-            style={{
-              padding: '0.3125rem',
-              borderRadius: 'var(--ox-radius-sm)',
-              border: '1px solid var(--ox-border-default)',
-              background: 'var(--ox-surface-subtle)',
-              cursor: 'pointer',
-              fontWeight: 600,
-              fontSize: '0.75rem'
-            }}
-          >
+          <div style={{ paddingTop: '0.5rem', borderTop: '1px solid var(--ox-border-subtle)', display: 'flex', flexDirection: 'column', gap: '0.25rem', fontSize: '0.75rem', color: 'var(--ox-text-secondary)' }}>
+            <div>Gateway contract: <code>{versions.currentGatewayContract}</code></div>
+            <div>Site build: <code>{buildRevision.slice(0, 12)}</code></div>
+            {storageState && storageState !== 'ready' && <div>Saved progress: {storageState === 'ephemeral' ? 'this tab only (browser storage unavailable)' : storageState}</div>}
+          </div>
+
+          <button type="button" onClick={close} style={{ ...fieldStyle, cursor: 'pointer', fontWeight: 600 }}>
             Close
           </button>
         </div>

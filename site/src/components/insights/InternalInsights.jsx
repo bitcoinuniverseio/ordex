@@ -1,131 +1,110 @@
 import { h } from 'preact';
-import { useState } from 'preact/hooks';
+import { useEffect, useState } from 'preact/hooks';
+import { callDocsApi, DOCS_API_BASE } from '../../lib/docs/docs-client.mjs';
+
+// OX-S11: shows the docs service's aggregate counts (GET /api/docs/insights, OX-P08) for the
+// chosen window: hourly event counts per event and product, and feedback per category. The
+// service stores no cookies, IPs or raw comments in aggregates. When it cannot be reached the
+// page says so; it never shows invented numbers.
+
+const RANGES = [
+  { id: '7d', label: 'Last 7 days' },
+  { id: '30d', label: 'Last 30 days' },
+  { id: '90d', label: 'Last 90 days' }
+];
 
 export function InternalInsights() {
-  const [timeRange, setTimeRange] = useState('7d');
+  const [range, setRange] = useState('7d');
+  const [state, setState] = useState({ status: 'loading', data: null, message: '' });
+  const [reload, setReload] = useState(0);
 
-  /* IMPLEMENTATION-HANDOFF [OX-S11]
-   * Defect OX-S-D11; coverage OX-S-C1420..OX-S-C1423. The dashboard presents fixed mockInsights as first-party
-   * metrics and timeRange changes only selected styling.
-   * 1. Wire this existing dashboard to an authorized OX-P08 aggregate metrics endpoint backed by persisted
-   * sanitized events/feedback; query actual time ranges with documented UTC boundaries.
-   * 2. Keep privacy promises: no cookies/IP/user tracking, no raw comments/secrets in aggregate responses,
-   * enforce any internal operator authorization before serving data. Do not add unrelated analytics products.
-   * 3. Display loading/empty/unavailable and actual observation window/build; remove fabricated numbers from
-   * live mode while keeping explicitly labeled deterministic examples if already offered.
-   * 4. Test24h/7d/30d against seeded isolated legitimate events and independently queried aggregates, denied
-   * access, delayed ingestion and refresh. PROPOSED NEW tests/e2e/docs-insights.test.js requires real
-   * worker/storage; source-only mock counts are never acceptance.
-   * Dependencies: OX-P08 ingest/aggregate service, OX-S10 UI. Rollback dashboard and endpoint contract together;
-   * no destructive data migration.
-   */
-  // Aggregated first-party documentation intelligence metrics
-  const mockInsights = {
-    totalViews: 42850,
-    searchQueries: 12400,
-    wizardsStarted: 3820,
-    wizardsCompleted: 2950,
-    completionRate: '77.2%',
-    topPages: [
-      { path: '/quickstart', views: 9800, title: 'Quickstart & First Order' },
-      { path: '/build/recipes/publish-ask', views: 7600, title: 'Publish Portable Public Ask' },
-      { path: '/reference/api', views: 6900, title: 'API Reference & Playground' },
-      { path: '/lab', views: 5400, title: 'Ordex Protocol Lab' },
-      { path: '/atlas', views: 4200, title: 'Visual Protocol Atlas' }
-    ],
-    topWizards: [
-      { name: 'Choose Your Ordex Integration', starts: 1450, completions: 1220, rate: '84.1%' },
-      { name: 'Publish a Portable Public Ask', starts: 1100, completions: 920, rate: '83.6%' },
-      { name: 'Purchase One or More Public Asks', starts: 850, completions: 640, rate: '75.3%' },
-      { name: 'Plan a SafeOps Operation', starts: 420, completions: 170, rate: '40.5%' }
-    ],
-    commonRefusalSearches: [
-      { code: 'SAT_FLOW_SHORTFALL', count: 820 },
-      { code: 'SELLER_OUTPUT_MISSING', count: 640 },
-      { code: 'CENOTAPH_BURNS_BALANCE', count: 410 },
-      { code: 'RECOVERY_BEFORE_EXPIRY', count: 290 }
-    ],
-    feedbackSummary: {
-      helpful: 412,
-      not_helpful: 18,
-      unclear: 34,
-      outdated: 4,
-      missing_example: 28,
-      broken_workflow: 6,
-      other: 12
-    }
-  };
+  useEffect(() => {
+    const ctrl = new AbortController();
+    setState({ status: 'loading', data: null, message: '' });
+    callDocsApi(`/api/docs/insights?range=${range}`, { signal: ctrl.signal }).then((res) => {
+      if (res.kind === 'cancelled') return;
+      if (res.kind === 'ok' && res.data?.ok === true && Array.isArray(res.data.events) && Array.isArray(res.data.feedback)) setState({ status: 'ready', data: res.data, message: '' });
+      else setState({ status: 'unavailable', data: null, message: res.kind === 'ok' ? 'The response is not an insights report.' : res.message });
+    });
+    return () => ctrl.abort();
+  }, [range, reload]);
+
+  const d = state.data;
+  const total = (rows) => rows.reduce((n, r) => n + Number(r.count || 0), 0);
 
   return (
     <div class="insights-container panel" style="padding: 1.5rem;">
-      <div class="panel-header">
+      <div class="panel-header" style="flex-wrap: wrap; gap: 0.75rem;">
         <div>
-          <h3 style="margin: 0; font-size: 1.25rem;">Documentation Intelligence & Reader Insights</h3>
-          <p style="margin: 0.25rem 0 0 0; font-size: 0.85rem; color: var(--color-text-secondary);">
-            First-party aggregated metrics without cookies, IP addresses, or cross-site tracking.
-          </p>
+          <h2 style="margin: 0; font-size: 1.25rem;">Documentation insights</h2>
+          <p style="margin: 0.25rem 0 0; font-size: 0.85rem; color: var(--color-text-secondary);">Aggregate counts from the Ordex docs service. Hours are UTC.</p>
         </div>
-        <div style="display: flex; gap: 0.5rem;">
-          {['24h', '7d', '30d'].map((r) => (
-            <button
-              key={r}
-              class={`btn ${timeRange === r ? 'btn-primary' : 'btn-outline'}`}
-              style="font-size: 0.8rem; min-height: 28px; padding: 0.2rem 0.6rem;"
-              onClick={() => setTimeRange(r)}
-            >
-              Last {r}
+        <div role="group" aria-label="Time window" style="display: flex; gap: 0.25rem; flex-wrap: wrap;">
+          {RANGES.map((r) => (
+            <button key={r.id} type="button" aria-pressed={range === r.id ? 'true' : 'false'} class={`btn ${range === r.id ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setRange(r.id)}>
+              {r.label}
             </button>
           ))}
         </div>
       </div>
 
-      {/* KPI Cards */}
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
-        <div class="panel" style="background: var(--color-bg-subtle); padding: 1rem;">
-          <div style="font-size: 0.8rem; color: var(--color-text-muted);">Total Documentation Views</div>
-          <div style="font-size: 1.8rem; font-weight: 800; color: var(--color-brand);">{mockInsights.totalViews.toLocaleString()}</div>
-        </div>
-        <div class="panel" style="background: var(--color-bg-subtle); padding: 1rem;">
-          <div style="font-size: 0.8rem; color: var(--color-text-muted);">Total Searches</div>
-          <div style="font-size: 1.8rem; font-weight: 800; color: var(--color-focus);">{mockInsights.searchQueries.toLocaleString()}</div>
-        </div>
-        <div class="panel" style="background: var(--color-bg-subtle); padding: 1rem;">
-          <div style="font-size: 0.8rem; color: var(--color-text-muted);">Wizard Completion Rate</div>
-          <div style="font-size: 1.8rem; font-weight: 800; color: var(--color-success);">{mockInsights.completionRate}</div>
-        </div>
-        <div class="panel" style="background: var(--color-bg-subtle); padding: 1rem;">
-          <div style="font-size: 0.8rem; color: var(--color-text-muted);">Reader Satisfaction</div>
-          <div style="font-size: 1.8rem; font-weight: 800; color: var(--color-brand);">93.4%</div>
-        </div>
+      <div role="status" aria-live="polite" style="font-size: 0.9rem; margin: 0.75rem 0;">
+        {state.status === 'loading' && 'Loading...'}
+        {state.status === 'unavailable' && (
+          <span>
+            No insights are available: {state.message}
+            {DOCS_API_BASE ? '' : ' This build has no docs service configured.'}{' '}
+            <button type="button" class="btn btn-outline" style="min-height: 28px; font-size: 0.8rem;" onClick={() => setReload((n) => n + 1)}>
+              Retry
+            </button>
+          </span>
+        )}
+        {state.status === 'ready' && `Since ${d.since}, generated ${d.generatedAt}.`}
       </div>
 
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
-        {/* Top Pages */}
-        <div>
-          <h4 style="margin: 0 0 0.5rem 0; font-size: 0.95rem;">Most Viewed Documentation</h4>
-          <div style="display: flex; flex-direction: column; gap: 0.4rem;">
-            {mockInsights.topPages.map((p) => (
-              <div key={p.path} style="display: flex; justify-content: space-between; padding: 0.4rem 0.6rem; background: var(--color-bg-subtle); border-radius: 4px; font-size: 0.85rem;">
-                <span style="font-weight: 600;">{p.title}</span>
-                <span style="font-family: var(--font-mono); color: var(--color-text-muted);">{p.views.toLocaleString()}</span>
-              </div>
-            ))}
-          </div>
+      {state.status === 'ready' && (
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); gap: 1.5rem;">
+          <section aria-labelledby="insights-events">
+            <h3 id="insights-events" style="font-size: 1rem; margin: 0 0 0.5rem;">Events ({total(d.events)})</h3>
+            {d.events.length === 0 ? (
+              <p style="margin: 0; font-size: 0.875rem; color: var(--color-text-secondary);">No events in this window.</p>
+            ) : (
+              <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                <thead>
+                  <tr>
+                    <th scope="col" style="text-align: left;">Event</th>
+                    <th scope="col" style="text-align: left;">Product</th>
+                    <th scope="col" style="text-align: right;">Count</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {d.events.map((e) => (
+                    <tr key={`${e.event}-${e.product}`} style="border-top: 1px solid var(--color-border);">
+                      <td>{e.event}</td>
+                      <td>{e.product}</td>
+                      <td style="text-align: right;">{e.count}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </section>
+          <section aria-labelledby="insights-feedback">
+            <h3 id="insights-feedback" style="font-size: 1rem; margin: 0 0 0.5rem;">Feedback ({total(d.feedback)})</h3>
+            {d.feedback.length === 0 ? (
+              <p style="margin: 0; font-size: 0.875rem; color: var(--color-text-secondary);">No feedback in this window.</p>
+            ) : (
+              <ul style="margin: 0; padding-left: 1.2rem; font-size: 0.85rem;">
+                {d.feedback.map((f) => (
+                  <li key={f.category}>
+                    {f.category}: {f.count}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
         </div>
-
-        {/* Common Refusal Code Lookups */}
-        <div>
-          <h4 style="margin: 0 0 0.5rem 0; font-size: 0.95rem;">Top Refusal Code Lookups</h4>
-          <div style="display: flex; flex-direction: column; gap: 0.4rem;">
-            {mockInsights.commonRefusalSearches.map((r) => (
-              <div key={r.code} style="display: flex; justify-content: space-between; padding: 0.4rem 0.6rem; background: var(--color-bg-subtle); border-radius: 4px; font-size: 0.85rem;">
-                <code style="color: var(--color-danger);">{r.code}</code>
-                <span style="font-family: var(--font-mono); color: var(--color-text-muted);">{r.count}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+      )}
     </div>
   );
 }

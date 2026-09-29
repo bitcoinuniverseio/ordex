@@ -1,212 +1,171 @@
 import { h } from 'preact';
-import { useState } from 'preact/hooks';
+import { useState, useEffect, useRef } from 'preact/hooks';
+import operations from '../../data/operations.json';
+import openapi from '../../../../spec/openapi.json';
+import { runGatewayDoctor, CHECKS } from '../../lib/doctor/gateway-doctor.mjs';
+import { journeyStore, DEFAULT_SETTINGS } from '../../lib/session/journey-store';
+import { normalizeGatewayOrigin } from '../../lib/session/journey-schema';
+import { recordToolEvidence, SOURCE_BUILD } from '../../lib/session/evidence';
 
+const STATUS_TEXT = { passed: 'Passed', failed: 'Failed', blocked: 'Blocked', cancelled: 'Cancelled', running: 'Running', 'not-run': 'Not run' };
+const STATUS_COLOR = { passed: 'var(--color-success)', failed: 'var(--color-danger)', blocked: 'var(--color-text-secondary)', cancelled: 'var(--color-text-secondary)', running: 'var(--color-text-primary)', 'not-run': 'var(--color-text-secondary)' };
+
+// OX-S02: every check is a real read-only request with exact assertions; an unreachable,
+// invalid, stale or wrong-network gateway fails, dependent checks are blocked, and the
+// report digest is SHA-256 over the report the user can download.
 export function GatewayDoctor() {
-  const [gatewayOrigin, setGatewayOrigin] = useState('http://localhost:8080');
-  const [isRunning, setIsRunning] = useState(false);
-  const [steps, setSteps] = useState([]);
+  const [settings, setSettings] = useState({ ...DEFAULT_SETTINGS });
+  const [originInput, setOriginInput] = useState('');
+  const [originError, setOriginError] = useState(null);
+  const [checks, setChecks] = useState([]);
   const [report, setReport] = useState(null);
+  const [running, setRunning] = useState(false);
+  const abortRef = useRef(null);
 
-  const DOCTOR_STEPS = [
-    { id: 'health', name: 'Gateway Health Endpoint (GET /api/ordex/health)', critical: true },
-    { id: 'protocol', name: 'Protocol Contract Advertising (GET /api/ordex/protocol)', critical: true },
-    { id: 'catalog', name: 'Catalog Query & Schema Conformity (GET /api/ordex/catalog)', critical: true },
-    { id: 'cors', name: 'Browser Direct CORS Header Verification', critical: true },
-    { id: 'pagination', name: 'Keyset Pagination & Limit Boundaries', critical: false },
-    { id: 'cursor', name: 'Malformed Cursor Fail-Closed Handling', critical: false },
-    { id: 'error_envelope', name: 'Error Envelope Schema (ok: false, code, reason)', critical: true },
-    { id: 'decimal_strings', name: 'Decimal-String Atomic Sat Preservation', critical: true }
-  ];
+  useEffect(() => {
+    let live = true;
+    const load = () =>
+      journeyStore
+        .getSettings()
+        .then((s) => {
+          if (!live) return;
+          setSettings(s);
+          setOriginInput((cur) => cur || s.gatewayOrigin);
+        })
+        .catch(() => {});
+    load();
+    const off = journeyStore.subscribe((e) => e.type === 'settings' && load());
+    return () => {
+      live = false;
+      off();
+      abortRef.current?.abort();
+    };
+  }, []);
 
-  /* IMPLEMENTATION-HANDOFF [OX-S02]
-   * Defect OX-S-D02; coverage OX-S-C930..OX-S-C937. runDoctor turns an unreachable health endpoint into success,
-   * hardcodes seven further checks, and returns a fixed digest. Browser repro at /verify with http://127.0.0.1:1
-   * displays simulated success.
-   * 1. Replace each DOCTOR_STEPS branch with an actual bounded read-only request and exact assertions grounded
-   * in spec/openapi.json and spec/api.md at the accepted revision. Use AbortController, origin/network snapshot,
-   * cancellation and per-check request/response evidence; never fall back to simulation inside connected mode.
-   * 2. Health must assert storage/readiness, protocol/network and node/indexer freshness fields, not HTTP 200
-   * alone. Fetch protocol and catalog; validate schemas, decimal strings, page limits/cursor behavior, and an
-   * intentional invalid read request's error envelope. For CORS, report browser-readable evidence versus
-   * server-header evidence accurately.
-   * 3. Preserve failed/unreachable/not-run states; prerequisites may block dependent checks. Compute a real
-   * digest over the sanitized report contents and include actual build, network, timestamp and origin.
-   * 4. Share the request builder with OX-S05 and completion records with OX-S03. Add PROPOSED NEW
-   * tests/unit/gateway-doctor.test.js and browser /verify cases for unavailable, malformed-200, stale,
-   * wrong-network, compliant gateway and cancelled runs.
-   * Acceptance: no unavailable or invalid gateway yields a passed check. Complete read-only integration uses a
-   * real configured Universe-owned Signet gateway and authoritative readback; no transaction is required for
-   * this tool. Save response evidence and report hash. Rollback leaves false-success fallback removed, keeps
-   * last known valid deployed checker, and does not change gateway state.
-   */
-  const runDoctor = async () => {
-    setIsRunning(true);
-    setReport(null);
-    const activeSteps = DOCTOR_STEPS.map((s) => ({ ...s, status: 'pending', durationMs: 0 }));
-    setSteps([...activeSteps]);
-
-    const origin = gatewayOrigin.replace(/\/$/, '');
-    const startTime = performance.now();
-
-    for (let i = 0; i < activeSteps.length; i++) {
-      const step = activeSteps[i];
-      step.status = 'running';
-      setSteps([...activeSteps]);
-
-      const sStart = performance.now();
-      try {
-        let ok = false;
-        let details = '';
-
-        if (step.id === 'health') {
-          const res = await fetch(`${origin}/api/ordex/health`).catch(() => null);
-          if (res && res.ok) {
-            const data = await res.json().catch(() => ({}));
-            ok = data.status === 'healthy' || data.status === 'ok' || res.status === 200;
-            details = `Status: ${res.status}, Protocol: ${data.protocolVersion || '1.2'}`;
-          } else {
-            // Mock simulation when localhost not active
-            ok = true;
-            details = 'Simulated Conforming Gateway Health (Status: 200, Protocol: 1.2)';
-          }
-        } else if (step.id === 'protocol') {
-          ok = true;
-          details = 'Advertised Protocol: 1.2, Capabilities: Asks, Offers, SafeOps, Swaps, Provenance';
-        } else if (step.id === 'catalog') {
-          ok = true;
-          details = 'Valid Catalog Array returned matching OpenOrdex schema';
-        } else if (step.id === 'cors') {
-          ok = true;
-          details = 'Access-Control-Allow-Origin verified';
-        } else if (step.id === 'pagination') {
-          ok = true;
-          details = 'Keyset cursor properly limits to max 100 items per page';
-        } else if (step.id === 'cursor') {
-          ok = true;
-          details = 'Malformed cursor safely returns 400 Bad Request envelope';
-        } else if (step.id === 'error_envelope') {
-          ok = true;
-          details = 'All errors adhere to standard { ok: false, code: string, reason: string }';
-        } else if (step.id === 'decimal_strings') {
-          ok = true;
-          details = 'All amounts preserved as string decimals without IEEE 754 precision loss';
-        }
-
-        step.durationMs = Math.round(performance.now() - sStart);
-        step.status = ok ? 'passed' : 'failed';
-        step.details = details;
-      } catch (err) {
-        step.status = 'failed';
-        step.details = err.message;
-      }
-
-      setSteps([...activeSteps]);
-      await new Promise((r) => setTimeout(r, 100));
+  const run = async () => {
+    const o = normalizeGatewayOrigin(originInput);
+    if (!o.ok || !o.origin) {
+      setOriginError(o.ok ? 'Enter the gateway origin to check.' : o.error);
+      return;
     }
-
-    const duration = Math.round(performance.now() - startTime);
-    const passed = activeSteps.filter((s) => s.status === 'passed').length;
-    const total = activeSteps.length;
-
-    setReport({
-      origin,
-      timestamp: new Date().toISOString(),
-      durationMs: duration,
-      passed,
-      total,
-      success: passed === total,
-      digest: 'sha256:7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069'
+    setOriginError(null);
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    setRunning(true);
+    setReport(null);
+    setChecks([]);
+    // The run uses a snapshot of the origin and network taken now.
+    const result = await runGatewayDoctor({
+      doc: openapi,
+      operations,
+      origin: o.origin,
+      network: settings.network,
+      protocolVersion: settings.protocolVersion,
+      sourceBuild: SOURCE_BUILD,
+      signal: controller.signal,
+      onProgress: setChecks
     });
-
-    setIsRunning(false);
+    if (abortRef.current !== controller) return;
+    setRunning(false);
+    setChecks(result.checks);
+    setReport(result);
+    recordToolEvidence({
+      tool: 'doctor',
+      operation: `doctor:${o.origin}`,
+      state: result.success ? 'passed' : 'failed',
+      reason: `${result.passed} passed, ${result.failed} failed, ${result.blocked} blocked. Report SHA-256 ${result.digest}.`,
+      evidenceClass: 'Gateway observation',
+      gatewayOrigin: o.origin
+    });
   };
+
+  const cancel = () => abortRef.current?.abort();
+
+  const download = () => {
+    if (!report) return;
+    const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ordex-gateway-doctor-${report.digest.slice(0, 12)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const shown = checks.length ? checks : CHECKS.map((c) => ({ ...c, status: 'not-run', details: '' }));
 
   return (
     <div class="gateway-doctor-container" style="display: flex; flex-direction: column; gap: 1.5rem;">
       <div class="panel">
-        <div class="panel-header">
+        <div class="panel-header" style="flex-wrap: wrap; gap: 0.5rem;">
           <div>
-            <h3 style="margin: 0; font-size: 1.15rem;">Ordex Gateway Doctor</h3>
+            <h3 style="margin: 0; font-size: 1.15rem;">Gateway Doctor</h3>
             <p style="margin: 0.25rem 0 0 0; font-size: 0.85rem; color: var(--color-text-secondary);">
-              Automated compatibility and contract verification for self-hosted and remote gateways.
+              {CHECKS.length} read-only checks against the contract. Network: <strong>{settings.network}</strong>, protocol <strong>{settings.protocolVersion}</strong> (from settings). Nothing is written.
             </p>
           </div>
-          <button
-            class="btn btn-primary"
-            onClick={runDoctor}
-            disabled={isRunning}
-          >
-            {isRunning ? 'Running Diagnostic Sequence...' : '🩺 Run Gateway Doctor'}
-          </button>
+          <div style="display: flex; gap: 0.5rem;">
+            <button class="btn btn-primary" type="button" onClick={run} disabled={running}>
+              {running ? 'Checking...' : 'Run Gateway Doctor'}
+            </button>
+            {running && <button class="btn btn-outline" type="button" onClick={cancel}>Cancel</button>}
+          </div>
         </div>
-
-        <div style="display: flex; align-items: center; gap: 0.75rem; margin-top: 0.5rem;">
-          <label style="font-size: 0.85rem; font-weight: 600;">Gateway Origin URL:</label>
-          <input
-            type="text"
-            value={gatewayOrigin}
-            onInput={(e) => setGatewayOrigin(e.target.value)}
-            placeholder="http://localhost:8080"
-            style="flex: 1; max-width: 400px; padding: 0.35rem 0.65rem; font-family: var(--font-mono); font-size: 0.85rem; border: 1px solid var(--color-border); border-radius: var(--radius-sm);"
-          />
-        </div>
+        <label for="doctor-origin" style="display: block; font-size: 0.85rem; font-weight: 600; margin-top: 0.5rem;">Gateway origin</label>
+        <input
+          id="doctor-origin"
+          type="url"
+          value={originInput}
+          placeholder="https://gateway.example"
+          aria-invalid={originError ? 'true' : 'false'}
+          aria-describedby={originError ? 'doctor-origin-error' : undefined}
+          onInput={(e) => setOriginInput(e.currentTarget.value)}
+          style="width: 100%; max-width: 420px; padding: 0.35rem 0.65rem; font-family: var(--font-mono); font-size: 0.85rem; border: 1px solid var(--color-border); border-radius: var(--radius-sm);"
+        />
+        {originError && <div id="doctor-origin-error" role="alert" style="color: var(--color-danger); font-size: 0.8rem; margin-top: 0.25rem;">{originError}</div>}
       </div>
 
-      {/* Steps checklist */}
-      {steps.length > 0 && (
-        <div class="panel" style="padding: 1rem;">
-          <h4 style="margin: 0 0 0.75rem 0; font-size: 1rem;">Compatibility Verification Sequence</h4>
-          <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-            {steps.map((st) => (
-              <div
-                key={st.id}
-                style="display: flex; align-items: center; justify-content: space-between; padding: 0.6rem 0.85rem; background: var(--color-bg-subtle); border-radius: var(--radius-sm); font-size: 0.85rem;"
-              >
-                <div style="display: flex; align-items: center; gap: 0.6rem;">
-                  <span>
-                    {st.status === 'passed' ? '✅' : st.status === 'failed' ? '❌' : st.status === 'running' ? '⏳' : '◻️'}
-                  </span>
-                  <div>
-                    <span style="font-weight: 600;">{st.name}</span>
-                    {st.details && (
-                      <div style="font-size: 0.75rem; color: var(--color-text-secondary); margin-top: 0.15rem;">
-                        {st.details}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--color-text-muted);">
-                  {st.durationMs}ms
-                </span>
+      <div class="panel" style="padding: 1rem;">
+        <h4 style="margin: 0 0 0.75rem 0; font-size: 1rem;">Checks</h4>
+        <ol style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.5rem;">
+          {shown.map((c) => (
+            <li key={c.id} style="padding: 0.6rem 0.85rem; background: var(--color-bg-subtle); border-radius: var(--radius-sm); font-size: 0.85rem;">
+              <div style="display: flex; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap;">
+                <span style="font-weight: 600;">{c.name}</span>
+                <span style={{ fontWeight: 700, color: STATUS_COLOR[c.status] }}>{STATUS_TEXT[c.status] || c.status}</span>
               </div>
-            ))}
-          </div>
-        </div>
-      )}
+              {c.details && <div style="font-size: 0.8rem; color: var(--color-text-secondary); margin-top: 0.2rem;">{c.details}</div>}
+              {c.evidence?.response && (
+                <details style="margin-top: 0.25rem;">
+                  <summary style="cursor: pointer; font-size: 0.75rem;">Request and response</summary>
+                  <div style="font-family: var(--font-mono); font-size: 0.75rem; word-break: break-all;">
+                    <div>{c.evidence.request.method} {c.evidence.request.url}</div>
+                    <div>{c.evidence.response.error ? `${c.evidence.response.error}: ${c.evidence.response.message}` : `HTTP ${c.evidence.response.status} ${c.evidence.response.contentType || ''} body SHA-256 ${c.evidence.response.bodySha256}`}</div>
+                    {c.evidence.response.excerpt && <pre style="white-space: pre-wrap; margin: 0.25rem 0 0 0;">{c.evidence.response.excerpt}</pre>}
+                  </div>
+                </details>
+              )}
+            </li>
+          ))}
+        </ol>
+      </div>
 
-      {/* Report Summary */}
-      {report && (
-        <div
-          class="panel"
-          style={{
-            backgroundColor: report.success ? 'var(--color-success-bg)' : 'var(--color-danger-bg)',
-            borderColor: report.success ? 'var(--color-success)' : 'var(--color-danger)'
-          }}
-        >
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-            <div style="font-weight: 800; font-size: 1.2rem; color: report.success ? 'var(--color-success)' : 'var(--color-danger)';">
-              {report.success ? '✓ GATEWAY COMPLIANCE VERIFIED (Self-Test Report)' : '✖ GATEWAY NON-COMPLIANCE DETECTED'}
+      <div aria-live="polite">
+        {report && (
+          <div class="panel" style={{ borderColor: report.success ? 'var(--color-success)' : 'var(--color-danger)' }}>
+            <div style={{ fontWeight: 800, fontSize: '1.1rem', color: report.success ? 'var(--color-success)' : 'var(--color-danger)', marginBottom: '0.5rem' }}>
+              {report.success ? 'Every check passed' : 'The gateway is not compatible'}
             </div>
-            <span class="badge badge-verification" style="word-break: break-all;">Digest: {report.digest}</span>
+            <p style="margin: 0; font-size: 0.85rem;">
+              {report.origin}: {report.passed} passed, {report.failed} failed, {report.blocked} blocked{report.cancelled ? `, ${report.cancelled} cancelled` : ''}. Build <code>{report.sourceBuild.slice(0, 12)}</code>, {report.finishedAt}.
+            </p>
+            <p style="margin: 0.35rem 0 0 0; font-size: 0.8rem; word-break: break-all;">Report SHA-256: <code>{report.digest}</code></p>
+            <p style="margin: 0.35rem 0 0 0; font-size: 0.75rem; color: var(--color-text-secondary);">A self-check of one gateway at one moment. It is not an audit and proves nothing about chain state.</p>
+            <button class="btn btn-outline" type="button" onClick={download} style="margin-top: 0.5rem;">Download report (JSON)</button>
           </div>
-          <p style="margin: 0; font-size: 0.85rem;">
-            Target origin: <code>{report.origin}</code>. Passed {report.passed}/{report.total} requirements in {report.durationMs}ms.
-          </p>
-          <div style="font-size: 0.75rem; margin-top: 0.5rem; color: var(--color-text-secondary);">
-            * Note: This is an automated self-test report for integration readiness, not an external audit or guarantee.
-          </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

@@ -3,16 +3,11 @@
 // Deterministic conformance runner sharing exact execution engine with Conformance Studio.
 // Exit codes:
 // 0: All selected tests passed
-// 1: One or more conformance tests failed
+// 1: One or more conformance tests failed, or the selection had no vectors
 // 2: Configuration or invocation error
 
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { FAMILY_CONFIG, FAMILIES, runConformanceSuite } from '../../site/src/lib/conformance-engine.mjs';
-
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const conformanceDir = path.join(root, 'conformance');
+import { FAMILIES, runConformanceSuite } from '../../site/src/lib/conformance-engine.mjs';
+import { loadAllFamilies, assertNoUnregisteredVectorFiles } from './vector-loader.mjs';
 
 // Parse CLI flags
 const args = process.argv.slice(2);
@@ -50,25 +45,19 @@ Options:
 
 Exit codes:
   0: All selected conformance checks passed
-  1: One or more checks failed
+  1: One or more checks failed, or the selection had no vectors
   2: Configuration or usage error
 `);
     process.exit(0);
   }
 }
 
-// Load vector files
-const familiesData = {};
+// OX-S07: vectors load through the same Node loader the generator and tests use, and every
+// file in conformance/ must belong to a registered family.
+let familiesData;
 try {
-  for (const family of FAMILIES) {
-    const filename = FAMILY_CONFIG[family].file;
-    const filepath = path.join(conformanceDir, filename);
-    if (!fs.existsSync(filepath)) {
-      console.error(`Error: Missing vector file ${filepath}`);
-      process.exit(2);
-    }
-    familiesData[family] = JSON.parse(fs.readFileSync(filepath, 'utf8'));
-  }
+  assertNoUnregisteredVectorFiles();
+  familiesData = loadAllFamilies();
 } catch (err) {
   console.error('Error loading conformance vectors:', err.message);
   process.exit(2);
@@ -77,6 +66,8 @@ try {
 // Execute
 const selectedFamilies = selectedFamily ? [selectedFamily] : FAMILIES;
 const suiteResult = runConformanceSuite(familiesData, selectedFamilies);
+
+const xml = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
 
 if (jsonOutput) {
   console.log(JSON.stringify(suiteResult, null, 2));
@@ -90,16 +81,16 @@ if (jsonOutput) {
 - **Duration:** ${suiteResult.summary.durationMs.toFixed(2)}ms
 - **Verdict:** ${suiteResult.summary.success ? 'PASS' : 'FAIL'}
 
-| Family | Vector Case | Result |
-| :--- | :--- | :--- |
-${suiteResult.results.map(r => `| \`${r.family}\` | ${r.name} | ${r.passed ? '✅ PASS' : '❌ FAIL'} |`).join('\n')}
+| Family | Variant | Vector Case | Result | Outcome |
+| :--- | :--- | :--- | :--- | :--- |
+${suiteResult.results.map(r => `| \`${r.family}\` | ${r.variant} | ${r.name} | ${r.passed ? 'PASS' : 'FAIL'} | ${r.outcome} |`).join('\n')}
 `);
 } else if (junitOutput) {
   console.log(`<?xml version="1.0" encoding="UTF-8"?>
 <testsuites name="Ordex Conformance" tests="${suiteResult.summary.total}" failures="${suiteResult.summary.failed}" time="${(suiteResult.summary.durationMs / 1000).toFixed(3)}">
   <testsuite name="Ordex Verifiers" tests="${suiteResult.summary.total}" failures="${suiteResult.summary.failed}">
-${suiteResult.results.map(r => `    <testcase classname="${r.family}" name="${r.name.replace(/"/g, '&quot;')}" time="${(r.durationMs / 1000).toFixed(4)}">
-${r.passed ? '' : `      <failure message="Verdict mismatch">Expected: ${JSON.stringify(r.expected)} Actual: ${JSON.stringify(r.actual)}</failure>`}
+${suiteResult.results.map(r => `    <testcase classname="${xml(r.family)}" name="${xml(r.name)}" time="${(r.durationMs / 1000).toFixed(4)}">
+${r.passed ? '' : `      <failure message="Verdict mismatch">${xml(JSON.stringify(r.mismatches))}</failure>`}
     </testcase>`).join('\n')}
   </testsuite>
 </testsuites>`);
@@ -111,13 +102,14 @@ ${r.passed ? '' : `      <failure message="Verdict mismatch">Expected: ${JSON.st
     const symbol = r.passed ? '✔' : '✖';
     console.log(`  ${symbol} [${r.family}] ${r.name} (${r.durationMs.toFixed(2)}ms)`);
     if (!r.passed) {
-      console.error(`    Expected:`, r.expected);
-      console.error(`    Actual:  `, r.actual);
+      console.error(`    Mismatches:`, r.mismatches);
     }
   }
 
   console.log(`\nResults: ${suiteResult.summary.passed}/${suiteResult.summary.total} passed (${suiteResult.summary.durationMs.toFixed(2)}ms)`);
-  if (!suiteResult.summary.success) {
+  if (suiteResult.summary.empty) {
+    console.error('\nFAILED: the selected suite has no vectors.');
+  } else if (!suiteResult.summary.success) {
     console.error(`\nFAILED: ${suiteResult.summary.failed} checks failed.`);
   }
 }

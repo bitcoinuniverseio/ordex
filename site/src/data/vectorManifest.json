@@ -1,0 +1,55 @@
+{
+  "schema": "ordex.vector-manifest/v1",
+  "total": 157,
+  "familyCount": 9,
+  "vectorDigest": "87f95e934286ba5020f72bc142f037ee2fd52f86716329efef2b19b9af0c198b",
+  "specDigest": "7518802af4f8b67e035389c83a1a2e92e2f049642faee19741338bec92eb36ef",
+  "verifierDigest": "67387e0887eb926180816b01fb5f562f823e2f0469486395dba7ebc92834e2d4",
+  "families": {
+    "purchase": {
+      "file": "purchase-vectors.json",
+      "sha256": "8d4bfde64cf1e1e82201460be32513ccf93f70d188c25d06ed13e28b722a6dde",
+      "count": 17
+    },
+    "offers": {
+      "file": "offer-vectors.json",
+      "sha256": "7c89255e2ca16029760c9c49f987f0013a74f8252296f91455559523e31243ab",
+      "count": 25
+    },
+    "runes": {
+      "file": "rune-burn-vectors.json",
+      "sha256": "f4b23dcc636633d41005612af6463b1e8cf7647c8a01d4cff0a5823bba4d3209",
+      "count": 25
+    },
+    "safeops": {
+      "file": "safeops-vectors.json",
+      "sha256": "c77be0d9e53a7dfa79f7666995c4e1ee8ff7adf128b1c6d874735182a9aa4e9f",
+      "count": 17
+    },
+    "swaps": {
+      "file": "swap-vectors.json",
+      "sha256": "4dcdf13c521cccab1b2e7774e7876b737b5e1c10989e6613885459ffb9f4679e",
+      "count": 17
+    },
+    "events": {
+      "file": "event-vectors.json",
+      "sha256": "c419bd2d949db7ef0562791fb27d1f626a5e70501b74b81e1bb5083b4cf0f648",
+      "count": 14
+    },
+    "collection-manifest": {
+      "file": "collection-manifest-vectors.json",
+      "sha256": "6f871d86e5a053280285d3f281ad4425d4e6f12ae53f4be6ba2f425d271b31f6",
+      "count": 14
+    },
+    "counterparty-asset": {
+      "file": "counterparty-asset-vectors.json",
+      "sha256": "6c44f330e1e8ddea3b5e25a16e4f80983d3305e3e1238d9b6f1ca4847a6ad76a",
+      "count": 12
+    },
+    "offline-signing": {
+      "file": "offline-signing-vectors.json",
+      "sha256": "33da412af79cabc8b1b2a6219e9ee4d2c1ae166aa6964d93fd1c51d0d25ae468",
+      "count": 16
+    }
+  }
+}

@@ -1,4 +1,4 @@
-import { cp, mkdir, readFile, rm, writeFile, readdir } from 'node:fs/promises';
+import { cp, readFile, rm, writeFile, readdir } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execSync } from 'node:child_process';
@@ -11,12 +11,15 @@ const siteDir = resolve(root, 'site');
 console.log('--- Step 1: Extract authoritative protocol metadata ---');
 execSync('node scripts/docs/generate-all-data.mjs', { cwd: root, stdio: 'inherit' });
 
+console.log('--- Step 1.5: Build the starter-kit assets (vendored SDK, vectors, lock entries) ---');
+execSync('node scripts/docs/build-kit-assets.mjs', { cwd: root, stdio: 'inherit' });
+
 console.log('--- Step 2: Render API reference specification page ---');
 const contract = JSON.parse(await readFile(resolve(root, 'spec', 'openapi.json'), 'utf8'));
 await writeFile(resolve(root, 'docs', 'api-reference.html'), renderApiReference(contract));
 
-console.log('--- Step 2.5: Generate deterministic product tour captures ---');
-execSync('node scripts/capture-walkthroughs.mjs', { cwd: root, stdio: 'inherit' });
+// OX-S10: tour screenshots are captured from the built site in a browser by
+// scripts/capture-walkthroughs.mjs (npm run capture:walkthroughs), never drawn during the build.
 
 console.log('--- Step 3: Compile Astro static application ---');
 execSync('npx astro build', { cwd: siteDir, stdio: 'inherit' });
@@ -73,39 +76,29 @@ await writeFile(resolve(dist, 'client', 'llms-full.txt'), llmsFull);
 await writeFile(resolve(root, 'docs', 'llms-full.txt'), llmsFull);
 
 console.log('--- Step 6: Sync static application to docs/ for GitHub Pages ---');
-// Copy dist/client contents into docs/ while preserving existing html pages
+// Copy dist/client contents into docs/ while preserving existing html pages. Hashed assets and
+// the search index are replaced, not merged, so no orphan from an older build is published.
+await rm(resolve(root, 'docs', 'assets'), { recursive: true, force: true });
+await rm(resolve(root, 'docs', 'pagefind'), { recursive: true, force: true });
 await cp(resolve(dist, 'client'), resolve(root, 'docs'), { recursive: true });
 
 // Ensure docs/api-reference.html is strictly what renderApiReference produced
 await writeFile(resolve(root, 'docs', 'api-reference.html'), renderApiReference(contract));
 await cp(resolve(root, 'docs', 'api-reference.html'), resolve(dist, 'client', 'api-reference.html'));
 
-console.log('--- Step 7: Prepare Server Deployment Assets ---');
-await mkdir(resolve(dist, 'server'), { recursive: true });
-await cp(resolve(root, 'worker', 'index.js'), resolve(dist, 'server', 'index.js'));
-if (await readFile(resolve(root, 'worker', 'migrations', '0001_initial.sql')).catch(() => null)) {
-  await cp(resolve(root, 'worker', 'migrations'), resolve(dist, 'server', 'migrations'), { recursive: true });
-}
+// OX-S12: the service worker lists exactly this build's files and changes with them.
+execSync('node scripts/docs/build-service-worker.mjs', { cwd: root, stdio: 'inherit' });
+await cp(resolve(dist, 'client', 'sw.js'), resolve(root, 'docs', 'sw.js'));
 
-/* IMPLEMENTATION-HANDOFF [OX-S10]
- * Defect OX-S-D10; coverage all OX-S browser rows and OX-S-C1313. Build verifies file presence/link syntax,
- * not hydrated behavior; npm coverage:check references missing scripts/docs/coverage-check.mjs. A clean build
- * and npm test pass while deployed ConformanceStudio hydration fails.
- * 1. Preserve verified build-once behavior, then add PROPOSED NEW scripts/docs/coverage-check.mjs validating
- * the full operation/source/test matrix against current manifests. Wire the existing package script without
- * weakening tests or declaring source presence an E2E pass.
- * 2. Separate generated static assets, actual browser capture and Node-only server packaging. Browser checks
- * must assert island hydration and controls, no node built-ins in client chunks, exact source/vector/operation
- * counts and reproducible build metadata.
- * 3. Run capture only against the coordinated accepted artifact/application after it exists; never start a
- * duplicate frontend to satisfy the build. Avoid copying stale orphan assets from older docs builds into new
- * release output.
- * 4. Acceptance: npm run build, npm test, npm --prefix sdk test and npm run coverage:check all run from a
- * clean installed tree; actual browser suite covers all routes/states before public deployment. Existing
- * passing component results stay valid but do not substitute for browser or chain evidence.
- * Dependencies: OX-S07 generator/runtime, OX-S10 capture/accessibility, root integration and release work
- * package. Rollback one coherent verified static/server release and its versioned manifests.
- */
+console.log('--- Step 7: Build the docs service, MCP engine and stdio server ---');
+// OX-S04 / OX-P07: bundled handler (dist/server/index.js), Node host, migrations and build
+// identity; the MCP engine and the self-contained stdio server in dist/mcp.
+execSync('node scripts/docs/build-services.mjs', { cwd: root, stdio: 'inherit' });
+
+// OX-S10: step 8 checks the deliverables and, through scripts/docs/coverage-check.mjs, that the
+// published operations, vectors, refusal rules, MCP tools, tours and routes agree with their
+// sources and that every route has a browser gate. Browser behavior itself is proven by
+// tests/e2e in CI, not here.
 console.log('--- Step 8: Validate Build Deliverables ---');
 const requiredFiles = [
   'dist/client/index.html',
@@ -133,6 +126,7 @@ for (const file of requiredFiles) {
   const content = await readFile(resolve(root, file)).catch(() => null);
   if (!content) throw new Error(`Missing required build deliverable: ${file}`);
 }
+execSync('node scripts/docs/coverage-check.mjs', { cwd: root, stdio: 'inherit' });
 
 console.log('--- Step 9: Audit and validate all links and routes ---');
 execSync('node scripts/check-links.mjs', { cwd: root, stdio: 'inherit' });

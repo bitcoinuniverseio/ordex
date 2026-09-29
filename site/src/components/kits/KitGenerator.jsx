@@ -1,272 +1,206 @@
 import { h } from 'preact';
-import { useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import JSZip from 'jszip';
+import { KIT_CAPABILITIES, KIT_MODES, KIT_RUNTIMES, createKitZip, generateKit, kitName, validateKitOptions, verifyKitZip } from '../../lib/kits/generator';
+import { journeyStore } from '../../lib/session/journey-store';
+import { NETWORKS } from '../../lib/session/journey-schema';
+import { recordToolEvidence, SOURCE_BUILD } from '../../lib/session/evidence';
+import { sha256Bytes } from '../../lib/browser/node-crypto.mjs';
+import { inputDigest } from '../../lib/lab-report.mjs';
+
+// OX-S06: the page collects the choices, generates the kit with the pure generator in
+// site/src/lib/kits/generator.ts, reads the archive back to confirm every file, then starts
+// the download and reports the file count, size and SHA-256. The SDK, vectors and pinned
+// lockfile entries (site/src/data/kitAssets.json) load only when a kit is generated.
+
+const hex = (bytes) => Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
 
 export function KitGenerator() {
-  const [runtime, setRuntime] = useState('node'); // 'node', 'browser', 'worker'
+  const [runtime, setRuntime] = useState('node');
   const [capabilities, setCapabilities] = useState(['asks', 'events']);
-  const [mode, setMode] = useState('mock'); // 'mock', 'connected'
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [mode, setMode] = useState('offline');
+  const [network, setNetwork] = useState('mainnet');
+  const [gatewayOrigin, setGatewayOrigin] = useState('');
+  const [phase, setPhase] = useState('idle');
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState('');
+  const urlRef = useRef(null);
 
-  const toggleCap = (id) => {
-    setCapabilities((prev) =>
-      prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]
-    );
-  };
+  // Start from the network and gateway chosen in Settings (OX-S03); the page never writes them.
+  // OX-S11: a wizard can preselect ?runtime=, ?capabilities= and ?mode=; unknown values are ignored.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (KIT_RUNTIMES.some((r) => r.id === params.get('runtime'))) setRuntime(params.get('runtime'));
+    const caps = (params.get('capabilities') || '').split(',').filter((c) => KIT_CAPABILITIES.some((k) => k.id === c));
+    if (caps.length) setCapabilities(caps);
+    if (KIT_MODES.some((m) => m.id === params.get('mode'))) setMode(params.get('mode'));
+    let live = true;
+    journeyStore
+      .getSettings()
+      .then((s) => {
+        if (!live) return;
+        setNetwork(s.network);
+        setGatewayOrigin(s.gatewayOrigin || '');
+      })
+      .catch(() => {});
+    return () => {
+      live = false;
+      if (urlRef.current) URL.revokeObjectURL(urlRef.current);
+    };
+  }, []);
 
-  /* IMPLEMENTATION-HANDOFF [OX-S06]
-   * Defect OX-S-D06; coverage OX-S-C1000..OX-S-C1014. Runtime/capabilities/mode do not change generated source;
-   * all kits emit Node code, start expects unbuilt index.js, SDK method signatures drift, and CI uses prohibited
-   * hosted runners.
-   * 1. Extract PROPOSED NEW site/src/lib/kits/generator.ts with deterministic pure templates. Generate actual
-   * Node, Browser and Worker entry/build/runtime files and separate checked-in offline-example versus
-   * configured-gateway adapters; wire selected capabilities into real typed SDK calls.
-   * 2. Resolve the accepted SDK package version/export shape with sdk/src/index.ts and generator; add package
-   * lock, exact package/runtime pins and build-before-start scripts. Browser code cannot reference
-   * process.env/node modules; Worker output must export a real fetch handler and explicit bindings.
-   * 3. Generate schema-correct request examples and per-capability verifiers/consumer tests using OX-S07
-   * normalized data. Include real project CI on authorized self-hosted runner labels; do not copy ubuntu-latest
-   * or unpinned install steps.
-   * 4. Replace tests/unit/kit-generator.test.js's independently constructed sample ZIP with assertions against
-   * the actual generator and extraction of every runtime/mode/capability choice. Run clean
-   * install/build/test/start on generated packages; verify Browser render and Worker request outcomes.
-   * 5. Label configured mode with required origin/network and no credentials in ZIP; keep key
-   * custody/signing/broadcast responsibilities with the real consumer. Await download completion and report
-   * failure accessibly.
-   * Dependencies: SDK repair package, OX-S03 settings, OX-S05 requests, OX-S07 browser verifier. Acceptance is a
-   * runnable extracted kit with correct advertised selected features, not ZIP nonemptiness. Rollback generated
-   * package/version as a unit; avoid shipping a template whose SDK is unavailable.
-   */
-  const handleGenerateZip = async () => {
-    setIsGenerating(true);
+  const options = { runtime, capabilities: KIT_CAPABILITIES.map((c) => c.id).filter((id) => capabilities.includes(id)), mode, network, gatewayOrigin, revision: SOURCE_BUILD };
+  const problems = validateKitOptions(options);
+
+  const toggleCap = (id) => setCapabilities((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]));
+
+  const generate = async () => {
+    if (problems.length) return;
+    setError('');
+    setResult(null);
     try {
-      const zip = new JSZip();
-
-      // 1. package.json
-      const pkgJson = {
-        name: `ordex-${runtime}-starter`,
-        version: '1.0.0',
-        type: 'module',
-        scripts: {
-          start: 'node src/index.js',
-          test: 'node --test test/*.test.js',
-          build: 'tsc'
-        },
-        dependencies: {
-          '@bitcoinuniverse/ordex-sdk': '1.0.0'
-        },
-        devDependencies: {
-          '@types/node': '24.10.1',
-          typescript: '5.9.3'
-        },
-        engines: {
-          node: '24.19.0'
-        }
-      };
-      zip.file('package.json', JSON.stringify(pkgJson, null, 2));
-
-      // 2. tsconfig.json
-      const tsConfig = {
-        compilerOptions: {
-          target: 'ES2022',
-          module: 'NodeNext',
-          moduleResolution: 'NodeNext',
-          strict: true,
-          skipLibCheck: true
-        }
-      };
-      zip.file('tsconfig.json', JSON.stringify(tsConfig, null, 2));
-
-      // 3. .env.example
-      zip.file('.env.example', 'ORDEX_GATEWAY_ORIGIN=http://localhost:8080\nORDEX_TIMEOUT_MS=10000\n');
-
-      // 4. README.md
-      const readme = `# Ordex ${runtime.toUpperCase()} Starter Integration Kit
-
-Generated from authoritative Ordex Protocol 1.2 specifications and @bitcoinuniverse/ordex-sdk 1.0.0.
-
-## Safety Boundaries
-- This starter kit executes read and composition workflows.
-- It NEVER holds private keys or broadcasts transactions.
-- All amounts are handled as BigInt decimal strings to prevent floating-point precision loss.
-
-## Quickstart
-\`\`\`bash
-npm install
-npm test
-npm start
-\`\`\`
-`;
-      zip.file('README.md', readme);
-
-      // 5. Source files (src/index.ts)
-      const srcCode = `import { OrdexClient } from '@bitcoinuniverse/ordex-sdk';
-
-const origin = process.env.ORDEX_GATEWAY_ORIGIN || 'http://localhost:8080';
-const client = new OrdexClient({ origin });
-
-async function main() {
-  console.log('Connecting to Ordex Gateway at:', origin);
-  const health = await client.getHealth();
-  console.log('Gateway Health:', health);
-
-  const catalog = await client.getCatalog();
-  console.log('Active Orders in Catalog:', catalog.orders?.length ?? 0);
-}
-
-main().catch(err => {
-  console.error('Execution error:', err);
-  process.exit(1);
-});
-`;
-      zip.file('src/index.ts', srcCode);
-
-      // 6. Test files (test/client.test.js)
-      const testCode = `import assert from 'node:assert/strict';
-import { test } from 'node:test';
-import { OrdexClient } from '@bitcoinuniverse/ordex-sdk';
-
-test('client initializes with configured origin', () => {
-  const client = new OrdexClient({ origin: 'http://localhost:8080' });
-  assert.ok(client);
-});
-
-test('parses decimal sats safely without floating point loss', () => {
-  const amount = '100000000000000';
-  assert.equal(BigInt(amount).toString(), amount);
-});
-`;
-      zip.file('test/client.test.js', testCode);
-
-      // 7. GitHub Actions CI
-      const ciYaml = `name: Starter CI
-on: [push, pull_request]
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24.19.0'
-      - run: npm install
-      - run: npm test
-`;
-      zip.file('.github/workflows/ci.yml', ciYaml);
-
-      // Generate blob & download
-      const content = await zip.generateAsync({ type: 'blob' });
-      const url = URL.createObjectURL(content);
+      setPhase('loading');
+      const assets = (await import('../../data/kitAssets.json')).default;
+      setPhase('generating');
+      const { name, files } = generateKit(options, assets);
+      const bytes = await createKitZip(name, files, JSZip);
+      const mismatches = await verifyKitZip(name, files, bytes, JSZip);
+      if (mismatches.length) throw new Error(`The archive did not match the generated files (${mismatches.slice(0, 3).join(', ')}). Nothing was downloaded.`);
+      const sha256 = hex(sha256Bytes(bytes));
+      if (urlRef.current) URL.revokeObjectURL(urlRef.current);
+      const url = URL.createObjectURL(new Blob([bytes], { type: 'application/zip' }));
+      urlRef.current = url;
       const a = document.createElement('a');
       a.href = url;
-      a.download = `ordex-${runtime}-starter.zip`;
+      a.download = `${name}.zip`;
+      document.body.appendChild(a);
       a.click();
-      URL.revokeObjectURL(url);
+      a.remove();
+      const summary = { name, fileName: `${name}.zip`, files: files.map((f) => f.path), size: bytes.length, sha256, sdk: `${assets.sdk.name}@${assets.sdk.version}`, url };
+      setResult(summary);
+      setPhase('done');
+      const digest = inputDigest(options);
+      for (const cap of KIT_CAPABILITIES.filter((c) => options.capabilities.includes(c.id))) {
+        recordToolEvidence({ tool: 'kits', operation: `kit:${cap.family}`, state: 'passed', evidenceClass: 'Deterministic example', inputDigest: digest, artifactDigests: [sha256] });
+      }
     } catch (err) {
-      alert(`Kit generation error: ${err.message}`);
-    } finally {
-      setIsGenerating(false);
+      setPhase('failed');
+      setError(err?.message || String(err));
     }
   };
 
+  const busy = phase === 'loading' || phase === 'generating';
+  const fieldset = 'border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 0.75rem 1rem; margin: 0; min-width: 0;';
+  const legend = 'font-weight: 700; font-size: 0.95rem; padding: 0 0.25rem;';
+  const hint = 'font-size: 0.8rem; color: var(--color-text-secondary);';
+
   return (
-    <div class="kit-generator-container panel" style="padding: 1.5rem;">
-      <div class="panel-header">
-        <div>
-          <h3 style="margin: 0; font-size: 1.25rem;">Integration Kit Generator (/kits/)</h3>
-          <p style="margin: 0.25rem 0 0 0; font-size: 0.85rem; color: var(--color-text-secondary);">
-            Generate and download ready-to-run starter repositories with pinned SDK, unit tests, and CI. Zero placeholders.
-          </p>
-        </div>
-        <button
-          class="btn btn-primary"
-          onClick={handleGenerateZip}
-          disabled={isGenerating}
-          style="min-width: 160px;"
-        >
-          {isGenerating ? 'Generating ZIP...' : '📦 Download Starter Kit'}
+    <div class="kit-generator-container panel" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem;">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem;">
+        <fieldset style={fieldset}>
+          <legend style={legend}>1. Runtime</legend>
+          {KIT_RUNTIMES.map((r) => (
+            <label key={r.id} style="display: flex; gap: 0.5rem; align-items: flex-start; padding: 0.4rem 0; cursor: pointer;">
+              <input type="radio" name="kit_runtime" value={r.id} checked={runtime === r.id} onChange={() => setRuntime(r.id)} style="margin-top: 0.25rem;" />
+              <span>
+                <span style="display: block; font-weight: 600; font-size: 0.9rem;">{r.label}</span>
+                <span style={hint}>{r.description}</span>
+              </span>
+            </label>
+          ))}
+        </fieldset>
+
+        <fieldset style={fieldset}>
+          <legend style={legend}>2. Capabilities</legend>
+          {KIT_CAPABILITIES.map((c) => (
+            <label key={c.id} style="display: flex; gap: 0.5rem; align-items: center; padding: 0.3rem 0; font-size: 0.875rem; cursor: pointer;">
+              <input type="checkbox" checked={capabilities.includes(c.id)} onChange={() => toggleCap(c.id)} />
+              <span>{c.label}</span>
+            </label>
+          ))}
+          <p style={`${hint} margin: 0.5rem 0 0;`}>Each one runs its checked-in conformance vectors through the SDK as the kit's own tests.</p>
+        </fieldset>
+
+        <fieldset style={fieldset}>
+          <legend style={legend}>3. Mode</legend>
+          {KIT_MODES.map((m) => (
+            <label key={m.id} style="display: flex; gap: 0.5rem; align-items: flex-start; padding: 0.4rem 0; cursor: pointer;">
+              <input type="radio" name="kit_mode" value={m.id} checked={mode === m.id} onChange={() => setMode(m.id)} style="margin-top: 0.25rem;" />
+              <span>
+                <span style="display: block; font-weight: 600; font-size: 0.9rem;">{m.label}</span>
+                <span style={hint}>{m.description}</span>
+              </span>
+            </label>
+          ))}
+          {mode === 'gateway' && (
+            <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem;">
+              <label style="font-size: 0.85rem; font-weight: 600;" for="kit-gateway-origin">
+                Gateway origin
+              </label>
+              <input id="kit-gateway-origin" type="url" value={gatewayOrigin} onInput={(e) => setGatewayOrigin(e.currentTarget.value)} placeholder="https://gateway.example" autocomplete="off" spellcheck={false} style="padding: 0.4rem; font-family: var(--font-mono); font-size: 0.85rem;" />
+              <label style="font-size: 0.85rem; font-weight: 600;" for="kit-network">
+                Network the gateway must serve
+              </label>
+              <select id="kit-network" value={network} onChange={(e) => setNetwork(e.currentTarget.value)} style="padding: 0.4rem;">
+                {NETWORKS.map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
+              <p style={`${hint} margin: 0;`}>The kit reads this gateway only. It carries no credentials, and it refuses a gateway on another network.</p>
+            </div>
+          )}
+        </fieldset>
+      </div>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: center;">
+        <button type="button" class="btn btn-primary" onClick={generate} disabled={busy || problems.length > 0} aria-describedby="kit-status">
+          {phase === 'loading' ? 'Loading the SDK and vectors...' : phase === 'generating' ? 'Building the archive...' : `Download ${kitName(options)}.zip`}
         </button>
+        <span style={hint}>Source {SOURCE_BUILD}. Nothing leaves your browser.</span>
       </div>
 
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-top: 1rem;">
-        {/* Runtime selection */}
-        <div>
-          <h4 style="margin: 0 0 0.5rem 0; font-size: 0.95rem;">1. Select Target Environment</h4>
-          <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-            {[
-              { id: 'node', label: 'Node.js TypeScript Server', desc: 'Backend application using Node 24 LTS and exact SDK pin.' },
-              { id: 'browser', label: 'Browser Client Application', desc: 'Client-side verification and UI components in pure TypeScript.' },
-              { id: 'worker', label: 'Cloudflare Worker / Edge', desc: 'Lightweight serverless edge proxy and event forwarder.' }
-            ].map((r) => (
-              <label
-                key={r.id}
-                class="panel"
-                style={{
-                  padding: '0.75rem',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: '0.5rem',
-                  border: runtime === r.id ? '2px solid var(--color-brand)' : '1px solid var(--color-border)',
-                  backgroundColor: runtime === r.id ? 'var(--color-brand-subtle)' : 'var(--color-bg-surface)'
-                }}
-              >
-                <input
-                  type="radio"
-                  name="kit_runtime"
-                  checked={runtime === r.id}
-                  onChange={() => setRuntime(r.id)}
-                  style="margin-top: 0.2rem;"
-                />
-                <div>
-                  <div style="font-weight: 700; font-size: 0.9rem;">{r.label}</div>
-                  <div style="font-size: 0.75rem; color: var(--color-text-secondary);">{r.desc}</div>
-                </div>
-              </label>
-            ))}
-          </div>
+      {problems.length > 0 && (
+        <ul id="kit-status" role="alert" style="margin: 0; padding-left: 1.2rem; color: var(--color-danger, #a61e4d); font-size: 0.875rem;">
+          {problems.map((p) => (
+            <li key={p}>{p}</li>
+          ))}
+        </ul>
+      )}
+      {problems.length === 0 && (
+        <div id="kit-status" role="status" aria-live="polite" style="font-size: 0.9rem;">
+          {phase === 'done' && result && (
+            <div style="display: flex; flex-direction: column; gap: 0.35rem;">
+              <strong>
+                Download started: {result.fileName}, {result.files.length} files, {(result.size / 1024).toFixed(1)} KiB.
+              </strong>
+              <span style={hint}>
+                SHA-256 <code style="word-break: break-all;">{result.sha256}</code>. The archive was read back and every file matched before the download.{' '}
+                <a href={result.url} download={result.fileName}>
+                  Download again
+                </a>
+              </span>
+              <span style={hint}>
+                Next: unzip, then run <code>npm ci</code>, <code>npm test</code> and <code>npm start</code> with Node.js 24.19.0. The SDK ({result.sdk}) is vendored in the kit.
+              </span>
+              <details>
+                <summary style="cursor: pointer;">Files in the kit</summary>
+                <ul style="margin: 0.5rem 0 0; padding-left: 1.2rem; font-family: var(--font-mono); font-size: 0.8rem; max-height: 16rem; overflow: auto;">
+                  {result.files.map((f) => (
+                    <li key={f}>{f}</li>
+                  ))}
+                </ul>
+              </details>
+            </div>
+          )}
         </div>
-
-        {/* Feature Checkboxes */}
-        <div>
-          <h4 style="margin: 0 0 0.5rem 0; font-size: 0.95rem;">2. Included Capabilities</h4>
-          <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-            {[
-              { id: 'asks', label: 'Public Asks & Purchasing' },
-              { id: 'offers', label: 'Buyer-Funded Offers v1' },
-              { id: 'safeops', label: 'SafeOps Execution Shield' },
-              { id: 'swaps', label: 'Atomic Swaps Links' },
-              { id: 'events', label: 'SSE Stream & Signed Webhooks' },
-              { id: 'provenance', label: 'Collection Provenance Manifests' }
-            ].map((c) => (
-              <label
-                key={c.id}
-                style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; padding: 0.4rem 0.6rem; background: var(--color-bg-subtle); border-radius: 4px; cursor: pointer;"
-              >
-                <input
-                  type="checkbox"
-                  checked={capabilities.includes(c.id)}
-                  onChange={() => toggleCap(c.id)}
-                />
-                <span>{c.label}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-
-        {/* Manifest Preview */}
-        <div>
-          <h4 style="margin: 0 0 0.5rem 0; font-size: 0.95rem;">3. Manifest Details</h4>
-          <div style="background: var(--color-bg-subtle); padding: 1rem; border-radius: var(--radius-md); font-size: 0.8rem; font-family: var(--font-mono);">
-            <div><strong>Package:</strong> @bitcoinuniverse/ordex-sdk</div>
-            <div><strong>SDK Version:</strong> 1.0.0 (exact pin)</div>
-            <div><strong>Node Requirement:</strong> 24.19.0 LTS</div>
-            <div><strong>TypeScript:</strong> 5.9.3</div>
-            <div><strong>Test Runner:</strong> Node.js native --test</div>
-            <div><strong>No Floating Dependencies:</strong> Confirmed</div>
-          </div>
-        </div>
-      </div>
+      )}
+      {phase === 'failed' && (
+        <p role="alert" style="margin: 0; color: var(--color-danger, #a61e4d); font-size: 0.9rem;">
+          The kit was not generated: {error}
+        </p>
+      )}
     </div>
   );
 }

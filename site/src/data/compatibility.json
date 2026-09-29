@@ -6,7 +6,7 @@
     "sdk": "Supported",
     "browser": "Supported",
     "node": "Supported",
-    "offline": "Supported (Mock)",
+    "offline": "Not applicable (needs a gateway)",
     "transport": "REST",
     "authority": "Publisher claim",
     "signing": "Wallet / Air-gap"
@@ -30,7 +30,7 @@
     "sdk": "Supported",
     "browser": "Supported",
     "node": "Supported",
-    "offline": "Supported (Mock)",
+    "offline": "Not applicable (needs a gateway)",
     "transport": "REST",
     "authority": "Protocol verification",
     "signing": "Buyer Wallet"
@@ -42,7 +42,7 @@
     "sdk": "Supported",
     "browser": "Supported",
     "node": "Supported",
-    "offline": "Supported (Mock)",
+    "offline": "Not applicable (needs a gateway)",
     "transport": "REST",
     "authority": "Chain proof + Policy",
     "signing": "Taproot Signer"
@@ -61,12 +61,12 @@
   },
   {
     "capability": "SafeOps Execution Shield",
-    "protocol": "1.1+",
+    "protocol": "1.2+",
     "gateway": "Supported",
     "sdk": "Supported",
     "browser": "Supported",
     "node": "Supported",
-    "offline": "Supported (Mock)",
+    "offline": "Not applicable (needs a gateway)",
     "transport": "REST",
     "authority": "Protocol verification",
     "signing": "Operator Key"
@@ -85,12 +85,12 @@
   },
   {
     "capability": "Atomic Swaps OTC",
-    "protocol": "1.1+",
+    "protocol": "1.2+",
     "gateway": "Supported",
     "sdk": "Supported",
     "browser": "Supported",
     "node": "Supported",
-    "offline": "Supported (Mock)",
+    "offline": "Not applicable (needs a gateway)",
     "transport": "REST",
     "authority": "Protocol verification",
     "signing": "Dual Signer"
@@ -102,7 +102,7 @@
     "sdk": "Supported",
     "browser": "Supported",
     "node": "Supported",
-    "offline": "Supported (Mock)",
+    "offline": "Not applicable (needs a gateway)",
     "transport": "SSE / WS",
     "authority": "Gateway observation",
     "signing": "None required"
@@ -114,7 +114,7 @@
     "sdk": "Supported",
     "browser": "Supported",
     "node": "Supported",
-    "offline": "Supported (Mock)",
+    "offline": "Supported (signature verification)",
     "transport": "HTTP POST",
     "authority": "Gateway HMAC",
     "signing": "HMAC-SHA256"

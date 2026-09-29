@@ -182,8 +182,8 @@ export function signWebhookDelivery({ secret, secrets, timestamp, deliveryId, bo
 }
 
 const equalConstantTime = (a, b) => {
-  const left = Buffer.from(a, 'utf8');
-  const right = Buffer.from(b, 'utf8');
+  const left = new TextEncoder().encode(a);
+  const right = new TextEncoder().encode(b);
   if (left.length !== right.length) return false;
   return timingSafeEqual(left, right);
 };
