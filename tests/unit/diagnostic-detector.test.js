@@ -3,10 +3,11 @@ import { test } from 'node:test';
 import { detectFailureInput, getAllDiagnosticRules } from '../../site/src/lib/diagnostics/detector.js';
 
 // The count follows the refusal codes the verifiers can return. OX-P04 and OX-P10
-// added the rune allocation and Counterparty move codes (172 to 195).
-test('diagnostic detector: maps all 195 refusal codes to conclusive diagnostic rules', () => {
+// added the rune allocation and Counterparty move codes (172 to 195), and OX-P01
+// the SafeOps v2 plan and signed result codes (to 212).
+test('diagnostic detector: maps all 212 refusal codes to conclusive diagnostic rules', () => {
   const rules = getAllDiagnosticRules();
-  assert.equal(rules.length, 195);
+  assert.equal(rules.length, 212);
 
   for (const rule of rules) {
     const code = rule.exactCodes[0];

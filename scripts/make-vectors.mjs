@@ -6,11 +6,14 @@
 
 import { writeFileSync } from 'node:fs';
 
+import { bytesToHex, serializeTransaction } from '../verifier/bitcoin-tx.js';
 import {
   SAFEOPS_PLAN_SCHEMA,
   SAFEOPS_SIGNED_RESULT_SCHEMA,
   safeopsPlanDigest,
+  safeopsUnsignedTransaction,
 } from '../verifier/safeops.js';
+import { p2trKeyPath, p2wpkhScript, signP2wpkh, signTaprootKeyPath, testKey } from './vector-signer.mjs';
 import { SWAP_INTENT_SCHEMA, SWAP_ACCEPTANCE_SCHEMA, swapIntentDigest } from '../verifier/swaps.js';
 import { signWebhookDelivery } from '../verifier/events.js';
 import {
@@ -40,6 +43,24 @@ const LEDGER_HASH = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789a
 
 const sats = (n) => String(n);
 
+// OX-P01: SafeOps v2 fixtures spend outputs locked to test keys, so the signed
+// results carry real signatures the verifier checks from the transaction bytes.
+const SAFEOPS_USER_KEY = testKey('safeops-user-taproot');
+const SAFEOPS_USER_TR = p2trKeyPath(SAFEOPS_USER_KEY).scriptHex;
+const SAFEOPS_SEGWIT_KEY = testKey('safeops-user-segwit');
+const SAFEOPS_USER_WPKH = p2wpkhScript(SAFEOPS_SEGWIT_KEY);
+const SAFEOPS_KEYS = { [SAFEOPS_USER_TR]: SAFEOPS_USER_KEY, [SAFEOPS_USER_WPKH]: SAFEOPS_SEGWIT_KEY };
+const SEQUENCE_RBF = 0xfffffffd;
+const RUNESTONE_TO_OUTPUT_1 = '6a5d0800c0a23301f40301'; // 500 of 840000:1 to output 1
+
+const planInput = (outpoint, valueSats, inventory = { examined: true }, scriptPubKeyHex = SAFEOPS_USER_TR) => ({
+  outpoint,
+  valueSats,
+  scriptPubKeyHex,
+  sequence: SEQUENCE_RBF,
+  inventory,
+});
+
 function basePlan(overrides = {}) {
   const plan = {
     schema: SAFEOPS_PLAN_SCHEMA,
@@ -49,10 +70,8 @@ function basePlan(overrides = {}) {
     createdAtHeight: 900000,
     expiryHeight: 900010,
     checkpoint: { height: 900000, blockHash: BLOCK_HASH },
-    inputs: [
-      { outpoint: OUTPOINT_A, valueSats: '50000', inventory: { examined: true } },
-      { outpoint: OUTPOINT_B, valueSats: '60000', inventory: { examined: true } },
-    ],
+    transaction: { version: 2, lockTime: 0 },
+    inputs: [planInput(OUTPOINT_A, '50000'), planInput(OUTPOINT_B, '60000', { examined: true }, SAFEOPS_USER_WPKH)],
     outputs: [
       { scriptHex: SCRIPT_P2WPKH, valueSats: '10000', role: 'recipient' },
       { scriptHex: SCRIPT_P2TR, valueSats: '20000', role: 'recipient' },
@@ -71,40 +90,69 @@ function basePlan(overrides = {}) {
 function ordinalPlan(overrides = {}) {
   const inventory = {
     examined: true,
-    inscriptions: [{ inscriptionId: INSCRIPTION, satpoint: `${OUTPOINT_A.txid}:${OUTPOINT_A.vout}:0` }],
+    inscriptions: [{ inscriptionId: INSCRIPTION, offset: '0', satpoint: `${OUTPOINT_A.txid}:${OUTPOINT_A.vout}:0` }],
   };
   return basePlan({
     operationKind: 'ORDINAL_BATCH_TRANSFER',
-    inputs: [
-      { outpoint: OUTPOINT_A, valueSats: '50000', inventory },
-      { outpoint: OUTPOINT_B, valueSats: '60000', inventory: { examined: true } },
-    ],
+    inputs: [planInput(OUTPOINT_A, '50000', inventory), planInput(OUTPOINT_B, '60000', { examined: true }, SAFEOPS_USER_WPKH)],
     outputs: [
       { scriptHex: SCRIPT_P2TR, valueSats: '10000', role: 'recipient' },
       { scriptHex: SCRIPT_P2WPKH, valueSats: '99400', role: 'change' },
     ],
-    assetTransitions: [{ assetType: 'ORDINAL', assetId: INSCRIPTION, fromInput: 0, toOutput: 0 }],
+    assetTransitions: [{ assetType: 'ORDINAL', assetId: INSCRIPTION, fromInput: 0, toOutput: 0, quantity: '1' }],
     ...overrides,
   });
 }
 
-function signedResultFor(plan, mutate) {
-  const signed = {
+/** P-R01: an inscription 1500 sats into a 2000 sat input sits in output 1. */
+function offsetPlan(toOutput) {
+  return basePlan({
+    operationKind: 'ORDINAL_BATCH_TRANSFER',
+    inputs: [planInput(OUTPOINT_A, '2000', { examined: true, inscriptions: [{ inscriptionId: INSCRIPTION, offset: '1500' }] })],
+    outputs: [
+      { scriptHex: SCRIPT_P2TR, valueSats: '1000', role: 'recipient' },
+      { scriptHex: SCRIPT_P2TR, valueSats: '900', role: 'recipient' },
+    ],
+    assetTransitions: [{ assetType: 'ORDINAL', assetId: INSCRIPTION, fromInput: 0, toOutput, quantity: '1' }],
+    fee: { feeSats: '100', maxFeeSats: '100', feeRateSatsPerVb: '1' },
+    signing: { requiredIndexes: [0], sighashType: 'DEFAULT' },
+  });
+}
+
+function runePlan(overrides = {}) {
+  return basePlan({
+    operationKind: 'RUNE_BATCH_TRANSFER',
+    inputs: [
+      planInput(OUTPOINT_A, '10000', { examined: true, runeAllocations: [{ runeId: '840000:1', amount: '1000' }] }),
+      planInput(OUTPOINT_B, '20000', { examined: true, runeAllocations: [{ runeId: '840000:1', amount: '200' }] }, SAFEOPS_USER_WPKH),
+    ],
+    outputs: [
+      { scriptHex: RUNESTONE_TO_OUTPUT_1, valueSats: '0', role: 'data' },
+      { scriptHex: SCRIPT_P2TR, valueSats: '546', role: 'recipient' },
+      { scriptHex: SCRIPT_P2WPKH, valueSats: '28854', role: 'change' },
+    ],
+    assetTransitions: [{ assetType: 'RUNE', assetId: '840000:1', toOutput: 1, quantity: '1200' }],
+    ...overrides,
+  });
+}
+
+function signedResultFor(plan, { beforeSign, afterSign, hashType = 0x00, skip = [] } = {}) {
+  const tx = safeopsUnsignedTransaction(plan);
+  if (beforeSign) beforeSign(tx);
+  const prevouts = plan.inputs.map((input) => ({ valueSats: input.valueSats, scriptHex: input.scriptPubKeyHex }));
+  tx.inputs.forEach((input, i) => {
+    if (skip.includes(i)) return;
+    const script = prevouts[i].scriptHex;
+    input.witness = script.startsWith('5120')
+      ? [signTaprootKeyPath(tx, i, prevouts, SAFEOPS_KEYS[script], hashType)]
+      : signP2wpkh(tx, i, prevouts, SAFEOPS_KEYS[script]);
+  });
+  if (afterSign) afterSign(tx);
+  return {
     schema: SAFEOPS_SIGNED_RESULT_SCHEMA,
     planDigest: plan.digest,
-    tx: {
-      inputs: plan.inputs.map((input) => ({
-        txid: input.outpoint.txid,
-        vout: input.outpoint.vout,
-        valueSats: input.valueSats,
-        signaturePresent: true,
-        sighashType: plan.signing.sighashType,
-      })),
-      outputs: plan.outputs.map((output) => ({ scriptHex: output.scriptHex, valueSats: output.valueSats })),
-    },
+    signedTxHex: bytesToHex(serializeTransaction(tx)),
   };
-  if (mutate) mutate(signed);
-  return signed;
 }
 
 function baseIntent(overrides = {}) {
@@ -297,22 +345,28 @@ const safeopsCases = [
   },
   {
     name: 'an input that was never examined fails closed',
-    plan: basePlan({ inputs: [{ outpoint: OUTPOINT_A, valueSats: '50000', inventory: { examined: false } }] }),
+    plan: basePlan({ inputs: [planInput(OUTPOINT_A, '50000', { examined: false })] }),
     expected: { ok: false, code: 'INVENTORY_UNEXAMINED' },
+  },
+  {
+    name: 'P-R04: the same outpoint spent twice is refused',
+    plan: basePlan({ inputs: [planInput(OUTPOINT_A, '50000'), planInput(OUTPOINT_A, '60000')] }),
+    expected: { ok: false, code: 'INPUT_DUPLICATED' },
   },
   {
     name: 'a cardinal operation refuses an input that carries an inscription',
     plan: basePlan({
       inputs: [
-        {
-          outpoint: OUTPOINT_A,
-          valueSats: '50000',
-          inventory: { examined: true, inscriptions: [{ inscriptionId: INSCRIPTION }] },
-        },
-        { outpoint: OUTPOINT_B, valueSats: '60000', inventory: { examined: true } },
+        planInput(OUTPOINT_A, '50000', { examined: true, inscriptions: [{ inscriptionId: INSCRIPTION, offset: '0' }] }),
+        planInput(OUTPOINT_B, '60000', { examined: true }, SAFEOPS_USER_WPKH),
       ],
     }),
     expected: { ok: false, code: 'ASSET_IN_CARDINAL_OPERATION' },
+  },
+  {
+    name: 'an inscription at offset 0 moves with the first sat of its input',
+    plan: ordinalPlan(),
+    expected: { ok: true },
   },
   {
     name: 'a tracked asset without a transition is refused',
@@ -322,31 +376,88 @@ const safeopsCases = [
   {
     name: 'a transition naming a missing output is refused',
     plan: ordinalPlan({
-      assetTransitions: [{ assetType: 'ORDINAL', assetId: INSCRIPTION, fromInput: 0, toOutput: 5 }],
+      assetTransitions: [{ assetType: 'ORDINAL', assetId: INSCRIPTION, fromInput: 0, toOutput: 5, quantity: '1' }],
     }),
     expected: { ok: false, code: 'TRANSITION_OUTPUT_MISSING' },
   },
   {
-    name: 'a transition against the sat flow is refused',
-    plan: ordinalPlan({
-      assetTransitions: [{ assetType: 'ORDINAL', assetId: INSCRIPTION, fromInput: 0, toOutput: 1 }],
+    name: 'P-R01: an inscription 1500 sats in is not delivered to output 0',
+    plan: offsetPlan(0),
+    expected: { ok: false, code: 'TRANSITION_MISMATCH' },
+  },
+  {
+    name: 'P-R01: the same inscription is correctly planned to output 1',
+    plan: offsetPlan(1),
+    expected: { ok: true },
+  },
+  {
+    name: 'an inscription whose sat would fall into the fee is refused',
+    plan: basePlan({
+      operationKind: 'ORDINAL_BATCH_TRANSFER',
+      inputs: [planInput(OUTPOINT_A, '2000', { examined: true, inscriptions: [{ inscriptionId: INSCRIPTION, offset: '1950' }] })],
+      outputs: [{ scriptHex: SCRIPT_P2TR, valueSats: '1900', role: 'recipient' }],
+      assetTransitions: [{ assetType: 'ORDINAL', assetId: INSCRIPTION, fromInput: 0, toOutput: 0, quantity: '1' }],
+      fee: { feeSats: '100', maxFeeSats: '100', feeRateSatsPerVb: '1' },
+      signing: { requiredIndexes: [0], sighashType: 'DEFAULT' },
     }),
-    expected: { ok: false, code: 'TRANSITION_SAT_FLOW_MISMATCH' },
+    expected: { ok: false, code: 'ASSET_TO_FEE' },
+  },
+  {
+    name: 'an inscription below the product postage floor is refused',
+    plan: basePlan({
+      operationKind: 'ORDINAL_BATCH_TRANSFER',
+      inputs: [planInput(OUTPOINT_A, '2000', { examined: true, inscriptions: [{ inscriptionId: INSCRIPTION, offset: '0' }] })],
+      outputs: [
+        { scriptHex: SCRIPT_P2TR, valueSats: '400', role: 'recipient' },
+        { scriptHex: SCRIPT_P2TR, valueSats: '1500', role: 'change' },
+      ],
+      assetTransitions: [{ assetType: 'ORDINAL', assetId: INSCRIPTION, fromInput: 0, toOutput: 0, quantity: '1' }],
+      fee: { feeSats: '100', maxFeeSats: '100', feeRateSatsPerVb: '1' },
+      signing: { requiredIndexes: [0], sighashType: 'DEFAULT' },
+    }),
+    expected: { ok: false, code: 'POSTAGE_BELOW_FLOOR' },
+  },
+  {
+    name: 'a rare sat range delivered whole is accepted',
+    plan: basePlan({
+      operationKind: 'SPLIT_AND_POSTAGE',
+      inputs: [planInput(OUTPOINT_A, '20000', { examined: true, rareSatRanges: [{ rangeId: 'uncommon-1', offset: '600', count: '1' }] })],
+      outputs: [
+        { scriptHex: SCRIPT_P2TR, valueSats: '600', role: 'change' },
+        { scriptHex: SCRIPT_P2TR, valueSats: '600', role: 'preserve' },
+        { scriptHex: SCRIPT_P2WPKH, valueSats: '18500', role: 'change' },
+      ],
+      assetTransitions: [{ assetType: 'RARE_SAT', assetId: 'uncommon-1', fromInput: 0, toOutput: 1, quantity: '1' }],
+      fee: { feeSats: '300', maxFeeSats: '500', feeRateSatsPerVb: '2' },
+      signing: { requiredIndexes: [0], sighashType: 'DEFAULT' },
+    }),
+    expected: { ok: true },
+  },
+  {
+    name: 'a rare sat range split across outputs is refused',
+    plan: basePlan({
+      operationKind: 'SPLIT_AND_POSTAGE',
+      inputs: [planInput(OUTPOINT_A, '20000', { examined: true, rareSatRanges: [{ rangeId: 'block-9', offset: '500', count: '200' }] })],
+      outputs: [
+        { scriptHex: SCRIPT_P2TR, valueSats: '600', role: 'preserve' },
+        { scriptHex: SCRIPT_P2WPKH, valueSats: '19100', role: 'change' },
+      ],
+      assetTransitions: [{ assetType: 'RARE_SAT', assetId: 'block-9', fromInput: 0, toOutput: 0, quantity: '200' }],
+      fee: { feeSats: '300', maxFeeSats: '500', feeRateSatsPerVb: '2' },
+      signing: { requiredIndexes: [0], sighashType: 'DEFAULT' },
+    }),
+    expected: { ok: false, code: 'RARE_SAT_RANGE_SPLIT' },
   },
   {
     name: 'an unknown claim fails closed even with a transition',
     plan: ordinalPlan({
       inputs: [
-        {
-          outpoint: OUTPOINT_A,
-          valueSats: '50000',
-          inventory: {
-            examined: true,
-            inscriptions: [{ inscriptionId: INSCRIPTION }],
-            unknownClaims: ['mystery-token-at-outpoint'],
-          },
-        },
-        { outpoint: OUTPOINT_B, valueSats: '60000', inventory: { examined: true } },
+        planInput(OUTPOINT_A, '50000', {
+          examined: true,
+          inscriptions: [{ inscriptionId: INSCRIPTION, offset: '0' }],
+          unknownClaims: ['mystery-token-at-outpoint'],
+        }),
+        planInput(OUTPOINT_B, '60000', { examined: true }, SAFEOPS_USER_WPKH),
       ],
     }),
     expected: { ok: false, code: 'UNKNOWN_CLAIM_FAILS_CLOSED' },
@@ -359,20 +470,149 @@ const safeopsCases = [
     expected: { ok: false, code: 'VALUE_NOT_CONSERVED' },
   },
   {
-    name: 'a dust output is refused',
+    name: 'an output below its script dust threshold is refused',
     plan: basePlan({
       outputs: [
-        { scriptHex: SCRIPT_P2WPKH, valueSats: '100', role: 'recipient' },
+        { scriptHex: SCRIPT_P2WPKH, valueSats: '293', role: 'recipient' },
         { scriptHex: SCRIPT_P2TR, valueSats: '20000', role: 'recipient' },
-        { scriptHex: SCRIPT_P2WPKH, valueSats: '69300', role: 'change' },
+        { scriptHex: SCRIPT_P2WPKH, valueSats: '89107', role: 'change' },
       ],
     }),
     expected: { ok: false, code: 'DUST_OUTPUT' },
   },
   {
+    name: 'a P2WPKH output at the Bitcoin Core dust threshold of 294 sats is accepted',
+    plan: basePlan({
+      outputs: [
+        { scriptHex: SCRIPT_P2WPKH, valueSats: '294', role: 'recipient' },
+        { scriptHex: SCRIPT_P2TR, valueSats: '20000', role: 'recipient' },
+        { scriptHex: SCRIPT_P2WPKH, valueSats: '89106', role: 'change' },
+      ],
+    }),
+    expected: { ok: true },
+  },
+  {
     name: 'a rune operation without a rune allocation is refused',
     plan: ordinalPlan({ operationKind: 'RUNE_BATCH_TRANSFER' }),
     expected: { ok: false, code: 'RUNE_INPUT_MISSING_ALLOCATION' },
+  },
+  {
+    name: 'P-R02: a zero-sat runestone with a proved allocation is accepted',
+    plan: runePlan(),
+    expected: { ok: true },
+  },
+  {
+    name: 'a runestone whose edict names its own OP_RETURN burns runes and is refused',
+    plan: runePlan({
+      outputs: [
+        { scriptHex: '6a5d0800c0a23301f40300', valueSats: '0', role: 'data' },
+        { scriptHex: SCRIPT_P2TR, valueSats: '546', role: 'recipient' },
+        { scriptHex: SCRIPT_P2WPKH, valueSats: '28854', role: 'change' },
+      ],
+      assetTransitions: [{ assetType: 'RUNE', assetId: '840000:1', toOutput: 1, quantity: '700' }],
+    }),
+    expected: { ok: false, code: 'ALLOCATION_BURNS_BALANCE' },
+  },
+  {
+    name: 'a rune transition that states the wrong quantity is refused',
+    plan: runePlan({ assetTransitions: [{ assetType: 'RUNE', assetId: '840000:1', toOutput: 1, quantity: '500' }] }),
+    expected: { ok: false, code: 'RUNE_ALLOCATION_MISMATCH' },
+  },
+  {
+    name: 'a data output that carries value is refused as a burn',
+    plan: runePlan({
+      outputs: [
+        { scriptHex: RUNESTONE_TO_OUTPUT_1, valueSats: '100', role: 'data' },
+        { scriptHex: SCRIPT_P2TR, valueSats: '546', role: 'recipient' },
+        { scriptHex: SCRIPT_P2WPKH, valueSats: '28754', role: 'change' },
+      ],
+    }),
+    expected: { ok: false, code: 'DATA_OUTPUT_BURNS_VALUE' },
+  },
+  {
+    name: 'an OP_RETURN given a spendable role is refused',
+    plan: runePlan({
+      outputs: [
+        { scriptHex: RUNESTONE_TO_OUTPUT_1, valueSats: '0', role: 'preserve' },
+        { scriptHex: SCRIPT_P2TR, valueSats: '546', role: 'recipient' },
+        { scriptHex: SCRIPT_P2WPKH, valueSats: '28854', role: 'change' },
+      ],
+    }),
+    expected: { ok: false, code: 'DATA_OUTPUT_ROLE_MISMATCH' },
+  },
+  {
+    name: 'an OP_RETURN that is not a runestone is refused',
+    plan: basePlan({
+      outputs: [
+        { scriptHex: '6a0401020304', valueSats: '0', role: 'data' },
+        { scriptHex: SCRIPT_P2TR, valueSats: '20000', role: 'recipient' },
+        { scriptHex: SCRIPT_P2WPKH, valueSats: '89400', role: 'change' },
+      ],
+    }),
+    expected: { ok: false, code: 'DATA_OUTPUT_NOT_PERMITTED' },
+  },
+  {
+    name: 'a Counterparty attachment moves to the first spendable output',
+    plan: basePlan({
+      operationKind: 'RECOVERY',
+      inputs: [
+        planInput(OUTPOINT_A, '50000', { examined: true }),
+        planInput(OUTPOINT_C, '20000', {
+          examined: true,
+          counterpartyAssets: [{ name: 'RAREPEPE', assetId: '137', quantitySats: '1' }],
+        }),
+      ],
+      outputs: [
+        { scriptHex: SCRIPT_P2TR, valueSats: '1000', role: 'preserve' },
+        { scriptHex: SCRIPT_P2WPKH, valueSats: '68400', role: 'change' },
+      ],
+      assetTransitions: [{ assetType: 'COUNTERPARTY', assetId: '137', fromInput: 1, toOutput: 0, quantity: '1' }],
+    }),
+    expected: { ok: true },
+  },
+  {
+    name: 'a Counterparty attachment planned along its sat range is refused',
+    plan: basePlan({
+      operationKind: 'RECOVERY',
+      inputs: [
+        planInput(OUTPOINT_A, '50000', { examined: true }),
+        planInput(OUTPOINT_C, '20000', {
+          examined: true,
+          counterpartyAssets: [{ name: 'RAREPEPE', assetId: '137', quantitySats: '1' }],
+        }),
+      ],
+      outputs: [
+        { scriptHex: SCRIPT_P2TR, valueSats: '1000', role: 'preserve' },
+        { scriptHex: SCRIPT_P2WPKH, valueSats: '68400', role: 'change' },
+      ],
+      assetTransitions: [{ assetType: 'COUNTERPARTY', assetId: '137', fromInput: 1, toOutput: 1, quantity: '1' }],
+    }),
+    expected: { ok: false, code: 'TRANSITION_MISMATCH' },
+  },
+  {
+    name: 'P-R03: a null signing policy is refused, never thrown on',
+    plan: basePlan({ signing: null }),
+    expected: { ok: false, code: 'SIGNING_INVALID' },
+  },
+  {
+    name: 'a signing policy that skips an input is refused',
+    plan: basePlan({ signing: { requiredIndexes: [0], sighashType: 'DEFAULT' } }),
+    expected: { ok: false, code: 'SIGNING_INVALID' },
+  },
+  {
+    name: 'a sighash that lets the transaction change after signing is refused',
+    plan: basePlan({ signing: { requiredIndexes: [0, 1], sighashType: 'SINGLE|ANYONECANPAY' } }),
+    expected: { ok: false, code: 'SIGHASH_NOT_PERMITTED' },
+  },
+  {
+    name: 'a plan that does not fix version and locktime is refused',
+    plan: basePlan({ transaction: undefined }),
+    expected: { ok: false, code: 'TRANSACTION_INVALID' },
+  },
+  {
+    name: 'a v1 plan is refused rather than reinterpreted',
+    plan: basePlan({ schema: 'ordex.safeops-plan/v1' }),
+    expected: { ok: false, code: 'SCHEMA_UNSUPPORTED' },
   },
   {
     name: 'a plan whose digest was edited is refused',
@@ -390,6 +630,12 @@ const safeopsCases = [
     expected: { ok: true },
   },
   {
+    name: 'a signed rune transfer with its runestone is accepted',
+    plan: runePlan(),
+    signed: signedResultFor(runePlan()),
+    expected: { ok: true },
+  },
+  {
     name: 'a signed result from a different plan is refused',
     plan: ordinalPlan(),
     signed: signedResultFor(ordinalPlan({ expiryHeight: 900050 })),
@@ -398,32 +644,63 @@ const safeopsCases = [
   {
     name: 'a changed output script is refused after signing',
     plan: ordinalPlan(),
-    signed: signedResultFor(ordinalPlan(), (signed) => {
-      signed.tx.outputs[0] = { scriptHex: SCRIPT_P2WPKH, valueSats: '10000' };
+    signed: signedResultFor(ordinalPlan(), {
+      afterSign: (tx) => {
+        tx.outputs[0].scriptHex = SCRIPT_P2WPKH;
+      },
     }),
     expected: { ok: false, code: 'SCRIPT_CHANGED' },
   },
   {
     name: 'an unsigned required input is refused',
     plan: ordinalPlan(),
-    signed: signedResultFor(ordinalPlan(), (signed) => {
-      signed.tx.inputs[0].signaturePresent = false;
-    }),
+    signed: signedResultFor(ordinalPlan(), { skip: [0] }),
     expected: { ok: false, code: 'SIGNATURE_MISSING' },
   },
   {
-    name: 'a signature outside the signing policy is refused',
-    plan: ordinalPlan({ signing: { requiredIndexes: [0], sighashType: 'DEFAULT' } }),
-    signed: signedResultFor(ordinalPlan({ signing: { requiredIndexes: [0], sighashType: 'DEFAULT' } })),
-    expected: { ok: false, code: 'UNEXPECTED_SIGNATURE' },
+    name: 'a signature made over another transaction is refused',
+    plan: ordinalPlan(),
+    signed: signedResultFor(ordinalPlan(), {
+      beforeSign: (tx) => {
+        tx.outputs[1].valueSats = '99399';
+      },
+      afterSign: (tx) => {
+        tx.outputs[1].valueSats = '99400';
+      },
+    }),
+    expected: { ok: false, code: 'SIGNATURE_INVALID' },
   },
   {
     name: 'a changed sighash is refused',
     plan: ordinalPlan(),
-    signed: signedResultFor(ordinalPlan(), (signed) => {
-      signed.tx.inputs[0].sighashType = 'ALL';
-    }),
+    signed: signedResultFor(ordinalPlan(), { hashType: 0x01 }),
     expected: { ok: false, code: 'SIGHASH_CHANGED' },
+  },
+  {
+    name: 'a changed sequence is refused',
+    plan: ordinalPlan(),
+    signed: signedResultFor(ordinalPlan(), {
+      afterSign: (tx) => {
+        tx.inputs[1].sequence = 0xffffffff;
+      },
+    }),
+    expected: { ok: false, code: 'SEQUENCE_CHANGED' },
+  },
+  {
+    name: 'a changed locktime is refused',
+    plan: ordinalPlan(),
+    signed: signedResultFor(ordinalPlan(), {
+      afterSign: (tx) => {
+        tx.lockTime = 900001;
+      },
+    }),
+    expected: { ok: false, code: 'TRANSACTION_CHANGED' },
+  },
+  {
+    name: 'signed bytes that do not parse are refused',
+    plan: ordinalPlan(),
+    signed: { schema: SAFEOPS_SIGNED_RESULT_SCHEMA, planDigest: ordinalPlan().digest, signedTxHex: '0200' },
+    expected: { ok: false, code: 'MALFORMED_SIGNED_RESULT' },
   },
 ];
 

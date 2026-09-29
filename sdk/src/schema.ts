@@ -2151,47 +2151,63 @@ export interface components {
          * @enum {string}
          */
         SafeOpsOperationKind: "BTC_BATCH_SEND" | "ORDINAL_BATCH_TRANSFER" | "RUNE_BATCH_TRANSFER" | "CARDINAL_CONSOLIDATION" | "SPLIT_AND_POSTAGE" | "RECOVERY" | "RBF_REPLACE" | "CPFP_CHILD";
-        /** @description One exact inventory for one outpoint, resolved from the protocol authorities. Unexamined inputs fail closed. */
+        /** @description One exact inventory for one outpoint, resolved from the protocol authorities at the plan checkpoint. Unexamined inputs fail closed; every sat-bound asset carries its offset inside the input, every rune its exact balance, every Counterparty attachment its exact quantity. */
         SafeOpsInventory: {
             examined: boolean;
             confirmed?: boolean;
             inscriptions?: {
-                [key: string]: unknown;
+                inscriptionId: string;
+                offset: components["schemas"]["AtomicSats"];
+                /** @description txid:vout:offset of this input; when present it must agree with the outpoint and offset. */
+                satpoint?: string;
             }[];
             runeAllocations?: {
-                [key: string]: unknown;
+                runeId: string;
+                amount: components["schemas"]["AtomicSats"];
             }[];
             counterpartyAssets?: {
-                [key: string]: unknown;
+                name: string;
+                assetId: string;
+                quantitySats: components["schemas"]["AtomicSats"];
             }[];
             rareSatRanges?: {
-                [key: string]: unknown;
+                rangeId: string;
+                offset: components["schemas"]["AtomicSats"];
+                count: components["schemas"]["AtomicSats"];
             }[];
             unknownClaims?: string[];
         };
         SafeOpsPlanInput: {
             outpoint: components["schemas"]["Outpoint"];
             valueSats: components["schemas"]["AtomicSats"];
+            /** @description The script of the output this input spends; signatures are verified against it. */
+            scriptPubKeyHex: string;
+            sequence: number;
             inventory: components["schemas"]["SafeOpsInventory"];
         };
         SafeOpsPlanOutput: {
             scriptHex: string;
             valueSats: components["schemas"]["AtomicSats"];
-            /** @enum {string} */
-            role: "recipient" | "change" | "preserve";
+            /**
+             * @description data marks the one zero-value runestone OP_RETURN a rune transfer may carry; every other output meets the Bitcoin Core dust threshold for its script.
+             * @enum {string}
+             */
+            role: "recipient" | "change" | "preserve" | "data";
             explanation?: string;
         };
+        /** @description One derived asset movement. Inscriptions and rare sats name their input; runes are fungible and name only the output and amount. */
         SafeOpsAssetTransition: {
             /** @enum {string} */
             assetType: "ORDINAL" | "RARE_SAT" | "RUNE" | "COUNTERPARTY";
             assetId: string;
-            fromInput: number;
+            fromInput?: number;
             toOutput: number;
+            quantity: components["schemas"]["AtomicSats"];
         };
         /** @description The complete, verifiable plan for one SafeOps operation. Verify it with the SDK before any wallet opens. */
         SafeOpsPlan: {
             /** @constant */
-            schema: "ordex.safeops-plan/v1";
+            schema: "ordex.safeops-plan/v2";
             protocolVersion: string;
             network: components["schemas"]["Network"];
             operationKind: components["schemas"]["SafeOpsOperationKind"];
@@ -2207,13 +2223,20 @@ export interface components {
                 feeRateSatsPerVb?: components["schemas"]["AtomicSats"];
             };
             signing: {
+                /** @description Every input index, once: the user signs every input. */
                 requiredIndexes: number[];
-                sighashType?: string;
+                /** @enum {string} */
+                sighashType: "DEFAULT" | "ALL";
             };
             findings: {
                 [key: string]: unknown;
             }[];
             digest: string;
+            /** @description The transaction version and locktime the plan signs, so the unsigned transaction is fully determined. */
+            transaction: {
+                version: number;
+                lockTime: number;
+            };
         };
         SafeOpsPlanRequest: {
             operationKind: components["schemas"]["SafeOpsOperationKind"];
@@ -2255,9 +2278,10 @@ export interface components {
         };
         SafeOpsSignedResult: {
             /** @constant */
-            schema: "ordex.safeops-signed-result/v1";
+            schema: "ordex.safeops-signed-result/v2";
             planDigest: string;
-            tx: components["schemas"]["TxDescription"];
+            /** @description The complete signed transaction. Signatures are verified from these bytes, never from a flag. */
+            signedTxHex: string;
         };
         /** @description A fully signed transaction the user explicitly asked to relay. The gateway verifies, preflights, then relays. */
         BroadcastRequest: {
