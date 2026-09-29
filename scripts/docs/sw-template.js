@@ -38,13 +38,17 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+// Pages this worker answered from the cache because the network failed: they are offline
+// even where navigator.onLine still says otherwise (captive or failing networks).
+const offlineClients = new Set();
+
 self.addEventListener('message', (event) => {
   if (event.data === 'ORDEX_SW_SKIP_WAITING') self.skipWaiting();
   if (event.data === 'ORDEX_SW_STATUS' && event.ports[0]) {
     caches
       .open(CACHE)
       .then((c) => c.keys())
-      .then((keys) => event.ports[0].postMessage({ version: MANIFEST.version, revision: MANIFEST.revision, cached: keys.length, total: MANIFEST.files.length }));
+      .then((keys) => event.ports[0].postMessage({ version: MANIFEST.version, revision: MANIFEST.revision, cached: keys.length, total: MANIFEST.files.length, servedOffline: offlineClients.has(event.source?.id) }));
   }
 });
 
@@ -66,7 +70,10 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(req).catch(async () => {
         const hit = cachedPath && (await caches.match(cachedPath, { cacheName: CACHE }));
-        if (hit) return hit;
+        if (hit) {
+          if (event.resultingClientId) offlineClients.add(event.resultingClientId);
+          return hit;
+        }
         return new Response(
           `<!doctype html><meta charset="utf-8"><title>Offline</title><p>You are offline and ${url.pathname} is not saved for offline use.</p><p><a href="${SCOPE.pathname}">Open the saved home page</a></p>`,
           { status: 503, headers: { 'content-type': 'text/html; charset=utf-8' } }
