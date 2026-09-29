@@ -608,6 +608,55 @@ const safeopsCases = [
     plan: ordinalPlan({ operationKind: 'RUNE_BATCH_TRANSFER' }),
     expected: { ok: false, code: 'RUNE_INPUT_MISSING_ALLOCATION' },
   },
+  // D7: a rune on a dust output moves when asset-free inputs fund it.
+  {
+    name: 'D7: a rune on a dust output moves with an asset-free funding input',
+    plan: runePlan({
+      inputs: [
+        planInput(OUTPOINT_A, '546', { examined: true, runeAllocations: [{ runeId: '840000:1', amount: '1000' }] }),
+        planInput(OUTPOINT_B, '20000', { examined: true }, SAFEOPS_USER_WPKH),
+      ],
+      outputs: [
+        { scriptHex: RUNESTONE_TO_OUTPUT_1, valueSats: '0', role: 'data' },
+        { scriptHex: SCRIPT_P2TR, valueSats: '546', role: 'recipient' },
+        { scriptHex: SCRIPT_P2WPKH, valueSats: '19400', role: 'change' },
+      ],
+      assetTransitions: [{ assetType: 'RUNE', assetId: '840000:1', toOutput: 1, quantity: '1000' }],
+    }),
+    expected: { ok: true },
+  },
+  {
+    name: 'D7: a funding input of a rune transfer that carries an inscription is refused',
+    plan: runePlan({
+      inputs: [
+        planInput(OUTPOINT_A, '546', { examined: true, runeAllocations: [{ runeId: '840000:1', amount: '1000' }] }),
+        planInput(OUTPOINT_B, '20000', { examined: true, inscriptions: [{ inscriptionId: INSCRIPTION, offset: '0' }] }, SAFEOPS_USER_WPKH),
+      ],
+      outputs: [
+        { scriptHex: RUNESTONE_TO_OUTPUT_1, valueSats: '0', role: 'data' },
+        { scriptHex: SCRIPT_P2TR, valueSats: '546', role: 'recipient' },
+        { scriptHex: SCRIPT_P2WPKH, valueSats: '19400', role: 'change' },
+      ],
+      assetTransitions: [{ assetType: 'RUNE', assetId: '840000:1', toOutput: 1, quantity: '1000' }],
+    }),
+    expected: { ok: false, code: 'RUNE_INPUT_MISSING_ALLOCATION' },
+  },
+  {
+    name: 'D7: a rune transfer whose inputs are all asset-free is refused',
+    plan: runePlan({
+      inputs: [
+        planInput(OUTPOINT_A, '546', { examined: true }),
+        planInput(OUTPOINT_B, '20000', { examined: true }, SAFEOPS_USER_WPKH),
+      ],
+      outputs: [
+        { scriptHex: RUNESTONE_TO_OUTPUT_1, valueSats: '0', role: 'data' },
+        { scriptHex: SCRIPT_P2TR, valueSats: '546', role: 'recipient' },
+        { scriptHex: SCRIPT_P2WPKH, valueSats: '19400', role: 'change' },
+      ],
+      assetTransitions: [{ assetType: 'RUNE', assetId: '840000:1', toOutput: 1, quantity: '1000' }],
+    }),
+    expected: { ok: false, code: 'RUNE_INPUT_MISSING_ALLOCATION' },
+  },
   {
     name: 'P-R02: a zero-sat runestone with a proved allocation is accepted',
     plan: runePlan(),
