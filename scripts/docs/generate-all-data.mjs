@@ -1,6 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import { FAMILY_REGISTRY, FAMILIES, variantOf } from '../../site/src/lib/conformance-registry.mjs';
+import { assertNoUnregisteredVectorFiles, buildVectorManifest, loadVectorFile } from './vector-loader.mjs';
+import { exampleForSchema } from '../../site/src/lib/api/schema.mjs';
 
 const root = path.resolve('.');
 const dataOutDir = path.join(root, 'site', 'src', 'data');
@@ -19,17 +22,28 @@ for (const [routePath, pathItem] of Object.entries(openapi.paths)) {
     const tag = op.tags?.[0] || 'General';
     const isWrite = method.toLowerCase() === 'post' || method.toLowerCase() === 'delete' || method.toLowerCase() === 'put';
 
-    // Build mock request/response examples
+    // OX-S07: examples are built from the referenced schema (const, enum, oneOf/allOf,
+    // nullable, required) and published only when they validate against it. A missing
+    // example is stated as missing with its reason, never replaced by a generic body.
     let requestExample = null;
+    let requestExampleIssue = null;
     if (op.requestBody?.content?.['application/json']?.schema) {
-      const schema = op.requestBody.content['application/json'].schema;
-      requestExample = generateSchemaExample(schema, openapi);
+      const built = exampleForSchema(op.requestBody.content['application/json'].schema, openapi);
+      if (built.ok) requestExample = built.value;
+      else requestExampleIssue = built.reason;
     }
 
-    const response200 = op.responses?.['200'] || op.responses?.['201'];
-    let responseExample = { status: 200, ok: true };
-    if (response200?.content?.['application/json']?.schema) {
-      responseExample = generateSchemaExample(response200.content['application/json'].schema, openapi);
+    const successStatus = Object.keys(op.responses || {}).find((code) => /^2\d\d$/.test(code)) || null;
+    const successResponse = successStatus ? resolveResponse(op.responses[successStatus]) : null;
+    let responseExample = null;
+    let responseExampleIssue = successStatus ? null : 'The contract documents no success response';
+    const successSchema = successResponse?.content?.['application/json']?.schema;
+    if (successSchema) {
+      const built = exampleForSchema(successSchema, openapi);
+      if (built.ok) responseExample = built.value;
+      else responseExampleIssue = built.reason;
+    } else if (successStatus) {
+      responseExampleIssue = `The ${successStatus} response has no JSON body`;
     }
 
     // Evidence / authority level determination
@@ -62,7 +76,10 @@ for (const [routePath, pathItem] of Object.entries(openapi.paths)) {
       }),
       requestBodySchema: op.requestBody?.content?.['application/json']?.schema || null,
       requestExample,
+      requestExampleIssue,
+      successStatus: successStatus ? Number(successStatus) : null,
       responseExample,
+      responseExampleIssue,
       responses: op.responses || {},
       jsonPointer: `/paths${routePath.replace(/\//g, '~1')}/${method}`
     });
@@ -78,60 +95,64 @@ const channels = Object.entries(asyncapi.channels).map(([name, ch]) => ({
   messages: ch.messages || {}
 }));
 
-/* IMPLEMENTATION-HANDOFF [OX-S07]
- * Defect OX-S-D07; coverage OX-S-C900..OX-S-C918. Generator derives singular file-name families the executor
- * does not recognize and flattens away kind, plan, signed, intent, acceptance, event, membership, record and
- * other required arguments.
- * 1. Import the OX-S07 explicit family/file registry. Preserve the complete source case in each generated
- * entry, adding stable family+case IDs and display metadata without replacing its argument shape. Assert every
- * case maps to an executor and each generated/source count matches.
- * 2. Derive displayed counts from generated data; current README/UI says151 while source test expects157. Pin
- * metadata to actual build revision, spec digest and vector digest; reject stale generated data.
- * 3. Make examples obey OpenAPI 3.1 referenced schema including const, enum, oneOf/allOf, nullable and
- * required fields. Validate each generated example before publication; represent missing examples truthfully
- * rather than {status:200,ok:true}.
- * 4. Add parity tests that execute every generated case and every source case through the same shared
- * executor; compare expected/actual fields, not just aggregate pass counts. Run node
- * scripts/docs/generate-all-data.mjs only in a build/validation workspace during this preparation;
- * implementation may regenerate tracked data after changes are accepted.
- * 5. Rebuild Lab/Studio/MCP/Playground/Kits together; PROPOSED NEW tests/unit/generated-contracts.test.js must
- * assert source preservation and complete required fields for all nine families.
- * Dependencies: OX-S07 executor registry, SDK/spec fixes and OX-S11 source metadata. Generated JSON cannot
- * take comments, so this is its owning annotation. Rollback generator and all generated assets together,
- * retaining prior verified case hashes.
- */
 // 3. Conformance vectors
-const conformanceDir = path.join(root, 'conformance');
-const vectorFiles = fs.readdirSync(conformanceDir).filter(f => f.endsWith('.json'));
+// OX-S07: every generated entry keeps its complete source case under `case`, so the
+// browser executor receives exactly the arguments the CLI does. Families come from the
+// shared registry; a file with no registered family, a case no executor variant can run,
+// or a count that differs from its source stops generation.
+assertNoUnregisteredVectorFiles();
+const vectorManifest = buildVectorManifest();
 const vectorFamilies = {};
 const allVectorsList = [];
 
-for (const file of vectorFiles) {
-  const data = JSON.parse(fs.readFileSync(path.join(conformanceDir, file), 'utf8'));
-  const familyName = file.replace('-vectors.json', '');
-  const cases = data.cases || data.vectors || [];
-  
-  vectorFamilies[familyName] = {
-    family: familyName,
+const slugify = (text) => String(text).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+
+for (const family of FAMILIES) {
+  const spec = FAMILY_REGISTRY[family];
+  const { file, sha256, data, cases } = loadVectorFile(family);
+  const usedIds = new Set();
+  const variantCounts = {};
+  const entries = cases.map((c, index) => {
+    const variant = variantOf(family, c);
+    if (!variant) throw new Error(`${file} case ${index} (${c.name}) matches no ${family} executor variant`);
+    variantCounts[variant] = (variantCounts[variant] || 0) + 1;
+    let id = `${family}/${slugify(c.name || `case-${index + 1}`)}`;
+    if (usedIds.has(id)) id = `${id}-${index + 1}`;
+    usedIds.add(id);
+    const entry = {
+      id,
+      family,
+      variant,
+      index,
+      name: c.name || `case-${index + 1}`,
+      title: c.name || `Case ${index + 1}`,
+      description: c.description || c.note || '',
+      sourceFile: `conformance/${file}`,
+      sourceSha256: crypto.createHash('sha256').update(JSON.stringify(c), 'utf8').digest('hex'),
+      case: c
+    };
+    allVectorsList.push(entry);
+    return entry;
+  });
+  if (entries.length !== vectorManifest.families[family].count) {
+    throw new Error(`${family}: generated ${entries.length} cases but the source has ${vectorManifest.families[family].count}`);
+  }
+  vectorFamilies[family] = {
+    family,
+    label: spec.label,
     file,
+    fileSha256: sha256,
+    spec: spec.spec,
+    resultField: spec.result,
     version: data.version || data.protocolVersion || '1.0',
     description: data.description || data.note || '',
-    count: cases.length,
-    cases: cases.map((c, i) => {
-      const vObj = {
-        family: familyName,
-        id: c.name || `${familyName}-${i + 1}`,
-        title: c.name || `Case ${i + 1}`,
-        description: c.description || c.note || '',
-        input: c.input || c.transaction || c.manifest || c.order || c.record || c.plan || c.intent || c.envelope || c,
-        expected: c.expected || (c.verdict ? { ok: c.verdict === 'PASS', code: c.refusalCode } : { ok: true }),
-        order: c.order || null,
-        transaction: c.transaction || null
-      };
-      allVectorsList.push(vObj);
-      return vObj;
-    })
+    count: entries.length,
+    variants: variantCounts,
+    cases: entries
   };
+}
+if (allVectorsList.length !== vectorManifest.total) {
+  throw new Error(`Generated ${allVectorsList.length} vectors but the sources hold ${vectorManifest.total}`);
 }
 
 // 4. Verifiers and Refusal Codes
@@ -968,33 +989,8 @@ for (const ref of refusalList) {
 }
 
 // Helper to generate schema examples
-function generateSchemaExample(schema, doc) {
-  if (!schema) return {};
-  if (schema.$ref) {
-    const resolved = resolveRef(schema.$ref, doc);
-    return generateSchemaExample(resolved, doc);
-  }
-  if (schema.example !== undefined) return schema.example;
-  if (schema.default !== undefined) return schema.default;
-  if (schema.enum) return schema.enum[0];
-  if (schema.type === 'string') {
-    if (schema.format === 'date-time') return '2026-09-02T16:00:00Z';
-    if (schema.pattern && schema.pattern.includes('^[0-9a-f]{64}$')) return 'a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef';
-    return 'example-string';
-  }
-  if (schema.type === 'integer' || schema.type === 'number') return 10000;
-  if (schema.type === 'boolean') return true;
-  if (schema.type === 'array') {
-    return [generateSchemaExample(schema.items || {}, doc)];
-  }
-  if (schema.type === 'object' || schema.properties) {
-    const obj = {};
-    for (const [propName, propSchema] of Object.entries(schema.properties || {})) {
-      obj[propName] = generateSchemaExample(propSchema, doc);
-    }
-    return obj;
-  }
-  return {};
+function resolveResponse(response) {
+  return response?.$ref ? resolveRef(response.$ref, openapi) : response;
 }
 
 function resolveRef(ref, doc) {
@@ -1070,6 +1066,7 @@ fs.writeFileSync(path.join(dataOutDir, 'operations.json'), JSON.stringify(operat
 fs.writeFileSync(path.join(dataOutDir, 'channels.json'), JSON.stringify(channels, null, 2));
 fs.writeFileSync(path.join(dataOutDir, 'vectorFamilies.json'), JSON.stringify(vectorFamilies, null, 2));
 fs.writeFileSync(path.join(dataOutDir, 'allVectors.json'), JSON.stringify(allVectorsList, null, 2));
+fs.writeFileSync(path.join(dataOutDir, 'vectorManifest.json'), JSON.stringify(vectorManifest, null, 2));
 fs.writeFileSync(path.join(dataOutDir, 'refusals.json'), JSON.stringify(refusalList, null, 2));
 fs.writeFileSync(path.join(dataOutDir, 'diagnostics.json'), JSON.stringify(diagnostics, null, 2));
 fs.writeFileSync(path.join(dataOutDir, 'specs.json'), JSON.stringify(specs, null, 2));

@@ -19,8 +19,8 @@
     "protocolVersion": "1.2",
     "contentType": "specification",
     "title": "The Ordex gateway API - Reads\r",
-    "content": "| Route | Answers |\r\n| --- | --- |\r\n| `GET /health` | The observed verification verdict, not the configuration. |\r\n| `GET /protocol` | The protocol contract this gateway speaks. |\r\n| `GET /catalog` | The markets this gateway serves, and what it verifies for each. |\r\n| `GET /orders` | One page of the orderbook. |\r\n| `GET /orders/:id` | One order. |\r\n| `GET /activity` | The appended lifecycle log, newest first. |\r\n| `GET /orders/:id/ownership-challenge` | The message a listing owner signs before managing it. |\r\n| `GET /orders/:id/nostr-envelope` | The unsigned kind 802 event announcing this listing, for the seller's own NIP-07 signer. |\r\n\r\n`GET /orders/:id/artifact` is separate on purpose. A browse response carrying\r\nraw PSBTs would hand every public ask to anything that can read the market, so\r\nthe artifact is its own rate limited request and is released only while the\r\norder is live.",
-    "digest": "a904fb87b14a3c0e",
+    "content": "| Route | Answers |\r\n| --- | --- |\r\n| `GET /health` | The observed verification verdict, not the configuration. |\r\n| `GET /protocol` | The protocol contract this gateway speaks. |\r\n| `GET /catalog` | The markets this gateway serves, and what it verifies for each. |\r\n| `GET /orders` | One page of the orderbook. |\r\n| `GET /orders/:id` | One order. |\r\n| `GET /activity` | The appended lifecycle log, newest first. |\r\n| `GET /orders/:id/ownership-challenge` | The message a listing owner signs before managing it. |\r\n| `GET /operations/:operationId` | The receipt a mutation committed under an `idempotency-key`, or 404 when the gateway never recorded that id. |\r\n| `GET /orders/:id/nostr-envelope` | The unsigned kind 802 event announcing this listing, for the seller's own NIP-07 signer. |\r\n\r\n`GET /orders/:id/artifact` is separate on purpose. A browse response carrying\r\nraw PSBTs would hand every public ask to anything that can read the market, so\r\nthe artifact is its own rate limited request and is released only while the\r\norder is live.",
+    "digest": "9c3318c32e1ca4af",
     "docUrl": "/reference/specifications/api"
   },
   {
@@ -56,11 +56,47 @@
     "contentType": "specification",
     "title": "The Ordex gateway API - Writes\r",
     "content": "| Route | Does |\r\n| --- | --- |\r\n| `POST /orders/import` | Takes a signed artifact and verifies it. |\r\n| `POST /orders/openordex-event` | Takes a signed OpenOrdex event and verifies it. |\r\n| `POST /orders/build` | Builds the unsigned seller half. |\r\n| `POST /orders/publish` | Takes the signed seller half and publishes it. |\r\n| `POST /orders/{id}/replace` | Replaces a live ask with a freshly signed one for the same output: the old order leaves the book as `REPLACED` and the new one goes live, in one step. |\r\n| `POST /orders/:id/revalidate` | Rechecks one order against both authorities. |\r\n| `POST /orders/:id/withdraw` | Removes a listing, proved by the key owning the output it sells. |\r\n| `POST /orders/:id/quote` | Composes the buyer half and states the exact terms. |\r\n| `POST /orders/:id/preflight` | Verifies a signed purchase and asks the node whether it would accept it. |\r\n| `POST /orders/batch-purchase` | Composes several live asks into one transaction when every seller half can coexist. See [batch-purchase.md](batch-purchase.md). |\r\n| `POST /orders/batch-preflight` | Verifies a signed batch and asks the node about the exact composed bytes. |\r\n| `POST /offers` | Takes funded-out",
-    "digest": "bee55c94ed95c5e5",
+    "digest": "07bbb1cac5b04441",
     "docUrl": "/reference/specifications/api"
   },
   {
     "id": "spec-api-6",
+    "sourcePath": "spec/api.md",
+    "pointer": "heading:The protocol contract is checkable\r",
+    "product": "Protocol Specification",
+    "protocolVersion": "1.2",
+    "contentType": "specification",
+    "title": "The Ordex gateway API - The protocol contract is checkable\r",
+    "content": "`GET /protocol` is the consumer's first call, and it has to carry enough to\r\nrefuse a gateway that cannot keep the consumer's promises. Since 1.2.1 it\r\nstates the exact `protocolVersion` (and the same value as `version`), the\r\n`network`, a boolean per gateway capability (`browse`, `createListing`,\r\n`withdraw`, `replace`, `purchase`, `batchPurchase`, `fundedOffers`,\r\n`offerAcceptance`, `operationReceipts`), the `prerequisites` still missing for\r\nevery capability that is false, the versioned `feePolicy`, and the\r\n`implementation` name and source revision. A capability is true only when the\r\nroute, its verification, and its full execution contract exist in the build;\r\nwhether Core and ord are answering right now is `/health`. A consumer pins the\r\nversion, refuses a different network, refuses a missing capability, and keys\r\nits cached answer to the implementation revision so a redeployed gateway is\r\nre-verified before it is trusted.",
+    "digest": "8e47911a66d61eb6",
+    "docUrl": "/reference/specifications/api"
+  },
+  {
+    "id": "spec-api-7",
+    "sourcePath": "spec/api.md",
+    "pointer": "heading:Fees are proved, not trusted\r",
+    "product": "Protocol Specification",
+    "protocolVersion": "1.2",
+    "contentType": "specification",
+    "title": "The Ordex gateway API - Fees are proved, not trusted\r",
+    "content": "Every quote and every batch carries the `feePolicy` it was priced under and\r\nthe exact `feeOutputs` the composed transaction contains: role, output index,\r\nscript, value, and policy version. The consumer recomputes each role's total\r\nas the seller price times the policy's basis points, rounded down to whole\r\nsats, checks every declared output against the transaction bytes and against\r\nthe policy's approved destinations, and refuses any output the policy does\r\nnot describe. Under a zero policy the only valid answer is an empty list; a\r\nzero is stated, never omitted, and never guessed.",
+    "digest": "741a9f0a443412ef",
+    "docUrl": "/reference/specifications/api"
+  },
+  {
+    "id": "spec-api-8",
+    "sourcePath": "spec/api.md",
+    "pointer": "heading:Lost replies are recovered, never repeated\r",
+    "product": "Protocol Specification",
+    "protocolVersion": "1.2",
+    "contentType": "specification",
+    "title": "The Ordex gateway API - Lost replies are recovered, never repeated\r",
+    "content": "`POST /orders/publish`, `POST /orders/:id/withdraw`, and\r\n`POST /orders/:id/replace` accept an `idempotency-key`: the caller's own\r\noperation id. The gateway commits the order change and a receipt under that id\r\nin one transaction. The same id with the same request replays the receipt; the\r\nsame id with a different request is a `409`; a mutation the gateway rejected\r\nis recorded and replays as the same rejection. `GET /operations/:operationId`\r\nreads the receipt back, and an id the gateway never recorded is a `404`, which\r\nis how a caller tells a lost request from a lost reply: the first is safe to\r\nsend once more under the same id, the second is already done.\r\n\r\nOne further route exists outside the public surface:\r\n`POST /admin/orders/:id/withdraw` removes a listing as operator moderation. It\r\nrequires the operator's HTTP Basic credentials configured on the gateway, and\r\nno public route ever requires them.",
+    "digest": "e89e269e591af4c8",
+    "docUrl": "/reference/specifications/api"
+  },
+  {
+    "id": "spec-api-9",
     "sourcePath": "spec/api.md",
     "pointer": "heading:`POST /orders/:id/quote`\r",
     "product": "Protocol Specification",
@@ -72,7 +108,7 @@
     "docUrl": "/reference/specifications/api"
   },
   {
-    "id": "spec-api-7",
+    "id": "spec-api-10",
     "sourcePath": "spec/api.md",
     "pointer": "heading:`POST /orders/:id/preflight`\r",
     "product": "Protocol Specification",
@@ -84,7 +120,7 @@
     "docUrl": "/reference/specifications/api"
   },
   {
-    "id": "spec-batch-purchase-8",
+    "id": "spec-batch-purchase-11",
     "sourcePath": "spec/batch-purchase.md",
     "pointer": "heading:Buying several asks in one transaction\r",
     "product": "Protocol Specification",
@@ -96,7 +132,7 @@
     "docUrl": "/reference/specifications/batch-purchase"
   },
   {
-    "id": "spec-batch-purchase-9",
+    "id": "spec-batch-purchase-12",
     "sourcePath": "spec/batch-purchase.md",
     "pointer": "heading:The arrangement\r",
     "product": "Protocol Specification",
@@ -108,7 +144,7 @@
     "docUrl": "/reference/specifications/batch-purchase"
   },
   {
-    "id": "spec-batch-purchase-10",
+    "id": "spec-batch-purchase-13",
     "sourcePath": "spec/batch-purchase.md",
     "pointer": "heading:What Ordex refuses before composing\r",
     "product": "Protocol Specification",
@@ -120,7 +156,7 @@
     "docUrl": "/reference/specifications/batch-purchase"
   },
   {
-    "id": "spec-batch-purchase-11",
+    "id": "spec-batch-purchase-14",
     "sourcePath": "spec/batch-purchase.md",
     "pointer": "heading:What Ordex refuses before handing the result over\r",
     "product": "Protocol Specification",
@@ -132,7 +168,7 @@
     "docUrl": "/reference/specifications/batch-purchase"
   },
   {
-    "id": "spec-batch-purchase-12",
+    "id": "spec-batch-purchase-15",
     "sourcePath": "spec/batch-purchase.md",
     "pointer": "heading:No partial result\r",
     "product": "Protocol Specification",
@@ -144,7 +180,7 @@
     "docUrl": "/reference/specifications/batch-purchase"
   },
   {
-    "id": "spec-cold-signing-13",
+    "id": "spec-cold-signing-16",
     "sourcePath": "spec/cold-signing.md",
     "pointer": "heading:Cold signing and watch-only mode v1\r",
     "product": "Protocol Specification",
@@ -156,19 +192,19 @@
     "docUrl": "/reference/specifications/cold-signing"
   },
   {
-    "id": "spec-cold-signing-14",
+    "id": "spec-cold-signing-17",
     "sourcePath": "spec/cold-signing.md",
     "pointer": "heading:The SignerAdapter contract\r",
     "product": "Protocol Specification",
     "protocolVersion": "1.2",
     "contentType": "specification",
     "title": "Cold signing and watch-only mode v1 - The SignerAdapter contract\r",
-    "content": "One adapter interface with capability detection covers: connected-wallet signing (existing adapters), PSBT binary export and import, base64 copy and paste, animated QR through an established interoperable UR encoding, static QR fallback, hardware signing through audited wallet-provider APIs, and watch-only with no signing capability. No raw device key management exists anywhere in this codebase: keys and recovery material never pass through gateway, browser storage, or SDK.\r\n\r\nPSBT v0 and v2 are supported where wallets require them. Conversion preserves the unsigned transaction, UTXO data, scripts, sighash policy, derivation metadata, and proprietary asset-protection fields, and refuses lossy conversions.",
-    "digest": "11c51ff48d9220c2",
+    "content": "One adapter interface with capability detection covers: connected-wallet signing (existing adapters), PSBT binary export and import, base64 copy and paste, animated QR through an established interoperable UR encoding, static QR fallback, hardware signing through audited wallet-provider APIs, and watch-only with no signing capability. No raw device key management exists anywhere in this codebase: keys and recovery material never pass through gateway, browser storage, or SDK.\r\n\r\nPSBT v0 and v2 are supported where wallets require them. Conversion preserves the unsigned transaction, UTXO data, scripts, sighash policy, derivation metadata, and proprietary asset-protection fields, and refuses lossy conversions.\r\n\r\n<!--\r\nIMPLEMENTATION-HANDOFF [OX-P03] Preparation only; functional status FAIL, repair NOT IMPLEMENTED.\r\nCoverage: OX-P-C050, OX-P-C051, OX-P-C052, OX-P-C053, OX-P-C054, OX-P-C055, OX-P-C056. Evidence:\r\nP-R11, P-R12, P-R13 in handoff/evidence.\r\nVerified cause: expectedTransactionDigest omits transaction version/locktime/sequence and protection\r\npolicy. Comparator accepts missing carriedAssets and does not prove complete expected asset\r\npreservation; signature booleans require a",
+    "digest": "7c8a0ffb005f4256",
     "docUrl": "/reference/specifications/cold-signing"
   },
   {
-    "id": "spec-cold-signing-15",
+    "id": "spec-cold-signing-18",
     "sourcePath": "spec/cold-signing.md",
     "pointer": "heading:The expected transaction manifest\r",
     "product": "Protocol Specification",
@@ -180,7 +216,7 @@
     "docUrl": "/reference/specifications/cold-signing"
   },
   {
-    "id": "spec-cold-signing-16",
+    "id": "spec-cold-signing-19",
     "sourcePath": "spec/cold-signing.md",
     "pointer": "heading:The nine refusals\r",
     "product": "Protocol Specification",
@@ -192,7 +228,7 @@
     "docUrl": "/reference/specifications/cold-signing"
   },
   {
-    "id": "spec-cold-signing-17",
+    "id": "spec-cold-signing-20",
     "sourcePath": "spec/cold-signing.md",
     "pointer": "heading:The stepper\r",
     "product": "Protocol Specification",
@@ -204,7 +240,7 @@
     "docUrl": "/reference/specifications/cold-signing"
   },
   {
-    "id": "spec-cold-signing-18",
+    "id": "spec-cold-signing-21",
     "sourcePath": "spec/cold-signing.md",
     "pointer": "heading:Watch-only profiles\r",
     "product": "Protocol Specification",
@@ -216,7 +252,7 @@
     "docUrl": "/reference/specifications/cold-signing"
   },
   {
-    "id": "spec-cold-signing-19",
+    "id": "spec-cold-signing-22",
     "sourcePath": "spec/cold-signing.md",
     "pointer": "heading:Blind signing is prohibited\r",
     "product": "Protocol Specification",
@@ -228,7 +264,7 @@
     "docUrl": "/reference/specifications/cold-signing"
   },
   {
-    "id": "spec-collection-manifest-20",
+    "id": "spec-collection-manifest-23",
     "sourcePath": "spec/collection-manifest.md",
     "pointer": "heading:Collection provenance registry v1\r",
     "product": "Protocol Specification",
@@ -240,7 +276,7 @@
     "docUrl": "/reference/specifications/collection-manifest"
   },
   {
-    "id": "spec-collection-manifest-21",
+    "id": "spec-collection-manifest-24",
     "sourcePath": "spec/collection-manifest.md",
     "pointer": "heading:The manifest\r",
     "product": "Protocol Specification",
@@ -252,19 +288,19 @@
     "docUrl": "/reference/specifications/collection-manifest"
   },
   {
-    "id": "spec-collection-manifest-22",
+    "id": "spec-collection-manifest-25",
     "sourcePath": "spec/collection-manifest.md",
     "pointer": "heading:Membership proofs\r",
     "product": "Protocol Specification",
     "protocolVersion": "1.2",
     "contentType": "specification",
     "title": "Collection provenance registry v1 - Membership proofs\r",
-    "content": "Leaves are `SHA-256(sorted-key JSON of { domain: \"ordex.collection-member/v1\", collectionId, memberIdentity })`. Interior nodes combine child digests in ascending byte order inside `{ domain: \"ordex.collection-node/v1\", left, right }`. Domain separation means a member leaf can never be replayed as an interior node or as any other artifact's leaf.\r\n\r\n`buildMembershipProof` walks the sorted tree and returns the sibling path. `verifyMembershipProof` needs only the manifest, the member identity, and the proof: no network call, no gateway. A stranger's identity, a tampered sibling, and a member removed in a newer version all refuse with `MEMBER_NOT_PROVEN`.",
-    "digest": "1069572cffd6f786",
+    "content": "Leaves are `SHA-256(sorted-key JSON of { domain: \"ordex.collection-member/v1\", collectionId, memberIdentity })`. Interior nodes combine child digests in ascending byte order inside `{ domain: \"ordex.collection-node/v1\", left, right }`. Domain separation means a member leaf can never be replayed as an interior node or as any other artifact's leaf.\r\n\r\n`buildMembershipProof` walks the sorted tree and returns the sibling path. `verifyMembershipProof` needs only the manifest, the member identity, and the proof: no network call, no gateway. A stranger's identity, a tampered sibling, and a member removed in a newer version all refuse with `MEMBER_NOT_PROVEN`.\r\n\r\n<!--\r\nIMPLEMENTATION-HANDOFF [OX-P09] Preparation only; functional status FAIL, repair NOT IMPLEMENTED.\r\nCoverage: OX-P-C044. Evidence: P-R17 in handoff/evidence.\r\nVerified cause: verifyManifestRevocation checks manifest digest and signer address but never\r\ncompares revocation network or collectionId to supplied manifest; contradictory revocation passes.\r\nActual BIP322 proof remains integrator's responsibility.\r\nRequired behavior: Bind collection revocation to exact network, collection and signer context.\r\nGoverning refs: P-S15 (O",
+    "digest": "a8b912e7f8c81861",
     "docUrl": "/reference/specifications/collection-manifest"
   },
   {
-    "id": "spec-collection-manifest-23",
+    "id": "spec-collection-manifest-26",
     "sourcePath": "spec/collection-manifest.md",
     "pointer": "heading:Publication, versioning, revocation\r",
     "product": "Protocol Specification",
@@ -276,7 +312,7 @@
     "docUrl": "/reference/specifications/collection-manifest"
   },
   {
-    "id": "spec-collection-manifest-24",
+    "id": "spec-collection-manifest-27",
     "sourcePath": "spec/collection-manifest.md",
     "pointer": "heading:Verification states\r",
     "product": "Protocol Specification",
@@ -288,7 +324,7 @@
     "docUrl": "/reference/specifications/collection-manifest"
   },
   {
-    "id": "spec-collection-manifest-25",
+    "id": "spec-collection-manifest-28",
     "sourcePath": "spec/collection-manifest.md",
     "pointer": "heading:Compatibility\r",
     "product": "Protocol Specification",
@@ -300,7 +336,7 @@
     "docUrl": "/reference/specifications/collection-manifest"
   },
   {
-    "id": "spec-collection-manifest-26",
+    "id": "spec-collection-manifest-29",
     "sourcePath": "spec/collection-manifest.md",
     "pointer": "heading:Gates\r",
     "product": "Protocol Specification",
@@ -312,7 +348,7 @@
     "docUrl": "/reference/specifications/collection-manifest"
   },
   {
-    "id": "spec-counterparty-utxo-asset-27",
+    "id": "spec-counterparty-utxo-asset-30",
     "sourcePath": "spec/counterparty-utxo-asset.md",
     "pointer": "heading:Counterparty heritage assets v1\r",
     "product": "Protocol Specification",
@@ -324,7 +360,7 @@
     "docUrl": "/reference/specifications/counterparty-utxo-asset"
   },
   {
-    "id": "spec-counterparty-utxo-asset-28",
+    "id": "spec-counterparty-utxo-asset-31",
     "sourcePath": "spec/counterparty-utxo-asset.md",
     "pointer": "heading:Identity\r",
     "product": "Protocol Specification",
@@ -336,7 +372,7 @@
     "docUrl": "/reference/specifications/counterparty-utxo-asset"
   },
   {
-    "id": "spec-counterparty-utxo-asset-29",
+    "id": "spec-counterparty-utxo-asset-32",
     "sourcePath": "spec/counterparty-utxo-asset.md",
     "pointer": "heading:The authority\r",
     "product": "Protocol Specification",
@@ -348,19 +384,19 @@
     "docUrl": "/reference/specifications/counterparty-utxo-asset"
   },
   {
-    "id": "spec-counterparty-utxo-asset-30",
+    "id": "spec-counterparty-utxo-asset-33",
     "sourcePath": "spec/counterparty-utxo-asset.md",
     "pointer": "heading:The attachment record\r",
     "product": "Protocol Specification",
     "protocolVersion": "1.2",
     "contentType": "specification",
     "title": "Counterparty heritage assets v1 - The attachment record\r",
-    "content": "A record states that an exact quantity of one asset is attached to one outpoint right now, controlled by one address, with the co-traveling assets on the same outpoint declared. An undeclared co-traveling asset is how unrelated assets get burned, so the declaration is part of the record and part of every verification that moves the outpoint.",
-    "digest": "2a16c25f1bdb156f",
+    "content": "A record states that an exact quantity of one asset is attached to one outpoint right now, controlled by one address, with the co-traveling assets on the same outpoint declared. An undeclared co-traveling asset is how unrelated assets get burned, so the declaration is part of the record and part of every verification that moves the outpoint.\r\n\r\n<!--\r\nIMPLEMENTATION-HANDOFF [OX-P10] Preparation only; functional status FAIL, repair NOT IMPLEMENTED.\r\nCoverage: OX-P-C034, OX-P-C046, OX-P-C047, OX-P-C048, OX-P-C049. Evidence: P-R18 in\r\nhandoff/evidence.\r\nVerified cause: Ordex spec/verifier treats attachment as ordinal first-sat transfer. Pinned\r\nCounterparty Corev11.4.0 get_utxos_info selects one first non-OP_RETURN output for all attached\r\ninputs; move_assets credits complete balances there, independent of input sat positions.\r\nRequired behavior: Correct Counterparty move semantics across heritage, SafeOps and swaps. Governing\r\nrefs: P-S17 (v11.4.0 e4d1315654b79bb7207cd9f45a8d7b6d5255a290;\r\nblob3867149258f2fc417d676a0e54bf15dc0b6bfd9b); P-S18 (v11.4.0;\r\nblob77fc9b6354a59feba810bce7c4a8ba8957fd0f28); P-S19 (guide accessed2026-09-29; v11.4.0\r\nrelease2026-09-18); complete URLs in reports/",
+    "digest": "e55ce785dd20d1e0",
     "docUrl": "/reference/specifications/counterparty-utxo-asset"
   },
   {
-    "id": "spec-counterparty-utxo-asset-31",
+    "id": "spec-counterparty-utxo-asset-34",
     "sourcePath": "spec/counterparty-utxo-asset.md",
     "pointer": "heading:Attachment follows the spend\r",
     "product": "Protocol Specification",
@@ -372,7 +408,7 @@
     "docUrl": "/reference/specifications/counterparty-utxo-asset"
   },
   {
-    "id": "spec-counterparty-utxo-asset-32",
+    "id": "spec-counterparty-utxo-asset-35",
     "sourcePath": "spec/counterparty-utxo-asset.md",
     "pointer": "heading:Attach and detach\r",
     "product": "Protocol Specification",
@@ -384,7 +420,7 @@
     "docUrl": "/reference/specifications/counterparty-utxo-asset"
   },
   {
-    "id": "spec-counterparty-utxo-asset-33",
+    "id": "spec-counterparty-utxo-asset-36",
     "sourcePath": "spec/counterparty-utxo-asset.md",
     "pointer": "heading:Protection everywhere\r",
     "product": "Protocol Specification",
@@ -396,7 +432,7 @@
     "docUrl": "/reference/specifications/counterparty-utxo-asset"
   },
   {
-    "id": "spec-counterparty-utxo-asset-34",
+    "id": "spec-counterparty-utxo-asset-37",
     "sourcePath": "spec/counterparty-utxo-asset.md",
     "pointer": "heading:Trading path\r",
     "product": "Protocol Specification",
@@ -408,7 +444,7 @@
     "docUrl": "/reference/specifications/counterparty-utxo-asset"
   },
   {
-    "id": "spec-counterparty-utxo-asset-35",
+    "id": "spec-counterparty-utxo-asset-38",
     "sourcePath": "spec/counterparty-utxo-asset.md",
     "pointer": "heading:Readiness gates\r",
     "product": "Protocol Specification",
@@ -420,7 +456,7 @@
     "docUrl": "/reference/specifications/counterparty-utxo-asset"
   },
   {
-    "id": "spec-events-36",
+    "id": "spec-events-39",
     "sourcePath": "spec/events.md",
     "pointer": "heading:Realtime events and signed webhooks v1\r",
     "product": "Protocol Specification",
@@ -432,7 +468,7 @@
     "docUrl": "/reference/specifications/events"
   },
   {
-    "id": "spec-events-37",
+    "id": "spec-events-40",
     "sourcePath": "spec/events.md",
     "pointer": "heading:The envelope\r",
     "product": "Protocol Specification",
@@ -444,7 +480,7 @@
     "docUrl": "/reference/specifications/events"
   },
   {
-    "id": "spec-events-38",
+    "id": "spec-events-41",
     "sourcePath": "spec/events.md",
     "pointer": "heading:Event families\r",
     "product": "Protocol Specification",
@@ -456,19 +492,19 @@
     "docUrl": "/reference/specifications/events"
   },
   {
-    "id": "spec-events-39",
+    "id": "spec-events-42",
     "sourcePath": "spec/events.md",
     "pointer": "heading:Streaming\r",
     "product": "Protocol Specification",
     "protocolVersion": "1.2",
     "contentType": "specification",
     "title": "Realtime events and signed webhooks v1 - Streaming\r",
-    "content": "Two transports carry the same envelopes:\r\n\r\n- Server-sent events at `GET /api/ordex/events/stream`, for resilient browser and server consumption, with `Last-Event-ID` resumption and heartbeats.\r\n- WebSocket at the streaming gateway, for multiplexed, high-volume consumers: one connection, many filters, cursor resumption.\r\n\r\nRequired behavior, both transports: filter by network, protocol, collection, event type, and aggregate; deterministic replay from the acknowledged cursor; bounded buffers; slow-consumer disconnection with a resumable cursor; at-least-once delivery with event-id deduplication; seven-day minimum retention; no silent gaps.\r\n\r\nPublication latency target: p95 under two seconds from the authoritative database commit. No event loss during worker restart: an at-least-once consumer that deduplicates by id observes exactly-once effect.",
-    "digest": "71432aff9de56e1f",
+    "content": "Two transports carry the same envelopes:\r\n\r\n- Server-sent events at `GET /api/ordex/events/stream`, for resilient browser and server consumption, with `Last-Event-ID` resumption and heartbeats.\r\n- WebSocket at the streaming gateway, for multiplexed, high-volume consumers: one connection, many filters, cursor resumption.\r\n\r\nRequired behavior, both transports: filter by network, protocol, collection, event type, and aggregate; deterministic replay from the acknowledged cursor; bounded buffers; slow-consumer disconnection with a resumable cursor; at-least-once delivery with event-id deduplication; seven-day minimum retention; no silent gaps.\r\n\r\nPublication latency target: p95 under two seconds from the authoritative database commit. No event loss during worker restart: an at-least-once consumer that deduplicates by id observes exactly-once effect.\r\n\r\n<!--\r\nIMPLEMENTATION-HANDOFF [OX-P11] Preparation only; functional status FAIL, repair NOT IMPLEMENTED.\r\nCoverage: OX-P-C038, OX-P-C039. Evidence: spec/events.md Signed webhooks: hash-only storage\r\nconflicts with later encrypted-secret requirement in handoff/evidence.\r\nVerified cause: Spec requires hash-only stored secret then delivery HM",
+    "digest": "da6bb599f5093a6e",
     "docUrl": "/reference/specifications/events"
   },
   {
-    "id": "spec-events-40",
+    "id": "spec-events-43",
     "sourcePath": "spec/events.md",
     "pointer": "heading:Signed webhooks\r",
     "product": "Protocol Specification",
@@ -480,7 +516,7 @@
     "docUrl": "/reference/specifications/events"
   },
   {
-    "id": "spec-events-41",
+    "id": "spec-events-44",
     "sourcePath": "spec/events.md",
     "pointer": "heading:Historical APIs\r",
     "product": "Protocol Specification",
@@ -492,7 +528,7 @@
     "docUrl": "/reference/specifications/events"
   },
   {
-    "id": "spec-interoperability-42",
+    "id": "spec-interoperability-45",
     "sourcePath": "spec/interoperability.md",
     "pointer": "heading:Portable orders: import, export, and OpenOrdex\r",
     "product": "Protocol Specification",
@@ -504,7 +540,7 @@
     "docUrl": "/reference/specifications/interoperability"
   },
   {
-    "id": "spec-interoperability-43",
+    "id": "spec-interoperability-46",
     "sourcePath": "spec/interoperability.md",
     "pointer": "heading:Identity is the artifact, not the venue\r",
     "product": "Protocol Specification",
@@ -516,7 +552,7 @@
     "docUrl": "/reference/specifications/interoperability"
   },
   {
-    "id": "spec-interoperability-44",
+    "id": "spec-interoperability-47",
     "sourcePath": "spec/interoperability.md",
     "pointer": "heading:Import: `POST /api/ordex/orders/import`\r",
     "product": "Protocol Specification",
@@ -528,7 +564,7 @@
     "docUrl": "/reference/specifications/interoperability"
   },
   {
-    "id": "spec-interoperability-45",
+    "id": "spec-interoperability-48",
     "sourcePath": "spec/interoperability.md",
     "pointer": "heading:OpenOrdex events: `POST /api/ordex/orders/openordex-event`\r",
     "product": "Protocol Specification",
@@ -540,7 +576,7 @@
     "docUrl": "/reference/specifications/interoperability"
   },
   {
-    "id": "spec-interoperability-46",
+    "id": "spec-interoperability-49",
     "sourcePath": "spec/interoperability.md",
     "pointer": "heading:Export: the envelope and the artifact\r",
     "product": "Protocol Specification",
@@ -552,7 +588,7 @@
     "docUrl": "/reference/specifications/interoperability"
   },
   {
-    "id": "spec-interoperability-47",
+    "id": "spec-interoperability-50",
     "sourcePath": "spec/interoperability.md",
     "pointer": "heading:What a source may never do\r",
     "product": "Protocol Specification",
@@ -564,7 +600,7 @@
     "docUrl": "/reference/specifications/interoperability"
   },
   {
-    "id": "spec-lifecycle-48",
+    "id": "spec-lifecycle-51",
     "sourcePath": "spec/lifecycle.md",
     "pointer": "heading:Order lifecycle\r",
     "product": "Protocol Specification",
@@ -576,7 +612,7 @@
     "docUrl": "/reference/specifications/lifecycle"
   },
   {
-    "id": "spec-lifecycle-49",
+    "id": "spec-lifecycle-52",
     "sourcePath": "spec/lifecycle.md",
     "pointer": "heading:States\r",
     "product": "Protocol Specification",
@@ -588,7 +624,7 @@
     "docUrl": "/reference/specifications/lifecycle"
   },
   {
-    "id": "spec-lifecycle-50",
+    "id": "spec-lifecycle-53",
     "sourcePath": "spec/lifecycle.md",
     "pointer": "heading:Actionability\r",
     "product": "Protocol Specification",
@@ -600,7 +636,7 @@
     "docUrl": "/reference/specifications/lifecycle"
   },
   {
-    "id": "spec-lifecycle-51",
+    "id": "spec-lifecycle-54",
     "sourcePath": "spec/lifecycle.md",
     "pointer": "heading:Withdrawal is discovery, not cancellation\r",
     "product": "Protocol Specification",
@@ -612,7 +648,7 @@
     "docUrl": "/reference/specifications/lifecycle"
   },
   {
-    "id": "spec-lifecycle-52",
+    "id": "spec-lifecycle-55",
     "sourcePath": "spec/lifecycle.md",
     "pointer": "heading:The activity log\r",
     "product": "Protocol Specification",
@@ -624,7 +660,7 @@
     "docUrl": "/reference/specifications/lifecycle"
   },
   {
-    "id": "spec-offers-53",
+    "id": "spec-offers-56",
     "sourcePath": "spec/offers.md",
     "pointer": "heading:Offers v1\r",
     "product": "Protocol Specification",
@@ -636,19 +672,19 @@
     "docUrl": "/reference/specifications/offers"
   },
   {
-    "id": "spec-offers-54",
+    "id": "spec-offers-57",
     "sourcePath": "spec/offers.md",
     "pointer": "heading:The three offer kinds\r",
     "product": "Protocol Specification",
     "protocolVersion": "1.2",
     "contentType": "specification",
     "title": "Offers v1 - The three offer kinds\r",
-    "content": "| Kind | Scope | An eligible Feline is one that |\r\n| --- | --- | --- |\r\n| `ITEM` | one exact inscription | has exactly the named inscription ID. |\r\n| `COLLECTION` | a whole collection | is included in the manifest the named collection root commits to. |\r\n| `TRAIT` | one trait value | is included in that root and carries exactly the named trait name and value. |\r\n\r\nA collection or trait offer binds to one confirmed collection root. The root is\r\npart of the terms, so acceptance is provable against a fixed manifest instead\r\nof against \"whatever the collection is this week\". When the collection\r\npublishes a new root, existing offers keep binding the root they were posted\r\nwith, and a buyer who wants the new root posts new offers.",
-    "digest": "2651c4ababb2025f",
+    "content": "| Kind | Scope | An eligible Feline is one that |\r\n| --- | --- | --- |\r\n| `ITEM` | one exact inscription | has exactly the named inscription ID. |\r\n| `COLLECTION` | a whole collection | is included in the manifest the named collection root commits to. |\r\n| `TRAIT` | one trait value | is included in that root and carries exactly the named trait name and value. |\r\n\r\nA collection or trait offer binds to one confirmed collection root. The root is\r\npart of the terms, so acceptance is provable against a fixed manifest instead\r\nof against \"whatever the collection is this week\". When the collection\r\npublishes a new root, existing offers keep binding the root they were posted\r\nwith, and a buyer who wants the new root posts new offers.\r\n\r\n<!--\r\nIMPLEMENTATION-HANDOFF [OX-P05] Preparation only; functional status FAIL, repair NOT IMPLEMENTED.\r\nCoverage: OX-P-C003, OX-P-C004, OX-P-C005, OX-P-C006, OX-P-C007. Evidence: P-R14, P-R15, P-R16 in\r\nhandoff/evidence.\r\nVerified cause: Buyer script occurrence before seller index does not prove Feline delivery; recovery\r\ncomparisons accept missing locktime; terms permit height>=500000000. Leaf substring checks do not\r\nprove exact script structure/commitme",
+    "digest": "d9fb27354d1d4fde",
     "docUrl": "/reference/specifications/offers"
   },
   {
-    "id": "spec-offers-55",
+    "id": "spec-offers-58",
     "sourcePath": "spec/offers.md",
     "pointer": "heading:Offer terms\r",
     "product": "Protocol Specification",
@@ -660,7 +696,7 @@
     "docUrl": "/reference/specifications/offers"
   },
   {
-    "id": "spec-offers-56",
+    "id": "spec-offers-59",
     "sourcePath": "spec/offers.md",
     "pointer": "heading:The funded offer output\r",
     "product": "Protocol Specification",
@@ -672,7 +708,7 @@
     "docUrl": "/reference/specifications/offers"
   },
   {
-    "id": "spec-offers-57",
+    "id": "spec-offers-60",
     "sourcePath": "spec/offers.md",
     "pointer": "heading:Acceptance\r",
     "product": "Protocol Specification",
@@ -684,7 +720,7 @@
     "docUrl": "/reference/specifications/offers"
   },
   {
-    "id": "spec-offers-58",
+    "id": "spec-offers-61",
     "sourcePath": "spec/offers.md",
     "pointer": "heading:Recovery\r",
     "product": "Protocol Specification",
@@ -696,7 +732,7 @@
     "docUrl": "/reference/specifications/offers"
   },
   {
-    "id": "spec-offers-59",
+    "id": "spec-offers-62",
     "sourcePath": "spec/offers.md",
     "pointer": "heading:Offer lifecycle\r",
     "product": "Protocol Specification",
@@ -708,7 +744,7 @@
     "docUrl": "/reference/specifications/offers"
   },
   {
-    "id": "spec-offers-60",
+    "id": "spec-offers-63",
     "sourcePath": "spec/offers.md",
     "pointer": "heading:What Ordex never does\r",
     "product": "Protocol Specification",
@@ -720,7 +756,7 @@
     "docUrl": "/reference/specifications/offers"
   },
   {
-    "id": "spec-purchase-61",
+    "id": "spec-purchase-64",
     "sourcePath": "spec/purchase.md",
     "pointer": "heading:Completing a public ask\r",
     "product": "Protocol Specification",
@@ -732,7 +768,7 @@
     "docUrl": "/reference/specifications/purchase"
   },
   {
-    "id": "spec-purchase-62",
+    "id": "spec-purchase-65",
     "sourcePath": "spec/purchase.md",
     "pointer": "heading:The seller half\r",
     "product": "Protocol Specification",
@@ -744,7 +780,7 @@
     "docUrl": "/reference/specifications/purchase"
   },
   {
-    "id": "spec-purchase-63",
+    "id": "spec-purchase-66",
     "sourcePath": "spec/purchase.md",
     "pointer": "heading:Rule one: the indexes must match\r",
     "product": "Protocol Specification",
@@ -756,7 +792,7 @@
     "docUrl": "/reference/specifications/purchase"
   },
   {
-    "id": "spec-purchase-64",
+    "id": "spec-purchase-67",
     "sourcePath": "spec/purchase.md",
     "pointer": "heading:Rule two: that index cannot be zero\r",
     "product": "Protocol Specification",
@@ -768,7 +804,7 @@
     "docUrl": "/reference/specifications/purchase"
   },
   {
-    "id": "spec-purchase-65",
+    "id": "spec-purchase-68",
     "sourcePath": "spec/purchase.md",
     "pointer": "heading:The arrangement Ordex builds\r",
     "product": "Protocol Specification",
@@ -780,7 +816,7 @@
     "docUrl": "/reference/specifications/purchase"
   },
   {
-    "id": "spec-purchase-66",
+    "id": "spec-purchase-69",
     "sourcePath": "spec/purchase.md",
     "pointer": "heading:What Ordex refuses\r",
     "product": "Protocol Specification",
@@ -792,7 +828,7 @@
     "docUrl": "/reference/specifications/purchase"
   },
   {
-    "id": "spec-purchase-67",
+    "id": "spec-purchase-70",
     "sourcePath": "spec/purchase.md",
     "pointer": "heading:What Ordex never does\r",
     "product": "Protocol Specification",
@@ -804,7 +840,7 @@
     "docUrl": "/reference/specifications/purchase"
   },
   {
-    "id": "spec-purchase-68",
+    "id": "spec-purchase-71",
     "sourcePath": "spec/purchase.md",
     "pointer": "heading:A public ask can be raced\r",
     "product": "Protocol Specification",
@@ -816,7 +852,7 @@
     "docUrl": "/reference/specifications/purchase"
   },
   {
-    "id": "spec-runes-69",
+    "id": "spec-runes-72",
     "sourcePath": "spec/runes.md",
     "pointer": "heading:Not burning the runes a purchase spends\r",
     "product": "Protocol Specification",
@@ -828,7 +864,7 @@
     "docUrl": "/reference/specifications/runes"
   },
   {
-    "id": "spec-runes-70",
+    "id": "spec-runes-73",
     "sourcePath": "spec/runes.md",
     "pointer": "heading:Where a rune balance lives\r",
     "product": "Protocol Specification",
@@ -840,7 +876,7 @@
     "docUrl": "/reference/specifications/runes"
   },
   {
-    "id": "spec-runes-71",
+    "id": "spec-runes-74",
     "sourcePath": "spec/runes.md",
     "pointer": "heading:The cenotaph\r",
     "product": "Protocol Specification",
@@ -852,19 +888,19 @@
     "docUrl": "/reference/specifications/runes"
   },
   {
-    "id": "spec-runes-72",
+    "id": "spec-runes-75",
     "sourcePath": "spec/runes.md",
     "pointer": "heading:Reading the runestone\r",
     "product": "Protocol Specification",
     "protocolVersion": "1.2",
     "contentType": "specification",
     "title": "Not burning the runes a purchase spends - Reading the runestone\r",
-    "content": "Take the first output whose script starts `OP_RETURN OP_13`. Concatenate its\r\nremaining data pushes into one payload. Read the payload as a sequence of\r\nbase-128 varints, then as `(tag, value)` pairs until tag `0`, the body, after\r\nwhich the remaining integers are edicts in groups of four.\r\n\r\nWalk the script directly. A general purpose script decompiler is free to\r\nrewrite a data push into its minimal opcode form, and that rewrite is lossy\r\nhere: a one byte payload comes back as an opcode and is read as a cenotaph it\r\nis not.\r\n\r\n`OP_0` is an empty push, not an opcode.",
-    "digest": "dbd43d4c01ea5697",
+    "content": "Take the first output whose script starts `OP_RETURN OP_13`. Concatenate its\r\nremaining data pushes into one payload. Read the payload as a sequence of\r\nbase-128 varints, then as `(tag, value)` pairs until tag `0`, the body, after\r\nwhich the remaining integers are edicts in groups of four.\r\n\r\nWalk the script directly. A general purpose script decompiler is free to\r\nrewrite a data push into its minimal opcode form, and that rewrite is lossy\r\nhere: a one byte payload comes back as an opcode and is read as a cenotaph it\r\nis not.\r\n\r\n`OP_0` is an empty push, not an opcode.\r\n\r\n<!--\r\nIMPLEMENTATION-HANDOFF [OX-P04] Preparation only; functional status FAIL, repair NOT IMPLEMENTED.\r\nCoverage: OX-P-C001, OX-P-C009, OX-P-C017, OX-P-C031, OX-P-C032, OX-P-C033, OX-P-C057. Evidence:\r\nP-R05, P-R06, P-R07, P-R08 in handoff/evidence.\r\nVerified cause: A whitelist of even tags is substituted for ord field consumption;\r\nduplicate/unused/incomplete fields classified as RUNESTONE. verifyRuneBurnSafety checks only\r\ncenotaph and cannot detect valid runestones burning assets via OP_RETURN.\r\nRequired behavior: Rune parser parity and complete allocation/burn protection. Governing refs: P-S02\r\n(Ord0.29.0 comm",
+    "digest": "68fbb3568d467d46",
     "docUrl": "/reference/specifications/runes"
   },
   {
-    "id": "spec-runes-73",
+    "id": "spec-runes-76",
     "sourcePath": "spec/runes.md",
     "pointer": "heading:What makes it a cenotaph\r",
     "product": "Protocol Specification",
@@ -876,7 +912,7 @@
     "docUrl": "/reference/specifications/runes"
   },
   {
-    "id": "spec-runes-74",
+    "id": "spec-runes-77",
     "sourcePath": "spec/runes.md",
     "pointer": "heading:The rule a client must apply\r",
     "product": "Protocol Specification",
@@ -888,7 +924,7 @@
     "docUrl": "/reference/specifications/runes"
   },
   {
-    "id": "spec-runes-75",
+    "id": "spec-runes-78",
     "sourcePath": "spec/runes.md",
     "pointer": "heading:Conformance\r",
     "product": "Protocol Specification",
@@ -900,7 +936,7 @@
     "docUrl": "/reference/specifications/runes"
   },
   {
-    "id": "spec-safeops-76",
+    "id": "spec-safeops-79",
     "sourcePath": "spec/safeops.md",
     "pointer": "heading:SafeOps v1\r",
     "product": "Protocol Specification",
@@ -912,7 +948,7 @@
     "docUrl": "/reference/specifications/safeops"
   },
   {
-    "id": "spec-safeops-77",
+    "id": "spec-safeops-80",
     "sourcePath": "spec/safeops.md",
     "pointer": "heading:Who does what\r",
     "product": "Protocol Specification",
@@ -924,7 +960,7 @@
     "docUrl": "/reference/specifications/safeops"
   },
   {
-    "id": "spec-safeops-78",
+    "id": "spec-safeops-81",
     "sourcePath": "spec/safeops.md",
     "pointer": "heading:Inventory resolution\r",
     "product": "Protocol Specification",
@@ -936,19 +972,19 @@
     "docUrl": "/reference/specifications/safeops"
   },
   {
-    "id": "spec-safeops-79",
+    "id": "spec-safeops-82",
     "sourcePath": "spec/safeops.md",
     "pointer": "heading:The plan\r",
     "product": "Protocol Specification",
     "protocolVersion": "1.2",
     "contentType": "specification",
     "title": "SafeOps v1 - The plan\r",
-    "content": "A plan carries: schema and protocol version, network, operation kind, the chain checkpoint it was built against, an expiry height after that checkpoint, every selected input with its complete resolved inventory, the deterministic output map with recipient, change, and preserve roles, one asset transition per tracked asset naming its exact destination output, the fee with a permitted maximum, the signing policy with required indexes and the sighash type, human readable findings, and the digest.\r\n\r\nThe digest is SHA-256 over the sorted-key JSON of everything except the findings and the digest itself. A consumer can recompute it and must.",
-    "digest": "1153d88003d0db0b",
+    "content": "A plan carries: schema and protocol version, network, operation kind, the chain checkpoint it was built against, an expiry height after that checkpoint, every selected input with its complete resolved inventory, the deterministic output map with recipient, change, and preserve roles, one asset transition per tracked asset naming its exact destination output, the fee with a permitted maximum, the signing policy with required indexes and the sighash type, human readable findings, and the digest.\r\n\r\nThe digest is SHA-256 over the sorted-key JSON of everything except the findings and the digest itself. A consumer can recompute it and must.\r\n\r\n<!--\r\nIMPLEMENTATION-HANDOFF [OX-P01] Preparation only; functional status FAIL, repair NOT IMPLEMENTED.\r\nCoverage: OX-P-C015, OX-P-C016, OX-P-C017, OX-P-C018, OX-P-C019, OX-P-C020, OX-P-C021, OX-P-C022,\r\nOX-P-C023. Evidence: P-R01, P-R02, P-R03, P-R04 in handoff/evidence.\r\nVerified cause: SafeOps assumes every tracked asset follows input first sat; ignores inscription\r\noffsets/ranges and rune allocation. Every output is subject to 546-sat dust, including runestones.\r\nDuplicate outpoints and null signing also bypass refusal contract.\r\nRequired beha",
+    "digest": "0d2d56d91f0bae1b",
     "docUrl": "/reference/specifications/safeops"
   },
   {
-    "id": "spec-safeops-80",
+    "id": "spec-safeops-83",
     "sourcePath": "spec/safeops.md",
     "pointer": "heading:Asset safety rules\r",
     "product": "Protocol Specification",
@@ -960,7 +996,7 @@
     "docUrl": "/reference/specifications/safeops"
   },
   {
-    "id": "spec-safeops-81",
+    "id": "spec-safeops-84",
     "sourcePath": "spec/safeops.md",
     "pointer": "heading:Partitioning at scale\r",
     "product": "Protocol Specification",
@@ -972,7 +1008,7 @@
     "docUrl": "/reference/specifications/safeops"
   },
   {
-    "id": "spec-safeops-82",
+    "id": "spec-safeops-85",
     "sourcePath": "spec/safeops.md",
     "pointer": "heading:The execution shield\r",
     "product": "Protocol Specification",
@@ -984,7 +1020,7 @@
     "docUrl": "/reference/specifications/safeops"
   },
   {
-    "id": "spec-safeops-83",
+    "id": "spec-safeops-86",
     "sourcePath": "spec/safeops.md",
     "pointer": "heading:Signed results\r",
     "product": "Protocol Specification",
@@ -996,7 +1032,7 @@
     "docUrl": "/reference/specifications/safeops"
   },
   {
-    "id": "spec-safeops-84",
+    "id": "spec-safeops-87",
     "sourcePath": "spec/safeops.md",
     "pointer": "heading:RBF and CPFP\r",
     "product": "Protocol Specification",
@@ -1008,7 +1044,7 @@
     "docUrl": "/reference/specifications/safeops"
   },
   {
-    "id": "spec-safeops-85",
+    "id": "spec-safeops-88",
     "sourcePath": "spec/safeops.md",
     "pointer": "heading:Monitoring\r",
     "product": "Protocol Specification",
@@ -1020,7 +1056,7 @@
     "docUrl": "/reference/specifications/safeops"
   },
   {
-    "id": "spec-swaps-86",
+    "id": "spec-swaps-89",
     "sourcePath": "spec/swaps.md",
     "pointer": "heading:Atomic swap links and the OTC desk v1\r",
     "product": "Protocol Specification",
@@ -1032,7 +1068,7 @@
     "docUrl": "/reference/specifications/swaps"
   },
   {
-    "id": "spec-swaps-87",
+    "id": "spec-swaps-90",
     "sourcePath": "spec/swaps.md",
     "pointer": "heading:The two stage model\r",
     "product": "Protocol Specification",
@@ -1044,7 +1080,7 @@
     "docUrl": "/reference/specifications/swaps"
   },
   {
-    "id": "spec-swaps-88",
+    "id": "spec-swaps-91",
     "sourcePath": "spec/swaps.md",
     "pointer": "heading:The intent\r",
     "product": "Protocol Specification",
@@ -1056,7 +1092,7 @@
     "docUrl": "/reference/specifications/swaps"
   },
   {
-    "id": "spec-swaps-89",
+    "id": "spec-swaps-92",
     "sourcePath": "spec/swaps.md",
     "pointer": "heading:Private encrypted links\r",
     "product": "Protocol Specification",
@@ -1068,7 +1104,7 @@
     "docUrl": "/reference/specifications/swaps"
   },
   {
-    "id": "spec-swaps-90",
+    "id": "spec-swaps-93",
     "sourcePath": "spec/swaps.md",
     "pointer": "heading:The acceptance plan\r",
     "product": "Protocol Specification",
@@ -1076,11 +1112,11 @@
     "contentType": "specification",
     "title": "Atomic swap links and the OTC desk v1 - The acceptance plan\r",
     "content": "The builder revalidates every maker outpoint, resolves the taker's selection, orders inputs for sat-flow safety, and produces one immutable unsigned-transaction digest. The verifier proves:\r\n\r\n1. Both parties contribute inputs and outputs; a one-sided transaction cannot settle (`ATOMICITY_IMPOSSIBLE`).\r\n2. Every input commits to every output with SIGHASH_ALL (`UNCLOSED_SIGHASH`). With that closure, a transaction carrying only one party's signatures cannot confirm, so refusing the final signature can stall a swap but can never take the other party's asset.\r\n3. Every maker-committed outpoint is spent exactly once, by the maker side (`MAKER_OUTPOINT_MISSING`, `MAKER_OUTPOINT_REASSIGNED`, `INPUT_DUPLICATED`), and no uncommitted maker input appears (`UNEXPECTED_MAKER_INPUT`).\r\n4. Every required criterion is paid to the maker receive script at no less than its minimum (`CONSIDERATION_SHORTFALL`).\r\n5. Fee conservation holds, the maker and taker contributions sum to it, and the maker share stays inside the intent budget (`FEE_CHANGED`, `FEE_SPLIT_INVALID`, `FEE_BUDGET_EXCEEDED`).\r\n6. Every given asset and every taker asset is delivered through an explicit transition to the output that rece",
-    "digest": "d247a2c2632339cf",
+    "digest": "4e3f32f278519e1c",
     "docUrl": "/reference/specifications/swaps"
   },
   {
-    "id": "spec-swaps-91",
+    "id": "spec-swaps-94",
     "sourcePath": "spec/swaps.md",
     "pointer": "heading:Lifecycle\r",
     "product": "Protocol Specification",
@@ -1092,7 +1128,7 @@
     "docUrl": "/reference/specifications/swaps"
   },
   {
-    "id": "spec-swaps-92",
+    "id": "spec-swaps-95",
     "sourcePath": "spec/swaps.md",
     "pointer": "heading:Settlement cohort\r",
     "product": "Protocol Specification",
@@ -1104,7 +1140,7 @@
     "docUrl": "/reference/specifications/swaps"
   },
   {
-    "id": "spec-swaps-93",
+    "id": "spec-swaps-96",
     "sourcePath": "spec/swaps.md",
     "pointer": "heading:Adversarial coverage\r",
     "product": "Protocol Specification",
@@ -2050,6 +2086,18 @@
     "content": "POST /api/ordex/signing/verify (verifySigningArtifacts): Verify a manifest and signed result pair without a session. The same checks the session flow runs, usable directly by SDK consumers and the reference conformance tests.. Evidence level: Protocol verification. Tag: signing.",
     "digest": "b6a2f2340c613e60",
     "docUrl": "/reference/api/#verifySigningArtifacts"
+  },
+  {
+    "id": "api-op-getOperation",
+    "sourcePath": "spec/openapi.json",
+    "pointer": "/paths~1api~1ordex~1operations~1{operationId}/get",
+    "product": "status",
+    "protocolVersion": "1.2",
+    "contentType": "api-operation",
+    "title": "GET /api/ordex/operations/{operationId} (getOperation)",
+    "content": "GET /api/ordex/operations/{operationId} (getOperation): The receipt a mutation committed under an idempotency key. Lets a caller that lost a reply learn what the gateway committed under the operation id it sent, instead of repeating the mutation. Unknown ids answer 404 so a lost request is distinguishable from a lost reply.. Evidence level: Deterministic example. Tag: status.",
+    "digest": "4b296daa1ab81931",
+    "docUrl": "/reference/api/#getOperation"
   },
   {
     "id": "ref-ACCOUNT_INVALID",

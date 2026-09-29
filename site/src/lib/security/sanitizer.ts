@@ -51,6 +51,12 @@ const DERIVATION_PATH_REGEX = /\bm\/(?:44|49|84|86)'\/\d+'\/\d+'\/\d+\/\d+\b/g;
  */
 export function detectSecrets(text: string): SecretDetectionResult {
   const detectedSecrets: Array<{ type: string; description: string; location?: string }> = [];
+  // These patterns carry the g flag, so test() keeps lastIndex between calls; reset them so a
+  // second scan never starts midway through the text and misses a key.
+  PEM_PRIVATE_KEY_REGEX.lastIndex = 0;
+  XPRV_REGEX.lastIndex = 0;
+  WIF_REGEX.lastIndex = 0;
+  BEARER_TOKEN_REGEX.lastIndex = 0;
 
   if (PEM_PRIVATE_KEY_REGEX.test(text)) {
     detectedSecrets.push({
