@@ -113,6 +113,9 @@ test('a page answered for a malformed cursor, a 200 for a missing order and nume
   const s = byId(await run(g.fetchImpl));
   assert.equal(s['malformed-cursor'], 'failed');
   assert.deepEqual(nonDecimalAmounts({ a: { priceSats: 100 }, b: [{ feeSats: '1' }, { valueSats: '01' }] }), ['$.a.priceSats', '$.b[1].valueSats']);
+  // A list of amounts (OrderSummary.inspection.outputValuesSats) is checked item by item.
+  assert.deepEqual(nonDecimalAmounts({ inspection: { outputValuesSats: ['45000', '330'] } }), []);
+  assert.deepEqual(nonDecimalAmounts({ inspection: { outputValuesSats: ['45000', 330] } }), ['$.inspection.outputValuesSats[1]']);
 });
 
 test('inconsistent paging is caught', async () => {
