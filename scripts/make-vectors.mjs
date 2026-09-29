@@ -6,14 +6,32 @@
 
 import { writeFileSync } from 'node:fs';
 
-import { bytesToHex, serializeTransaction } from '../verifier/bitcoin-tx.js';
+import { bytesToHex, hexToBytes, serializeTransaction } from '../verifier/bitcoin-tx.js';
+import {
+  OFFER_ACCEPTANCE_SCHEMA,
+  OFFER_RECOVERY_SCHEMA,
+  OFFER_TERMS_SCHEMA,
+  buildTraitMemberProof,
+  offerCriteriaHash,
+  offerOutputTree,
+  offerTermsHash,
+} from '../verifier/offers.js';
+import { publicKeyXFromScalar } from '../verifier/secp256k1.js';
 import {
   SAFEOPS_PLAN_SCHEMA,
   SAFEOPS_SIGNED_RESULT_SCHEMA,
   safeopsPlanDigest,
   safeopsUnsignedTransaction,
 } from '../verifier/safeops.js';
-import { encodePsbt, p2trKeyPath, p2wpkhScript, signP2wpkh, signTaprootKeyPath, testKey } from './vector-signer.mjs';
+import {
+  encodePsbt,
+  p2trKeyPath,
+  p2wpkhScript,
+  signP2wpkh,
+  signTaprootKeyPath,
+  signTaprootScriptPath,
+  testKey,
+} from './vector-signer.mjs';
 import { SWAP_INTENT_SCHEMA, SWAP_ACCEPTANCE_SCHEMA, swapAcceptanceDigest, swapIntentDigest } from '../verifier/swaps.js';
 import { signWebhookDelivery } from '../verifier/events.js';
 import {
@@ -1997,6 +2015,422 @@ const runeAllocationCases = [
   runeCase('contradictory-count-and-balances', 'An input claims no runes while listing one.', [RUNE_SPEND_1], [{ indexed: true, runes: 0, balances: [{ runeId: '840000:1', amount: '5' }] }], refused('NONE', 'MALFORMED_RUNE_BALANCE')),
 ];
 
+// ---------------------------------------------------------------------------
+// OX-P05: funded offer fixtures. The funded output commits to the exact
+// acceptance and recovery leaves, and every signature is made with test keys:
+// both policy signers, the seller, and the buyer recovery key.
+
+const OFFER_POLICY_A = testKey('offer-policy-a');
+const OFFER_POLICY_B = testKey('offer-policy-b');
+const OFFER_RECOVERY_KEY = testKey('offer-buyer-recovery');
+const OFFER_SELLER_KEY = testKey('offer-seller');
+const xOnlyHex = (scalar) => bytesToHex(publicKeyXFromScalar(scalar).x);
+const OFFER_POLICY_KEYS = [xOnlyHex(OFFER_POLICY_A), xOnlyHex(OFFER_POLICY_B)];
+const OFFER_SELLER_TR = p2trKeyPath(OFFER_SELLER_KEY).scriptHex;
+const OFFER_SELLER_PAY = p2wpkhScript(testKey('offer-seller-pay'));
+const OFFER_BUYER_RECEIVE = p2trKeyPath(testKey('offer-buyer')).scriptHex;
+const OFFER_STRANGER = '0014' + '9'.repeat(40);
+const OFFER_COLLECTION = 'forked-felines';
+const felineId = (n) => `${'f'.repeat(63)}${n}i0`;
+const OFFER_MEMBERS = [1, 2, 3, 4, 5].map(felineId);
+const OFFER_ROOT = membershipRoot(OFFER_COLLECTION, OFFER_MEMBERS);
+const OFFER_FELINE = OFFER_MEMBERS[1];
+const OFFER_OTHER_INSCRIPTION = `${'c'.repeat(64)}i3`;
+const OFFER_TRAIT_MEMBERS = [OFFER_MEMBERS[1], OFFER_MEMBERS[3]];
+const OFFER_FUNDED_OUTPOINT = { txid: '1'.repeat(64), vout: 1 };
+const OFFER_FELINE_OUTPOINT = { txid: '2'.repeat(64), vout: 0 };
+const OFFER_PADDING_OUTPOINT = { txid: '3'.repeat(64), vout: 0 };
+const OFFER_HEIGHT = 900000;
+const OFFER_EXPIRY = 900100;
+
+function offerTerms(overrides = {}) {
+  const terms = {
+    schema: OFFER_TERMS_SCHEMA,
+    protocolVersion: '1.1',
+    network: 'signet',
+    offerKind: 'ITEM',
+    collectionId: OFFER_COLLECTION,
+    collectionRoot: OFFER_ROOT,
+    itemInscriptionId: OFFER_FELINE,
+    buyerReceiveScriptHex: OFFER_BUYER_RECEIVE,
+    priceSats: '90000',
+    maxNetworkFeeSats: '2000',
+    expiryHeight: OFFER_EXPIRY,
+    buyerRecoveryKeyHex: xOnlyHex(OFFER_RECOVERY_KEY),
+    ...overrides,
+  };
+  for (const key of Object.keys(terms)) if (terms[key] === undefined) delete terms[key];
+  if (!('criteriaHash' in overrides)) terms.criteriaHash = offerCriteriaHash(terms, OFFER_TRAIT_MEMBERS);
+  return terms;
+}
+const traitTerms = (overrides = {}) =>
+  offerTerms({ offerKind: 'TRAIT', itemInscriptionId: undefined, traitName: 'eyes', traitValue: 'laser', ...overrides });
+
+function fundedOffer(terms, { policyKeysHex = OFFER_POLICY_KEYS, valueSats = '93000', currentHeight = OFFER_HEIGHT, treeKeys } = {}) {
+  const tree = offerOutputTree(terms, treeKeys || policyKeysHex);
+  return {
+    terms,
+    policyKeysHex,
+    fundedOutput: { outpoint: OFFER_FUNDED_OUTPOINT, valueSats, scriptPubKeyHex: tree.scriptPubKeyHex },
+    currentHeight,
+  };
+}
+
+const offerOut = (scriptHex, valueSats) => ({ scriptHex, valueSats });
+const felineInput = (valueSats = '546', inscriptions = [{ inscriptionId: OFFER_FELINE, offset: '0' }], extra = {}) => ({
+  outpoint: OFFER_FELINE_OUTPOINT,
+  party: 'SELLER',
+  valueSats,
+  scriptPubKeyHex: OFFER_SELLER_TR,
+  inventory: { examined: true, inscriptions, ...extra },
+  key: OFFER_SELLER_KEY,
+});
+const fundedInput = (offer) => ({
+  outpoint: offer.fundedOutput.outpoint,
+  party: 'OFFER',
+  valueSats: offer.fundedOutput.valueSats,
+  scriptPubKeyHex: offer.fundedOutput.scriptPubKeyHex,
+  inventory: { examined: true },
+});
+const standardOutputs = () => [
+  offerOut(OFFER_BUYER_RECEIVE, '546'),
+  offerOut(OFFER_SELLER_PAY, '90000'),
+  offerOut(OFFER_BUYER_RECEIVE, '1500'),
+];
+
+function offerEligibility(terms, inscriptionId) {
+  return {
+    membershipProof: buildMembershipProof(OFFER_COLLECTION, OFFER_MEMBERS, inscriptionId) || [],
+    traitProof: terms.offerKind === 'TRAIT' ? buildTraitMemberProof(terms, OFFER_TRAIT_MEMBERS, inscriptionId) || [] : undefined,
+  };
+}
+
+function offerAcceptance(offer, options = {}) {
+  const {
+    inputs = [felineInput(), fundedInput(offer)],
+    outputs = standardOutputs(),
+    lockTime = OFFER_HEIGHT,
+    felineInscription = OFFER_FELINE,
+    seller = { paymentScriptHex: OFFER_SELLER_PAY, returnScriptHex: OFFER_SELLER_TR },
+    eligibility,
+    sign = {},
+    overrides = {},
+  } = options;
+  const tx = {
+    version: 2,
+    lockTime,
+    inputs: inputs.map((input) => ({ txid: input.outpoint.txid, vout: input.outpoint.vout, scriptSigHex: '', sequence: input.sequence ?? 0xfffffffd, witness: [] })),
+    outputs,
+  };
+  const prevouts = inputs.map((input) => ({ valueSats: input.valueSats, scriptHex: input.scriptPubKeyHex }));
+  const tree = offerOutputTree(offer.terms, offer.policyKeysHex);
+  inputs.forEach((input, i) => {
+    if (input.party === 'OFFER') {
+      const leafHash = hexToBytes(tree.acceptanceLeafHashHex);
+      const hashType = sign.policyHashType ?? 0x00;
+      const sigA = sign.omitPolicyA ? '' : signTaprootScriptPath(tx, i, prevouts, sign.policyKeyA ?? OFFER_POLICY_A, leafHash, hashType);
+      const sigB = sign.omitPolicyB ? '' : signTaprootScriptPath(tx, i, prevouts, sign.policyKeyB ?? OFFER_POLICY_B, leafHash, hashType);
+      tx.inputs[i].witness = [sigB, sigA, sign.leafHex ?? tree.acceptanceLeafHex, sign.controlBlockHex ?? tree.acceptanceControlBlockHex];
+    } else if (input.key !== undefined && !sign.unsignedSeller) {
+      tx.inputs[i].witness = [signTaprootKeyPath(tx, i, prevouts, input.key, sign.sellerHashType ?? 0x00)];
+    }
+  });
+  return {
+    schema: OFFER_ACCEPTANCE_SCHEMA,
+    network: offer.terms.network,
+    seller,
+    feline: { inscriptionId: felineInscription, outpoint: OFFER_FELINE_OUTPOINT },
+    eligibility: eligibility || offerEligibility(offer.terms, felineInscription),
+    inputs: inputs.map(({ outpoint, party, valueSats, scriptPubKeyHex, inventory }) => ({ outpoint, party, valueSats, scriptPubKeyHex, inventory })),
+    transactionHex: bytesToHex(serializeTransaction(tx)),
+    ...overrides,
+  };
+}
+
+const acceptanceCase = (name, offer, acceptance, expected) => ({ name, kind: 'acceptance', acceptance, offer, expected });
+const acceptedAs = (offer, extra) => ({
+  ok: true,
+  offerTermsHash: offerTermsHash(offer.terms),
+  offerInputIndex: 1,
+  felineInputIndex: 0,
+  buyerAssetOutputIndex: 0,
+  sellerPaymentIndex: 1,
+  feeSats: '1500',
+  ...extra,
+});
+
+const itemOffer = fundedOffer(offerTerms());
+const collectionOffer = fundedOffer(offerTerms({ offerKind: 'COLLECTION', itemInscriptionId: undefined }));
+const traitOffer = fundedOffer(traitTerms());
+const multiAssetInputs = (offer) => [
+  felineInput('10000', [
+    { inscriptionId: OFFER_OTHER_INSCRIPTION, offset: '0' },
+    { inscriptionId: OFFER_FELINE, offset: '5000' },
+  ]),
+  fundedInput(offer),
+];
+const multiAssetOutputs = () => [
+  offerOut(OFFER_SELLER_TR, '5000'),
+  offerOut(OFFER_BUYER_RECEIVE, '5000'),
+  offerOut(OFFER_SELLER_PAY, '90000'),
+  offerOut(OFFER_BUYER_RECEIVE, '1500'),
+];
+const flippedParity = (hex) => (hex.startsWith('c0') ? 'c1' : 'c0') + hex.slice(2);
+const legacyAcceptance = {
+  inputs: [{ txid: OFFER_FELINE_OUTPOINT.txid, vout: 0, valueSats: '546' }],
+  outputs: [{ scriptHex: OFFER_BUYER_RECEIVE, valueSats: '546' }],
+  policySignatureCount: 2,
+  acceptanceLeafScriptHex: offerOutputTree(offerTerms(), OFFER_POLICY_KEYS).acceptanceLeafHex,
+};
+
+const withAcceptance = (offer, options) => offerAcceptance(offer, options);
+const offerAcceptanceCases = [
+  acceptanceCase('a valid ITEM acceptance settles through both policy signers', itemOffer, withAcceptance(itemOffer), acceptedAs(itemOffer)),
+  acceptanceCase('a valid COLLECTION acceptance preserves the seller other inscription', collectionOffer, withAcceptance(collectionOffer, { inputs: multiAssetInputs(collectionOffer), outputs: multiAssetOutputs() }), acceptedAs(collectionOffer, { buyerAssetOutputIndex: 1, sellerPaymentIndex: 2 })),
+  acceptanceCase('a valid TRAIT acceptance proves the Feline against the committed trait set', traitOffer, withAcceptance(traitOffer), acceptedAs(traitOffer)),
+  acceptanceCase('policy signatures with SIGHASH_ALL pass', itemOffer, withAcceptance(itemOffer, { sign: { policyHashType: 0x01 } }), acceptedAs(itemOffer)),
+  acceptanceCase('acceptance at the last height before expiry passes', fundedOffer(offerTerms(), { currentHeight: OFFER_EXPIRY - 1 }), withAcceptance(fundedOffer(offerTerms(), { currentHeight: OFFER_EXPIRY - 1 })), acceptedAs(itemOffer)),
+  acceptanceCase(
+    'seller runes stay with the seller when a seller output comes first',
+    itemOffer,
+    withAcceptance(itemOffer, {
+      inputs: [felineInput('1092', [{ inscriptionId: OFFER_FELINE, offset: '546' }], { runeAllocations: [{ runeId: '840000:1', amount: '500' }] }), fundedInput(itemOffer)],
+      outputs: [offerOut(OFFER_SELLER_TR, '546'), offerOut(OFFER_BUYER_RECEIVE, '546'), offerOut(OFFER_SELLER_PAY, '90000'), offerOut(OFFER_BUYER_RECEIVE, '1500')],
+    }),
+    acceptedAs(itemOffer, { buyerAssetOutputIndex: 1, sellerPaymentIndex: 2 }),
+  ),
+  acceptanceCase(
+    'a buyer script ahead of the payment that does not receive the Feline is refused',
+    itemOffer,
+    withAcceptance(itemOffer, {
+      inputs: [felineInput('1092'), fundedInput(itemOffer)],
+      outputs: [offerOut(OFFER_SELLER_TR, '546'), offerOut(OFFER_BUYER_RECEIVE, '546'), offerOut(OFFER_SELLER_PAY, '90000'), offerOut(OFFER_BUYER_RECEIVE, '1500')],
+    }),
+    { ok: false, code: 'FELINE_NOT_DELIVERED' },
+  ),
+  acceptanceCase('one policy signature is not an acceptance', itemOffer, withAcceptance(itemOffer, { sign: { omitPolicyB: true } }), { ok: false, code: 'POLICY_SIGNATURES_MISSING' }),
+  acceptanceCase('one signer signing for both policy keys is refused', itemOffer, withAcceptance(itemOffer, { sign: { policyKeyB: OFFER_POLICY_A } }), { ok: false, code: 'POLICY_SIGNATURE_INVALID' }),
+  acceptanceCase('a policy signature with SIGHASH_SINGLE is refused', itemOffer, withAcceptance(itemOffer, { sign: { policyHashType: 0x03 } }), { ok: false, code: 'UNCLOSED_SIGHASH' }),
+  acceptanceCase(
+    'a leaf that commits to different terms is refused',
+    itemOffer,
+    withAcceptance(itemOffer, { sign: { leafHex: offerOutputTree(offerTerms({ priceSats: '95000' }), OFFER_POLICY_KEYS).acceptanceLeafHex } }),
+    { ok: false, code: 'ACCEPTANCE_LEAF_MISMATCH' },
+  ),
+  acceptanceCase(
+    'a control block that does not commit the leaf is refused',
+    itemOffer,
+    withAcceptance(itemOffer, { sign: { controlBlockHex: flippedParity(offerOutputTree(offerTerms(), OFFER_POLICY_KEYS).acceptanceControlBlockHex) } }),
+    { ok: false, code: 'CONTROL_BLOCK_MISMATCH' },
+  ),
+  acceptanceCase('acceptance at the expiry height is refused', fundedOffer(offerTerms(), { currentHeight: OFFER_EXPIRY }), withAcceptance(itemOffer), { ok: false, code: 'OFFER_EXPIRED' }),
+  acceptanceCase(
+    'a changed seller payment is refused',
+    itemOffer,
+    withAcceptance(itemOffer, { outputs: [offerOut(OFFER_BUYER_RECEIVE, '546'), offerOut(OFFER_SELLER_PAY, '89999'), offerOut(OFFER_BUYER_RECEIVE, '1501')] }),
+    { ok: false, code: 'SELLER_VALUE_MISMATCH' },
+  ),
+  acceptanceCase(
+    'a fee over the committed maximum is refused',
+    itemOffer,
+    withAcceptance(itemOffer, { outputs: [offerOut(OFFER_BUYER_RECEIVE, '546'), offerOut(OFFER_SELLER_PAY, '90000')] }),
+    { ok: false, code: 'FEE_OVER_MAXIMUM' },
+  ),
+  acceptanceCase(
+    'a buyer padding input is refused because the buyer signs nothing at acceptance',
+    itemOffer,
+    withAcceptance(itemOffer, {
+      inputs: [
+        { outpoint: OFFER_PADDING_OUTPOINT, party: 'BUYER', valueSats: '1000', scriptPubKeyHex: OFFER_BUYER_RECEIVE, inventory: { examined: true } },
+        felineInput(),
+        fundedInput(itemOffer),
+      ],
+      outputs: [offerOut(OFFER_BUYER_RECEIVE, '1000'), offerOut(OFFER_BUYER_RECEIVE, '546'), offerOut(OFFER_SELLER_PAY, '90000'), offerOut(OFFER_BUYER_RECEIVE, '1500')],
+    }),
+    { ok: false, code: 'BUYER_INPUT_UNAUTHORIZED' },
+  ),
+  acceptanceCase(
+    'the funded output ahead of the Feline is refused',
+    itemOffer,
+    withAcceptance(itemOffer, { inputs: [fundedInput(itemOffer), felineInput()] }),
+    { ok: false, code: 'OFFER_INPUT_POSITION' },
+  ),
+  acceptanceCase('an unsigned seller input is refused, never assumed', itemOffer, withAcceptance(itemOffer, { sign: { unsignedSeller: true } }), { ok: false, code: 'SIGNATURE_MISSING' }),
+  acceptanceCase('a seller SINGLE|ANYONECANPAY signature is refused', itemOffer, withAcceptance(itemOffer, { sign: { sellerHashType: 0x83 } }), { ok: false, code: 'UNCLOSED_SIGHASH' }),
+  acceptanceCase(
+    'a seller signature by another key is refused',
+    itemOffer,
+    withAcceptance(itemOffer, { inputs: [{ ...felineInput(), key: testKey('offer-stranger') }, fundedInput(itemOffer)] }),
+    { ok: false, code: 'SIGNATURE_INVALID' },
+  ),
+  acceptanceCase(
+    'an ITEM offer refuses a different Feline',
+    itemOffer,
+    withAcceptance(itemOffer, { felineInscription: OFFER_MEMBERS[2], inputs: [felineInput('546', [{ inscriptionId: OFFER_MEMBERS[2], offset: '0' }]), fundedInput(itemOffer)] }),
+    { ok: false, code: 'SCOPE_MISMATCH' },
+  ),
+  acceptanceCase(
+    'a COLLECTION offer refuses a Feline outside its root',
+    fundedOffer(offerTerms({ offerKind: 'COLLECTION', itemInscriptionId: undefined, collectionRoot: membershipRoot(OFFER_COLLECTION, OFFER_MEMBERS.slice(2)) })),
+    withAcceptance(fundedOffer(offerTerms({ offerKind: 'COLLECTION', itemInscriptionId: undefined, collectionRoot: membershipRoot(OFFER_COLLECTION, OFFER_MEMBERS.slice(2)) }))),
+    { ok: false, code: 'COLLECTION_MEMBERSHIP_NOT_PROVEN' },
+  ),
+  acceptanceCase(
+    'a TRAIT offer refuses a member without the trait',
+    traitOffer,
+    withAcceptance(traitOffer, {
+      felineInscription: OFFER_MEMBERS[2],
+      inputs: [felineInput('546', [{ inscriptionId: OFFER_MEMBERS[2], offset: '0' }]), fundedInput(traitOffer)],
+      eligibility: {
+        membershipProof: buildMembershipProof(OFFER_COLLECTION, OFFER_MEMBERS, OFFER_MEMBERS[2]),
+        traitProof: buildTraitMemberProof(traitTerms(), OFFER_TRAIT_MEMBERS, OFFER_MEMBERS[1]),
+      },
+    }),
+    { ok: false, code: 'TRAIT_NOT_PROVEN' },
+  ),
+  acceptanceCase(
+    'another inscription travelling with the Feline to the buyer is refused',
+    itemOffer,
+    withAcceptance(itemOffer, {
+      inputs: [felineInput('546', [{ inscriptionId: OFFER_FELINE, offset: '0' }, { inscriptionId: OFFER_OTHER_INSCRIPTION, offset: '300' }]), fundedInput(itemOffer)],
+    }),
+    { ok: false, code: 'ASSET_MISDIRECTED' },
+  ),
+  acceptanceCase(
+    'seller runes that would follow the Feline to the buyer are refused',
+    itemOffer,
+    withAcceptance(itemOffer, { inputs: [felineInput('546', undefined, { runeAllocations: [{ runeId: '840000:1', amount: '500' }] }), fundedInput(itemOffer)] }),
+    { ok: false, code: 'ASSET_MISDIRECTED' },
+  ),
+  acceptanceCase(
+    'policy keys in another order are a different funded output',
+    { ...itemOffer, policyKeysHex: [OFFER_POLICY_KEYS[1], OFFER_POLICY_KEYS[0]] },
+    withAcceptance(itemOffer),
+    { ok: false, code: 'OFFER_OUTPUT_MISMATCH' },
+  ),
+  acceptanceCase(
+    'one key named for both policy signers is refused',
+    { ...itemOffer, policyKeysHex: [OFFER_POLICY_KEYS[0], OFFER_POLICY_KEYS[0]] },
+    withAcceptance(itemOffer),
+    { ok: false, code: 'POLICY_KEYS_INVALID' },
+  ),
+  acceptanceCase('an acceptance for another network is refused', itemOffer, withAcceptance(itemOffer, { overrides: { network: 'mainnet' } }), { ok: false, code: 'NETWORK_MISMATCH' }),
+  acceptanceCase('a locktime above the current height is refused', itemOffer, withAcceptance(itemOffer, { lockTime: OFFER_HEIGHT + 1 }), { ok: false, code: 'LOCKTIME_INVALID' }),
+  acceptanceCase(
+    'a relative timelock on a seller input is refused',
+    itemOffer,
+    withAcceptance(itemOffer, { inputs: [{ ...felineInput(), sequence: 10 }, fundedInput(itemOffer)] }),
+    { ok: false, code: 'SEQUENCE_INVALID' },
+  ),
+  acceptanceCase(
+    'an output to a third party is refused',
+    itemOffer,
+    withAcceptance(itemOffer, { outputs: [offerOut(OFFER_BUYER_RECEIVE, '546'), offerOut(OFFER_SELLER_PAY, '90000'), offerOut(OFFER_BUYER_RECEIVE, '500'), offerOut(OFFER_STRANGER, '1000')] }),
+    { ok: false, code: 'OUTPUT_UNDESCRIBED' },
+  ),
+  acceptanceCase(
+    'asset outputs that take offer sats are refused',
+    itemOffer,
+    withAcceptance(itemOffer, { outputs: [offerOut(OFFER_BUYER_RECEIVE, '600'), offerOut(OFFER_SELLER_PAY, '90000'), offerOut(OFFER_BUYER_RECEIVE, '1446')] }),
+    { ok: false, code: 'ASSET_OUTPUTS_UNBALANCED' },
+  ),
+  acceptanceCase(
+    'a Feline the authorities do not report on the named outpoint is refused',
+    itemOffer,
+    withAcceptance(itemOffer, { inputs: [felineInput('546', []), fundedInput(itemOffer)] }),
+    { ok: false, code: 'FELINE_NOT_HELD' },
+  ),
+  acceptanceCase('the unversioned v1 acceptance shape is refused', itemOffer, legacyAcceptance, { ok: false, code: 'SCHEMA_UNSUPPORTED' }),
+];
+
+function offerRecovery(offer, options = {}) {
+  const {
+    lockTime = OFFER_EXPIRY,
+    sequence = 0xfffffffe,
+    outputs = [offerOut(OFFER_BUYER_RECEIVE, '92000')],
+    extraInputs = [],
+    key = OFFER_RECOVERY_KEY,
+    hashType = 0x00,
+    leafHex,
+    controlBlockHex,
+    unsigned = false,
+    overrides = {},
+  } = options;
+  const tree = offerOutputTree(offer.terms, offer.policyKeysHex);
+  const tx = {
+    version: 2,
+    lockTime,
+    inputs: [offer.fundedOutput.outpoint, ...extraInputs.map((e) => e.outpoint)].map((o) => ({ txid: o.txid, vout: o.vout, scriptSigHex: '', sequence, witness: [] })),
+    outputs,
+  };
+  const prevouts = [{ valueSats: offer.fundedOutput.valueSats, scriptHex: offer.fundedOutput.scriptPubKeyHex }, ...extraInputs.map((e) => ({ valueSats: e.valueSats, scriptHex: e.scriptPubKeyHex }))];
+  if (!unsigned) {
+    const sig = signTaprootScriptPath(tx, 0, prevouts, key, hexToBytes(tree.recoveryLeafHashHex), hashType);
+    tx.inputs[0].witness = [sig, leafHex ?? tree.recoveryLeafHex, controlBlockHex ?? tree.recoveryControlBlockHex];
+  }
+  return { schema: OFFER_RECOVERY_SCHEMA, transactionHex: bytesToHex(serializeTransaction(tx)), ...overrides };
+}
+
+const recoveryCase = (name, recovery, expected, offer = itemOffer) => ({ name, kind: 'recovery', recovery, offer, expected });
+const offerTree = offerOutputTree(offerTerms(), OFFER_POLICY_KEYS);
+const offerRecoveryCases = [
+  recoveryCase('a valid recovery at the expiry height passes', offerRecovery(itemOffer), { ok: true, feeSats: '1000' }),
+  recoveryCase('a recovery signed with SIGHASH_ALL passes', offerRecovery(itemOffer, { hashType: 0x01 }), { ok: true, feeSats: '1000' }),
+  recoveryCase('a recovery with no locktime is refused', offerRecovery(itemOffer, { lockTime: 0 }), { ok: false, code: 'RECOVERY_BEFORE_EXPIRY' }),
+  recoveryCase('a recovery one block before expiry is refused', offerRecovery(itemOffer, { lockTime: OFFER_EXPIRY - 1 }), { ok: false, code: 'RECOVERY_BEFORE_EXPIRY' }),
+  recoveryCase('a timestamp locktime is refused', offerRecovery(itemOffer, { lockTime: 500000000 }), { ok: false, code: 'LOCKTIME_INVALID' }),
+  recoveryCase('a final sequence is refused because it disables the locktime', offerRecovery(itemOffer, { sequence: 0xffffffff }), { ok: false, code: 'SEQUENCE_FINAL' }),
+  recoveryCase('a recovery paying elsewhere is refused', offerRecovery(itemOffer, { outputs: [offerOut(OFFER_STRANGER, '92000')] }), { ok: false, code: 'RECOVERY_OUTPUT_WRONG' }),
+  recoveryCase(
+    'key and CHECKLOCKTIMEVERIFY bytes inside pushed data are not a recovery leaf',
+    offerRecovery(itemOffer, { leafHex: `24${xOnlyHex(OFFER_RECOVERY_KEY)}b17520ac` }),
+    { ok: false, code: 'RECOVERY_LEAF_MISMATCH' },
+  ),
+  recoveryCase('a control block that does not commit the leaf is refused', offerRecovery(itemOffer, { controlBlockHex: flippedParity(offerTree.recoveryControlBlockHex) }), { ok: false, code: 'CONTROL_BLOCK_MISMATCH' }),
+  recoveryCase('a policy key cannot sign the recovery', offerRecovery(itemOffer, { key: OFFER_POLICY_A }), { ok: false, code: 'SIGNATURE_INVALID' }),
+  recoveryCase('an unsigned recovery is refused', offerRecovery(itemOffer, { unsigned: true }), { ok: false, code: 'SIGNATURE_MISSING' }),
+  recoveryCase('a SIGHASH_NONE recovery is refused', offerRecovery(itemOffer, { hashType: 0x02 }), { ok: false, code: 'UNCLOSED_SIGHASH' }),
+  recoveryCase(
+    'a recovery spending another input too is refused',
+    offerRecovery(itemOffer, { extraInputs: [{ outpoint: OFFER_PADDING_OUTPOINT, valueSats: '1000', scriptPubKeyHex: OFFER_BUYER_RECEIVE }] }),
+    { ok: false, code: 'RECOVERY_INPUTS_INVALID' },
+  ),
+  recoveryCase(
+    'the unversioned v1 recovery shape is refused',
+    { inputs: [{ ...OFFER_FUNDED_OUTPOINT, valueSats: '93000', sequence: 0xfffffffd }], outputs: [offerOut(OFFER_BUYER_RECEIVE, '92000')], recoveryLeafScriptHex: offerTree.recoveryLeafHex },
+    { ok: false, code: 'SCHEMA_UNSUPPORTED' },
+  ),
+];
+
+const OFFER_BASE_TERMS = offerTerms();
+const termsCase = (name, terms, expected) => ({ name, kind: 'terms', terms, expected });
+const termsRefused = (code) => ({ ok: false, code });
+const termsAccepted = (terms) => ({ ok: true, offerTermsHash: offerTermsHash(terms) });
+const offerTermsCases = [
+  termsCase('a valid ITEM offer verifies and carries its hash', OFFER_BASE_TERMS, termsAccepted(OFFER_BASE_TERMS)),
+  termsCase('a changed price changes the hash', offerTerms({ priceSats: '95000' }), termsAccepted(offerTerms({ priceSats: '95000' }))),
+  termsCase('a valid COLLECTION offer verifies', collectionOffer.terms, termsAccepted(collectionOffer.terms)),
+  termsCase('a valid TRAIT offer verifies', traitOffer.terms, termsAccepted(traitOffer.terms)),
+  termsCase('an unknown field is refused', { ...OFFER_BASE_TERMS, buyerNote: 'hi' }, termsRefused('MALFORMED_TERMS')),
+  termsCase('a wrong schema is refused', offerTerms({ schema: 'ordex.offer-terms/v2' }), termsRefused('TERMS_SCHEMA_UNSUPPORTED')),
+  termsCase('protocol 1.0 terms are refused', offerTerms({ protocolVersion: '1.0' }), termsRefused('TERMS_PROTOCOL_UNSUPPORTED')),
+  termsCase('an ITEM offer without an inscription is refused', offerTerms({ itemInscriptionId: undefined }), termsRefused('TERMS_SCOPE_FIELDS')),
+  termsCase('a TRAIT offer without a value is refused', traitTerms({ traitValue: undefined }), termsRefused('TERMS_SCOPE_FIELDS')),
+  termsCase('a COLLECTION offer must not scope a trait', offerTerms({ offerKind: 'COLLECTION', itemInscriptionId: undefined, traitName: 'eyes' }), termsRefused('TERMS_SCOPE_FIELDS')),
+  termsCase('a malformed root is refused', offerTerms({ collectionRoot: 'ZZ' }), termsRefused('TERMS_ROOT_INVALID')),
+  termsCase('a criteria hash that is not the hash of the stated scope is refused', offerTerms({ criteriaHash: 'b'.repeat(64) }), termsRefused('TERMS_CRITERIA_INVALID')),
+  termsCase('an OP_RETURN buyer receive script is refused', offerTerms({ buyerReceiveScriptHex: '6a00' }), termsRefused('TERMS_SCRIPT_INVALID')),
+  termsCase('a fractional price is refused', offerTerms({ priceSats: '1.5' }), termsRefused('TERMS_AMOUNT_INVALID')),
+  termsCase('the last height-domain expiry is accepted', offerTerms({ expiryHeight: 499999999 }), termsAccepted(offerTerms({ expiryHeight: 499999999 }))),
+  termsCase('an expiry at the timestamp threshold is refused', offerTerms({ expiryHeight: 500000000 }), termsRefused('TERMS_EXPIRY_INVALID')),
+  termsCase('an unrepresentable expiry is refused', offerTerms({ expiryHeight: 2147483648 }), termsRefused('TERMS_EXPIRY_INVALID')),
+  termsCase('an expiry written as a string is refused', offerTerms({ expiryHeight: '900100' }), termsRefused('TERMS_EXPIRY_INVALID')),
+  termsCase('a malformed recovery key is refused', offerTerms({ buyerRecoveryKeyHex: 'dd' }), termsRefused('TERMS_RECOVERY_KEY_INVALID')),
+  termsCase('a recovery key that is not a curve point is refused', offerTerms({ buyerRecoveryKeyHex: 'f'.repeat(64) }), termsRefused('TERMS_RECOVERY_KEY_INVALID')),
+];
+
+const offerCases = [...offerTermsCases, ...offerAcceptanceCases, ...offerRecoveryCases];
+
 const runeCases = [...LEGACY_RUNE_CASES, ...runeParityCases, ...runeAllocationCases];
 
 function writeVectors(path, document) {
@@ -2048,6 +2482,13 @@ writeVectors('../conformance/offline-signing-vectors.json', {
   version: 1,
   description: 'Expected transaction manifest and signed result comparison vectors.',
   cases: offlineCases,
+});
+
+writeVectors('../conformance/offer-vectors.json', {
+  protocolVersion: '1.1',
+  note: 'Shared conformance vectors for funded offers. verifier/offers.js and sdk/src/offers.ts must both answer every case exactly as recorded here. Every signature was made by scripts/vector-signer.mjs with test keys.',
+  termsHash: offerTermsHash(OFFER_BASE_TERMS),
+  cases: offerCases,
 });
 
 writeVectors('../conformance/rune-burn-vectors.json', {

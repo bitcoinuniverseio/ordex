@@ -11,11 +11,12 @@ import { runAllVectors } from '../../site/src/lib/conformance-engine.mjs';
 // allocation, OX-P10 to 236 with Counterparty v11.4.0 move vectors that
 // replace the old sat-flow ones, OX-P01 to 261 with SafeOps v2 vectors that
 // carry real signatures, OX-P03 to 278 with cold signing v2 results read from
-// raw transactions and PSBT v0 and v2, and OX-P02 to 294 with swap acceptance
-// v2 plans judged by derived asset movements.
-test('294/294 official protocol vectors pass deterministically against reference verifiers', () => {
+// raw transactions and PSBT v0 and v2, OX-P02 to 294 with swap acceptance
+// v2 plans judged by derived asset movements, and OX-P05 to 337 with funded
+// offer acceptances and recoveries proved from signed transaction bytes.
+test('337/337 official protocol vectors pass deterministically against reference verifiers', () => {
   const result = runAllVectors();
-  assert.equal(result.total, 294, `Expected 294 vectors, ran ${result.total}`);
+  assert.equal(result.total, 337, `Expected 337 vectors, ran ${result.total}`);
   assert.equal(result.failed, 0, `Expected 0 failures, had ${result.failed}`);
-  assert.equal(result.passed, 294, `Expected 294 passed, had ${result.passed}`);
+  assert.equal(result.passed, 337, `Expected 337 passed, had ${result.passed}`);
 });

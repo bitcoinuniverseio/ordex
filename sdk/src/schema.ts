@@ -495,7 +495,7 @@ export interface paths {
         put?: never;
         /**
          * State the exact acceptance arrangement for one live offer
-         * @description Given the seller outpoint, reads every value from the node and the ord index, lays out padding, buyer asset, every preserve in sat order, the seller payment at the seller input index, and change, and refuses when the Feline is elsewhere, the root no longer holds, or expiry has passed.
+         * @description Given the seller outpoint, reads every value from the node and the ord index and lays out the seller inputs, the funded output last, the asset outputs that absorb exactly the seller sats (the Feline to the buyer, every other seller asset preserved in sat order), the seller payment, and buyer change. Refuses when the Feline is elsewhere, the root or trait set does not prove it, or expiry has been reached. No buyer input is ever planned.
          */
         post: operations["planOfferAcceptance"];
         delete?: never;
@@ -515,7 +515,7 @@ export interface paths {
         put?: never;
         /**
          * Verify a built acceptance and ask the node
-         * @description Parses the complete acceptance, checks every rule in spec/offers.md including both policy signatures against the committed terms tree, then asks the node whether it would accept the bytes. The answer carries the exact bytes checked.
+         * @description Parses the complete acceptance, checks every rule in spec/offers.md including both policy signatures under the exact acceptance leaf and control block and a closing seller signature on every seller input, then asks the node whether it would accept the bytes. The answer carries the exact bytes checked.
          */
         post: operations["preflightOfferAcceptance"];
         delete?: never;
@@ -1859,7 +1859,7 @@ export interface components {
             offerKind: components["schemas"]["OfferKind"];
             /** @description The collection the scope names. */
             collectionId: string;
-            /** @description Lowercase hex SHA-256 collection Merkle root the scope binds to. */
+            /** @description Lowercase hex membership root of the collection (the manifest membershipRoot) the scope binds to. */
             collectionRoot: string;
             /** @description ITEM offers only: the exact inscription the offer buys. */
             itemInscriptionId?: string;
@@ -1867,17 +1867,17 @@ export interface components {
             traitName?: string;
             /** @description TRAIT offers only: the exact trait value. */
             traitValue?: string;
-            /** @description SHA-256 over the exact serialized scope criteria the buyer accepted, so a verifier can recheck scope membership without trusting a description of it. */
+            /** @description Commitment to the scope the buyer accepted. ITEM and COLLECTION: SHA-256 over the sorted-key JSON of the stated scope under domain ordex.offer-criteria/v1, recomputed by every verifier. TRAIT: the Merkle root over the members the buyer accepted as carrying the trait, which each acceptance proves its Feline against. */
             criteriaHash: string;
-            /** @description Lowercase hex script the bought Feline must land in. */
+            /** @description Lowercase hex of a spendable script (not OP_RETURN). The bought Feline, buyer change and a recovery all pay it. */
             buyerReceiveScriptHex: string;
             /** @description Exact price paid to the accepting seller. */
             priceSats: components["schemas"]["AtomicSats"];
             /** @description The largest fee an acceptance may pay. */
             maxNetworkFeeSats: components["schemas"]["AtomicSats"];
-            /** @description Block height after which acceptance is refused and the recovery path unlocks. */
+            /** @description Block height from which acceptance is refused; a recovery confirms from the next block. Below 500000000, the locktime timestamp threshold, because it is a height-domain CHECKLOCKTIMEVERIFY argument. */
             expiryHeight: number;
-            /** @description Lowercase hex x-only key that can recover the funded output alone after expiry. */
+            /** @description Lowercase hex x-only public key, a valid curve point, that can recover the funded output alone after expiry. */
             buyerRecoveryKeyHex: string;
         };
         /** @description SHA-256 over the terms serialized as UTF-8 JSON with object keys sorted recursively and no insignificant whitespace. Two parties that hold the same terms hold the same hash. */
@@ -1887,11 +1887,11 @@ export interface components {
             fundedTxid: string;
             /** @description The funded output index. */
             fundedVout: number;
-            /** @description Lowercase hex x-only internal key of the funded output. */
+            /** @description The x-only internal key of the funded output: always BIP341 unspendable point H (50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0), so no key path exists. */
             tapInternalKeyHex: string;
-            /** @description The acceptance leaf: the terms hash push, both policy keys, CHECKSIG, CHECKSIGADD, and the 2-of-2 equal. The gateway recomputes the tree and the tweak from these leaves, so the funded script must commit to the exact terms. */
+            /** @description The acceptance leaf, byte for byte: 20 <offerTermsHash> 75 20 <policyKeyA> ac 20 <policyKeyB> ba 52 87. The gateway rebuilds both leaves, the tree and the tweak from the terms and the two policy keys and refuses a funded script that is not exactly that output. */
             acceptanceLeafScriptHex: string;
-            /** @description The recovery leaf: the expiry height, CHECKLOCKTIMEVERIFY, and the buyer recovery key. */
+            /** @description The recovery leaf, byte for byte: the minimal push of expiryHeight, b1 75 20 <buyerRecoveryKey> ac. */
             recoveryLeafScriptHex: string;
         };
         OfferValidation: {
@@ -1944,32 +1944,36 @@ export interface components {
         OfferAcceptancePlanRequest: {
             /** @description The output the accepting seller will spend to deliver the Feline. */
             sellerFelineOutpoint: components["schemas"]["Outpoint"];
-            /** @description The script the seller payment output must carry, committed by the seller signature. */
+            /** @description The script the seller payment output must carry, exactly priceSats. The seller signs every input with SIGHASH_ALL. */
             sellerPaymentScriptHex: string;
+            /** @description Optional: the script the seller receives its own other assets and the sats around the Feline at. Defaults to sellerPaymentScriptHex. */
+            sellerReturnScriptHex?: string;
         };
         OfferAcceptancePlan: {
             /** @description The offer this plan settles. */
             offerId: string;
-            /** @description Where the Feline input sits, and with it the seller payment. */
+            /** @description Where the Feline input sits among the seller inputs. */
             sellerInputIndex: number;
-            /** @description Where the funded offer output sits. */
+            /** @description Where the funded offer output sits: always the last input. */
             offerInputIndex: number;
+            /** @description The seller payment, immediately after the asset outputs. */
             sellerPaymentOutputIndex: number;
+            /** @description The output the Feline lands in, derived from its satpoint. */
             buyerAssetOutputIndex: number;
-            /** @description Every input in transaction order, with the exact values read from the node. */
+            /** @description Every input in transaction order, with the exact values read from the node. The buyer contributes no input: the funded output is spent by the two policy signers, and the buyer signs nothing at acceptance. */
             inputs: {
                 txid: string;
                 vout: number;
                 valueSats: components["schemas"]["AtomicSats"];
                 /** @enum {string} */
-                role: "PADDING" | "OFFER" | "SELLER_FELINE";
+                role: "SELLER_FELINE" | "SELLER" | "OFFER";
             }[];
-            /** @description Every output in transaction order: padding merge, buyer asset, seller preserves in sat order, seller payment at the seller input index, buyer change last. */
+            /** @description Every output in transaction order: asset outputs absorbing exactly the seller inputs (the buyer asset output and seller preserves in sat order), the seller payment, and buyer change last. */
             outputs: {
                 scriptHex: string;
                 valueSats: components["schemas"]["AtomicSats"];
                 /** @enum {string} */
-                role: "PADDING_MERGE" | "BUYER_ASSET" | "SELLER_PRESERVE" | "SELLER_PAYMENT" | "BUYER_CHANGE";
+                role: "BUYER_ASSET" | "SELLER_PRESERVE" | "SELLER_PAYMENT" | "BUYER_CHANGE";
             }[];
             /** @description The fee the composed arrangement pays at the current rate. */
             estimatedFeeSats: components["schemas"]["AtomicSats"];

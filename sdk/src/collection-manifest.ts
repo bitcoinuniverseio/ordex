@@ -172,6 +172,30 @@ export function buildMembershipProof(
 }
 
 /**
+ * The membership root a proof resolves to for one member identity, without
+ * the manifest: what an offer checks against the root its terms commit to.
+ * Returns lowercase hex, or null for a malformed proof.
+ */
+// OX-P05: funded offers bind a bare collection root, so membership is proved
+// against that root with the same leaf and node hashing as a manifest.
+export function membershipProofRoot(collectionId: string, memberIdentity: string, proof: unknown): string | null {
+  if (
+    !Array.isArray(proof) ||
+    !proof.every(
+      (step: MembershipProofStep) =>
+        !!step && HEX64.test(step.sibling as string) && (step.position === 'left' || step.position === 'right'),
+    )
+  ) {
+    return null;
+  }
+  let digest = memberLeafHash(collectionId, memberIdentity);
+  for (const step of proof as Array<{ sibling: string; position: 'left' | 'right' }>) {
+    digest = step.position === 'left' ? nodeHash(step.sibling, digest) : nodeHash(digest, step.sibling);
+  }
+  return digest;
+}
+
+/**
  * Recompute the manifest digest: SHA-256 over the sorted-key JSON of the
  * whole manifest except the digest and the creator signature, which cannot
  * cover themselves.
