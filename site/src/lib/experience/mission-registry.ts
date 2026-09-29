@@ -367,7 +367,7 @@ export const MISSIONS: MissionDefinition[] = [
       verifyLabel: 'Verify Events',
       integrateDesc: 'Generate webhook receiver server boilerplate.',
       integrateLabel: 'Get Receiver Code',
-      validateDesc: 'Execute Gateway Doctor 17-step compatibility diagnosis.',
+      validateDesc: 'Run Gateway Doctor against the configured gateway until every check passes.',
       validateLabel: 'Run Gateway Doctor',
       finishDesc: 'Gateway verified healthy and event streaming active.'
     }),
