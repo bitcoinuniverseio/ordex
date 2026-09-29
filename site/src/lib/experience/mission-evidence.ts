@@ -149,7 +149,7 @@ export const MISSION_EVIDENCE: Record<string, StageMap> = {
     simulate: { label: 'Reproduce the refusal in the Sandbox with a failure injection', tool: 'sandbox', operations: ['injection:'], states: ['refused'], needsGateway: false },
     inspect: lens,
     verify: lab(['purchase', 'offers', 'runes', 'safeops', 'swaps', 'events', 'collection-manifest', 'counterparty-asset', 'offline-signing'], ['refused']),
-    integrate: kit('diagnostics'),
+    integrate: { label: 'Generate and verify a starter kit whose tests include the refused conformance cases', tool: 'kits', operations: ['kit:'], states: ['passed'], needsGateway: false },
     validate: { ...api('Receive a refusal whose error envelope matches the contract from the configured gateway in the API Playground', ['api:']), states: ['refused'] }
   },
   'perform-security-review': {

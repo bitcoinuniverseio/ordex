@@ -71,3 +71,23 @@ test('changing the network makes completed stages stale instead of keeping them'
   await page.getByRole('button', { name: /1\. Understand Mechanics: needs to be repeated/ }).waitFor();
   await context.close();
 });
+
+test('final phase: Failure Navigator and Atlas runs complete their stages', async () => {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  await page.goto(server.url('/diagnose/?code=SELLER_VALUE_MISMATCH'), { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Run in this browser' }).first().click();
+  await page.getByText('Reproduced', { exact: true }).first().waitFor({ timeout: 20000 });
+  await page.goto(server.url('/workspace/?mission=diagnose-protocol-failure'), { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: /2\. / }).click();
+  await page.getByRole('button', { name: 'Check evidence and complete' }).click();
+  await page.getByText('Stage complete.').waitFor();
+
+  await page.goto(server.url('/atlas/'), { waitUntil: 'networkidle' });
+  for (let i = 0; i < 20 && (await page.getByRole('button', { name: /Next/ }).first().isEnabled()); i++) await page.getByRole('button', { name: /Next/ }).first().click();
+  await page.goto(server.url('/workspace/?mission=perform-security-review'), { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: /2\. / }).click();
+  await page.getByRole('button', { name: 'Check evidence and complete' }).click();
+  await page.getByText('Stage complete.').waitFor();
+  await context.close();
+});
