@@ -18,6 +18,8 @@ import {
 import { resolveUrl } from '../../lib/base-url.js';
 import { tabKeyHandler, tabProps, tabPanelProps } from '../../lib/a11y/tabs.js';
 import { recordToolEvidence } from '../../lib/session/evidence';
+import reproducerFile from '../../lib/diagnostics/reproducers.json';
+import { reproducerArgs } from '../../lib/diagnostics/reproducer.mjs';
 
 const SOURCE_BUILD = import.meta.env.PUBLIC_ORDEX_BUILD_REVISION || 'unknown';
 const MAX_INPUT_BYTES = 2 * 1024 * 1024;
@@ -55,9 +57,11 @@ export function ProtocolLab() {
   const [status, setStatus] = useState('idle');
   const [run, setRun] = useState(null);
   const [slots, setSlots] = useState({ A: null, B: null });
+  const [reproNotice, setReproNotice] = useState(null);
   const abortRef = useRef(null);
 
   const loadVector = (entry) => {
+    setReproNotice(null);
     const args = argsFromCase(entry.family, entry.variant, entry.case);
     setFamily(entry.family);
     setVariant(entry.variant);
@@ -68,9 +72,29 @@ export function ProtocolLab() {
     setStatus('idle');
   };
 
+  // OX-S09: /lab/?reproduce=CODE&family=F opens the Failure Navigator's reproducer for that
+  // refusal as an edited candidate: the base vector with the reproducer's changes applied.
+  const loadReproducer = (code, familyHint) => {
+    const list = reproducerFile.reproducers[code] || [];
+    const repro = list.find((r) => r.family === familyHint) || list[0];
+    const base = repro && allVectors.find((v) => v.id === repro.base);
+    if (!repro || !base) return false;
+    setFamily(repro.family);
+    setVariant(repro.variant);
+    setInputText(JSON.stringify(reproducerArgs(repro, base.case), null, 2));
+    setLoadedVector(null);
+    setInputError(null);
+    setRun(null);
+    setStatus('idle');
+    setReproNotice(`Loaded the reproducer for ${code}: ${base.name}${repro.patch.length ? ` with ${repro.patch.length} change(s)` : ''}. Run the verifier to see the refusal.`);
+    return true;
+  };
+
   useEffect(() => {
+    const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+    const code = params?.get('reproduce');
     const first = allVectors.find((v) => v.family === 'purchase' && v.case?.expected?.ok === true) || allVectors[0];
-    if (first) loadVector(first);
+    if (!(code && loadReproducer(code, params.get('family'))) && first) loadVector(first);
     return () => abortRef.current?.abort();
   }, []);
 
@@ -104,6 +128,7 @@ export function ProtocolLab() {
   };
 
   const onEdit = (text) => {
+    setReproNotice(null);
     setInputText(text);
     setLoadedVector(null);
     setInputError(null);
@@ -275,6 +300,11 @@ export function ProtocolLab() {
               </label>
             </div>
 
+            {reproNotice && (
+              <p role="status" style="margin: 0 0 0.5rem; font-size: 0.85rem; color: var(--color-text-secondary);">
+                {reproNotice}
+              </p>
+            )}
             <label for="lab-input" style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 0.25rem;">
               Input JSON. Required: {variantSpec.args.map((a) => <code key={a} style="margin-right: 0.35rem;">{a}</code>)}
               {variantSpec.optional?.length ? <span> Optional: {variantSpec.optional.map((a) => <code key={a}>{a}</code>)}</span> : null}
