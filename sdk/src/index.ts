@@ -228,14 +228,18 @@ export {
   OFFLINE_SIGNING_SESSION_SCHEMA,
   compareSignedResultToManifest,
   expectedTransactionDigest,
+  manifestUnsignedTransaction,
   verifyExpectedTransactionManifest,
   type ExpectedAsset,
   type ExpectedTransactionInput,
   type ExpectedTransactionManifest,
   type ExpectedTransactionManifestVerdict,
   type ExpectedTransactionOutput,
+  type ObservedAsset,
   type OfflineSigningRefusalCode,
   type OfflineSigningResult,
+  type PreservedSignature,
+  type SignedResultVerdict,
 } from './offline-signing.js';
 
 type Schemas = components['schemas'];

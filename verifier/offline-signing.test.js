@@ -35,7 +35,7 @@ for (const vector of vectors.cases) {
 }
 
 test('the schema names are stable', () => {
-  assert.equal(EXPECTED_TRANSACTION_MANIFEST_SCHEMA, 'ordex.expected-transaction-manifest/v1');
+  assert.equal(EXPECTED_TRANSACTION_MANIFEST_SCHEMA, 'ordex.expected-transaction-manifest/v2');
 });
 
 test('a malformed manifest or signed result is refused, never thrown on', () => {
@@ -45,41 +45,42 @@ test('a malformed manifest or signed result is refused, never thrown on', () => 
   assert.equal(compareSignedResultToManifest({}, {}).code, 'SCHEMA_UNSUPPORTED');
 });
 
-test('the digest covers the unsigned transaction, network, and sighash policy only', () => {
+test('the digest covers the transaction and the policy, never the display text', () => {
   const manifest = {
     schema: EXPECTED_TRANSACTION_MANIFEST_SCHEMA,
     network: 'regtest',
     purpose: 'one',
     watchOnly: false,
     unsignedTx: {
+      version: 2,
+      lockTime: 0,
       inputs: [
         {
           txid: 'a'.repeat(64),
           vout: 0,
+          sequence: 0xfffffffd,
           valueSats: '1000',
-          scriptPubKeyHex: '0014aa',
+          scriptPubKeyHex: '0014' + 'aa'.repeat(20),
           controlledByUser: true,
           sighashType: 'ALL',
           explanation: 'why',
         },
       ],
-      outputs: [{ scriptHex: '5120bb', valueSats: '900', role: 'recipient', explanation: 'who' }],
+      outputs: [{ scriptHex: '5120' + 'bb'.repeat(32), valueSats: '900', role: 'recipient', explanation: 'who' }],
     },
     fee: { feeSats: '100', maxFeeSats: '200' },
     digest: 'x',
   };
   const digest = expectedTransactionDigest(manifest);
   assert.match(digest, /^[0-9a-f]{64}$/);
-  const cosmeticChange = { ...manifest, purpose: 'two', watchOnly: true, account: { descriptor: 'wpkh(...)' } };
-  assert.equal(expectedTransactionDigest(cosmeticChange), digest, 'presentation fields must not move the digest');
-  const realChange = {
-    ...manifest,
-    unsignedTx: {
-      ...manifest.unsignedTx,
-      outputs: [{ scriptHex: '5120cc', valueSats: '900', role: 'recipient', explanation: 'who' }],
-    },
-  };
-  assert.notEqual(expectedTransactionDigest(realChange), digest, 'a changed script must move the digest');
+  const cosmetic = structuredClone(manifest);
+  Object.assign(cosmetic, { purpose: 'two', watchOnly: true, account: { descriptor: 'wpkh(...)' } });
+  cosmetic.unsignedTx.inputs[0].explanation = 'other words';
+  cosmetic.unsignedTx.outputs[0].role = 'gift';
+  assert.equal(expectedTransactionDigest(cosmetic), digest, 'display fields must not move the digest');
+  const real = structuredClone(manifest);
+  real.unsignedTx.outputs[0].scriptHex = '5120' + 'cc'.repeat(32);
+  assert.notEqual(expectedTransactionDigest(real), digest, 'a changed script must move the digest');
 });
 
 test('parseSats accepts only exact non-negative decimal strings', () => {

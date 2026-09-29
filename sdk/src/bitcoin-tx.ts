@@ -1001,6 +1001,7 @@ export interface PsbtSignatureCheck {
   sighashType?: number;
   valid: boolean;
   unsupported?: true;
+  reason?: string;
 }
 
 /**
@@ -1021,16 +1022,32 @@ export function verifyPsbtPartialSignatures(psbt: Psbt, index: number): PsbtSign
     hashType === undefined ? {} : { sighashType: hashType };
   for (const entry of input.partialSig ?? []) {
     let digestFor: ((h: number) => Uint8Array) | null = null;
+    let program: string | null = null;
     const redeem = input.redeemScript;
     if (type === 'p2wpkh') {
-      digestFor = (h) => segwitV0Sighash(tx, index, p2pkhScriptCode(prevout.scriptHex.slice(4)), prevout.valueSats, h);
-    } else if (type === 'p2sh' && redeem && /^0014[0-9a-f]{40}$/.test(redeem)) {
-      digestFor = (h) => segwitV0Sighash(tx, index, p2pkhScriptCode(redeem.slice(4)), prevout.valueSats, h);
+      const p = prevout.scriptHex.slice(4);
+      program = p;
+      digestFor = (h) => segwitV0Sighash(tx, index, p2pkhScriptCode(p), prevout.valueSats, h);
+    } else if (
+      type === 'p2sh' &&
+      redeem &&
+      /^0014[0-9a-f]{40}$/.test(redeem) &&
+      bytesToHex(hash160(bytesOf(redeem))) === prevout.scriptHex.slice(4, 44)
+    ) {
+      const p = redeem.slice(4);
+      program = p;
+      digestFor = (h) => segwitV0Sighash(tx, index, p2pkhScriptCode(p), prevout.valueSats, h);
     } else if (type === 'p2pkh') {
+      program = prevout.scriptHex.slice(6, 46);
       digestFor = (h) => legacySighash(tx, index, bytesOf(prevout.scriptHex), h);
     }
     if (!digestFor) {
       out.push({ kind: 'ecdsa', publicKey: entry.keyData, valid: false, unsupported: true });
+      continue;
+    }
+    // A signature only counts for the key the script commits to.
+    if (bytesToHex(hash160(bytesOf(entry.keyData))) !== program) {
+      out.push({ kind: 'ecdsa', publicKey: entry.keyData, valid: false, reason: 'The key does not match the script.' });
       continue;
     }
     const check = ecdsaCheck(entry.value, entry.keyData, digestFor);

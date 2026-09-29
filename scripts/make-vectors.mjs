@@ -13,7 +13,7 @@ import {
   safeopsPlanDigest,
   safeopsUnsignedTransaction,
 } from '../verifier/safeops.js';
-import { p2trKeyPath, p2wpkhScript, signP2wpkh, signTaprootKeyPath, testKey } from './vector-signer.mjs';
+import { encodePsbt, p2trKeyPath, p2wpkhScript, signP2wpkh, signTaprootKeyPath, testKey } from './vector-signer.mjs';
 import { SWAP_INTENT_SCHEMA, SWAP_ACCEPTANCE_SCHEMA, swapIntentDigest } from '../verifier/swaps.js';
 import { signWebhookDelivery } from '../verifier/events.js';
 import {
@@ -29,6 +29,7 @@ import {
   EXPECTED_TRANSACTION_MANIFEST_SCHEMA,
   OFFLINE_SIGNING_SESSION_SCHEMA,
   expectedTransactionDigest,
+  manifestUnsignedTransaction,
 } from '../verifier/offline-signing.js';
 
 const OUTPOINT_A = { txid: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', vout: 0 };
@@ -272,6 +273,29 @@ function counterpartyRecord(overrides = {}) {
   };
 }
 
+// OX-P03: cold signing v2 fixtures carry real signatures over the exact
+// presented transaction, as a raw transaction or as a PSBT v0 or v2.
+const COLD_USER_KEY = testKey('cold-user-taproot');
+const COLD_USER_TR = p2trKeyPath(COLD_USER_KEY).scriptHex;
+const COLD_SEGWIT_KEY = testKey('cold-user-segwit');
+const COLD_USER_WPKH = p2wpkhScript(COLD_SEGWIT_KEY);
+const COLD_SELLER_KEY = testKey('cold-seller-taproot');
+const COLD_SELLER_TR = p2trKeyPath(COLD_SELLER_KEY).scriptHex;
+const COLD_KEYS = { [COLD_USER_TR]: COLD_USER_KEY, [COLD_USER_WPKH]: COLD_SEGWIT_KEY, [COLD_SELLER_TR]: COLD_SELLER_KEY };
+const COLD_OBSERVED = [{ assetType: 'ORDINAL', assetId: INSCRIPTION, quantity: '1', outputIndex: 0 }];
+
+const coldInput = (outpoint, valueSats, scriptPubKeyHex, sighashType, explanation, extra = {}) => ({
+  txid: outpoint.txid,
+  vout: outpoint.vout,
+  sequence: 0xfffffffd,
+  valueSats,
+  scriptPubKeyHex,
+  controlledByUser: true,
+  sighashType,
+  explanation,
+  ...extra,
+});
+
 function signingManifest(overrides = {}) {
   const manifest = {
     schema: EXPECTED_TRANSACTION_MANIFEST_SCHEMA,
@@ -279,25 +303,11 @@ function signingManifest(overrides = {}) {
     purpose: 'Transfer one inscription and pay one recipient.',
     watchOnly: false,
     unsignedTx: {
+      version: 2,
+      lockTime: 0,
       inputs: [
-        {
-          txid: OUTPOINT_A.txid,
-          vout: OUTPOINT_A.vout,
-          valueSats: '50000',
-          scriptPubKeyHex: SCRIPT_P2TR,
-          controlledByUser: true,
-          sighashType: 'DEFAULT',
-          explanation: 'Your sealed inscription output, spent whole.',
-        },
-        {
-          txid: OUTPOINT_B.txid,
-          vout: OUTPOINT_B.vout,
-          valueSats: '30000',
-          scriptPubKeyHex: SCRIPT_P2WPKH,
-          controlledByUser: true,
-          sighashType: 'DEFAULT',
-          explanation: 'Cardinal change funding the fee.',
-        },
+        coldInput(OUTPOINT_A, '50000', COLD_USER_TR, 'DEFAULT', 'Your sealed inscription output, spent whole.'),
+        coldInput(OUTPOINT_B, '30000', COLD_USER_WPKH, 'ALL', 'Cardinal change funding the fee.'),
       ],
       outputs: [
         {
@@ -305,7 +315,7 @@ function signingManifest(overrides = {}) {
           valueSats: '10000',
           role: 'recipient',
           explanation: 'The buyer receives the inscription here.',
-          expectedAssets: [{ assetType: 'ORDINAL', assetId: INSCRIPTION }],
+          expectedAssets: [{ assetType: 'ORDINAL', assetId: INSCRIPTION, quantity: '1' }],
         },
         { scriptHex: SCRIPT_P2WPKH, valueSats: '69400', role: 'change', explanation: 'Your change returns here.' },
       ],
@@ -317,25 +327,108 @@ function signingManifest(overrides = {}) {
   return manifest;
 }
 
-function signedFor(manifest, mutate) {
-  const signed = {
+/**
+ * A purchase: buyer padding first, then the seller input already signed
+ * SINGLE|ANYONECANPAY for its payout at the same index, then the payment.
+ */
+function purchaseManifest(overrides = {}) {
+  const tx = {
+    version: 2,
+    lockTime: 0,
+    inputs: [
+      { txid: OUTPOINT_A.txid, vout: OUTPOINT_A.vout, scriptSigHex: '', sequence: 0xfffffffd, witness: [] },
+      { txid: OUTPOINT_C.txid, vout: OUTPOINT_C.vout, scriptSigHex: '', sequence: 0xffffffff, witness: [] },
+      { txid: OUTPOINT_B.txid, vout: OUTPOINT_B.vout, scriptSigHex: '', sequence: 0xfffffffd, witness: [] },
+    ],
+    outputs: [
+      { valueSats: '10600', scriptHex: SCRIPT_P2TR },
+      { valueSats: '40000', scriptHex: SCRIPT_P2WPKH },
+    ],
+  };
+  const prevouts = [
+    { valueSats: '600', scriptHex: COLD_USER_WPKH },
+    { valueSats: '10000', scriptHex: COLD_SELLER_TR },
+    { valueSats: '40600', scriptHex: COLD_USER_WPKH },
+  ];
+  const sellerSignature = signTaprootKeyPath(tx, 1, prevouts, COLD_SELLER_KEY, 0x83);
+  const manifest = {
+    schema: EXPECTED_TRANSACTION_MANIFEST_SCHEMA,
+    network: 'mainnet',
+    purpose: 'Buy one inscription from a signed ask.',
+    watchOnly: false,
+    unsignedTx: {
+      version: 2,
+      lockTime: 0,
+      inputs: [
+        coldInput(OUTPOINT_A, '600', COLD_USER_WPKH, 'ALL', 'Your padding, which carries the inscription into your output.'),
+        {
+          txid: OUTPOINT_C.txid,
+          vout: OUTPOINT_C.vout,
+          sequence: 0xffffffff,
+          valueSats: '10000',
+          scriptPubKeyHex: COLD_SELLER_TR,
+          controlledByUser: false,
+          explanation: 'The seller spends the inscription output, already signed.',
+          preservedSignature: { scriptSigHex: '', witness: [sellerSignature] },
+        },
+        coldInput(OUTPOINT_B, '40600', COLD_USER_WPKH, 'ALL', 'Your payment.'),
+      ],
+      outputs: [
+        {
+          scriptHex: SCRIPT_P2TR,
+          valueSats: '10600',
+          role: 'recipient',
+          explanation: 'You receive the inscription here.',
+          expectedAssets: [{ assetType: 'ORDINAL', assetId: INSCRIPTION, quantity: '1' }],
+        },
+        { scriptHex: SCRIPT_P2WPKH, valueSats: '40000', role: 'payout', explanation: 'The seller is paid here.' },
+      ],
+    },
+    fee: { feeSats: '600', maxFeeSats: '1000' },
+    ...overrides,
+  };
+  manifest.digest = expectedTransactionDigest(manifest);
+  return manifest;
+}
+
+function signedFor(manifest, { form = 'tx', beforeSign, afterSign, hashTypes = {}, skip = [], observedAssets = COLD_OBSERVED, extra = {} } = {}) {
+  const tx = manifestUnsignedTransaction(manifest);
+  if (beforeSign) beforeSign(tx);
+  const prevouts = manifest.unsignedTx.inputs.map((input) => ({ valueSats: input.valueSats, scriptHex: input.scriptPubKeyHex }));
+  const psbtInputs = prevouts.map((prevout) => ({ witnessUtxo: prevout }));
+  manifest.unsignedTx.inputs.forEach((input, i) => {
+    if (!input.controlledByUser) {
+      if (input.preservedSignature) {
+        tx.inputs[i].witness = input.preservedSignature.witness.slice();
+        psbtInputs[i].finalWitness = input.preservedSignature.witness.slice();
+      }
+      return;
+    }
+    if (skip.includes(i)) return;
+    const key = COLD_KEYS[input.scriptPubKeyHex];
+    if (input.scriptPubKeyHex.startsWith('5120')) {
+      const signature = signTaprootKeyPath(tx, i, prevouts, key, hashTypes[i] ?? 0x00);
+      tx.inputs[i].witness = [signature];
+      psbtInputs[i].tapKeySig = signature;
+    } else {
+      const [signature, pubkey] = signP2wpkh(tx, i, prevouts, key, hashTypes[i] ?? 0x01);
+      tx.inputs[i].witness = [signature, pubkey];
+      psbtInputs[i].partialSigs = [{ pubkey, sig: signature }];
+    }
+  });
+  if (afterSign) afterSign(tx, psbtInputs);
+  const result = {
     schema: OFFLINE_SIGNING_SESSION_SCHEMA,
     manifestDigest: manifest.digest,
-    tx: {
-      inputs: manifest.unsignedTx.inputs.map((input) => ({
-        txid: input.txid,
-        vout: input.vout,
-        valueSats: input.valueSats,
-        signaturePresent: input.controlledByUser,
-        sighashType: input.sighashType,
-      })),
-      outputs: manifest.unsignedTx.outputs.map((output) => ({ scriptHex: output.scriptHex, valueSats: output.valueSats })),
-      carriedAssets: [{ outputIndex: 0, assetType: 'ORDINAL', assetId: INSCRIPTION }],
-    },
+    ...(form === 'tx'
+      ? { signedTxHex: bytesToHex(serializeTransaction(tx)) }
+      : { psbt: encodePsbt({ version: form === 'psbt2' ? 2 : 0, tx, inputs: psbtInputs }) }),
+    ...(observedAssets ? { observedAssets } : {}),
+    ...extra,
   };
-  if (mutate) mutate(signed);
-  return signed;
+  return result;
 }
+
 
 const safeopsCases = [
   {
@@ -1252,14 +1345,14 @@ const counterpartyCases = [
 
 const offlineCases = (() => {
   const manifest = signingManifest();
-  const foreignManifest = signingManifest({
-    unsignedTx: (() => {
-      const inner = signingManifest();
-      inner.unsignedTx.inputs[1].controlledByUser = false;
-      return inner.unsignedTx;
-    })(),
-  });
+  const purchase = purchaseManifest();
   const tightFeeManifest = signingManifest({ fee: { feeSats: '600', maxFeeSats: '700' } });
+  const edit = (mutate) => {
+    const m = signingManifest();
+    mutate(m);
+    m.digest = expectedTransactionDigest(m);
+    return m;
+  };
   return [
     { name: 'a complete manifest is accepted', manifest, expected: { ok: true } },
     {
@@ -1282,126 +1375,257 @@ const offlineCases = (() => {
     },
     {
       name: 'a manifest that does not conserve value is refused',
-      manifest: (() => {
-        const m = signingManifest();
+      manifest: edit((m) => {
         m.unsignedTx.outputs[1] = { ...m.unsignedTx.outputs[1], valueSats: '69401' };
-        return m;
-      })(),
+      }),
       expected: { ok: false, code: 'VALUE_NOT_CONSERVED' },
     },
     {
       name: 'a dust recipient output is refused',
-      manifest: signingManifest({
-        unsignedTx: {
-          inputs: [
-            {
-              txid: OUTPOINT_A.txid,
-              vout: OUTPOINT_A.vout,
-              valueSats: '50000',
-              scriptPubKeyHex: SCRIPT_P2TR,
-              controlledByUser: true,
-              sighashType: 'DEFAULT',
-              explanation: 'Your sealed output, spent whole.',
-            },
-          ],
-          outputs: [
-            { scriptHex: SCRIPT_P2TR, valueSats: '100', role: 'recipient', explanation: 'Too small to send.' },
-            { scriptHex: SCRIPT_P2WPKH, valueSats: '49300', role: 'change', explanation: 'Your change.' },
-          ],
-        },
+      manifest: edit((m) => {
+        m.unsignedTx.outputs = [
+          { scriptHex: SCRIPT_P2TR, valueSats: '100', role: 'recipient', explanation: 'Too small to send.' },
+          { scriptHex: SCRIPT_P2WPKH, valueSats: '79300', role: 'change', explanation: 'Your change.' },
+        ];
       }),
       expected: { ok: false, code: 'DUST_OUTPUT' },
     },
     {
-      name: 'a signed result matching the manifest is accepted',
+      name: 'the same outpoint presented twice is refused',
+      manifest: edit((m) => {
+        m.unsignedTx.inputs[1] = { ...m.unsignedTx.inputs[1], txid: OUTPOINT_A.txid, vout: OUTPOINT_A.vout };
+      }),
+      expected: { ok: false, code: 'INPUT_DUPLICATED' },
+    },
+    {
+      name: 'a user input without its approved sighash is refused',
+      manifest: edit((m) => {
+        delete m.unsignedTx.inputs[0].sighashType;
+      }),
+      expected: { ok: false, code: 'SIGNING_POLICY_INVALID' },
+    },
+    {
+      name: 'a manifest that does not fix version and locktime is refused',
+      manifest: edit((m) => {
+        delete m.unsignedTx.lockTime;
+      }),
+      expected: { ok: false, code: 'TRANSACTION_INVALID' },
+    },
+    {
+      name: 'an expected asset without a quantity is refused',
+      manifest: edit((m) => {
+        m.unsignedTx.outputs[0].expectedAssets = [{ assetType: 'ORDINAL', assetId: INSCRIPTION }];
+      }),
+      expected: { ok: false, code: 'ASSET_EXPECTATION_INVALID' },
+    },
+    {
+      name: 'a v1 manifest is refused rather than reinterpreted',
+      manifest: edit((m) => {
+        m.schema = 'ordex.expected-transaction-manifest/v1';
+      }),
+      expected: { ok: false, code: 'SCHEMA_UNSUPPORTED' },
+    },
+    {
+      name: 'a signed transaction matching the manifest is accepted',
       manifest,
       signed: signedFor(manifest),
       expected: { ok: true },
     },
     {
+      name: 'a signed PSBT v0 matching the manifest is accepted',
+      manifest,
+      signed: signedFor(manifest, { form: 'psbt0' }),
+      expected: { ok: true },
+    },
+    {
+      name: 'a signed PSBT v2 matching the manifest is accepted',
+      manifest,
+      signed: signedFor(manifest, { form: 'psbt2' }),
+      expected: { ok: true },
+    },
+    {
+      name: 'a purchase that preserves the seller signature is accepted',
+      manifest: purchase,
+      signed: signedFor(purchase),
+      expected: { ok: true },
+    },
+    {
+      name: 'a purchase PSBT that preserves the seller signature is accepted',
+      manifest: purchase,
+      signed: signedFor(purchase, { form: 'psbt0' }),
+      expected: { ok: true },
+    },
+    {
       name: 'a signed result from a different manifest is refused',
       manifest,
-      signed: signedFor(
-        signingManifest({
-          unsignedTx: (() => {
-            const inner = signingManifest();
-            inner.unsignedTx.outputs[1] = { ...inner.unsignedTx.outputs[1], valueSats: '69500' };
-            return inner.unsignedTx;
-          })(),
-        }),
-      ),
+      signed: signedFor(tightFeeManifest),
       expected: { ok: false, code: 'MANIFEST_DIGEST_MISMATCH' },
     },
     {
       name: 'a reordered input is refused',
       manifest,
-      signed: signedFor(manifest, (signed) => {
-        signed.tx.inputs = [signed.tx.inputs[1], signed.tx.inputs[0]];
+      signed: signedFor(manifest, {
+        afterSign: (tx) => {
+          tx.inputs = [tx.inputs[1], tx.inputs[0]];
+        },
       }),
       expected: { ok: false, code: 'INPUT_REORDERED' },
     },
     {
       name: 'an added output is refused',
       manifest,
-      signed: signedFor(manifest, (signed) => {
-        signed.tx.outputs.push({ scriptHex: SCRIPT_P2TR, valueSats: '1' });
+      signed: signedFor(manifest, {
+        afterSign: (tx) => {
+          tx.outputs.push({ scriptHex: SCRIPT_P2TR, valueSats: '330' });
+        },
       }),
       expected: { ok: false, code: 'OUTPUT_SET_CHANGED' },
     },
     {
       name: 'a changed output script is refused',
       manifest,
-      signed: signedFor(manifest, (signed) => {
-        signed.tx.outputs[0] = { scriptHex: SCRIPT_P2WPKH, valueSats: '10000' };
+      signed: signedFor(manifest, {
+        afterSign: (tx) => {
+          tx.outputs[0] = { scriptHex: SCRIPT_P2WPKH, valueSats: '10000' };
+        },
       }),
       expected: { ok: false, code: 'SCRIPT_CHANGED' },
     },
     {
       name: 'a fee outside the approved bound is refused',
       manifest: tightFeeManifest,
-      signed: signedFor(tightFeeManifest, (signed) => {
-        signed.tx.outputs[1] = { scriptHex: SCRIPT_P2WPKH, valueSats: '69100' };
+      signed: signedFor(tightFeeManifest, {
+        afterSign: (tx) => {
+          tx.outputs[1] = { scriptHex: SCRIPT_P2WPKH, valueSats: '69100' };
+        },
       }),
       expected: { ok: false, code: 'FEE_OUT_OF_BOUNDS' },
     },
     {
+      name: 'P-R12: a changed sequence is refused',
+      manifest,
+      signed: signedFor(manifest, {
+        afterSign: (tx) => {
+          tx.inputs[0].sequence = 0xffffffff;
+        },
+      }),
+      expected: { ok: false, code: 'SEQUENCE_CHANGED' },
+    },
+    {
+      name: 'P-R12: a changed locktime is refused',
+      manifest,
+      signed: signedFor(manifest, {
+        afterSign: (tx) => {
+          tx.lockTime = 500000000;
+        },
+      }),
+      expected: { ok: false, code: 'TRANSACTION_CHANGED' },
+    },
+    {
+      name: 'P-R12: a changed version is refused',
+      manifest,
+      signed: signedFor(manifest, {
+        afterSign: (tx) => {
+          tx.version = 1;
+        },
+      }),
+      expected: { ok: false, code: 'TRANSACTION_CHANGED' },
+    },
+    {
       name: 'a missing user signature is refused',
       manifest,
-      signed: signedFor(manifest, (signed) => {
-        signed.tx.inputs[0].signaturePresent = false;
-      }),
+      signed: signedFor(manifest, { skip: [0] }),
       expected: { ok: false, code: 'REQUIRED_SIGNATURE_MISSING' },
     },
     {
-      name: 'a signature on a foreign input is refused',
-      manifest: foreignManifest,
-      signed: signedFor(foreignManifest, (signed) => {
-        signed.tx.inputs[1].signaturePresent = true;
+      name: 'a signature made over another transaction is refused',
+      manifest,
+      signed: signedFor(manifest, {
+        beforeSign: (tx) => {
+          tx.outputs[1].valueSats = '69399';
+        },
+        afterSign: (tx) => {
+          tx.outputs[1].valueSats = '69400';
+        },
       }),
-      expected: { ok: false, code: 'SIGNATURE_ON_FOREIGN_INPUT' },
+      expected: { ok: false, code: 'SIGNATURE_INVALID' },
     },
     {
       name: 'an unapproved sighash is refused',
       manifest,
-      signed: signedFor(manifest, (signed) => {
-        signed.tx.inputs[0].sighashType = 'ALL';
-      }),
+      signed: signedFor(manifest, { hashTypes: { 0: 0x01 } }),
       expected: { ok: false, code: 'SIGHASH_UNEXPECTED' },
+    },
+    {
+      name: 'a PSBT naming a different spent output is refused',
+      manifest,
+      signed: signedFor(manifest, {
+        form: 'psbt0',
+        afterSign: (tx, psbtInputs) => {
+          psbtInputs[1].witnessUtxo = { valueSats: '30001', scriptHex: COLD_USER_WPKH };
+        },
+      }),
+      expected: { ok: false, code: 'PREVOUT_MISMATCH' },
     },
     {
       name: 'a protected asset that moved elsewhere is refused',
       manifest,
-      signed: signedFor(manifest, (signed) => {
-        signed.tx.carriedAssets = [{ outputIndex: 1, assetType: 'ORDINAL', assetId: INSCRIPTION }];
-      }),
+      signed: signedFor(manifest, { observedAssets: [{ assetType: 'ORDINAL', assetId: INSCRIPTION, quantity: '1', outputIndex: 1 }] }),
       expected: { ok: false, code: 'PROTECTED_ASSET_MISPLACED' },
+    },
+    {
+      name: 'a protected asset observed with another quantity is refused',
+      manifest,
+      signed: signedFor(manifest, { observedAssets: [{ assetType: 'ORDINAL', assetId: INSCRIPTION, quantity: '2', outputIndex: 0 }] }),
+      expected: { ok: false, code: 'PROTECTED_ASSET_MISPLACED' },
+    },
+    {
+      name: 'P-R11: a result without protected asset observations is refused',
+      manifest,
+      signed: signedFor(manifest, { observedAssets: null }),
+      expected: { ok: false, code: 'PROTECTED_ASSET_OBSERVATION_MISSING' },
+    },
+    {
+      name: 'the seller signature changed after it was presented is refused',
+      manifest: purchase,
+      signed: signedFor(purchase, {
+        afterSign: (tx) => {
+          tx.inputs[1].witness = [tx.inputs[1].witness[0].slice(0, -2) + '81'];
+        },
+      }),
+      expected: { ok: false, code: 'FOREIGN_SIGNATURE_CHANGED' },
+    },
+    {
+      name: 'a signature on a foreign input is refused',
+      manifest: (() => {
+        const m = signingManifest();
+        m.unsignedTx.inputs[1] = { ...m.unsignedTx.inputs[1], controlledByUser: false };
+        delete m.unsignedTx.inputs[1].sighashType;
+        m.digest = expectedTransactionDigest(m);
+        return m;
+      })(),
+      signed: (() => {
+        const m = signingManifest();
+        const tx = manifestUnsignedTransaction(m);
+        const prevouts = m.unsignedTx.inputs.map((input) => ({ valueSats: input.valueSats, scriptHex: input.scriptPubKeyHex }));
+        tx.inputs[0].witness = [signTaprootKeyPath(tx, 0, prevouts, COLD_USER_KEY)];
+        tx.inputs[1].witness = signP2wpkh(tx, 1, prevouts, COLD_SEGWIT_KEY);
+        const foreign = { ...m.unsignedTx.inputs[1], controlledByUser: false };
+        delete foreign.sighashType;
+        m.unsignedTx.inputs[1] = foreign;
+        return {
+          schema: OFFLINE_SIGNING_SESSION_SCHEMA,
+          manifestDigest: expectedTransactionDigest(m),
+          signedTxHex: bytesToHex(serializeTransaction(tx)),
+          observedAssets: COLD_OBSERVED,
+        };
+      })(),
+      expected: { ok: false, code: 'SIGNATURE_ON_FOREIGN_INPUT' },
     },
     {
       name: 'an unknown critical field is refused',
       manifest,
-      signed: signedFor(manifest, (signed) => {
-        signed.unknownCriticalFields = ['proprietary.key.mystery'];
-      }),
+      signed: signedFor(manifest, { extra: { unknownCriticalFields: ['proprietary.key.mystery'] } }),
       expected: { ok: false, code: 'UNKNOWN_CRITICAL_FIELDS' },
     },
   ];

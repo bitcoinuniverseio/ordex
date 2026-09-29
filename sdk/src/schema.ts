@@ -2130,22 +2130,6 @@ export interface components {
             height: number;
             blockHash: string;
         };
-        /** @description A normalized transaction: exact inputs and outputs in order. Parsers convert raw bytes into this shape before verification. */
-        TxDescription: {
-            inputs: components["schemas"]["TxInputDescription"][];
-            outputs: components["schemas"]["TxOutputDescription"][];
-        };
-        TxInputDescription: {
-            txid: string;
-            vout: number;
-            valueSats: components["schemas"]["AtomicSats"];
-            signaturePresent?: boolean;
-            sighashType?: string;
-        };
-        TxOutputDescription: {
-            scriptHex: string;
-            valueSats: components["schemas"]["AtomicSats"];
-        };
         /**
          * @description The operation the desk will execute.
          * @enum {string}
@@ -2714,10 +2698,10 @@ export interface components {
             xcpGasSats?: components["schemas"]["AtomicSats"];
             minerFeeSats?: components["schemas"]["AtomicSats"];
         };
-        /** @description What the signer will see, in human readable and machine verifiable form, before any signature is requested. */
+        /** @description What the signer will see, in human readable and machine verifiable form, before any signature is requested. The digest commits to the exact unsigned transaction bytes, every prevout and the protection policy; purpose, explanations, roles and account are display text outside it. */
         ExpectedTransactionManifest: {
             /** @constant */
-            schema: "ordex.expected-transaction-manifest/v1";
+            schema: "ordex.expected-transaction-manifest/v2";
             network: components["schemas"]["Network"];
             purpose: string;
             watchOnly: boolean;
@@ -2731,8 +2715,18 @@ export interface components {
                     valueSats: components["schemas"]["AtomicSats"];
                     scriptPubKeyHex: string;
                     controlledByUser: boolean;
-                    sighashType?: string;
+                    /**
+                     * @description The one sighash the user may sign this input with; required when controlledByUser.
+                     * @enum {string}
+                     */
+                    sighashType?: "DEFAULT" | "ALL" | "NONE" | "SINGLE" | "ALL|ANYONECANPAY" | "NONE|ANYONECANPAY" | "SINGLE|ANYONECANPAY";
                     explanation: string;
+                    sequence: number;
+                    /** @description A foreign input already signed, such as a seller input; the result must carry it unchanged. */
+                    preservedSignature?: {
+                        scriptSigHex: string;
+                        witness: string[];
+                    };
                 }[];
                 outputs: {
                     scriptHex: string;
@@ -2740,9 +2734,13 @@ export interface components {
                     role: string;
                     explanation: string;
                     expectedAssets?: {
-                        [key: string]: unknown;
+                        assetType: string;
+                        assetId: string;
+                        quantity: components["schemas"]["AtomicSats"];
                     }[];
                 }[];
+                version: number;
+                lockTime: number;
             };
             fee: {
                 feeSats: components["schemas"]["AtomicSats"];
@@ -2762,13 +2760,21 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        /** @description Exactly one of psbt and signedTxHex. Signatures are verified from these bytes. */
         SignedResultSubmission: {
             /** @constant */
-            schema: "ordex.offline-signing-session/v1";
+            schema: "ordex.offline-signing-session/v2";
             manifestDigest: string;
-            tx: components["schemas"]["TxDescription"];
-            carriedAssets?: {
-                [key: string]: unknown;
+            /** @description A PSBT v0 or v2, base64 or hex, with the user signatures. */
+            psbt?: string;
+            /** @description A fully signed raw transaction. */
+            signedTxHex?: string;
+            /** @description Protected asset movements derived independently from the signed transaction; required when the manifest expects assets. */
+            observedAssets?: {
+                assetType: string;
+                assetId: string;
+                quantity: components["schemas"]["AtomicSats"];
+                outputIndex: number;
             }[];
             unknownCriticalFields?: string[];
         };

@@ -104,3 +104,88 @@ export function signP2wpkh(tx, index, prevouts, scalar, hashType = 0x01) {
   const digest = segwitV0Sighash(tx, index, hexToBytes(`76a914${program}88ac`), prevouts[index].valueSats, hashType);
   return [ecdsaSign(digest, scalar) + hashType.toString(16).padStart(2, '0'), compressedPublicKey(scalar)];
 }
+
+// ---------------------------------------------------------------------------
+// PSBT encoding for fixtures (BIP174 v0 and BIP370 v2).
+
+const cat = (...parts) => {
+  const out = new Uint8Array(parts.reduce((n, p) => n + p.length, 0));
+  let at = 0;
+  for (const p of parts) {
+    out.set(p, at);
+    at += p.length;
+  }
+  return out;
+};
+const le = (n, bytes) => {
+  const out = new Uint8Array(bytes);
+  let v = BigInt(n);
+  for (let i = 0; i < bytes; i += 1) {
+    out[i] = Number(v & 0xffn);
+    v >>= 8n;
+  }
+  return out;
+};
+const compact = (n) => (n < 0xfd ? Uint8Array.of(n) : n <= 0xffff ? cat(Uint8Array.of(0xfd), le(n, 2)) : cat(Uint8Array.of(0xfe), le(n, 4)));
+const pair = (type, keyData, value) => {
+  const key = cat(compact(type), keyData);
+  return cat(compact(key.length), key, compact(value.length), value);
+};
+const txOut = ({ valueSats, scriptHex }) => cat(le(valueSats, 8), compact(scriptHex.length / 2), hexToBytes(scriptHex));
+const witnessStack = (items) => cat(compact(items.length), ...items.map((h) => cat(compact(h.length / 2), hexToBytes(h))));
+
+/**
+ * Encode a PSBT. inputs[i]: { witnessUtxo?, partialSigs? [{ pubkey, sig }],
+ * tapKeySig?, finalWitness?, finalScriptSig?, sighashType? }. Returns base64.
+ */
+export function encodePsbt({ version = 0, tx, inputs }) {
+  const parts = [Uint8Array.of(0x70, 0x73, 0x62, 0x74, 0xff)];
+  if (version === 0) {
+    const unsigned = serializeUnsigned(tx);
+    parts.push(pair(0x00, new Uint8Array(0), unsigned));
+  } else {
+    parts.push(
+      pair(0x02, new Uint8Array(0), le(tx.version, 4)),
+      pair(0x03, new Uint8Array(0), le(tx.lockTime, 4)),
+      pair(0x04, new Uint8Array(0), compact(tx.inputs.length)),
+      pair(0x05, new Uint8Array(0), compact(tx.outputs.length)),
+      pair(0xfb, new Uint8Array(0), le(2, 4))
+    );
+  }
+  parts.push(Uint8Array.of(0x00));
+  tx.inputs.forEach((input, i) => {
+    const fields = inputs[i] ?? {};
+    if (version === 2) {
+      parts.push(
+        pair(0x0e, new Uint8Array(0), hexToBytes(input.txid).reverse()),
+        pair(0x0f, new Uint8Array(0), le(input.vout, 4)),
+        pair(0x10, new Uint8Array(0), le(input.sequence, 4))
+      );
+    }
+    if (fields.witnessUtxo) parts.push(pair(0x01, new Uint8Array(0), txOut(fields.witnessUtxo)));
+    for (const { pubkey, sig } of fields.partialSigs ?? []) parts.push(pair(0x02, hexToBytes(pubkey), hexToBytes(sig)));
+    if (fields.sighashType !== undefined) parts.push(pair(0x03, new Uint8Array(0), le(fields.sighashType, 4)));
+    if (fields.finalScriptSig !== undefined) parts.push(pair(0x07, new Uint8Array(0), hexToBytes(fields.finalScriptSig)));
+    if (fields.finalWitness !== undefined) parts.push(pair(0x08, new Uint8Array(0), witnessStack(fields.finalWitness)));
+    if (fields.tapKeySig !== undefined) parts.push(pair(0x13, new Uint8Array(0), hexToBytes(fields.tapKeySig)));
+    parts.push(Uint8Array.of(0x00));
+  });
+  tx.outputs.forEach((output) => {
+    if (version === 2) {
+      parts.push(pair(0x03, new Uint8Array(0), le(output.valueSats, 8)), pair(0x04, new Uint8Array(0), hexToBytes(output.scriptHex)));
+    }
+    parts.push(Uint8Array.of(0x00));
+  });
+  return Buffer.from(cat(...parts)).toString('base64');
+}
+
+function serializeUnsigned(tx) {
+  return cat(
+    le(tx.version, 4),
+    compact(tx.inputs.length),
+    ...tx.inputs.map((input) => cat(hexToBytes(input.txid).reverse(), le(input.vout, 4), compact(0), le(input.sequence, 4))),
+    compact(tx.outputs.length),
+    ...tx.outputs.map(txOut),
+    le(tx.lockTime, 4)
+  );
+}
