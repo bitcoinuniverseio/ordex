@@ -13,11 +13,12 @@ import { runAllVectors } from '../../site/src/lib/conformance-engine.mjs';
 // carry real signatures, OX-P03 to 278 with cold signing v2 results read from
 // raw transactions and PSBT v0 and v2, OX-P02 to 294 with swap acceptance
 // v2 plans judged by derived asset movements, OX-P05 to 337 with funded
-// offer acceptances and recoveries proved from signed transaction bytes, and
-// OX-P09 to 342 with revocations bound to their network and collection.
-test('342/342 official protocol vectors pass deterministically against reference verifiers', () => {
+// offer acceptances and recoveries proved from signed transaction bytes,
+// OX-P09 to 342 with revocations bound to their network and collection, and
+// OX-P11 to 349 with webhook rotation overlap and hash-as-key refusals.
+test('349/349 official protocol vectors pass deterministically against reference verifiers', () => {
   const result = runAllVectors();
-  assert.equal(result.total, 342, `Expected 342 vectors, ran ${result.total}`);
+  assert.equal(result.total, 349, `Expected 349 vectors, ran ${result.total}`);
   assert.equal(result.failed, 0, `Expected 0 failures, had ${result.failed}`);
-  assert.equal(result.passed, 342, `Expected 342 passed, had ${result.passed}`);
+  assert.equal(result.passed, 349, `Expected 349 passed, had ${result.passed}`);
 });

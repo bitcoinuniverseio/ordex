@@ -4,6 +4,7 @@
 // Merkle roots are recomputed by the same code the verifiers use instead of
 // being maintained by hand.
 
+import { createHash } from 'node:crypto';
 import { writeFileSync } from 'node:fs';
 
 import { bytesToHex, hexToBytes, serializeTransaction } from '../verifier/bitcoin-tx.js';
@@ -1246,6 +1247,7 @@ const eventCases = [
 ];
 
 const WEBHOOK_SECRET = 'whsec_test_secret_0123456789abcdef';
+const WEBHOOK_SECRET_NEXT = `whsec_${createHash('sha256').update('ordex-test-webhook-rotation', 'utf8').digest('base64url')}`;
 const webhookCases = [
   {
     name: 'a freshly signed delivery verifies',
@@ -1282,6 +1284,61 @@ const webhookCases = [
       headerOverride: 't=1787400000,v1=deadbeef',
     },
     expected: { ok: false, code: 'HEADER_MALFORMED' },
+  },
+  // OX-P11: rotation overlap signs with every unexpired secret, and a stored
+  // hash of a secret is never a signing key.
+  {
+    name: 'a delivery signed during a rotation overlap verifies with the previous secret',
+    signing: { secrets: [WEBHOOK_SECRET_NEXT, WEBHOOK_SECRET], timestamp: 1787400000, deliveryId: 'evt_0002', body: '{"ok":true}' },
+    verifying: { secret: WEBHOOK_SECRET, body: '{"ok":true}', nowSeconds: 1787400100, toleranceSeconds: 300 },
+    expected: { ok: true },
+  },
+  {
+    name: 'a delivery signed during a rotation overlap verifies with the new secret',
+    signing: { secrets: [WEBHOOK_SECRET_NEXT, WEBHOOK_SECRET], timestamp: 1787400000, deliveryId: 'evt_0002', body: '{"ok":true}' },
+    verifying: { secret: WEBHOOK_SECRET_NEXT, body: '{"ok":true}', nowSeconds: 1787400100, toleranceSeconds: 300 },
+    expected: { ok: true },
+  },
+  {
+    name: 'a receiver holding both secrets verifies a delivery signed after the overlap',
+    signing: { secret: WEBHOOK_SECRET_NEXT, timestamp: 1787400000, deliveryId: 'evt_0003', body: '{"ok":true}' },
+    verifying: { secrets: [WEBHOOK_SECRET, WEBHOOK_SECRET_NEXT], body: '{"ok":true}', nowSeconds: 1787400100, toleranceSeconds: 300 },
+    expected: { ok: true },
+  },
+  {
+    name: 'after the overlap the retired secret no longer verifies',
+    signing: { secret: WEBHOOK_SECRET_NEXT, timestamp: 1787400000, deliveryId: 'evt_0003', body: '{"ok":true}' },
+    verifying: { secret: WEBHOOK_SECRET, body: '{"ok":true}', nowSeconds: 1787400100, toleranceSeconds: 300 },
+    expected: { ok: false, code: 'SIGNATURE_INVALID' },
+  },
+  {
+    name: 'a stored hash of the secret is not the signing key',
+    signing: { secret: WEBHOOK_SECRET_NEXT, timestamp: 1787400000, deliveryId: 'evt_0004', body: '{"ok":true}' },
+    verifying: {
+      secret: createHash('sha256').update(WEBHOOK_SECRET_NEXT, 'utf8').digest('hex'),
+      body: '{"ok":true}',
+      nowSeconds: 1787400100,
+      toleranceSeconds: 300,
+    },
+    expected: { ok: false, code: 'SIGNATURE_INVALID' },
+  },
+  {
+    name: 'a header with two timestamps is refused',
+    signing: { secret: WEBHOOK_SECRET, timestamp: 1787400000, deliveryId: 'evt_0001', body: '{"ok":true}' },
+    verifying: {
+      secret: WEBHOOK_SECRET,
+      body: '{"ok":true}',
+      nowSeconds: 1787400100,
+      toleranceSeconds: 300,
+      headerOverride: `t=1787400000,t=1787400050,d=evt_0001,v1=${'0'.repeat(64)}`,
+    },
+    expected: { ok: false, code: 'HEADER_MALFORMED' },
+  },
+  {
+    name: 'naming both a secret and a secret list is refused',
+    signing: { secret: WEBHOOK_SECRET, timestamp: 1787400000, deliveryId: 'evt_0001', body: '{"ok":true}' },
+    verifying: { secret: WEBHOOK_SECRET, secrets: [WEBHOOK_SECRET_NEXT], body: '{"ok":true}', nowSeconds: 1787400100, toleranceSeconds: 300 },
+    expected: { ok: false, code: 'SECRET_INVALID' },
   },
 ];
 

@@ -999,7 +999,7 @@ export interface paths {
         put?: never;
         /**
          * Rotate the signing secret
-         * @description The old secret keeps verifying during a bounded overlap window so rotation never drops a delivery.
+         * @description Returns the next signing secret exactly once. The previous secret keeps verifying during a bounded overlap: each delivery carries one v1 per unexpired secret, so rotation never drops a delivery.
          */
         post: operations["rotateWebhookSecret"];
         delete?: never;
@@ -2518,8 +2518,10 @@ export interface components {
             network?: components["schemas"]["Network"];
             /** @enum {string} */
             status: "PENDING_VERIFICATION" | "ACTIVE" | "PAUSED" | "FAILED";
-            /** @description The last four characters only. The full secret is shown once at creation. */
+            /** @description The last four characters only. The full secret is shown once, at creation or rotation; the gateway keeps it only as ciphertext the delivery worker alone can open. */
             secretHint?: string;
+            /** @description The version of the current signing secret. Rotation increments it. */
+            secretVersion?: number;
             /** Format: date-time */
             createdAt: string;
         };
@@ -2537,8 +2539,10 @@ export interface components {
         };
         WebhookSecretReveal: {
             subscriptionId: string;
-            /** @description Shown exactly once. */
+            /** @description Shown exactly once: whsec_ followed by 32 random bytes in base64url. Store it; the gateway cannot show it again. */
             secret: string;
+            /** @description The version this secret signs as. */
+            secretVersion?: number;
         };
         WebhookDelivery: {
             deliveryId: string;
