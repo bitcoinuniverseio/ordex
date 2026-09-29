@@ -114,6 +114,8 @@ test('insights return aggregates only, and 503 without storage', async () => {
   assert.equal(data.ok, true);
   assert.deepEqual(data.events, [{ event: 'lab_verifier_completed', product: 'lab', count: 1 }]);
   assert.equal((await worker.fetch(new Request('http://svc/api/docs/insights?range=1y'), env)).status, 400);
+  const day = await (await worker.fetch(new Request('http://svc/api/docs/insights?range=24h'), env)).json();
+  assert.equal(day.range, '24h');
   assert.equal((await worker.fetch(new Request('http://svc/api/docs/insights'), {})).status, 503);
 });
 

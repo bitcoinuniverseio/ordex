@@ -1,7 +1,7 @@
 import type { JSX } from 'preact';
 import { useState, useEffect, useRef } from 'preact/hooks';
 import { SCENARIOS, ACTOR_LANES, getScenarioById } from '../../lib/scenarios/registry.js';
-import { createInitialScenarioState, scenarioReducer, pendingCheck, verdictFromResult, scenarioOutcome } from '../../lib/scenarios/engine.js';
+import { createInitialScenarioState, scenarioReducer, pendingCheck, verdictFromResult, scenarioOutcome, checkInputFor } from '../../lib/scenarios/engine.js';
 import { recordToolEvidence } from '../../lib/session/evidence.js';
 import type { ScenarioAction } from '../../lib/scenarios/engine.js';
 import type { ScenarioDefinition, ScenarioExecutionState } from '../../lib/scenarios/types.js';
@@ -15,8 +15,7 @@ import {
   IconStepBack,
   IconReset,
   IconShieldCheck,
-  IconAlertTriangle,
-  IconExternalLink
+  IconAlertTriangle
 } from '../experience/OrdexIcons.js';
 
 interface SandboxProps {
@@ -129,6 +128,34 @@ export function TransactionSandbox({
 
   const handleStepForward = () => dispatch({ type: 'STEP_FORWARD' });
   const handleStepBackward = () => dispatch({ type: 'STEP_BACKWARD' });
+
+  // OX-S08: the current step's exact verifier input (with an active injection applied) goes to
+  // Protocol Lab as a stored artifact; only its opaque id travels in the URL.
+  const [handoffError, setHandoffError] = useState<string | null>(null);
+  const openInLab = async () => {
+    setHandoffError(null);
+    const check = checkInputFor(selectedScenario, currentStep, engineState.activeFailureInjectionId ?? undefined);
+    if (!check) return;
+    const candidate = {
+      schema: 'ordex.lab-candidate/v1',
+      family: check.family,
+      variant: check.variant,
+      args: check.args,
+      source: { tool: 'sandbox', scenarioId: selectedScenario.id, stepId: currentStep.id, injectionId: engineState.activeFailureInjectionId ?? null, inputDigest: check.inputDigest, vectorId: currentStep.verifierCheck?.vectorId ?? null }
+    };
+    try {
+      const ref = await journeyStore.putArtifact({
+        name: `${selectedScenario.id} step ${engineState.currentStepIndex + 1}`,
+        type: 'json',
+        payload: JSON.stringify(candidate),
+        isDeterministicFixture: true,
+        summary: `${check.family} (${check.variant}) input of ${selectedScenario.title}, step ${engineState.currentStepIndex + 1}${candidate.source.injectionId ? `, injection ${candidate.source.injectionId}` : ''}`
+      });
+      window.location.assign(`${basePath}/lab/?artifact=${encodeURIComponent(ref.id)}`);
+    } catch (err) {
+      setHandoffError(`The input could not be handed to Protocol Lab: ${(err as Error).message}`);
+    }
+  };
 
   const handleReset = () => {
     setIsPlaying(false);
@@ -482,6 +509,14 @@ export function TransactionSandbox({
                   <strong>Arguments from vector:</strong> <code>{currentStep.verifierCheck.vectorId}</code>
                 </div>
               )}
+              {currentStep.verifierCheck && (
+                <div>
+                  <button type="button" onClick={openInLab} style={{ padding: '0.3rem 0.625rem', borderRadius: 'var(--ox-radius-sm)', border: '1px solid var(--ox-border-default)', backgroundColor: 'var(--ox-surface-panel)', color: 'var(--ox-text-primary)', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>
+                    Open this input in Protocol Lab
+                  </button>
+                  {handoffError && <div role="alert" style={{ marginTop: '0.25rem', color: 'var(--ox-status-refusal-text)' }}>{handoffError}</div>}
+                </div>
+              )}
             </div>
           )}
 
@@ -510,21 +545,6 @@ export function TransactionSandbox({
                 </div>
               </div>
 
-              <a
-                href={`${basePath}/inspect/`}
-                style={{
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.25rem',
-                  color: 'var(--ox-accent-text)',
-                  textDecoration: 'none'
-                }}
-              >
-                <span>Inspect in Lens</span>
-                <IconExternalLink size={12} />
-              </a>
             </div>
           )}
 

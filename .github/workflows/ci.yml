@@ -146,3 +146,35 @@ jobs:
       - name: Test the SDK
         working-directory: sdk
         run: npm test
+
+  # Documentation acceptance rows (tests/acceptance): every OX-S-C* coverage row that a browser
+  # gate can prove is exercised here against the built site, and each result is printed as one
+  # ORDEX-ROW line tied to this run and commit. Rows needing a deployed service stay blocked.
+  acceptance:
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, linux, x64, universe-super]
+    timeout-minutes: 90
+    steps:
+      - name: Check out exact source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Select pinned Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+
+      - name: Install locked root dependencies
+        run: npm ci
+
+      - name: Build the documentation site
+        run: npm run build
+
+      - name: Install the pinned Chromium for the browser gates
+        run: npx playwright install chromium
+
+      - name: Run the documentation acceptance rows
+        run: npm run test:acceptance

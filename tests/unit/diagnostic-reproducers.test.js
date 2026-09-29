@@ -105,6 +105,8 @@ test('rules are bound to their source, spec, lifecycle, versions and a fitting r
     const introduced = reaching.map((f) => FAMILY_INTRODUCED_IN[f]).sort()[0];
     assert.equal(d.supportedProtocolVersions[0], introduced, code);
     if (d.invariant) assert.ok(readFileSync(new URL(d.sourceRefs.find((s) => s.type === 'spec').path, root), 'utf8').includes(code), code);
+    // The requirement is a sentence, not a fragment listing codes.
+    if (d.invariant) assert.ok(d.invariant.includes(code) && d.invariant.replace(/\b[A-Z][A-Z0-9_]{2,}\b/g, ' ').split(/[^A-Za-z]+/).filter((w) => w.length > 1).length >= 4, `${code}: ${d.invariant}`);
     const steps = d.resolutionSteps.map((s) => s.action).join(' ');
     assert.doesNotMatch(steps, /Verify outpoints, scriptPubKeys/, code);
     if (['events', 'collection-manifest'].includes(d.family)) assert.doesNotMatch(steps, /outpoint|UTXO|scriptPubKey/i, `${code} is not a transaction failure`);

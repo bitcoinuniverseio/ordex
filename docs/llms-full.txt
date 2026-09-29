@@ -1367,8 +1367,7 @@ Before a plan exists, every candidate outpoint is resolved against the authoriti
 2. An inventory that lists an asset without its exact position or quantity, places it outside the input, or lists the same inscription or range on two inputs is refused (`INVENTORY_INVALID`).
 3. An unrecognized claim fails the plan closed (`UNKNOWN_CLAIM_FAILS_CLOSED`). Resolve the claim first.
 4. Cardinal only operations refuse inputs that carry any tracked asset (`ASSET_IN_CARDINAL_OPERATION`).
-5. A rune transfer refuses inputs without a rune allocation (`RUNE_INPUT_MISSING_ALLOCATION`).
-6. Authorities that disagree, stale data, or an indexer behind its accepted checkpoint fail the resolution closed.
+5. A rune transfer spends at least one input with a rune allocation. Its other inputs either carry a rune allocation or carry no tracked asset at all, so asset-free inputs can fund postage, change and fee for a rune that sits on a dus
 
 ---
 
@@ -3690,7 +3689,7 @@ Whether this transaction burns runes depends on the exact balances each input ca
 - Source: verifier/safeops.js
 - URL: /reference/refusal-codes/#RUNE_INPUT_MISSING_ALLOCATION
 
-Input <i> carries no rune allocation. Category: rune. Remediation: Regenerate the plan from the wallet as it is now and review it again before signing. Run the SafeOps verifier on the corrected input and continue only when it accepts.
+Input <i> carries <read.assets[0].assetType> <read.assets[0].assetId> but no rune allocation; a rune transfer is funded only by rune inputs or asset-free inputs. Category: rune. Remediation: Regenerate the plan from the wallet as it is now and review it again before signing. Run the SafeOps verifier on the corrected input and continue only when it accepts.
 
 ---
 

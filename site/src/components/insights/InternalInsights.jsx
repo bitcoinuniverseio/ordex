@@ -8,6 +8,7 @@ import { callDocsApi, DOCS_API_BASE } from '../../lib/docs/docs-client.mjs';
 // page says so; it never shows invented numbers.
 
 const RANGES = [
+  { id: '24h', label: 'Last 24 hours' },
   { id: '7d', label: 'Last 7 days' },
   { id: '30d', label: 'Last 30 days' },
   { id: '90d', label: 'Last 90 days' }
