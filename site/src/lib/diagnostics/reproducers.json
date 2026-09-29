@@ -348,7 +348,7 @@
       {
         "family": "safeops",
         "variant": "plan",
-        "base": "safeops/p-r02-a-zero-sat-runestone-with-a-proved-allocation-is-accepted",
+        "base": "safeops/d7-a-rune-on-a-dust-output-moves-with-an-asset-free-funding-input",
         "patch": [
           {
             "op": "replace",

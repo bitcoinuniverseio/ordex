@@ -216,12 +216,28 @@ export function verifySafeOpsPlan(plan) {
         `Input ${i} carries ${read.assets[0].assetType} ${read.assets[0].assetId}; this operation moves cardinal value only.`,
       );
     }
-    if (plan.operationKind === 'RUNE_BATCH_TRANSFER' && !read.assets.some((a) => a.assetType === 'RUNE')) {
-      return refuse('RUNE_INPUT_MISSING_ALLOCATION', `Input ${i} carries no rune allocation.`);
+    // D7: a rune transfer may be funded by cardinal inputs that carry no tracked
+    // asset, so a rune on a dust output can move; an input with other assets and
+    // no rune allocation is refused, and some input must carry a rune allocation.
+    if (
+      plan.operationKind === 'RUNE_BATCH_TRANSFER' &&
+      read.assets.length > 0 &&
+      !read.assets.some((a) => a.assetType === 'RUNE')
+    ) {
+      return refuse(
+        'RUNE_INPUT_MISSING_ALLOCATION',
+        `Input ${i} carries ${read.assets[0].assetType} ${read.assets[0].assetId} but no rune allocation; a rune transfer is funded only by rune inputs or asset-free inputs.`,
+      );
     }
     inputValues.push(value);
     inputAssets.push(read.assets);
     totalIn += value;
+  }
+  if (
+    plan.operationKind === 'RUNE_BATCH_TRANSFER' &&
+    !inputAssets.some((assets) => assets.some((a) => a.assetType === 'RUNE'))
+  ) {
+    return refuse('RUNE_INPUT_MISSING_ALLOCATION', 'No input carries a rune allocation, so there is no rune to transfer.');
   }
 
   // Outputs: an OP_RETURN is only ever a declared data output of zero value;

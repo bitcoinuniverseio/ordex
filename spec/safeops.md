@@ -16,7 +16,7 @@ Before a plan exists, every candidate outpoint is resolved against the authoriti
 2. An inventory that lists an asset without its exact position or quantity, places it outside the input, or lists the same inscription or range on two inputs is refused (`INVENTORY_INVALID`).
 3. An unrecognized claim fails the plan closed (`UNKNOWN_CLAIM_FAILS_CLOSED`). Resolve the claim first.
 4. Cardinal only operations refuse inputs that carry any tracked asset (`ASSET_IN_CARDINAL_OPERATION`).
-5. A rune transfer refuses inputs without a rune allocation (`RUNE_INPUT_MISSING_ALLOCATION`).
+5. A rune transfer spends at least one input with a rune allocation. Its other inputs either carry a rune allocation or carry no tracked asset at all, so asset-free inputs can fund postage, change and fee for a rune that sits on a dust output; an input carrying any other asset without a rune allocation is refused (`RUNE_INPUT_MISSING_ALLOCATION`).
 6. Authorities that disagree, stale data, or an indexer behind its accepted checkpoint fail the resolution closed.
 
 ## The plan
