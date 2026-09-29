@@ -10803,10 +10803,324 @@
     }
   },
   {
-    "id": "safeops/p-r02-a-zero-sat-runestone-with-a-proved-allocation-is-accepted",
+    "id": "safeops/d7-a-rune-on-a-dust-output-moves-with-an-asset-free-funding-input",
     "family": "safeops",
     "variant": "plan",
     "index": 18,
+    "name": "D7: a rune on a dust output moves with an asset-free funding input",
+    "title": "D7: a rune on a dust output moves with an asset-free funding input",
+    "description": "",
+    "sourceFile": "conformance/safeops-vectors.json",
+    "sourceSha256": "26c16f40bb61405638d84933ad2a190e08ce24ddde7432d857c8059ab59ee794",
+    "case": {
+      "name": "D7: a rune on a dust output moves with an asset-free funding input",
+      "plan": {
+        "schema": "ordex.safeops-plan/v2",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "operationKind": "RUNE_BATCH_TRANSFER",
+        "createdAtHeight": 900000,
+        "expiryHeight": 900010,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
+        "inputs": [
+          {
+            "outpoint": {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0
+            },
+            "valueSats": "546",
+            "scriptPubKeyHex": "5120f3893c6e54427448da37c6486c37fad14849038282aaf23390ee9e144f335f64",
+            "sequence": 4294967293,
+            "inventory": {
+              "examined": true,
+              "runeAllocations": [
+                {
+                  "runeId": "840000:1",
+                  "amount": "1000"
+                }
+              ]
+            }
+          },
+          {
+            "outpoint": {
+              "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "vout": 1
+            },
+            "valueSats": "20000",
+            "scriptPubKeyHex": "00148d85947dc48654dfe077116c141885d3b7904ce1",
+            "sequence": 4294967293,
+            "inventory": {
+              "examined": true
+            }
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "6a5d0800c0a23301f40301",
+            "valueSats": "0",
+            "role": "data"
+          },
+          {
+            "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "valueSats": "546",
+            "role": "recipient"
+          },
+          {
+            "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "valueSats": "19400",
+            "role": "change"
+          }
+        ],
+        "assetTransitions": [
+          {
+            "assetType": "RUNE",
+            "assetId": "840000:1",
+            "toOutput": 1,
+            "quantity": "1000"
+          }
+        ],
+        "fee": {
+          "feeSats": "600",
+          "maxFeeSats": "2000",
+          "feeRateSatsPerVb": "12"
+        },
+        "signing": {
+          "requiredIndexes": [
+            0,
+            1
+          ],
+          "sighashType": "DEFAULT"
+        },
+        "findings": [],
+        "digest": "6f46624b398f8e61992349c6a85c2657f7a34d9ce12fbdf57e003e6ba30446c5"
+      },
+      "expected": {
+        "ok": true
+      }
+    }
+  },
+  {
+    "id": "safeops/d7-a-funding-input-of-a-rune-transfer-that-carries-an-inscription-is-refused",
+    "family": "safeops",
+    "variant": "plan",
+    "index": 19,
+    "name": "D7: a funding input of a rune transfer that carries an inscription is refused",
+    "title": "D7: a funding input of a rune transfer that carries an inscription is refused",
+    "description": "",
+    "sourceFile": "conformance/safeops-vectors.json",
+    "sourceSha256": "c5bef4b8fd458c74c17dc0da7783071e68237b1cab740ed1227761999f094709",
+    "case": {
+      "name": "D7: a funding input of a rune transfer that carries an inscription is refused",
+      "plan": {
+        "schema": "ordex.safeops-plan/v2",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "operationKind": "RUNE_BATCH_TRANSFER",
+        "createdAtHeight": 900000,
+        "expiryHeight": 900010,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
+        "inputs": [
+          {
+            "outpoint": {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0
+            },
+            "valueSats": "546",
+            "scriptPubKeyHex": "5120f3893c6e54427448da37c6486c37fad14849038282aaf23390ee9e144f335f64",
+            "sequence": 4294967293,
+            "inventory": {
+              "examined": true,
+              "runeAllocations": [
+                {
+                  "runeId": "840000:1",
+                  "amount": "1000"
+                }
+              ]
+            }
+          },
+          {
+            "outpoint": {
+              "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "vout": 1
+            },
+            "valueSats": "20000",
+            "scriptPubKeyHex": "00148d85947dc48654dfe077116c141885d3b7904ce1",
+            "sequence": 4294967293,
+            "inventory": {
+              "examined": true,
+              "inscriptions": [
+                {
+                  "inscriptionId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+                  "offset": "0"
+                }
+              ]
+            }
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "6a5d0800c0a23301f40301",
+            "valueSats": "0",
+            "role": "data"
+          },
+          {
+            "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "valueSats": "546",
+            "role": "recipient"
+          },
+          {
+            "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "valueSats": "19400",
+            "role": "change"
+          }
+        ],
+        "assetTransitions": [
+          {
+            "assetType": "RUNE",
+            "assetId": "840000:1",
+            "toOutput": 1,
+            "quantity": "1000"
+          }
+        ],
+        "fee": {
+          "feeSats": "600",
+          "maxFeeSats": "2000",
+          "feeRateSatsPerVb": "12"
+        },
+        "signing": {
+          "requiredIndexes": [
+            0,
+            1
+          ],
+          "sighashType": "DEFAULT"
+        },
+        "findings": [],
+        "digest": "fdb93f7d43eb608d26a5b2e2cb07826498a3f9060dcb142b43c3f58c80bf6f7f"
+      },
+      "expected": {
+        "ok": false,
+        "code": "RUNE_INPUT_MISSING_ALLOCATION"
+      }
+    }
+  },
+  {
+    "id": "safeops/d7-a-rune-transfer-whose-inputs-are-all-asset-free-is-refused",
+    "family": "safeops",
+    "variant": "plan",
+    "index": 20,
+    "name": "D7: a rune transfer whose inputs are all asset-free is refused",
+    "title": "D7: a rune transfer whose inputs are all asset-free is refused",
+    "description": "",
+    "sourceFile": "conformance/safeops-vectors.json",
+    "sourceSha256": "9739999cb70c8731430d6d781d1b203141e98ef84df50e6ee7615d1df6a096a6",
+    "case": {
+      "name": "D7: a rune transfer whose inputs are all asset-free is refused",
+      "plan": {
+        "schema": "ordex.safeops-plan/v2",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "operationKind": "RUNE_BATCH_TRANSFER",
+        "createdAtHeight": 900000,
+        "expiryHeight": 900010,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
+        "inputs": [
+          {
+            "outpoint": {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0
+            },
+            "valueSats": "546",
+            "scriptPubKeyHex": "5120f3893c6e54427448da37c6486c37fad14849038282aaf23390ee9e144f335f64",
+            "sequence": 4294967293,
+            "inventory": {
+              "examined": true
+            }
+          },
+          {
+            "outpoint": {
+              "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "vout": 1
+            },
+            "valueSats": "20000",
+            "scriptPubKeyHex": "00148d85947dc48654dfe077116c141885d3b7904ce1",
+            "sequence": 4294967293,
+            "inventory": {
+              "examined": true
+            }
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "6a5d0800c0a23301f40301",
+            "valueSats": "0",
+            "role": "data"
+          },
+          {
+            "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "valueSats": "546",
+            "role": "recipient"
+          },
+          {
+            "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "valueSats": "19400",
+            "role": "change"
+          }
+        ],
+        "assetTransitions": [
+          {
+            "assetType": "RUNE",
+            "assetId": "840000:1",
+            "toOutput": 1,
+            "quantity": "1000"
+          }
+        ],
+        "fee": {
+          "feeSats": "600",
+          "maxFeeSats": "2000",
+          "feeRateSatsPerVb": "12"
+        },
+        "signing": {
+          "requiredIndexes": [
+            0,
+            1
+          ],
+          "sighashType": "DEFAULT"
+        },
+        "findings": [],
+        "digest": "ddcde13a8d9d46ba3671fdad3019e0d4bc555b4aeebf46e34a46a59096b4ef35"
+      },
+      "expected": {
+        "ok": false,
+        "code": "RUNE_INPUT_MISSING_ALLOCATION"
+      }
+    }
+  },
+  {
+    "id": "safeops/p-r02-a-zero-sat-runestone-with-a-proved-allocation-is-accepted",
+    "family": "safeops",
+    "variant": "plan",
+    "index": 21,
     "name": "P-R02: a zero-sat runestone with a proved allocation is accepted",
     "title": "P-R02: a zero-sat runestone with a proved allocation is accepted",
     "description": "",
@@ -10916,7 +11230,7 @@
     "id": "safeops/a-runestone-whose-edict-names-its-own-op-return-burns-runes-and-is-refused",
     "family": "safeops",
     "variant": "plan",
-    "index": 19,
+    "index": 22,
     "name": "a runestone whose edict names its own OP_RETURN burns runes and is refused",
     "title": "a runestone whose edict names its own OP_RETURN burns runes and is refused",
     "description": "",
@@ -11027,7 +11341,7 @@
     "id": "safeops/a-rune-transition-that-states-the-wrong-quantity-is-refused",
     "family": "safeops",
     "variant": "plan",
-    "index": 20,
+    "index": 23,
     "name": "a rune transition that states the wrong quantity is refused",
     "title": "a rune transition that states the wrong quantity is refused",
     "description": "",
@@ -11138,7 +11452,7 @@
     "id": "safeops/a-data-output-that-carries-value-is-refused-as-a-burn",
     "family": "safeops",
     "variant": "plan",
-    "index": 21,
+    "index": 24,
     "name": "a data output that carries value is refused as a burn",
     "title": "a data output that carries value is refused as a burn",
     "description": "",
@@ -11249,7 +11563,7 @@
     "id": "safeops/an-op-return-given-a-spendable-role-is-refused",
     "family": "safeops",
     "variant": "plan",
-    "index": 22,
+    "index": 25,
     "name": "an OP_RETURN given a spendable role is refused",
     "title": "an OP_RETURN given a spendable role is refused",
     "description": "",
@@ -11360,7 +11674,7 @@
     "id": "safeops/an-op-return-that-is-not-a-runestone-is-refused",
     "family": "safeops",
     "variant": "plan",
-    "index": 23,
+    "index": 26,
     "name": "an OP_RETURN that is not a runestone is refused",
     "title": "an OP_RETURN that is not a runestone is refused",
     "description": "",
@@ -11452,7 +11766,7 @@
     "id": "safeops/a-counterparty-attachment-moves-to-the-first-spendable-output",
     "family": "safeops",
     "variant": "plan",
-    "index": 24,
+    "index": 27,
     "name": "a Counterparty attachment moves to the first spendable output",
     "title": "a Counterparty attachment moves to the first spendable output",
     "description": "",
@@ -11553,7 +11867,7 @@
     "id": "safeops/a-counterparty-attachment-planned-along-its-sat-range-is-refused",
     "family": "safeops",
     "variant": "plan",
-    "index": 25,
+    "index": 28,
     "name": "a Counterparty attachment planned along its sat range is refused",
     "title": "a Counterparty attachment planned along its sat range is refused",
     "description": "",
@@ -11655,7 +11969,7 @@
     "id": "safeops/p-r03-a-null-signing-policy-is-refused-never-thrown-on",
     "family": "safeops",
     "variant": "plan",
-    "index": 26,
+    "index": 29,
     "name": "P-R03: a null signing policy is refused, never thrown on",
     "title": "P-R03: a null signing policy is refused, never thrown on",
     "description": "",
@@ -11741,7 +12055,7 @@
     "id": "safeops/a-signing-policy-that-skips-an-input-is-refused",
     "family": "safeops",
     "variant": "plan",
-    "index": 27,
+    "index": 30,
     "name": "a signing policy that skips an input is refused",
     "title": "a signing policy that skips an input is refused",
     "description": "",
@@ -11832,7 +12146,7 @@
     "id": "safeops/a-sighash-that-lets-the-transaction-change-after-signing-is-refused",
     "family": "safeops",
     "variant": "plan",
-    "index": 28,
+    "index": 31,
     "name": "a sighash that lets the transaction change after signing is refused",
     "title": "a sighash that lets the transaction change after signing is refused",
     "description": "",
@@ -11924,7 +12238,7 @@
     "id": "safeops/a-plan-that-does-not-fix-version-and-locktime-is-refused",
     "family": "safeops",
     "variant": "plan",
-    "index": 29,
+    "index": 32,
     "name": "a plan that does not fix version and locktime is refused",
     "title": "a plan that does not fix version and locktime is refused",
     "description": "",
@@ -12012,7 +12326,7 @@
     "id": "safeops/a-v1-plan-is-refused-rather-than-reinterpreted",
     "family": "safeops",
     "variant": "plan",
-    "index": 30,
+    "index": 33,
     "name": "a v1 plan is refused rather than reinterpreted",
     "title": "a v1 plan is refused rather than reinterpreted",
     "description": "",
@@ -12104,7 +12418,7 @@
     "id": "safeops/a-plan-whose-digest-was-edited-is-refused",
     "family": "safeops",
     "variant": "plan",
-    "index": 31,
+    "index": 34,
     "name": "a plan whose digest was edited is refused",
     "title": "a plan whose digest was edited is refused",
     "description": "",
@@ -12196,7 +12510,7 @@
     "id": "safeops/a-fully-signed-result-matching-its-plan-is-accepted",
     "family": "safeops",
     "variant": "signed",
-    "index": 32,
+    "index": 35,
     "name": "a fully signed result matching its plan is accepted",
     "title": "a fully signed result matching its plan is accepted",
     "description": "",
@@ -12302,7 +12616,7 @@
     "id": "safeops/a-signed-rune-transfer-with-its-runestone-is-accepted",
     "family": "safeops",
     "variant": "signed",
-    "index": 33,
+    "index": 36,
     "name": "a signed rune transfer with its runestone is accepted",
     "title": "a signed rune transfer with its runestone is accepted",
     "description": "",
@@ -12417,7 +12731,7 @@
     "id": "safeops/a-signed-result-from-a-different-plan-is-refused",
     "family": "safeops",
     "variant": "signed",
-    "index": 34,
+    "index": 37,
     "name": "a signed result from a different plan is refused",
     "title": "a signed result from a different plan is refused",
     "description": "",
@@ -12524,7 +12838,7 @@
     "id": "safeops/a-changed-output-script-is-refused-after-signing",
     "family": "safeops",
     "variant": "signed",
-    "index": 35,
+    "index": 38,
     "name": "a changed output script is refused after signing",
     "title": "a changed output script is refused after signing",
     "description": "",
@@ -12631,7 +12945,7 @@
     "id": "safeops/an-unsigned-required-input-is-refused",
     "family": "safeops",
     "variant": "signed",
-    "index": 36,
+    "index": 39,
     "name": "an unsigned required input is refused",
     "title": "an unsigned required input is refused",
     "description": "",
@@ -12738,7 +13052,7 @@
     "id": "safeops/a-signature-made-over-another-transaction-is-refused",
     "family": "safeops",
     "variant": "signed",
-    "index": 37,
+    "index": 40,
     "name": "a signature made over another transaction is refused",
     "title": "a signature made over another transaction is refused",
     "description": "",
@@ -12845,7 +13159,7 @@
     "id": "safeops/a-changed-sighash-is-refused",
     "family": "safeops",
     "variant": "signed",
-    "index": 38,
+    "index": 41,
     "name": "a changed sighash is refused",
     "title": "a changed sighash is refused",
     "description": "",
@@ -12952,7 +13266,7 @@
     "id": "safeops/a-changed-sequence-is-refused",
     "family": "safeops",
     "variant": "signed",
-    "index": 39,
+    "index": 42,
     "name": "a changed sequence is refused",
     "title": "a changed sequence is refused",
     "description": "",
@@ -13059,7 +13373,7 @@
     "id": "safeops/a-changed-locktime-is-refused",
     "family": "safeops",
     "variant": "signed",
-    "index": 40,
+    "index": 43,
     "name": "a changed locktime is refused",
     "title": "a changed locktime is refused",
     "description": "",
@@ -13166,7 +13480,7 @@
     "id": "safeops/signed-bytes-that-do-not-parse-are-refused",
     "family": "safeops",
     "variant": "signed",
-    "index": 41,
+    "index": 44,
     "name": "signed bytes that do not parse are refused",
     "title": "signed bytes that do not parse are refused",
     "description": "",

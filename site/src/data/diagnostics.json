@@ -120,7 +120,7 @@
       "1.2"
     ],
     "summary": "The revealed leaf is not the exact acceptance leaf for these terms and policy keys.",
-    "invariant": "ACCEPTANCE_LEAF_MISMATCH, CONTROL_BLOCK_MISMATCH, SIGNATURE_MISSING,",
+    "invariant": "Both policy signatures verify under the exact acceptance leaf and control block, and every seller input carries a verifying closing signature (POLICY_SIGNATURES_MISSING, POLICY_SIGNATURE_INVALID, ACCEPTANCE_LEAF_MISMATCH, CONTROL_BLOCK_MISMATCH, SIGNATURE_MISSING, UNCLOSED_SIGHASH).",
     "causes": [
       {
         "family": "offers",
@@ -683,7 +683,7 @@
       "1.2"
     ],
     "summary": "RUNE_MINT_UNRESOLVED",
-    "invariant": "| ALLOCATION_BURNS_BALANCE | a readable runestone, or none, sends a balance to an OP_RETURN or to no output |",
+    "invariant": "ALLOCATION_BURNS_BALANCE: a readable runestone, or none, sends a balance to an OP_RETURN or to no output",
     "causes": [
       {
         "family": "asset-flow",
@@ -1117,7 +1117,7 @@
       "1.2"
     ],
     "summary": "Asset identity is the authoritative numeric Counterparty asset id; a name alone is never an identity.",
-    "invariant": "Asset identity is the authoritative numeric Counterparty asset id plus current ledger state. A ticker or name alone is never an identity (ASSET_ID_REQUIRED). Records carry the name, the numeric id, divisibility, and the exact atomic quantity as a decimal string.",
+    "invariant": "A ticker or name alone is never an identity (ASSET_ID_REQUIRED).",
     "causes": [
       {
         "family": "counterparty-asset",
@@ -1427,7 +1427,7 @@
       "1.2"
     ],
     "summary": "<m.assetType> <m.assetId> belongs to the <from> and would land with the <owners[m.toOutput]>.",
-    "invariant": "ASSET_MISDIRECTED). The buyer receives the Feline and nothing else of the",
+    "invariant": "The Feline lands in the buyer asset output, and every other asset lands with its owner: the seller's other inscriptions, rare sats, runes and Counterparty attachments in seller outputs (FELINE_NOT_DELIVERED, ASSET_MISDIRECTED).",
     "causes": [
       {
         "family": "offers",
@@ -1723,7 +1723,7 @@
       "1.2"
     ],
     "summary": "The outputs ahead of the seller payment must absorb exactly the sats of the seller inputs.",
-    "invariant": "(ASSET_OUTPUTS_UNBALANCED, SELLER_VALUE_MISMATCH, OUTPUT_UNDESCRIBED,",
+    "invariant": "The asset outputs absorb exactly the sats of the seller inputs, so the offer output's sats never reach them; exactly one pays the buyer receive script and the rest pay seller scripts; then the seller payment pays exactly priceSats to the seller payment script; then at most one buyer change output; nothing else, no data output and no dust (ASSET_OUTPUTS_UNBALANCED, SELLER_VALUE_MISMATCH, OUTPUT_UNDESCRIBED, DUST_OUTPUT).",
     "causes": [
       {
         "family": "offers",
@@ -1821,7 +1821,7 @@
       "1.2"
     ],
     "summary": "<m.assetType> <m.assetId> would land in the fee and be lost to the miner.",
-    "invariant": "A sat-bound asset never lands in the fee (ASSET_TO_FEE), and an output carrying an inscription or rare sat range holds at least the 546 sat product postage floor (POSTAGE_BELOW_FLOOR). Postage is an Ordex product rule.",
+    "invariant": "A sat-bound asset never lands in the fee (ASSET_TO_FEE), and an output carrying an inscription or rare sat range holds at least the 546 sat product postage floor (POSTAGE_BELOW_FLOOR).",
     "causes": [
       {
         "family": "asset-flow",
@@ -2247,7 +2247,7 @@
       "1.2"
     ],
     "summary": "The record may only be produced while the self hosted Counterparty Core authority reports ready.",
-    "invariant": "One self-hosted Counterparty Core deployment is the only production authority. A record may be produced only while it reports ready, matches the intended network, reaches the accepted Bitcoin Core height, and carries stable ledger, transaction-list, and message hashes (AUTHORITY_NOT_READY). Every record binds the block height, block hash, and ledger hash it was read at, so any consumer can judge freshness. There is no public API fallback in production, ever. A lagging node fails the market closed rather than opening it on stale truth.",
+    "invariant": "A record may be produced only while it reports ready, matches the intended network, reaches the accepted Bitcoin Core height, and carries stable ledger, transaction-list, and message hashes (AUTHORITY_NOT_READY).",
     "causes": [
       {
         "family": "counterparty-asset",
@@ -2441,7 +2441,7 @@
       "1.2"
     ],
     "summary": "This transaction can send rune balances to an OP_RETURN or to no output at all, and it spends an output the rune index has not examined.",
-    "invariant": "| BURN_PATH_WITH_UNPROVEN_INPUT | a burn path exists and an input was never examined |",
+    "invariant": "BURN_PATH_WITH_UNPROVEN_INPUT: a burn path exists and an input was never examined",
     "causes": [
       {
         "family": "runes",
@@ -2638,7 +2638,7 @@
       "1.2"
     ],
     "summary": "Input <i> is a buyer input. The buyer signs nothing at acceptance; only the funded output is spent for the buyer.",
-    "invariant": "refused (BUYER_INPUT_UNAUTHORIZED).",
+    "invariant": "An input described as the buyer's is refused (BUYER_INPUT_UNAUTHORIZED).",
     "causes": [
       {
         "family": "offers",
@@ -2738,7 +2738,7 @@
       "1.2"
     ],
     "summary": "Confirming this transaction would destroy rune balances its inputs carry.",
-    "invariant": "| CENOTAPH_BURNS_BALANCE | a cenotaph spends a rune balance |",
+    "invariant": "CENOTAPH_BURNS_BALANCE: a cenotaph spends a rune balance",
     "causes": [
       {
         "family": "asset-flow",
@@ -2792,8 +2792,8 @@
         "family": "safeops",
         "covers": "asset-flow",
         "variant": "plan",
-        "base": "safeops/p-r02-a-zero-sat-runestone-with-a-proved-allocation-is-accepted",
-        "baseName": "P-R02: a zero-sat runestone with a proved allocation is accepted",
+        "base": "safeops/d7-a-rune-on-a-dust-output-moves-with-an-asset-free-funding-input",
+        "baseName": "D7: a rune on a dust output moves with an asset-free funding input",
         "patch": [
           {
             "op": "replace",
@@ -2864,7 +2864,7 @@
         "type": "spec"
       },
       {
-        "title": "conformance/safeops-vectors.json: P-R02: a zero-sat runestone with a proved allocation is accepted",
+        "title": "conformance/safeops-vectors.json: D7: a rune on a dust output moves with an asset-free funding input",
         "path": "conformance/safeops-vectors.json",
         "line": null,
         "type": "vector"
@@ -2896,7 +2896,7 @@
       "1.2"
     ],
     "summary": "This transaction carries a malformed runestone and spends an output the rune index has not examined, so it cannot be proven to hold no runes.",
-    "invariant": "| CENOTAPH_WITH_UNPROVEN_INPUT | a cenotaph spends an input the index never examined |",
+    "invariant": "CENOTAPH_WITH_UNPROVEN_INPUT: a cenotaph spends an input the index never examined",
     "causes": [
       {
         "family": "runes",
@@ -3364,7 +3364,7 @@
       "1.2"
     ],
     "summary": "The membership proof does not resolve to the collection root the terms commit to.",
-    "invariant": "set (SCOPE_MISMATCH, COLLECTION_MEMBERSHIP_NOT_PROVEN,",
+    "invariant": "The Feline is the named inscription for ITEM, proves membership in the collection root, and for TRAIT proves membership in the committed trait set (SCOPE_MISMATCH, COLLECTION_MEMBERSHIP_NOT_PROVEN, TRAIT_NOT_PROVEN).",
     "causes": [
       {
         "family": "offers",
@@ -3461,7 +3461,7 @@
       "1.2"
     ],
     "summary": "<m.assetType> <m.assetId> the maker requires would not reach the maker.",
-    "invariant": "Every given asset reaches the taker receive script with its exact quantity (MAKER_ASSET_NOT_DELIVERED, GIVE_QUANTITY_MISMATCH). Every required asset reaches the maker receive script in at least its quantity, judged by asset identity and never by a BTC value: an inscription whole, a rare sat range by count, a rune or Counterparty asset by the maker's net gain (CONSIDERATION_SHORTFALL). Every other asset returns to its owner (ASSET_MISDIRECTED).",
+    "invariant": "Every required asset reaches the maker receive script in at least its quantity, judged by asset identity and never by a BTC value: an inscription whole, a rare sat range by count, a rune or Counterparty asset by the maker's net gain (CONSIDERATION_SHORTFALL).",
     "causes": [
       {
         "family": "swaps",
@@ -3693,7 +3693,7 @@
       "1.2"
     ],
     "summary": "The control block does not commit the acceptance leaf to the funded output.",
-    "invariant": "ACCEPTANCE_LEAF_MISMATCH, CONTROL_BLOCK_MISMATCH, SIGNATURE_MISSING,",
+    "invariant": "Both policy signatures verify under the exact acceptance leaf and control block, and every seller input carries a verifying closing signature (POLICY_SIGNATURES_MISSING, POLICY_SIGNATURE_INVALID, ACCEPTANCE_LEAF_MISMATCH, CONTROL_BLOCK_MISMATCH, SIGNATURE_MISSING, UNCLOSED_SIGHASH).",
     "causes": [
       {
         "family": "offers",
@@ -4026,7 +4026,7 @@
       "1.2"
     ],
     "summary": "Counterparty would <outcome.operation === 'STRANDED' ? 'strand' : 'detach'> the attached assets instead of moving them.",
-    "invariant": "**Counterparty attachments** move, all of them, to the first output Counterparty does not pass over (see spec/counterparty-utxo-asset.md). A spend that would detach or strand them instead is refused (COUNTERPARTY_NOT_MOVED).",
+    "invariant": "A spend that would detach or strand them instead is refused (COUNTERPARTY_NOT_MOVED).",
     "causes": [
       {
         "family": "asset-flow",
@@ -4390,7 +4390,7 @@
       "1.2"
     ],
     "summary": "The manifest must carry a bip322 creator signature.",
-    "invariant": "A manifest is drafted, validated locally, signed by the creator, and then published. Publication is immutable. Corrections are a new version whose digest names the previous one. Supersession and revocation are creator-signed documents. A revocation (ordex.collection-manifest-revocation/v1, which revokes ordex.collection-manifest/v1 documents) names the network, the collection id and the exact manifest digest, states a reason, and carries a bip322 creator signature: the signer address and a base64 signature (CREATOR_SIGNATURE_INVALID).",
+    "invariant": "collection-manifest/v1 documents) names the network, the collection id and the exact manifest digest, states a reason, and carries a bip322 creator signature: the signer address and a base64 signature (CREATOR_SIGNATURE_INVALID).",
     "causes": [
       {
         "family": "collection-manifest",
@@ -4602,14 +4602,14 @@
       "1.2"
     ],
     "summary": "Output <i> would burn <output.valueSats> sats in an OP_RETURN.",
-    "invariant": "An OP_RETURN output is a data output and a data output is an OP_RETURN (DATA_OUTPUT_ROLE_MISMATCH). It carries zero value (DATA_OUTPUT_BURNS_VALUE). The only data output a plan may carry is one runestone moving the runes the plan's inputs hold (DATA_OUTPUT_NOT_PERMITTED), within the 83 byte relay limit (DATA_OUTPUT_NONSTANDARD).",
+    "invariant": "It carries zero value (DATA_OUTPUT_BURNS_VALUE).",
     "causes": [
       {
         "family": "safeops",
         "predicate": "Output <i> would burn <output.valueSats> sats in an OP_RETURN.",
         "source": {
           "path": "verifier/safeops.js",
-          "line": 248,
+          "line": 264,
           "symbol": "verifySafeOpsPlan"
         },
         "reachable": true
@@ -4693,9 +4693,9 @@
     ],
     "sourceRefs": [
       {
-        "title": "verifier/safeops.js:248 (verifySafeOpsPlan)",
+        "title": "verifier/safeops.js:264 (verifySafeOpsPlan)",
         "path": "verifier/safeops.js",
-        "line": 248,
+        "line": 264,
         "type": "verifier"
       },
       {
@@ -4744,14 +4744,14 @@
       "1.2"
     ],
     "summary": "The runestone exceeds the <MAX_OP_RETURN_RELAY_BYTES> byte relay limit.",
-    "invariant": "An OP_RETURN output is a data output and a data output is an OP_RETURN (DATA_OUTPUT_ROLE_MISMATCH). It carries zero value (DATA_OUTPUT_BURNS_VALUE). The only data output a plan may carry is one runestone moving the runes the plan's inputs hold (DATA_OUTPUT_NOT_PERMITTED), within the 83 byte relay limit (DATA_OUTPUT_NONSTANDARD).",
+    "invariant": "The only data output a plan may carry is one runestone moving the runes the plan's inputs hold (DATA_OUTPUT_NOT_PERMITTED), within the 83 byte relay limit (DATA_OUTPUT_NONSTANDARD).",
     "causes": [
       {
         "family": "safeops",
         "predicate": "The runestone exceeds the <MAX_OP_RETURN_RELAY_BYTES> byte relay limit.",
         "source": {
           "path": "verifier/safeops.js",
-          "line": 279,
+          "line": 295,
           "symbol": "verifySafeOpsPlan"
         },
         "reachable": true
@@ -4848,9 +4848,9 @@
     ],
     "sourceRefs": [
       {
-        "title": "verifier/safeops.js:279 (verifySafeOpsPlan)",
+        "title": "verifier/safeops.js:295 (verifySafeOpsPlan)",
         "path": "verifier/safeops.js",
-        "line": 279,
+        "line": 295,
         "type": "verifier"
       },
       {
@@ -4899,14 +4899,14 @@
       "1.2"
     ],
     "summary": "The only data output a plan may carry is one readable runestone for the runes it moves.",
-    "invariant": "An OP_RETURN output is a data output and a data output is an OP_RETURN (DATA_OUTPUT_ROLE_MISMATCH). It carries zero value (DATA_OUTPUT_BURNS_VALUE). The only data output a plan may carry is one runestone moving the runes the plan's inputs hold (DATA_OUTPUT_NOT_PERMITTED), within the 83 byte relay limit (DATA_OUTPUT_NONSTANDARD).",
+    "invariant": "The only data output a plan may carry is one runestone moving the runes the plan's inputs hold (DATA_OUTPUT_NOT_PERMITTED), within the 83 byte relay limit (DATA_OUTPUT_NONSTANDARD).",
     "causes": [
       {
         "family": "safeops",
         "predicate": "The only data output a plan may carry is one readable runestone for the runes it moves.",
         "source": {
           "path": "verifier/safeops.js",
-          "line": 276,
+          "line": 292,
           "symbol": "verifySafeOpsPlan"
         },
         "reachable": true
@@ -4989,9 +4989,9 @@
     ],
     "sourceRefs": [
       {
-        "title": "verifier/safeops.js:276 (verifySafeOpsPlan)",
+        "title": "verifier/safeops.js:292 (verifySafeOpsPlan)",
         "path": "verifier/safeops.js",
-        "line": 276,
+        "line": 292,
         "type": "verifier"
       },
       {
@@ -5038,14 +5038,14 @@
       "1.2"
     ],
     "summary": "Output <i>: an OP_RETURN output is a data output and a data output is an OP_RETURN.",
-    "invariant": "An OP_RETURN output is a data output and a data output is an OP_RETURN (DATA_OUTPUT_ROLE_MISMATCH). It carries zero value (DATA_OUTPUT_BURNS_VALUE). The only data output a plan may carry is one runestone moving the runes the plan's inputs hold (DATA_OUTPUT_NOT_PERMITTED), within the 83 byte relay limit (DATA_OUTPUT_NONSTANDARD).",
+    "invariant": "An OP_RETURN output is a data output and a data output is an OP_RETURN (DATA_OUTPUT_ROLE_MISMATCH).",
     "causes": [
       {
         "family": "safeops",
         "predicate": "Output <i>: an OP_RETURN output is a data output and a data output is an OP_RETURN.",
         "source": {
           "path": "verifier/safeops.js",
-          "line": 245,
+          "line": 261,
           "symbol": "verifySafeOpsPlan"
         },
         "reachable": true
@@ -5093,9 +5093,9 @@
     ],
     "sourceRefs": [
       {
-        "title": "verifier/safeops.js:245 (verifySafeOpsPlan)",
+        "title": "verifier/safeops.js:261 (verifySafeOpsPlan)",
         "path": "verifier/safeops.js",
-        "line": 245,
+        "line": 261,
         "type": "verifier"
       },
       {
@@ -5581,7 +5581,7 @@
         "predicate": "The plan digest does not match its binding content.",
         "source": {
           "path": "verifier/safeops.js",
-          "line": 327,
+          "line": 343,
           "symbol": "verifySafeOpsPlan"
         },
         "reachable": true
@@ -5724,9 +5724,9 @@
         "type": "verifier"
       },
       {
-        "title": "verifier/safeops.js:327 (verifySafeOpsPlan)",
+        "title": "verifier/safeops.js:343 (verifySafeOpsPlan)",
         "path": "verifier/safeops.js",
-        "line": 327,
+        "line": 343,
         "type": "verifier"
       },
       {
@@ -5889,7 +5889,7 @@
       "1.2"
     ],
     "summary": "Output <j> is below the <dust> sat dust threshold for its script.",
-    "invariant": "DUST_OUTPUT).",
+    "invariant": "The asset outputs absorb exactly the sats of the seller inputs, so the offer output's sats never reach them; exactly one pays the buyer receive script and the rest pay seller scripts; then the seller payment pays exactly priceSats to the seller payment script; then at most one buyer change output; nothing else, no data output and no dust (ASSET_OUTPUTS_UNBALANCED, SELLER_VALUE_MISMATCH, OUTPUT_UNDESCRIBED, DUST_OUTPUT).",
     "causes": [
       {
         "family": "offers",
@@ -5936,7 +5936,7 @@
         "predicate": "Output <i> holds <output.valueSats> sats, below the <dustThresholdSats(output.scriptHex)> sat dust threshold for its script.",
         "source": {
           "path": "verifier/safeops.js",
-          "line": 251,
+          "line": 267,
           "symbol": "verifySafeOpsPlan"
         },
         "reachable": true
@@ -6094,9 +6094,9 @@
         "type": "verifier"
       },
       {
-        "title": "verifier/safeops.js:251 (verifySafeOpsPlan)",
+        "title": "verifier/safeops.js:267 (verifySafeOpsPlan)",
         "path": "verifier/safeops.js",
-        "line": 251,
+        "line": 267,
         "type": "verifier"
       },
       {
@@ -6739,7 +6739,7 @@
       "1.2"
     ],
     "summary": "The maker would contribute <makerFeeActual> sats, above the budget the intent approved.",
-    "invariant": "Fee shares come from value flow, not labels. The postage of a sat-bound asset moves with the asset. With that, the maker's share is its BTC requirement, minus its BTC gives, minus its net BTC change; it must stay inside the intent budget, and the declared split must equal the computed one (FEE_BUDGET_EXCEEDED, CONSIDERATION_SHORTFALL, FEE_SPLIT_INVALID, FEE_CHANGED). The carrier sats of a rune or Counterparty output count as BTC.",
+    "invariant": "With that, the maker's share is its BTC requirement, minus its BTC gives, minus its net BTC change; it must stay inside the intent budget, and the declared split must equal the computed one (FEE_BUDGET_EXCEEDED, CONSIDERATION_SHORTFALL, FEE_SPLIT_INVALID, FEE_CHANGED).",
     "causes": [
       {
         "family": "swaps",
@@ -6927,7 +6927,7 @@
       "1.2"
     ],
     "summary": "The declared fee does not match the transaction.",
-    "invariant": "Fee shares come from value flow, not labels. The postage of a sat-bound asset moves with the asset. With that, the maker's share is its BTC requirement, minus its BTC gives, minus its net BTC change; it must stay inside the intent budget, and the declared split must equal the computed one (FEE_BUDGET_EXCEEDED, CONSIDERATION_SHORTFALL, FEE_SPLIT_INVALID, FEE_CHANGED). The carrier sats of a rune or Counterparty output count as BTC.",
+    "invariant": "With that, the maker's share is its BTC requirement, minus its BTC gives, minus its net BTC change; it must stay inside the intent budget, and the declared split must equal the computed one (FEE_BUDGET_EXCEEDED, CONSIDERATION_SHORTFALL, FEE_SPLIT_INVALID, FEE_CHANGED).",
     "causes": [
       {
         "family": "swaps",
@@ -7347,7 +7347,7 @@
       "1.2"
     ],
     "summary": "The fee exceeds the maximum the terms committed to.",
-    "invariant": "maxNetworkFeeSats (FEE_OVER_MAXIMUM).",
+    "invariant": "The fee actually paid, sum(inputs) - sum(outputs), is at or below maxNetworkFeeSats (FEE_OVER_MAXIMUM).",
     "causes": [
       {
         "family": "offers",
@@ -7444,7 +7444,7 @@
       "1.2"
     ],
     "summary": "From the value flow the maker contributes <makerFeeActual> and the taker <takerFeeActual>, not the <feeSpec.makerFeeSats> and <feeSpec.takerFeeSats> declared.",
-    "invariant": "Fee shares come from value flow, not labels. The postage of a sat-bound asset moves with the asset. With that, the maker's share is its BTC requirement, minus its BTC gives, minus its net BTC change; it must stay inside the intent budget, and the declared split must equal the computed one (FEE_BUDGET_EXCEEDED, CONSIDERATION_SHORTFALL, FEE_SPLIT_INVALID, FEE_CHANGED). The carrier sats of a rune or Counterparty output count as BTC.",
+    "invariant": "With that, the maker's share is its BTC requirement, minus its BTC gives, minus its net BTC change; it must stay inside the intent budget, and the declared split must equal the computed one (FEE_BUDGET_EXCEEDED, CONSIDERATION_SHORTFALL, FEE_SPLIT_INVALID, FEE_CHANGED).",
     "causes": [
       {
         "family": "swaps",
@@ -7542,7 +7542,7 @@
       "1.2"
     ],
     "summary": "The Feline would land in output <m.toOutput>, not the buyer asset output <buyerAssetIndex>.",
-    "invariant": "Counterparty attachments in seller outputs (FELINE_NOT_DELIVERED,",
+    "invariant": "The Feline lands in the buyer asset output, and every other asset lands with its owner: the seller's other inscriptions, rare sats, runes and Counterparty attachments in seller outputs (FELINE_NOT_DELIVERED, ASSET_MISDIRECTED).",
     "causes": [
       {
         "family": "offers",
@@ -7656,7 +7656,7 @@
       "1.2"
     ],
     "summary": "The authorities do not report the Feline on the outpoint the acceptance names.",
-    "invariant": "FELINE_NOT_HELD).",
+    "invariant": "Every input is described once and in order; the funded output is spent exactly once, as the last input, with its funded value and script; the Feline is on a seller input (OFFER_INPUT_POSITION, OFFER_INPUT_MISMATCH, FELINE_NOT_HELD).",
     "causes": [
       {
         "family": "offers",
@@ -8164,7 +8164,7 @@
       "1.2"
     ],
     "summary": "Counterparty moves all <m.quantity> of <m.assetId>, not the <gives.get(key).quantitySats> the intent gives.",
-    "invariant": "Every given asset reaches the taker receive script with its exact quantity (MAKER_ASSET_NOT_DELIVERED, GIVE_QUANTITY_MISMATCH). Every required asset reaches the maker receive script in at least its quantity, judged by asset identity and never by a BTC value: an inscription whole, a rare sat range by count, a rune or Counterparty asset by the maker's net gain (CONSIDERATION_SHORTFALL). Every other asset returns to its owner (ASSET_MISDIRECTED).",
+    "invariant": "Every given asset reaches the taker receive script with its exact quantity (MAKER_ASSET_NOT_DELIVERED, GIVE_QUANTITY_MISMATCH).",
     "causes": [
       {
         "family": "swaps",
@@ -8720,7 +8720,7 @@
       "1.2"
     ],
     "summary": "Input <i> does not carry the Counterparty attachments read for it, so what it moves is unknown.",
-    "invariant": "counterpartyMoveDestination returns the destination index, counterpartyUtxoGates the active gates, and counterpartyMoveOutcome the whole outcome of a spend: NONE, MOVE, DETACH_BY_SPEND, STRANDED or DETACH_MESSAGE, with every asset listed from its source input. The outcome needs the ledger's attachment list for **every** input, [] for none (INPUT_ATTACHMENTS_UNKNOWN), because any attached input moves to the same output as the one being traded.",
+    "invariant": "The outcome needs the ledger's attachment list for **every** input, [] for none (INPUT_ATTACHMENTS_UNKNOWN), because any attached input moves to the same output as the one being traded.",
     "causes": [
       {
         "family": "counterparty-asset",
@@ -9028,7 +9028,7 @@
       "1.2"
     ],
     "summary": "Input <key> appears more than once.",
-    "invariant": "A selected outpoint appears once (INPUT_DUPLICATED). Each input names the script it spends (INPUT_SCRIPT_INVALID) and its sequence (INPUT_SEQUENCE_INVALID), and the plan names the version and locktime (TRANSACTION_INVALID).",
+    "invariant": "A selected outpoint appears once (INPUT_DUPLICATED).",
     "causes": [
       {
         "family": "offers",
@@ -9296,14 +9296,14 @@
       "1.2"
     ],
     "summary": "Input <i> was reordered or substituted after the plan was agreed.",
-    "invariant": "The version or locktime changed (TRANSACTION_CHANGED), or the inputs or outputs differ from the plan in identity, order, sequence, script, or value (INPUT_SET_CHANGED, INPUT_ORDER_CHANGED, SEQUENCE_CHANGED, OUTPUT_SET_CHANGED, SCRIPT_CHANGED, VALUE_CHANGED). With all of these equal the fee is the plan's fee.",
+    "invariant": "The version or locktime changed (TRANSACTION_CHANGED), or the inputs or outputs differ from the plan in identity, order, sequence, script, or value (INPUT_SET_CHANGED, INPUT_ORDER_CHANGED, SEQUENCE_CHANGED, OUTPUT_SET_CHANGED, SCRIPT_CHANGED, VALUE_CHANGED).",
     "causes": [
       {
         "family": "safeops",
         "predicate": "Input <i> was reordered or substituted after the plan was agreed.",
         "source": {
           "path": "verifier/safeops.js",
-          "line": 390,
+          "line": 406,
           "symbol": "verifySafeOpsSignedResult"
         },
         "reachable": true
@@ -9363,9 +9363,9 @@
     ],
     "sourceRefs": [
       {
-        "title": "verifier/safeops.js:390 (verifySafeOpsSignedResult)",
+        "title": "verifier/safeops.js:406 (verifySafeOpsSignedResult)",
         "path": "verifier/safeops.js",
-        "line": 390,
+        "line": 406,
         "type": "verifier"
       },
       {
@@ -9788,7 +9788,7 @@
       "1.2"
     ],
     "summary": "Input <i> does not carry the script of the output it spends.",
-    "invariant": "A selected outpoint appears once (INPUT_DUPLICATED). Each input names the script it spends (INPUT_SCRIPT_INVALID) and its sequence (INPUT_SEQUENCE_INVALID), and the plan names the version and locktime (TRANSACTION_INVALID).",
+    "invariant": "Each input names the script it spends (INPUT_SCRIPT_INVALID) and its sequence (INPUT_SEQUENCE_INVALID), and the plan names the version and locktime (TRANSACTION_INVALID).",
     "causes": [
       {
         "family": "offers",
@@ -9985,7 +9985,7 @@
       "1.2"
     ],
     "summary": "Input <i> does not fix its sequence number.",
-    "invariant": "A selected outpoint appears once (INPUT_DUPLICATED). Each input names the script it spends (INPUT_SCRIPT_INVALID) and its sequence (INPUT_SEQUENCE_INVALID), and the plan names the version and locktime (TRANSACTION_INVALID).",
+    "invariant": "Each input names the script it spends (INPUT_SCRIPT_INVALID) and its sequence (INPUT_SEQUENCE_INVALID), and the plan names the version and locktime (TRANSACTION_INVALID).",
     "causes": [
       {
         "family": "safeops",
@@ -10148,7 +10148,7 @@
         "predicate": "The signed transaction does not spend exactly the planned inputs.",
         "source": {
           "path": "verifier/safeops.js",
-          "line": 385,
+          "line": 401,
           "symbol": "verifySafeOpsSignedResult"
         },
         "reachable": true
@@ -10241,9 +10241,9 @@
         "type": "verifier"
       },
       {
-        "title": "verifier/safeops.js:385 (verifySafeOpsSignedResult)",
+        "title": "verifier/safeops.js:401 (verifySafeOpsSignedResult)",
         "path": "verifier/safeops.js",
-        "line": 385,
+        "line": 401,
         "type": "verifier"
       },
       {
@@ -10678,7 +10678,7 @@
       "1.2"
     ],
     "summary": "The acceptance plan was not built from this intent.",
-    "invariant": "The plan was built from this intent, on its network, at a checkpoint no earlier than the intent's and in time to confirm before it expires (INTENT_DIGEST_MISMATCH, NETWORK_MISMATCH, CHECKPOINT_INVALID, INTENT_EXPIRED). A taker-bound intent needs that taker's identity proof (TAKER_BINDING_MISMATCH).",
+    "invariant": "The plan was built from this intent, on its network, at a checkpoint no earlier than the intent's and in time to confirm before it expires (INTENT_DIGEST_MISMATCH, NETWORK_MISMATCH, CHECKPOINT_INVALID, INTENT_EXPIRED).",
     "causes": [
       {
         "family": "swaps",
@@ -10775,7 +10775,7 @@
       "1.2"
     ],
     "summary": "The intent expires before this plan could confirm.",
-    "invariant": "The plan was built from this intent, on its network, at a checkpoint no earlier than the intent's and in time to confirm before it expires (INTENT_DIGEST_MISMATCH, NETWORK_MISMATCH, CHECKPOINT_INVALID, INTENT_EXPIRED). A taker-bound intent needs that taker's identity proof (TAKER_BINDING_MISMATCH).",
+    "invariant": "The plan was built from this intent, on its network, at a checkpoint no earlier than the intent's and in time to confirm before it expires (INTENT_DIGEST_MISMATCH, NETWORK_MISMATCH, CHECKPOINT_INVALID, INTENT_EXPIRED).",
     "causes": [
       {
         "family": "swaps",
@@ -11021,7 +11021,7 @@
       "1.2"
     ],
     "summary": "Input <index> was never examined against the protocol authorities.",
-    "invariant": "An outpoint whose inventory was never examined is refused (INVENTORY_UNEXAMINED). It is never assumed cardinal.",
+    "invariant": "An outpoint whose inventory was never examined is refused (INVENTORY_UNEXAMINED).",
     "causes": [
       {
         "family": "asset-flow",
@@ -11114,7 +11114,7 @@
       "1.2"
     ],
     "summary": "The ledger recorded a <e.event> event that is not valid.",
-    "invariant": "After confirmation, and again after any reorg, verifyCounterpartyLedgerEvents reconciles the UTXO_MOVE, ATTACH_TO_UTXO and DETACH_FROM_UTXO events the ledger recorded for the transaction against the exact events the plan expected, at a stated block height, block hash and ledger hash. An event that is missing, unexpected or not valid is refused (LEDGER_EVENT_MISSING, LEDGER_EVENT_UNEXPECTED, LEDGER_EVENT_INVALID).",
+    "invariant": "An event that is missing, unexpected or not valid is refused (LEDGER_EVENT_MISSING, LEDGER_EVENT_UNEXPECTED, LEDGER_EVENT_INVALID).",
     "causes": [
       {
         "family": "counterparty-asset",
@@ -11251,7 +11251,7 @@
       "1.2"
     ],
     "summary": "The ledger holds no <slot.split('|')[0]> event for <slot>.",
-    "invariant": "After confirmation, and again after any reorg, verifyCounterpartyLedgerEvents reconciles the UTXO_MOVE, ATTACH_TO_UTXO and DETACH_FROM_UTXO events the ledger recorded for the transaction against the exact events the plan expected, at a stated block height, block hash and ledger hash. An event that is missing, unexpected or not valid is refused (LEDGER_EVENT_MISSING, LEDGER_EVENT_UNEXPECTED, LEDGER_EVENT_INVALID).",
+    "invariant": "An event that is missing, unexpected or not valid is refused (LEDGER_EVENT_MISSING, LEDGER_EVENT_UNEXPECTED, LEDGER_EVENT_INVALID).",
     "causes": [
       {
         "family": "counterparty-asset",
@@ -11378,7 +11378,7 @@
       "1.2"
     ],
     "summary": "The ledger moved <e.quantity> <e.asset> from <e.source> to <e.destination>, which the plan did not expect.",
-    "invariant": "After confirmation, and again after any reorg, verifyCounterpartyLedgerEvents reconciles the UTXO_MOVE, ATTACH_TO_UTXO and DETACH_FROM_UTXO events the ledger recorded for the transaction against the exact events the plan expected, at a stated block height, block hash and ledger hash. An event that is missing, unexpected or not valid is refused (LEDGER_EVENT_MISSING, LEDGER_EVENT_UNEXPECTED, LEDGER_EVENT_INVALID).",
+    "invariant": "An event that is missing, unexpected or not valid is refused (LEDGER_EVENT_MISSING, LEDGER_EVENT_UNEXPECTED, LEDGER_EVENT_INVALID).",
     "causes": [
       {
         "family": "counterparty-asset",
@@ -11516,7 +11516,7 @@
       "1.2"
     ],
     "summary": "The acceptance locktime must be a block height no later than the current one, so it can confirm before expiry.",
-    "invariant": "LOCKTIME_INVALID, SEQUENCE_INVALID).",
+    "invariant": "It is checked at a known height below expiryHeight, on the terms' network, with a height-domain locktime no later than that height, and no input carries a relative timelock (OFFER_EXPIRED, NETWORK_MISMATCH, LOCKTIME_INVALID, SEQUENCE_INVALID).",
     "causes": [
       {
         "family": "offers",
@@ -11737,7 +11737,7 @@
       "1.2"
     ],
     "summary": "<m.assetType> <m.assetId> would not reach the taker receive script.",
-    "invariant": "Every given asset reaches the taker receive script with its exact quantity (MAKER_ASSET_NOT_DELIVERED, GIVE_QUANTITY_MISMATCH). Every required asset reaches the maker receive script in at least its quantity, judged by asset identity and never by a BTC value: an inscription whole, a rare sat range by count, a rune or Counterparty asset by the maker's net gain (CONSIDERATION_SHORTFALL). Every other asset returns to its owner (ASSET_MISDIRECTED).",
+    "invariant": "Every given asset reaches the taker receive script with its exact quantity (MAKER_ASSET_NOT_DELIVERED, GIVE_QUANTITY_MISMATCH).",
     "causes": [
       {
         "family": "swaps",
@@ -13058,7 +13058,7 @@
         "predicate": "Expected an assetTransitions array.",
         "source": {
           "path": "verifier/safeops.js",
-          "line": 284,
+          "line": 300,
           "symbol": "verifySafeOpsPlan"
         },
         "reachable": true
@@ -13123,9 +13123,9 @@
         "type": "verifier"
       },
       {
-        "title": "verifier/safeops.js:284 (verifySafeOpsPlan)",
+        "title": "verifier/safeops.js:300 (verifySafeOpsPlan)",
         "path": "verifier/safeops.js",
-        "line": 284,
+        "line": 300,
         "type": "verifier"
       },
       {
@@ -13442,7 +13442,7 @@
       "1.2"
     ],
     "summary": "An input reports a rune count that contradicts the balances it lists.",
-    "invariant": "| MALFORMED_RUNE_BALANCE | a balance, a rune id or a count is malformed or contradictory |",
+    "invariant": "MALFORMED_RUNE_BALANCE: a balance, a rune id or a count is malformed or contradictory",
     "causes": [
       {
         "family": "runes",
@@ -13821,7 +13821,7 @@
         "predicate": "Expected a signed result object.",
         "source": {
           "path": "verifier/safeops.js",
-          "line": 362,
+          "line": 378,
           "symbol": "verifySafeOpsSignedResult"
         },
         "reachable": true
@@ -13831,7 +13831,7 @@
         "predicate": "parseTransaction refused the input: <parsed.reason>",
         "source": {
           "path": "verifier/safeops.js",
-          "line": 377,
+          "line": 393,
           "symbol": "verifySafeOpsSignedResult"
         },
         "reachable": true
@@ -13986,15 +13986,15 @@
         "type": "verifier"
       },
       {
-        "title": "verifier/safeops.js:362 (verifySafeOpsSignedResult)",
+        "title": "verifier/safeops.js:378 (verifySafeOpsSignedResult)",
         "path": "verifier/safeops.js",
-        "line": 362,
+        "line": 378,
         "type": "verifier"
       },
       {
-        "title": "verifier/safeops.js:377 (verifySafeOpsSignedResult)",
+        "title": "verifier/safeops.js:393 (verifySafeOpsSignedResult)",
         "path": "verifier/safeops.js",
-        "line": 377,
+        "line": 393,
         "type": "verifier"
       },
       {
@@ -14625,7 +14625,7 @@
       "1.2"
     ],
     "summary": "The proof does not resolve to the membership root, so this identity is not a member.",
-    "invariant": "buildMembershipProof walks the sorted tree and returns the sibling path. verifyMembershipProof needs only the manifest, the member identity, and the proof: no network call, no gateway. A stranger's identity, a tampered sibling, and a member removed in a newer version all refuse with MEMBER_NOT_PROVEN.",
+    "invariant": "A stranger's identity, a tampered sibling, and a member removed in a newer version all refuse with MEMBER_NOT_PROVEN.",
     "causes": [
       {
         "family": "collection-manifest",
@@ -15189,7 +15189,7 @@
       "1.2"
     ],
     "summary": "The acceptance was built for a different network than the terms.",
-    "invariant": "carries a relative timelock (OFFER_EXPIRED, NETWORK_MISMATCH,",
+    "invariant": "It is checked at a known height below expiryHeight, on the terms' network, with a height-domain locktime no later than that height, and no input carries a relative timelock (OFFER_EXPIRED, NETWORK_MISMATCH, LOCKTIME_INVALID, SEQUENCE_INVALID).",
     "causes": [
       {
         "family": "offers",
@@ -16057,7 +16057,7 @@
       "1.2"
     ],
     "summary": "The expiry height has been reached; recovery is the only remaining path.",
-    "invariant": "carries a relative timelock (OFFER_EXPIRED, NETWORK_MISMATCH,",
+    "invariant": "It is checked at a known height below expiryHeight, on the terms' network, with a height-domain locktime no later than that height, and no input carries a relative timelock (OFFER_EXPIRED, NETWORK_MISMATCH, LOCKTIME_INVALID, SEQUENCE_INVALID).",
     "causes": [
       {
         "family": "offers",
@@ -16155,7 +16155,7 @@
       "1.2"
     ],
     "summary": "Input <i> is described as <d.party === 'OFFER' ? 'the offer but spends another output' : 'a seller input but spends the funded offer output'>.",
-    "invariant": "Feline is on a seller input (OFFER_INPUT_POSITION, OFFER_INPUT_MISMATCH,",
+    "invariant": "Every input is described once and in order; the funded output is spent exactly once, as the last input, with its funded value and script; the Feline is on a seller input (OFFER_INPUT_POSITION, OFFER_INPUT_MISMATCH, FELINE_NOT_HELD).",
     "causes": [
       {
         "family": "offers",
@@ -16275,7 +16275,7 @@
       "1.2"
     ],
     "summary": "The funded offer output must be the last input, so its sats never reach the Feline range.",
-    "invariant": "Feline is on a seller input (OFFER_INPUT_POSITION, OFFER_INPUT_MISMATCH,",
+    "invariant": "Every input is described once and in order; the funded output is spent exactly once, as the last input, with its funded value and script; the Feline is on a seller input (OFFER_INPUT_POSITION, OFFER_INPUT_MISMATCH, FELINE_NOT_HELD).",
     "causes": [
       {
         "family": "offers",
@@ -16487,7 +16487,7 @@
       "1.2"
     ],
     "summary": "The funded output does not commit to the tree these terms and policy keys produce.",
-    "invariant": "output is exactly the output they produce (OFFER_OUTPUT_MISMATCH,",
+    "invariant": "Outputs funded under earlier drafts of this contract, with a different internal key, leaf or expiry domain, are never reinterpreted: this verifier refuses them (OFFER_OUTPUT_MISMATCH or a terms refusal), and their funds remain recoverable exactly as their own recovery leaf states.",
     "causes": [
       {
         "family": "offers",
@@ -16553,9 +16553,9 @@
         "type": "verifier"
       },
       {
-        "title": "spec/offers.md: Acceptance",
+        "title": "spec/offers.md: Offer lifecycle",
         "path": "spec/offers.md",
-        "line": 204,
+        "line": 288,
         "type": "spec"
       },
       {
@@ -17372,7 +17372,7 @@
         "predicate": "Output <i> does not name a recipient, change, preserve, or data role.",
         "source": {
           "path": "verifier/safeops.js",
-          "line": 242,
+          "line": 258,
           "symbol": "verifySafeOpsPlan"
         },
         "reachable": true
@@ -17425,9 +17425,9 @@
     ],
     "sourceRefs": [
       {
-        "title": "verifier/safeops.js:242 (verifySafeOpsPlan)",
+        "title": "verifier/safeops.js:258 (verifySafeOpsPlan)",
         "path": "verifier/safeops.js",
-        "line": 242,
+        "line": 258,
         "type": "verifier"
       },
       {
@@ -17476,7 +17476,7 @@
         "predicate": "Output <i> does not carry lowercase hex script bytes.",
         "source": {
           "path": "verifier/safeops.js",
-          "line": 235,
+          "line": 251,
           "symbol": "verifySafeOpsPlan"
         },
         "reachable": true
@@ -17595,9 +17595,9 @@
         "type": "verifier"
       },
       {
-        "title": "verifier/safeops.js:235 (verifySafeOpsPlan)",
+        "title": "verifier/safeops.js:251 (verifySafeOpsPlan)",
         "path": "verifier/safeops.js",
-        "line": 235,
+        "line": 251,
         "type": "verifier"
       },
       {
@@ -17669,7 +17669,7 @@
         "predicate": "The signed transaction does not carry exactly the planned outputs.",
         "source": {
           "path": "verifier/safeops.js",
-          "line": 397,
+          "line": 413,
           "symbol": "verifySafeOpsSignedResult"
         },
         "reachable": true
@@ -17755,9 +17755,9 @@
         "type": "verifier"
       },
       {
-        "title": "verifier/safeops.js:397 (verifySafeOpsSignedResult)",
+        "title": "verifier/safeops.js:413 (verifySafeOpsSignedResult)",
         "path": "verifier/safeops.js",
-        "line": 397,
+        "line": 413,
         "type": "verifier"
       },
       {
@@ -17799,7 +17799,7 @@
       "1.2"
     ],
     "summary": "Output <j> is a data output; an acceptance carries none.",
-    "invariant": "(ASSET_OUTPUTS_UNBALANCED, SELLER_VALUE_MISMATCH, OUTPUT_UNDESCRIBED,",
+    "invariant": "The asset outputs absorb exactly the sats of the seller inputs, so the offer output's sats never reach them; exactly one pays the buyer receive script and the rest pay seller scripts; then the seller payment pays exactly priceSats to the seller payment script; then at most one buyer change output; nothing else, no data output and no dust (ASSET_OUTPUTS_UNBALANCED, SELLER_VALUE_MISMATCH, OUTPUT_UNDESCRIBED, DUST_OUTPUT).",
     "causes": [
       {
         "family": "offers",
@@ -17960,7 +17960,7 @@
       "1.2"
     ],
     "summary": "Output <i> pays a script that belongs to neither party.",
-    "invariant": "Every output pays the maker receive script or a taker script, and the two sets never overlap (OUTPUT_UNOWNED, PARTY_SCRIPTS_OVERLAP). The only other output allowed is one zero-value runestone when runes move.",
+    "invariant": "Every output pays the maker receive script or a taker script, and the two sets never overlap (OUTPUT_UNOWNED, PARTY_SCRIPTS_OVERLAP).",
     "causes": [
       {
         "family": "swaps",
@@ -18066,7 +18066,7 @@
         "predicate": "Output <i> does not carry an exact decimal value.",
         "source": {
           "path": "verifier/safeops.js",
-          "line": 239,
+          "line": 255,
           "symbol": "verifySafeOpsPlan"
         },
         "reachable": true
@@ -18154,9 +18154,9 @@
     ],
     "sourceRefs": [
       {
-        "title": "verifier/safeops.js:239 (verifySafeOpsPlan)",
+        "title": "verifier/safeops.js:255 (verifySafeOpsPlan)",
         "path": "verifier/safeops.js",
-        "line": 239,
+        "line": 255,
         "type": "verifier"
       },
       {
@@ -18200,7 +18200,7 @@
       "1.2"
     ],
     "summary": "A seller script equals the buyer receive script, so no output could be attributed.",
-    "invariant": "Every output pays the maker receive script or a taker script, and the two sets never overlap (OUTPUT_UNOWNED, PARTY_SCRIPTS_OVERLAP). The only other output allowed is one zero-value runestone when runes move.",
+    "invariant": "Every output pays the maker receive script or a taker script, and the two sets never overlap (OUTPUT_UNOWNED, PARTY_SCRIPTS_OVERLAP).",
     "causes": [
       {
         "family": "offers",
@@ -18439,7 +18439,7 @@
         "predicate": "The signed result was not produced from this plan. Refresh the plan and sign again.",
         "source": {
           "path": "verifier/safeops.js",
-          "line": 371,
+          "line": 387,
           "symbol": "verifySafeOpsSignedResult"
         },
         "reachable": true
@@ -18492,9 +18492,9 @@
     ],
     "sourceRefs": [
       {
-        "title": "verifier/safeops.js:371 (verifySafeOpsSignedResult)",
+        "title": "verifier/safeops.js:387 (verifySafeOpsSignedResult)",
         "path": "verifier/safeops.js",
-        "line": 371,
+        "line": 387,
         "type": "verifier"
       },
       {
@@ -18530,7 +18530,7 @@
       "1.2"
     ],
     "summary": "An offer names two distinct valid policy signer keys, neither of them the buyer recovery key.",
-    "invariant": "POLICY_KEYS_INVALID).",
+    "invariant": "The terms verify, the two policy keys are valid and distinct, and the funded output is exactly the output they produce (OFFER_OUTPUT_MISMATCH, POLICY_KEYS_INVALID).",
     "causes": [
       {
         "family": "offers",
@@ -18644,7 +18644,7 @@
       "1.2"
     ],
     "summary": "The signature for policy key <keyHex> does not verify.",
-    "invariant": "(POLICY_SIGNATURES_MISSING, POLICY_SIGNATURE_INVALID,",
+    "invariant": "Both policy signatures verify under the exact acceptance leaf and control block, and every seller input carries a verifying closing signature (POLICY_SIGNATURES_MISSING, POLICY_SIGNATURE_INVALID, ACCEPTANCE_LEAF_MISMATCH, CONTROL_BLOCK_MISMATCH, SIGNATURE_MISSING, UNCLOSED_SIGHASH).",
     "causes": [
       {
         "family": "offers",
@@ -18742,7 +18742,7 @@
       "1.2"
     ],
     "summary": "The offer input carries no policy signatures.",
-    "invariant": "(POLICY_SIGNATURES_MISSING, POLICY_SIGNATURE_INVALID,",
+    "invariant": "Both policy signatures verify under the exact acceptance leaf and control block, and every seller input carries a verifying closing signature (POLICY_SIGNATURES_MISSING, POLICY_SIGNATURE_INVALID, ACCEPTANCE_LEAF_MISMATCH, CONTROL_BLOCK_MISMATCH, SIGNATURE_MISSING, UNCLOSED_SIGHASH).",
     "causes": [
       {
         "family": "offers",
@@ -18970,14 +18970,14 @@
       "1.2"
     ],
     "summary": "Output <m.toOutput> carries <m.assetId> with less than the <SAFEOPS_POSTAGE_FLOOR_SATS> sat postage floor.",
-    "invariant": "A sat-bound asset never lands in the fee (ASSET_TO_FEE), and an output carrying an inscription or rare sat range holds at least the 546 sat product postage floor (POSTAGE_BELOW_FLOOR). Postage is an Ordex product rule.",
+    "invariant": "A sat-bound asset never lands in the fee (ASSET_TO_FEE), and an output carrying an inscription or rare sat range holds at least the 546 sat product postage floor (POSTAGE_BELOW_FLOOR).",
     "causes": [
       {
         "family": "safeops",
         "predicate": "Output <m.toOutput> carries <m.assetId> with less than the <SAFEOPS_POSTAGE_FLOOR_SATS> sat postage floor.",
         "source": {
           "path": "verifier/safeops.js",
-          "line": 299,
+          "line": 315,
           "symbol": "verifySafeOpsPlan"
         },
         "reachable": true
@@ -19025,9 +19025,9 @@
     ],
     "sourceRefs": [
       {
-        "title": "verifier/safeops.js:299 (verifySafeOpsPlan)",
+        "title": "verifier/safeops.js:315 (verifySafeOpsPlan)",
         "path": "verifier/safeops.js",
-        "line": 299,
+        "line": 315,
         "type": "verifier"
       },
       {
@@ -21385,7 +21385,7 @@
       "1.2"
     ],
     "summary": "The revocation names a different network or collection than the manifest it revokes.",
-    "invariant": "verifyManifestRevocation(revocation, manifest) checks the revocation against the manifest it revokes. The network and collection id must equal the manifest's, before the digest and the signer are considered (REVOCATION_CONTEXT_MISMATCH); the manifest digest must be that manifest's (MANIFEST_DIGEST_MISMATCH); the signer must be its creator (SIGNER_IDENTITY_MISMATCH); and the revocation digest recomputes over everything except the signature and the digest (DIGEST_MISMATCH). The verdict then carries scope: \"TARGET_BOUND\". Without the manifest the verdict carries scope: \"STRUCTURE_ONLY\": the document is well formed, and nothing about which manifest it may revoke is proved.",
+    "invariant": "The network and collection id must equal the manifest's, before the digest and the signer are considered (REVOCATION_CONTEXT_MISMATCH); the manifest digest must be that manifest's (MANIFEST_DIGEST_MISMATCH); the signer must be its creator (SIGNER_IDENTITY_MISMATCH); and the revocation digest recomputes over everything except the signature and the digest (DIGEST_MISMATCH).",
     "causes": [
       {
         "family": "collection-manifest",
@@ -21485,7 +21485,7 @@
       "1.2"
     ],
     "summary": "Output <output> would receive <(actual.get(mismatch) ?? 0n).toString()> of rune <runeId>, not the <(planned.get(mismatch) ?? 0n).toString()> stated.",
-    "invariant": "| RUNE_ALLOCATION_MISMATCH | allocation only: the balances would not land where the plan says |",
+    "invariant": "RUNE_ALLOCATION_MISMATCH: allocation only: the balances would not land where the plan says",
     "causes": [
       {
         "family": "asset-flow",
@@ -21623,7 +21623,7 @@
       "1.2"
     ],
     "summary": "Whether this transaction burns runes depends on the exact balances each input carries, and the index reported only counts.",
-    "invariant": "| RUNE_BALANCES_REQUIRED | a burn path exists and the index reported counts, not balances |",
+    "invariant": "RUNE_BALANCES_REQUIRED: a burn path exists and the index reported counts, not balances",
     "causes": [
       {
         "family": "runes",
@@ -21719,15 +21719,25 @@
     "supportedProtocolVersions": [
       "1.2"
     ],
-    "summary": "Input <i> carries no rune allocation.",
-    "invariant": "A rune transfer refuses inputs without a rune allocation (RUNE_INPUT_MISSING_ALLOCATION).",
+    "summary": "Input <i> carries <read.assets[0].assetType> <read.assets[0].assetId> but no rune allocation; a rune transfer is funded only by rune inputs or asset-free inputs.",
+    "invariant": "Its other inputs either carry a rune allocation or carry no tracked asset at all, so asset-free inputs can fund postage, change and fee for a rune that sits on a dust output; an input carrying any other asset without a rune allocation is refused (RUNE_INPUT_MISSING_ALLOCATION).",
     "causes": [
       {
         "family": "safeops",
-        "predicate": "Input <i> carries no rune allocation.",
+        "predicate": "Input <i> carries <read.assets[0].assetType> <read.assets[0].assetId> but no rune allocation; a rune transfer is funded only by rune inputs or asset-free inputs.",
         "source": {
           "path": "verifier/safeops.js",
-          "line": 220,
+          "line": 227,
+          "symbol": "verifySafeOpsPlan"
+        },
+        "reachable": true
+      },
+      {
+        "family": "safeops",
+        "predicate": "No input carries a rune allocation, so there is no rune to transfer.",
+        "source": {
+          "path": "verifier/safeops.js",
+          "line": 240,
           "symbol": "verifySafeOpsPlan"
         },
         "reachable": true
@@ -21757,7 +21767,7 @@
         "baseName": "a rune operation without a rune allocation is refused",
         "patch": [],
         "derivation": "vector",
-        "verifiedReason": "Input 0 carries no rune allocation.",
+        "verifiedReason": "Input 0 carries ORDINAL eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0 but no rune allocation; a rune transfer is funded only by rune inputs or asset-free inputs.",
         "lifecycle": "SafeOps plan review, before signing",
         "inputs": [
           "The SafeOps plan, including the examined inventory of every input"
@@ -21775,9 +21785,15 @@
     ],
     "sourceRefs": [
       {
-        "title": "verifier/safeops.js:220 (verifySafeOpsPlan)",
+        "title": "verifier/safeops.js:227 (verifySafeOpsPlan)",
         "path": "verifier/safeops.js",
-        "line": 220,
+        "line": 227,
+        "type": "verifier"
+      },
+      {
+        "title": "verifier/safeops.js:240 (verifySafeOpsPlan)",
+        "path": "verifier/safeops.js",
+        "line": 240,
         "type": "verifier"
       },
       {
@@ -21813,7 +21829,7 @@
       "1.2"
     ],
     "summary": "Input <index> has not been examined by the rune index, so its balances are unknown.",
-    "invariant": "| RUNE_INPUT_UNPROVEN | allocation only: an input was never examined |",
+    "invariant": "RUNE_INPUT_UNPROVEN: allocation only: an input was never examined",
     "causes": [
       {
         "family": "runes",
@@ -21935,7 +21951,7 @@
       "1.2"
     ],
     "summary": "This runestone mints a rune whose minted amount was not supplied, so the allocation is not exact.",
-    "invariant": "| RUNE_MINT_UNRESOLVED | the runestone mints a rune the inputs carry and the minted amount is unknown |",
+    "invariant": "RUNE_MINT_UNRESOLVED: the runestone mints a rune the inputs carry and the minted amount is unknown",
     "causes": [
       {
         "family": "asset-flow",
@@ -22115,7 +22131,7 @@
       "1.2"
     ],
     "summary": "Rune allocation depends on every output script, and not every output was supplied.",
-    "invariant": "| RUNE_OUTPUTS_INCOMPLETE | not every output script was supplied |",
+    "invariant": "RUNE_OUTPUTS_INCOMPLETE: not every output script was supplied",
     "causes": [
       {
         "family": "runes",
@@ -22316,7 +22332,7 @@
       "1.2"
     ],
     "summary": "The manifest schema is not ordex.collection-manifest/v1.",
-    "invariant": "Status: active at protocol 1.2. Artifacts: ordex.safeops-plan/v2, ordex.safeops-signed-result/v2. A v1 plan or result is refused (SCHEMA_UNSUPPORTED) and replanned; its digest is never reinterpreted under v2 rules. Reference verifier: verifier/safeops.js. Vectors: conformance/safeops-vectors.json.",
+    "invariant": "A v1 plan or result is refused (SCHEMA_UNSUPPORTED) and replanned; its digest is never reinterpreted under v2 rules.",
     "causes": [
       {
         "family": "collection-manifest",
@@ -22413,7 +22429,7 @@
         "predicate": "The signed result schema is not ordex.safeops-signed-result/v2.",
         "source": {
           "path": "verifier/safeops.js",
-          "line": 365,
+          "line": 381,
           "symbol": "verifySafeOpsSignedResult"
         },
         "reachable": true
@@ -22673,9 +22689,9 @@
         "type": "verifier"
       },
       {
-        "title": "verifier/safeops.js:365 (verifySafeOpsSignedResult)",
+        "title": "verifier/safeops.js:381 (verifySafeOpsSignedResult)",
         "path": "verifier/safeops.js",
-        "line": 365,
+        "line": 381,
         "type": "verifier"
       },
       {
@@ -22765,7 +22781,7 @@
       "1.2"
     ],
     "summary": "The delivered inscription is not the one this ITEM offer names.",
-    "invariant": "set (SCOPE_MISMATCH, COLLECTION_MEMBERSHIP_NOT_PROVEN,",
+    "invariant": "The Feline is the named inscription for ITEM, proves membership in the collection root, and for TRAIT proves membership in the committed trait set (SCOPE_MISMATCH, COLLECTION_MEMBERSHIP_NOT_PROVEN, TRAIT_NOT_PROVEN).",
     "causes": [
       {
         "family": "offers",
@@ -22881,7 +22897,7 @@
         "predicate": "Output <i> no longer pays the planned script.",
         "source": {
           "path": "verifier/safeops.js",
-          "line": 401,
+          "line": 417,
           "symbol": "verifySafeOpsSignedResult"
         },
         "reachable": true
@@ -22960,9 +22976,9 @@
         "type": "verifier"
       },
       {
-        "title": "verifier/safeops.js:401 (verifySafeOpsSignedResult)",
+        "title": "verifier/safeops.js:417 (verifySafeOpsSignedResult)",
         "path": "verifier/safeops.js",
-        "line": 401,
+        "line": 417,
         "type": "verifier"
       },
       {
@@ -23487,7 +23503,7 @@
       "1.2"
     ],
     "summary": "The seller payment is not the exact offer price.",
-    "invariant": "(ASSET_OUTPUTS_UNBALANCED, SELLER_VALUE_MISMATCH, OUTPUT_UNDESCRIBED,",
+    "invariant": "The asset outputs absorb exactly the sats of the seller inputs, so the offer output's sats never reach them; exactly one pays the buyer receive script and the rest pay seller scripts; then the seller payment pays exactly priceSats to the seller payment script; then at most one buyer change output; nothing else, no data output and no dust (ASSET_OUTPUTS_UNBALANCED, SELLER_VALUE_MISMATCH, OUTPUT_UNDESCRIBED, DUST_OUTPUT).",
     "causes": [
       {
         "family": "offers",
@@ -23645,7 +23661,7 @@
         "predicate": "Input <i> changed its sequence number.",
         "source": {
           "path": "verifier/safeops.js",
-          "line": 393,
+          "line": 409,
           "symbol": "verifySafeOpsSignedResult"
         },
         "reachable": true
@@ -23724,9 +23740,9 @@
         "type": "verifier"
       },
       {
-        "title": "verifier/safeops.js:393 (verifySafeOpsSignedResult)",
+        "title": "verifier/safeops.js:409 (verifySafeOpsSignedResult)",
         "path": "verifier/safeops.js",
-        "line": 393,
+        "line": 409,
         "type": "verifier"
       },
       {
@@ -24003,7 +24019,7 @@
         "predicate": "Input <i> was signed with a different sighash than the plan approved.",
         "source": {
           "path": "verifier/safeops.js",
-          "line": 426,
+          "line": 442,
           "symbol": "verifySafeOpsSignedResult"
         },
         "reachable": true
@@ -24056,9 +24072,9 @@
     ],
     "sourceRefs": [
       {
-        "title": "verifier/safeops.js:426 (verifySafeOpsSignedResult)",
+        "title": "verifier/safeops.js:442 (verifySafeOpsSignedResult)",
         "path": "verifier/safeops.js",
-        "line": 426,
+        "line": 442,
         "type": "verifier"
       },
       {
@@ -24100,7 +24116,7 @@
         "predicate": "SafeOps signs with SIGHASH_ALL or the Taproot default only, so no input or output can change after signing.",
         "source": {
           "path": "verifier/safeops.js",
-          "line": 322,
+          "line": 338,
           "symbol": "verifySafeOpsPlan"
         },
         "reachable": true
@@ -24148,9 +24164,9 @@
     ],
     "sourceRefs": [
       {
-        "title": "verifier/safeops.js:322 (verifySafeOpsPlan)",
+        "title": "verifier/safeops.js:338 (verifySafeOpsPlan)",
         "path": "verifier/safeops.js",
-        "line": 322,
+        "line": 338,
         "type": "verifier"
       },
       {
@@ -24430,7 +24446,7 @@
         "predicate": "Input <i> carries a signature that does not verify against the planned transaction.",
         "source": {
           "path": "verifier/safeops.js",
-          "line": 422,
+          "line": 438,
           "symbol": "verifySafeOpsSignedResult"
         },
         "reachable": true
@@ -24613,9 +24629,9 @@
         "type": "verifier"
       },
       {
-        "title": "verifier/safeops.js:422 (verifySafeOpsSignedResult)",
+        "title": "verifier/safeops.js:438 (verifySafeOpsSignedResult)",
         "path": "verifier/safeops.js",
-        "line": 422,
+        "line": 438,
         "type": "verifier"
       },
       {
@@ -24722,7 +24738,7 @@
         "predicate": "Input <i> is required to sign and is still unsigned.",
         "source": {
           "path": "verifier/safeops.js",
-          "line": 416,
+          "line": 432,
           "symbol": "verifySafeOpsSignedResult"
         },
         "reachable": true
@@ -24854,9 +24870,9 @@
         "type": "verifier"
       },
       {
-        "title": "verifier/safeops.js:416 (verifySafeOpsSignedResult)",
+        "title": "verifier/safeops.js:432 (verifySafeOpsSignedResult)",
         "path": "verifier/safeops.js",
-        "line": 416,
+        "line": 432,
         "type": "verifier"
       },
       {
@@ -25040,7 +25056,7 @@
         "predicate": "Input <i> spends a script this verifier cannot check, so its signature is unproven.",
         "source": {
           "path": "verifier/safeops.js",
-          "line": 419,
+          "line": 435,
           "symbol": "verifySafeOpsSignedResult"
         },
         "reachable": true
@@ -25236,9 +25252,9 @@
         "type": "verifier"
       },
       {
-        "title": "verifier/safeops.js:419 (verifySafeOpsSignedResult)",
+        "title": "verifier/safeops.js:435 (verifySafeOpsSignedResult)",
         "path": "verifier/safeops.js",
-        "line": 419,
+        "line": 435,
         "type": "verifier"
       },
       {
@@ -25297,7 +25313,7 @@
       "1.2"
     ],
     "summary": "The signature address is not the creator address.",
-    "invariant": "The signature address is the creator address (SIGNER_IDENTITY_MISMATCH). Proving the BIP-322 signature itself is the gateway's and SDK integrator's job, the same division as every other verifier here.",
+    "invariant": "The network and collection id must equal the manifest's, before the digest and the signer are considered (REVOCATION_CONTEXT_MISMATCH); the manifest digest must be that manifest's (MANIFEST_DIGEST_MISMATCH); the signer must be its creator (SIGNER_IDENTITY_MISMATCH); and the revocation digest recomputes over everything except the signature and the digest (DIGEST_MISMATCH).",
     "causes": [
       {
         "family": "collection-manifest",
@@ -25374,9 +25390,9 @@
         "type": "verifier"
       },
       {
-        "title": "spec/collection-manifest.md: The manifest",
+        "title": "spec/collection-manifest.md: Publication, versioning, revocation",
         "path": "spec/collection-manifest.md",
-        "line": 19,
+        "line": 37,
         "type": "spec"
       },
       {
@@ -25412,7 +25428,7 @@
         "predicate": "The plan must carry a signing object.",
         "source": {
           "path": "verifier/safeops.js",
-          "line": 308,
+          "line": 324,
           "symbol": "verifySafeOpsPlan"
         },
         "reachable": true
@@ -25422,7 +25438,7 @@
         "predicate": "The plan must list its required signing indexes.",
         "source": {
           "path": "verifier/safeops.js",
-          "line": 311,
+          "line": 327,
           "symbol": "verifySafeOpsPlan"
         },
         "reachable": true
@@ -25432,7 +25448,7 @@
         "predicate": "The user signs every selected input exactly once; list each input index once.",
         "source": {
           "path": "verifier/safeops.js",
-          "line": 319,
+          "line": 335,
           "symbol": "verifySafeOpsPlan"
         },
         "reachable": true
@@ -25480,21 +25496,21 @@
     ],
     "sourceRefs": [
       {
-        "title": "verifier/safeops.js:308 (verifySafeOpsPlan)",
+        "title": "verifier/safeops.js:324 (verifySafeOpsPlan)",
         "path": "verifier/safeops.js",
-        "line": 308,
+        "line": 324,
         "type": "verifier"
       },
       {
-        "title": "verifier/safeops.js:311 (verifySafeOpsPlan)",
+        "title": "verifier/safeops.js:327 (verifySafeOpsPlan)",
         "path": "verifier/safeops.js",
-        "line": 311,
+        "line": 327,
         "type": "verifier"
       },
       {
-        "title": "verifier/safeops.js:319 (verifySafeOpsPlan)",
+        "title": "verifier/safeops.js:335 (verifySafeOpsPlan)",
         "path": "verifier/safeops.js",
-        "line": 319,
+        "line": 335,
         "type": "verifier"
       },
       {
@@ -26270,7 +26286,7 @@
       "1.2"
     ],
     "summary": "This intent is bound to one taker, and the plan does not carry that taker identity proof.",
-    "invariant": "The plan was built from this intent, on its network, at a checkpoint no earlier than the intent's and in time to confirm before it expires (INTENT_DIGEST_MISMATCH, NETWORK_MISMATCH, CHECKPOINT_INVALID, INTENT_EXPIRED). A taker-bound intent needs that taker's identity proof (TAKER_BINDING_MISMATCH).",
+    "invariant": "A taker-bound intent needs that taker's identity proof (TAKER_BINDING_MISMATCH).",
     "causes": [
       {
         "family": "swaps",
@@ -27824,7 +27840,7 @@
       "1.2"
     ],
     "summary": "The trait proof does not resolve to the criteria hash, so this Feline is not one the buyer accepted.",
-    "invariant": "TRAIT_NOT_PROVEN).",
+    "invariant": "The Feline is the named inscription for ITEM, proves membership in the collection root, and for TRAIT proves membership in the committed trait set (SCOPE_MISMATCH, COLLECTION_MEMBERSHIP_NOT_PROVEN, TRAIT_NOT_PROVEN).",
     "causes": [
       {
         "family": "offers",
@@ -27952,7 +27968,7 @@
         "predicate": "The signed transaction changed its version or locktime.",
         "source": {
           "path": "verifier/safeops.js",
-          "line": 382,
+          "line": 398,
           "symbol": "verifySafeOpsSignedResult"
         },
         "reachable": true
@@ -27962,7 +27978,7 @@
         "predicate": "The signed transaction is not the planned transaction.",
         "source": {
           "path": "verifier/safeops.js",
-          "line": 409,
+          "line": 425,
           "symbol": "verifySafeOpsSignedResult"
         },
         "reachable": true
@@ -28088,15 +28104,15 @@
         "type": "verifier"
       },
       {
-        "title": "verifier/safeops.js:382 (verifySafeOpsSignedResult)",
+        "title": "verifier/safeops.js:398 (verifySafeOpsSignedResult)",
         "path": "verifier/safeops.js",
-        "line": 382,
+        "line": 398,
         "type": "verifier"
       },
       {
-        "title": "verifier/safeops.js:409 (verifySafeOpsSignedResult)",
+        "title": "verifier/safeops.js:425 (verifySafeOpsSignedResult)",
         "path": "verifier/safeops.js",
-        "line": 409,
+        "line": 425,
         "type": "verifier"
       },
       {
@@ -28156,7 +28172,7 @@
       "1.2"
     ],
     "summary": "parseTransaction refused the input: <parsed.reason>",
-    "invariant": "A selected outpoint appears once (INPUT_DUPLICATED). Each input names the script it spends (INPUT_SCRIPT_INVALID) and its sequence (INPUT_SEQUENCE_INVALID), and the plan names the version and locktime (TRANSACTION_INVALID).",
+    "invariant": "Each input names the script it spends (INPUT_SCRIPT_INVALID) and its sequence (INPUT_SEQUENCE_INVALID), and the plan names the version and locktime (TRANSACTION_INVALID).",
     "causes": [
       {
         "family": "offers",
@@ -28855,7 +28871,7 @@
       "1.2"
     ],
     "summary": "A policy signature does not commit to every input and output.",
-    "invariant": "UNCLOSED_SIGHASH). A missing signature is refused, never assumed.",
+    "invariant": "Both policy signatures verify under the exact acceptance leaf and control block, and every seller input carries a verifying closing signature (POLICY_SIGNATURES_MISSING, POLICY_SIGNATURE_INVALID, ACCEPTANCE_LEAF_MISMATCH, CONTROL_BLOCK_MISMATCH, SIGNATURE_MISSING, UNCLOSED_SIGHASH).",
     "causes": [
       {
         "family": "offers",
@@ -29140,7 +29156,7 @@
       "1.2"
     ],
     "summary": "Input <index> carries an unrecognized claim (<String(inventory.unknownClaims[0])>); resolve it before planning.",
-    "invariant": "An unrecognized claim fails the plan closed (UNKNOWN_CLAIM_FAILS_CLOSED). Resolve the claim first.",
+    "invariant": "An unrecognized claim fails the plan closed (UNKNOWN_CLAIM_FAILS_CLOSED).",
     "causes": [
       {
         "family": "asset-flow",
@@ -29451,7 +29467,7 @@
         "predicate": "Output <i> no longer carries its planned value.",
         "source": {
           "path": "verifier/safeops.js",
-          "line": 404,
+          "line": 420,
           "symbol": "verifySafeOpsSignedResult"
         },
         "reachable": true
@@ -29544,9 +29560,9 @@
         "type": "verifier"
       },
       {
-        "title": "verifier/safeops.js:404 (verifySafeOpsSignedResult)",
+        "title": "verifier/safeops.js:420 (verifySafeOpsSignedResult)",
         "path": "verifier/safeops.js",
-        "line": 404,
+        "line": 420,
         "type": "verifier"
       },
       {
@@ -29594,7 +29610,7 @@
       "1.2"
     ],
     "summary": "The outputs exceed the inputs.",
-    "invariant": "Value conservation: inputs equal outputs plus the declared fee, exactly, in BigInt. No other total is accepted (VALUE_NOT_CONSERVED).",
+    "invariant": "No other total is accepted (VALUE_NOT_CONSERVED).",
     "causes": [
       {
         "family": "offers",
@@ -29631,7 +29647,7 @@
         "predicate": "The inputs do not equal the outputs plus the declared fee, so the plan cannot be built as written.",
         "source": {
           "path": "verifier/safeops.js",
-          "line": 261,
+          "line": 277,
           "symbol": "verifySafeOpsPlan"
         },
         "reachable": true
@@ -29782,9 +29798,9 @@
         "type": "verifier"
       },
       {
-        "title": "verifier/safeops.js:261 (verifySafeOpsPlan)",
+        "title": "verifier/safeops.js:277 (verifySafeOpsPlan)",
         "path": "verifier/safeops.js",
-        "line": 261,
+        "line": 277,
         "type": "verifier"
       },
       {

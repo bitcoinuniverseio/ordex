@@ -130,37 +130,42 @@ export async function verifyKit(options, { install = false, keep = false } = {})
   mkdirSync(dir);
   writeKit(dir, files);
   try {
-    if (!install) linkLocalTools(dir, options.runtime);
-    const testOutput = await buildAndTest(dir, options.runtime, { install });
-    let startOutput = '';
-    if (options.runtime === 'node') {
-      const r = await runNodeKit(dir);
-      if (r.code !== 0) throw new Error(`npm start failed:\n${r.stdout}`);
-      startOutput = r.stdout;
-    } else {
-      const kit = await startKit(dir);
-      try {
-        const path = options.runtime === 'worker' ? '/checks' : '/';
-        const res = await fetch(`${kit.url}${path}`);
-        startOutput = `${res.status} ${await res.text()}`;
-        if (res.status !== 200) throw new Error(`GET ${path} answered ${startOutput.slice(0, 400)}`);
-        if (options.runtime === 'worker' && options.mode === 'gateway') {
-          const g = await fetch(`${kit.url}/gateway`);
-          const body = await g.text();
-          if (g.status !== 200) throw new Error(`GET /gateway answered ${g.status} ${body.slice(0, 400)}`);
-        }
-        if (options.runtime === 'browser') {
-          const app = await fetch(`${kit.url}/app.js`);
-          if (app.status !== 200) throw new Error('public/app.js is not served');
-        }
-      } finally {
-        await kit.stop();
-      }
-    }
-    return { dir, testOutput, startOutput };
+    return await verifyKitDir(dir, options, { install });
   } finally {
     if (!keep) rmSync(dirname(dir), { recursive: true, force: true });
   }
+}
+
+/** Build, test and start a kit already written to `dir` (for example extracted from a download). */
+export async function verifyKitDir(dir, options, { install = false } = {}) {
+  if (!install) linkLocalTools(dir, options.runtime);
+  const testOutput = await buildAndTest(dir, options.runtime, { install });
+  let startOutput = '';
+  if (options.runtime === 'node') {
+    const r = await runNodeKit(dir);
+    if (r.code !== 0) throw new Error(`npm start failed:\n${r.stdout}`);
+    startOutput = r.stdout;
+  } else {
+    const kit = await startKit(dir);
+    try {
+      const path = options.runtime === 'worker' ? '/checks' : '/';
+      const res = await fetch(`${kit.url}${path}`);
+      startOutput = `${res.status} ${await res.text()}`;
+      if (res.status !== 200) throw new Error(`GET ${path} answered ${startOutput.slice(0, 400)}`);
+      if (options.runtime === 'worker' && options.mode === 'gateway') {
+        const g = await fetch(`${kit.url}/gateway`);
+        const body = await g.text();
+        if (g.status !== 200) throw new Error(`GET /gateway answered ${g.status} ${body.slice(0, 400)}`);
+      }
+      if (options.runtime === 'browser') {
+        const app = await fetch(`${kit.url}/app.js`);
+        if (app.status !== 200) throw new Error('public/app.js is not served');
+      }
+    } finally {
+      await kit.stop();
+    }
+  }
+  return { dir, testOutput, startOutput };
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

@@ -155,6 +155,17 @@ export const MUTATION_FIXTURES: MutationFixture[] = [
     })
   },
   {
+    id: 'mut-version',
+    name: 'Transaction version changed',
+    description: 'The transaction version moves from 2 to 1. The byte length is unchanged.',
+    expectedSeverity: 'Dangerous',
+    expectedDifferenceId: 'diff-version',
+    rawFixtureHexA: A,
+    rawFixtureHexB: withUnsignedTx(A, (tx) => {
+      tx.version = tx.version === 1 ? 2 : 1;
+    })
+  },
+  {
     id: 'mut-sighash',
     name: 'Sighash downgraded',
     description: 'Input 0 sighash changes from ALL to SINGLE|ANYONECANPAY.',

@@ -154,12 +154,12 @@ export async function handleEvent(request, env, origin) {
   }
 }
 
-const RANGES = { '7d': 7, '30d': 30, '90d': 90 };
+const RANGES = { '24h': 1, '7d': 7, '30d': 30, '90d': 90 };
 
 /** Aggregates only: hourly counts per event and product over a range. */
 export async function handleInsights(request, env, origin) {
   const range = new URL(request.url).searchParams.get('range') || '30d';
-  if (!RANGES[range]) return invalid(['range must be 7d, 30d or 90d'], origin);
+  if (!RANGES[range]) return invalid(['range must be 24h, 7d, 30d or 90d'], origin);
   const db = env?.DB;
   if (!db) return unavailable(origin);
   try {

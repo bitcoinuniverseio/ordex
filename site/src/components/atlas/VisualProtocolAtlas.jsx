@@ -51,15 +51,41 @@ export function VisualProtocolAtlas({ initialDiagramId = null }) {
   const exportSvg = () => {
     const svgEl = document.getElementById('protocol-atlas-svg');
     if (!svgEl) return;
+    // A standalone file has no page stylesheet: resolve every CSS variable to the color the page
+    // shows, and give the file its own size, background and title.
+    const clone = svgEl.cloneNode(true);
+    const live = svgEl.querySelectorAll('*');
+    clone.querySelectorAll('*').forEach((el, i) => {
+      const cs = getComputedStyle(live[i]);
+      for (const attr of ['fill', 'stroke']) {
+        const v = el.getAttribute(attr);
+        if (v && v.includes('var(')) el.setAttribute(attr, cs[attr]);
+      }
+    });
+    const [, , vw, vh] = (svgEl.getAttribute('viewBox') || '0 0 900 240').split(/\s+/);
+    clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    clone.setAttribute('width', vw);
+    clone.setAttribute('height', vh);
+    clone.removeAttribute('style');
+    const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    bg.setAttribute('width', '100%');
+    bg.setAttribute('height', '100%');
+    bg.setAttribute('fill', getComputedStyle(svgEl.parentElement).backgroundColor || '#ffffff');
+    clone.insertBefore(bg, clone.firstChild);
+    const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+    title.textContent = `${diagram.title}, step ${currentStep + 1} of ${steps.length}`;
+    clone.insertBefore(title, clone.firstChild);
     const serializer = new XMLSerializer();
-    const source = serializer.serializeToString(svgEl);
+    const source = serializer.serializeToString(clone);
     const blob = new Blob([source], { type: 'image/svg+xml;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = `${diagram.id}-step-${currentStep + 1}.svg`;
+    document.body.appendChild(a);
     a.click();
-    URL.revokeObjectURL(url);
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 30000);
   };
 
   return (

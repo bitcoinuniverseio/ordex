@@ -276,6 +276,7 @@ export function LaunchpadEntry({ basePath = '/ordex' }: LaunchpadEntryProps): JS
 
               <a
                 href={`${basePath}/workspace/?mission=${mission.id}`}
+                aria-label={`Start mission: ${mission.title}`}
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',

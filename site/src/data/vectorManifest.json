@@ -1,10 +1,10 @@
 {
   "schema": "ordex.vector-manifest/v1",
-  "total": 353,
+  "total": 356,
   "familyCount": 9,
-  "vectorDigest": "88ea24963010c9e07a837a60670eb0253f5a2b11adbce0e5a4a4992f2867fb23",
+  "vectorDigest": "92067b4170fb40a00ea0a2372468a1a8f59a9c213b0fd88e9f8cd83614ae5662",
   "specDigest": "c32a2e3bfd34e11730ebc98f20b4eaa52e72587a2f8278a63fbd4cc9b7d38e5a",
-  "verifierDigest": "ffeff5a8cdf43f31f0ba77bc5d32d6ddfa32ba2cd0b34ac7a6f3911c5691f0db",
+  "verifierDigest": "038e774eeba6180427edce94eaaaafb9966e5cceb9fb05bbeb88247b52e9ed42",
   "families": {
     "purchase": {
       "file": "purchase-vectors.json",
@@ -23,8 +23,8 @@
     },
     "safeops": {
       "file": "safeops-vectors.json",
-      "sha256": "820a8d39f9296d011888973aecd4f2621d6a6ec3123b1ac0cbe2c521dae652c1",
-      "count": 42
+      "sha256": "9eade76b75b0e56891900bac085fb638a7344a428f7b268abd96bda7f9ad0276",
+      "count": 45
     },
     "swaps": {
       "file": "swap-vectors.json",

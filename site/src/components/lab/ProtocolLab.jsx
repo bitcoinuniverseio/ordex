@@ -18,6 +18,7 @@ import {
 import { resolveUrl } from '../../lib/base-url.js';
 import { tabKeyHandler, tabProps, tabPanelProps } from '../../lib/a11y/tabs.js';
 import { recordToolEvidence } from '../../lib/session/evidence';
+import { journeyStore } from '../../lib/session/journey-store';
 import reproducerFile from '../../lib/diagnostics/reproducers.json';
 import { reproducerArgs } from '../../lib/diagnostics/reproducer.mjs';
 
@@ -90,8 +91,41 @@ export function ProtocolLab() {
     return true;
   };
 
+  // OX-S08: another tool (the Sandbox) hands over an exact verifier input as a stored artifact;
+  // the URL carries only its id, and the bytes are checked against their digest on read.
+  const loadHandedOver = async (id) => {
+    try {
+      const art = await journeyStore.getArtifact(id);
+      if (!art) {
+        setReproNotice('The handed-over input is not stored in this browser.');
+        return;
+      }
+      const candidate = JSON.parse(art.payload);
+      if (candidate?.schema !== 'ordex.lab-candidate/v1' || !FAMILY_REGISTRY[candidate.family]?.variants?.[candidate.variant]) {
+        setReproNotice(`The handed-over artifact ${art.name} is not a verifier input this Lab can run.`);
+        return;
+      }
+      setFamily(candidate.family);
+      setVariant(candidate.variant);
+      setInputText(JSON.stringify(candidate.args, null, 2));
+      setLoadedVector(null);
+      setInputError(null);
+      setRun(null);
+      setStatus('idle');
+      const src = candidate.source || {};
+      setReproNotice(`Loaded ${art.name} from the ${src.tool === 'sandbox' ? 'Sandbox' : 'previous tool'} (${art.summary}; input sha256 ${src.inputDigest || art.sha256}). Run the verifier to see its verdict.`);
+    } catch (err) {
+      setReproNotice(`The handed-over input could not be loaded: ${err.message}`);
+    }
+  };
+
   useEffect(() => {
     const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+    const artifact = params?.get('artifact');
+    if (artifact) {
+      loadHandedOver(artifact);
+      return () => abortRef.current?.abort();
+    }
     const code = params?.get('reproduce');
     const first = allVectors.find((v) => v.family === 'purchase' && v.case?.expected?.ok === true) || allVectors[0];
     const familyParam = params?.get('family');

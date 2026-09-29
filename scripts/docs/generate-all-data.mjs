@@ -275,23 +275,51 @@ for (const [family, introduced] of Object.entries(FAMILY_INTRODUCED_IN)) {
 for (const family of FAMILIES) if (!FAMILY_INTRODUCED_IN[family]) throw new Error(`No introduction version for ${family}`);
 
 /** Where a spec names the code: file, nearest heading above, line and the sentence. */
+// A spec line that names a code is often one line of a wrapped paragraph or a bare list of
+// codes. The statement is the whole sentence around the code, read from its paragraph or
+// list item, and it must say something beyond the codes it names.
+const LIST_ITEM = /^\s*(?:[-*]|\d+\.)\s+/;
+const BLOCK_EDGE = (l) => l.trim() === '' || /^\s*(#{1,6}\s|```|\|)/.test(l);
+function blockAround(lines, i) {
+  let start = i;
+  while (start > 0 && !LIST_ITEM.test(lines[start]) && !BLOCK_EDGE(lines[start - 1])) start--;
+  let end = i;
+  while (end + 1 < lines.length && !BLOCK_EDGE(lines[end + 1]) && !LIST_ITEM.test(lines[end + 1])) end++;
+  return lines.slice(start, end + 1).map((l) => l.replace(LIST_ITEM, '').trim()).join(' ').replace(/`/g, '').replace(/\s+/g, ' ').trim();
+}
+const proseWords = (s) => s.replace(/\b[A-Z][A-Z0-9_]{2,}\b/g, ' ').split(/[^A-Za-z]+/).filter((w) => w.length > 1).length;
+
 function specPointer(code) {
+  let best = null;
   for (const [file, text] of Object.entries(specTexts)) {
     const lines = text.split('\n');
-    const i = lines.findIndex((l) => l.includes(code));
-    if (i < 0) continue;
-    let heading = null;
-    for (let j = i; j >= 0; j--) {
-      const m = lines[j].match(/^#{1,4}\s+(.+)$/);
-      if (m) {
-        heading = m[1].trim();
-        break;
+    lines.forEach((l, i) => {
+      if (!l.includes(code) || /^\s*#{1,6}\s/.test(l)) return;
+      let sentence;
+      if (/^\s*\|/.test(l)) {
+        // A table row whose first cell is the code: the code with the row's description.
+        const cells = l.split('|').slice(1, -1).map((c) => c.replace(/`/g, '').trim());
+        if (cells[0] !== code || !cells[1]) return;
+        sentence = `${code}: ${cells.slice(1).filter(Boolean).join('; ')}`;
+      } else {
+        const block = blockAround(lines, i);
+        sentence = (block.match(/[^.!?]*(?:[.!?](?=\s|$)|$)/g) || []).map((s) => s.trim()).find((s) => s.includes(code));
       }
-    }
-    const statement = lines[i].replace(/^\s*(?:[-*]|\d+\.)\s+/, '').replace(/`/g, '').trim();
-    return { path: `spec/${file}`, line: i + 1, heading, anchor: heading ? headingAnchor(heading) : null, statement };
+      if (!sentence || proseWords(sentence) < 4) return;
+      if (best && proseWords(sentence) <= proseWords(best.statement)) return;
+      let heading = null;
+      for (let j = i; j >= 0; j--) {
+        const m = lines[j].match(/^#{1,4}\s+(.+)$/);
+        if (m) {
+          heading = m[1].trim();
+          break;
+        }
+      }
+      best = { path: `spec/${file}`, line: i + 1, heading, anchor: heading ? headingAnchor(heading) : null, statement: sentence };
+    });
+    if (best) return best;
   }
-  return null;
+  return best;
 }
 
 const vectorById = new Map(allVectorsList.map((v) => [v.id, v]));

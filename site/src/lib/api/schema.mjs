@@ -139,7 +139,12 @@ const PATTERN_SAMPLES = {
   '^[0-9a-f]*$': '0014d85c2b71d0060b09c9886aeb815e50991dda124d',
   '^[0-9a-f]+$': '0014d85c2b71d0060b09c9886aeb815e50991dda124d',
   '^([0-9a-f]{2})+$': '0014d85c2b71d0060b09c9886aeb815e50991dda124d',
-  '^(?:[0-9a-f]{2})+$': '0014d85c2b71d0060b09c9886aeb815e50991dda124d'
+  '^(?:[0-9a-f]{2})+$': '0014d85c2b71d0060b09c9886aeb815e50991dda124d',
+  '^[0-9a-f]{64}i(0|[1-9][0-9]*)$': 'a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdefi0',
+  '^(?:[0-9a-f]{2})*$': '',
+  '^(0|[1-9][0-9]*):(0|[1-9][0-9]*)$': '840000:1',
+  '^swc_[A-Za-z0-9_-]{43}$': 'swc_ExampleSessionCapability0123456789abcdefghi',
+  '^[0-9a-f]{128}$': 'a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdefa0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef'
 };
 
 function mergeObjects(parts) {
@@ -173,9 +178,20 @@ function buildExample(schema, doc, depth, seen, path = '$') {
   }
   for (const key of ['oneOf', 'anyOf']) {
     if (Array.isArray(schema[key])) {
+      const { [key]: _alts, ...own } = schema;
       for (const alt of schema[key]) {
         try {
-          const candidate = buildExample(alt, doc, depth + 1, seen, path);
+          // An alternative that only names required properties (exactly one of a or b) selects
+          // from the object's own properties: build those and keep the required ones.
+          const onlyRequired = Array.isArray(alt.required) && !alt.type && !alt.properties && !alt.$ref;
+          let candidate;
+          if (onlyRequired && own.properties) {
+            const full = buildExample(own, doc, depth + 1, seen, path);
+            const keep = new Set([...(own.required || []), ...alt.required]);
+            candidate = Object.fromEntries(Object.entries(full).filter(([k]) => keep.has(k)));
+          } else {
+            candidate = buildExample(alt, doc, depth + 1, seen, path);
+          }
           if (validateSchema(candidate, schema, doc).length === 0) return candidate;
         } catch {
           // try the next alternative

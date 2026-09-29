@@ -52,3 +52,13 @@ test('every stage of every mission is satisfiable by a real emitted run, and onl
     }
   }
 });
+
+test('the tool a stage opens is the tool its requirement needs', () => {
+  const ROUTE_OF = { learn: '/learn', playground: '/build/playground', events: '/build/playground', sandbox: '/sandbox', 'artifact-lens': '/inspect', lab: '/lab', kits: '/kits', conformance: '/verify', doctor: '/verify', wizards: '/build/wizards', 'failure-navigator': '/diagnose', atlas: '/atlas' };
+  for (const m of MISSIONS) {
+    for (const st of m.stages.filter((s) => s.id !== 'finish')) {
+      const req = requirementFor(m.id, st.id);
+      assert.equal(st.toolRoute, ROUTE_OF[req.tool], `${m.id}/${st.id} opens ${st.toolRoute} but needs ${req.tool}`);
+    }
+  }
+});

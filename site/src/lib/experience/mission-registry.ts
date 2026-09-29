@@ -72,7 +72,11 @@ function createStandardStages(cfg: {
   prepareLabel: string;
   simulateDesc: string;
   simulateLabel: string;
+  /** The tool that produces this mission's simulate evidence, when it is not the Sandbox. */
+  simulateRoute?: string;
   inspectDesc: string;
+  /** The tool that produces this mission's inspect evidence, when it is not Artifact Lens. */
+  inspectRoute?: string;
   inspectLabel: string;
   verifyDesc: string;
   verifyLabel: string;
@@ -80,6 +84,8 @@ function createStandardStages(cfg: {
   integrateLabel: string;
   validateDesc: string;
   validateLabel: string;
+  /** The tool that produces this mission's validate evidence, when it is not /verify. */
+  validateRoute?: string;
   finishDesc: string;
 }): MissionStageDefinition[] {
   return [
@@ -103,7 +109,7 @@ function createStandardStages(cfg: {
       id: 'simulate',
       title: 'Simulate Execution',
       description: cfg.simulateDesc,
-      toolRoute: '/sandbox',
+      toolRoute: cfg.simulateRoute || '/sandbox',
       toolActionLabel: cfg.simulateLabel,
       summaryTemplate: 'Deterministic multi-actor simulation completed.'
     },
@@ -111,7 +117,7 @@ function createStandardStages(cfg: {
       id: 'inspect',
       title: 'Inspect Artifacts',
       description: cfg.inspectDesc,
-      toolRoute: '/inspect',
+      toolRoute: cfg.inspectRoute || '/inspect',
       toolActionLabel: cfg.inspectLabel,
       summaryTemplate: 'Transaction artifacts and sat-flow inspected in Artifact Lens.'
     },
@@ -135,7 +141,7 @@ function createStandardStages(cfg: {
       id: 'validate',
       title: 'Validate Conformance',
       description: cfg.validateDesc,
-      toolRoute: '/verify',
+      toolRoute: cfg.validateRoute || '/verify',
       toolActionLabel: cfg.validateLabel,
       summaryTemplate: 'Conformance vectors and compatibility checks verified.'
     },
@@ -357,12 +363,14 @@ export const MISSIONS: MissionDefinition[] = [
     stages: createStandardStages({
       understandDesc: 'Review stateless catalog endpoints, event cursors, and webhook signatures.',
       prepareDesc: 'Configure gateway URLs, CORS policies, and HMAC secrets.',
-      prepareRoute: '/operate',
+      prepareRoute: '/build/playground',
       prepareLabel: 'Configure Gateway',
       simulateDesc: 'Subscribe to real-time events and verify HMAC-SHA256 webhook signatures.',
       simulateLabel: 'Open Event Playground',
+      simulateRoute: '/build/playground',
       inspectDesc: 'Inspect signed event envelopes and cursor headers.',
       inspectLabel: 'Inspect Envelopes',
+      inspectRoute: '/build/playground',
       verifyDesc: 'Verify event delivery with verifier/events.js.',
       verifyLabel: 'Verify Events',
       integrateDesc: 'Generate webhook receiver server boilerplate.',
@@ -446,6 +454,7 @@ export const MISSIONS: MissionDefinition[] = [
       integrateLabel: 'Get Error Code',
       validateDesc: 'Check error envelope against authoritative OpenAPI schema.',
       validateLabel: 'Validate Schema',
+      validateRoute: '/build/playground',
       finishDesc: 'Executed remediation sequence and confirmed fix.'
     }),
     completionCriteria: [
