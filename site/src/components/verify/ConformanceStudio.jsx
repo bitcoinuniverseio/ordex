@@ -4,6 +4,7 @@ import vectorFamilies from '../../data/vectorFamilies.json';
 import vectorManifest from '../../data/vectorManifest.json';
 import { FAMILIES, FAMILY_REGISTRY } from '../../lib/conformance-registry.mjs';
 import { runVerifierJob } from '../../lib/verifier-client.mjs';
+import { recordToolEvidence } from '../../lib/session/evidence';
 
 const SOURCE_BUILD = import.meta.env.PUBLIC_ORDEX_BUILD_REVISION || 'unknown';
 const OUTCOME_TEXT = {
@@ -56,6 +57,13 @@ export function ConformanceStudio() {
       for (const r of suite.results) byId[r.id] = r;
       setResults(byId);
       setSummary({ ...suite.summary, families: selectedFamilies });
+      recordToolEvidence({
+        tool: 'conformance',
+        operation: `suite:${selectedFamily}`,
+        state: suite.summary.success ? 'passed' : 'failed',
+        reason: `${suite.summary.passed} of ${suite.summary.total} vectors reached their expected verdict (vector set ${vectorManifest.vectorDigest.slice(0, 12)}).`,
+        evidenceClass: 'Protocol verification'
+      });
     } catch (err) {
       if (err?.code !== 'VERIFIER_CANCELLED') setError(`${err?.code || 'VERIFIER_ERROR'}: ${err?.message || err}`);
       else setError('The run was cancelled. No results are shown for a cancelled run.');

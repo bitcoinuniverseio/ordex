@@ -184,6 +184,23 @@ export function scenarioReducer(
   }
 }
 
+/**
+ * The outcome of a full uninjected walk: 'passed' when every verifier step resolved and the
+ * scenario reached its declared outcome (every check accepted for a success scenario, the
+ * declared code for a refusal scenario), 'failed' when it resolved otherwise, 'incomplete'
+ * while any check is unresolved or an injection is active.
+ */
+export function scenarioOutcome(state: ScenarioExecutionState, scenario: ScenarioDefinition): 'passed' | 'failed' | 'incomplete' {
+  if (state.activeFailureInjectionId) return 'incomplete';
+  const verdicts = scenario.steps.map((_, i) => stepVerdict({ results: state.results, activeFailureInjectionId: undefined }, scenario, i));
+  if (verdicts.some((v) => v.state === 'pending')) return 'incomplete';
+  const decisive = verdicts.filter((v) => v.state === 'accepted' || v.state === 'refused' || v.state === 'unknown');
+  if (decisive.length === 0) return 'incomplete';
+  if (scenario.expectedOutcome === 'success') return decisive.every((v) => v.state === 'accepted') ? 'passed' : 'failed';
+  const last = decisive[decisive.length - 1];
+  return last.state === 'refused' && last.code === scenario.expectedRefusalCode ? 'passed' : 'failed';
+}
+
 /** The verifier call the current step is waiting for, if any. */
 export function pendingCheck(state: ScenarioExecutionState, scenario: ScenarioDefinition) {
   if (state.verificationVerdict.state !== 'pending') return null;

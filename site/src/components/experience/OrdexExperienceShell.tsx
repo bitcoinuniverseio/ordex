@@ -15,7 +15,8 @@ import {
   IconChevronDown,
   IconChevronRight
 } from './OrdexIcons.js';
-import { journeyStore, type UserSettings } from '../../lib/session/journey-store.js';
+import { journeyStore, DEFAULT_SETTINGS, type UserSettings, type StorageState } from '../../lib/session/journey-store.js';
+import { SOURCE_BUILD } from '../../lib/session/evidence.js';
 import { contextEngine } from '../../lib/experience/context-engine.js';
 
 interface ShellProps {
@@ -31,45 +32,50 @@ export function OrdexExperienceShell({
   children,
   basePath = '/ordex'
 }: ShellProps): JSX.Element {
-  const [settings, setSettings] = useState<UserSettings>({
-    disclosureMode: 'plain',
-    protocolVersion: '1.2',
-    environment: 'deterministic',
-    customGatewayUrl: '',
-    theme: 'light'
-  });
+  const [settings, setSettings] = useState<UserSettings>({ ...DEFAULT_SETTINGS });
+  const [storageState, setStorageState] = useState<StorageState>(journeyStore.storageState);
   const [isContextRailOpen, setIsContextRailOpen] = useState(true);
   const [isDocsExpanded, setIsDocsExpanded] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  // OX-S03: settings are read from the shared store and follow commits from any tab.
   useEffect(() => {
-    journeyStore.getSettings().then((s) => {
-      setSettings(s);
-      contextEngine.setContext({
-        route: currentRoute,
-        title: pageTitle,
-        protocolVersion: s.protocolVersion,
-        disclosureMode: s.disclosureMode
+    let live = true;
+    const load = () =>
+      journeyStore.getSettings().then((s) => {
+        if (!live) return;
+        setSettings(s);
+        contextEngine.setContext({
+          route: currentRoute,
+          title: pageTitle,
+          protocolVersion: s.protocolVersion,
+          disclosureMode: s.disclosureMode
+        });
       });
+    load();
+    const unsubscribe = journeyStore.subscribe((event) => {
+      if (event.type === 'settings') load();
+      if (event.type === 'status') setStorageState(event.state);
     });
+    return () => {
+      live = false;
+      unsubscribe();
+    };
   }, [currentRoute, pageTitle]);
 
-  const handleModeChange = (mode: 'plain' | 'builder' | 'proof') => {
-    setSettings((prev) => ({ ...prev, disclosureMode: mode }));
-    journeyStore.saveSettings({ disclosureMode: mode });
-    contextEngine.setContext({ disclosureMode: mode });
+  // A change is shown only once it is committed; a failed save keeps the previous value.
+  const saveSettings = async (patch: Partial<UserSettings>) => {
+    try {
+      const saved = await journeyStore.saveSettings(patch);
+      setSettings(saved);
+      contextEngine.setContext({ protocolVersion: saved.protocolVersion, disclosureMode: saved.disclosureMode });
+    } catch {
+      setStorageState(journeyStore.storageState);
+    }
   };
 
-  const handleVersionChange = (ver: string) => {
-    setSettings((prev) => ({ ...prev, protocolVersion: ver }));
-    journeyStore.saveSettings({ protocolVersion: ver });
-    contextEngine.setContext({ protocolVersion: ver });
-  };
-
-  const handleEnvChange = (env: string) => {
-    setSettings((prev) => ({ ...prev, environment: env as UserSettings['environment'] }));
-    journeyStore.saveSettings({ environment: env as UserSettings['environment'] });
-  };
+  const handleModeChange = (mode: 'plain' | 'builder' | 'proof') => saveSettings({ disclosureMode: mode });
+  const handleVersionChange = (ver: string) => saveSettings({ protocolVersion: ver });
 
   const navItemStyle = (active: boolean) => ({
     display: 'flex',
@@ -132,12 +138,7 @@ export function OrdexExperienceShell({
             onSelectProtocolVersion={handleVersionChange}
           />
 
-          <VersionEnvironmentController
-            version={settings.protocolVersion}
-            onVersionChange={handleVersionChange}
-            environment={settings.environment}
-            onEnvironmentChange={handleEnvChange}
-          />
+          <VersionEnvironmentController settings={settings} onChange={saveSettings} buildRevision={SOURCE_BUILD} storageState={storageState} />
         </div>
       </header>
 

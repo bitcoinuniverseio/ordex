@@ -9,6 +9,8 @@ import { runVerifierJob } from '../../lib/verifier-client.mjs';
 import { safeJsonParse, sanitizeForExport } from '../../lib/security/sanitizer';
 import { tabKeyHandler, tabProps, tabPanelProps } from '../../lib/a11y/tabs.js';
 import { IconAlertTriangle, IconShieldCheck } from '../experience/OrdexIcons.js';
+import { recordToolEvidence, readJourneyHandoff } from '../../lib/session/evidence.js';
+import { journeyStore } from '../../lib/session/journey-store.js';
 
 // OX-S01: Artifact Lens decodes through the strict shared parser (PSBT v0/v2 and raw
 // transactions), shows malformed and unsupported input as such, compares A and B field by
@@ -128,10 +130,21 @@ export function ArtifactLens({ initialPayload = SAMPLE_PSBT_HEX }: LensProps): J
     setNotice(null);
   };
 
-  const executeParse = (input: string) => {
+  const executeParse = (input: string, record = true) => {
     clearDerived();
     const res = parseArtifact(input);
     setParsed(res);
+    if (record) {
+      recordToolEvidence({
+        tool: 'artifact-lens',
+        operation: `decode:${res.format}`,
+        state: res.status === 'decoded' ? 'accepted' : 'refused',
+        code: res.status === 'decoded' ? null : res.status === 'unsupported' ? 'ARTIFACT_UNSUPPORTED' : 'ARTIFACT_MALFORMED',
+        reason: res.errors[0] || null,
+        evidenceClass: 'Deterministic example',
+        artifactDigests: res.totalByteLength ? [res.sha256] : []
+      });
+    }
     if (res.status === 'decoded') {
       contextEngine.setContext({
         title: `Artifact Lens: ${res.format}`,
@@ -141,8 +154,29 @@ export function ArtifactLens({ initialPayload = SAMPLE_PSBT_HEX }: LensProps): J
     }
   };
 
+  // OX-S03: a tool may hand an artifact over by opaque reference; its bytes come from local
+  // storage and are checked against their digest, never from the URL.
   useEffect(() => {
-    executeParse(rawInput);
+    const handoff = readJourneyHandoff();
+    if (!handoff?.artifactId) {
+      executeParse(rawInput, false);
+      return;
+    }
+    journeyStore
+      .getArtifact(handoff.artifactId)
+      .then((art) => {
+        if (art) {
+          setRawInput(art.payload);
+          executeParse(art.payload);
+        } else {
+          executeParse(rawInput, false);
+          setNotice('The referenced artifact is not stored in this browser. Showing the example instead.');
+        }
+      })
+      .catch((err) => {
+        executeParse(rawInput, false);
+        setNotice(`The referenced artifact could not be loaded: ${(err as Error).message}`);
+      });
   }, []);
 
   const runCompare = (a: ParsedArtifactResult | null, bText: string) => {
@@ -150,7 +184,16 @@ export function ArtifactLens({ initialPayload = SAMPLE_PSBT_HEX }: LensProps): J
     if (!a) return;
     const b = parseArtifact(bText);
     setParsedB(b);
-    setComparisonReport(compareParsedArtifacts(a, b));
+    const report = compareParsedArtifacts(a, b);
+    setComparisonReport(report);
+    recordToolEvidence({
+      tool: 'artifact-lens',
+      operation: `compare:${report.overallVerdict}`,
+      state: report.overallVerdict === 'DANGEROUS' || report.overallVerdict === 'UNKNOWN' ? 'refused' : 'accepted',
+      code: report.overallVerdict,
+      evidenceClass: 'Deterministic example',
+      artifactDigests: [report.artifactASha256, report.artifactBSha256].filter((d) => /^[0-9a-f]{64}$/.test(d))
+    });
   };
 
   const loadFixture = (id: string) => {
