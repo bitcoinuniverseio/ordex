@@ -45,10 +45,10 @@ test('an unregistered code and plain noise are not diagnosed conclusively', asyn
 });
 
 test('the Lab opens a reproducer by code and the verifier refuses it with that code', async () => {
-  const { page, context, errors } = await openPage(browser, site.url('/lab/?reproduce=MAKER_ASSET_UNASSIGNED'));
-  await page.getByText('Loaded the reproducer for MAKER_ASSET_UNASSIGNED').waitFor();
+  const { page, context, errors } = await openPage(browser, site.url('/lab/?reproduce=TRACKED_ASSET_UNASSIGNED'));
+  await page.getByText('Loaded the reproducer for TRACKED_ASSET_UNASSIGNED').waitFor();
   await page.getByRole('button', { name: 'Run reference verifier' }).click();
-  await page.getByText('MAKER_ASSET_UNASSIGNED').nth(1).waitFor({ timeout: 20000 });
+  await page.getByText('TRACKED_ASSET_UNASSIGNED').nth(1).waitFor({ timeout: 20000 });
   assert.deepEqual(errors, []);
   await context.close();
 });

@@ -19,7 +19,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
       </p>
     </div>
 
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.25rem;">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 1.25rem;">
       {specsData.map((s) => (
         <div key={s.id} id={`spec-${s.id}`} class="panel">
           <div style="font-size: 0.75rem; font-family: var(--font-mono); color: var(--color-brand-text); margin-bottom: 0.25rem;">

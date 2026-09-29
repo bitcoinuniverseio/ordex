@@ -109,8 +109,11 @@ export function OrdexExperienceShell({
       {/* Global Header */}
       <header
         role="banner"
+        class="ox-app-header"
         style={{
-          height: 'var(--ox-header-height)',
+          minHeight: 'var(--ox-header-height)',
+          flexWrap: 'wrap',
+          rowGap: '0.5rem',
           backgroundColor: 'var(--ox-surface-panel)',
           borderBottom: '1px solid var(--ox-border-default)',
           display: 'flex',
@@ -122,7 +125,7 @@ export function OrdexExperienceShell({
           zIndex: 100
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem 1.25rem', flexWrap: 'wrap', minWidth: 0 }}>
           <a href={`${basePath}/`} style={{ textDecoration: 'none' }} data-tour="brand" aria-label="Ordex home">
             <OrdexBrandMark version={`v${settings.protocolVersion}`} />
           </a>
@@ -133,7 +136,7 @@ export function OrdexExperienceShell({
           />
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem 0.75rem', flexWrap: 'wrap', minWidth: 0 }}>
           <CommandCenter
             basePath={basePath}
             onSelectDisclosureMode={handleModeChange}
@@ -344,6 +347,7 @@ export function OrdexExperienceShell({
 
       <style>{`
         @media (max-width: 768px) {
+          .ox-app-header { padding: 0.5rem 1rem !important; }
           .ox-left-nav { display: none !important; }
           .ox-context-rail { display: none !important; }
           .ox-mobile-nav { display: flex !important; }

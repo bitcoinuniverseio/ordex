@@ -26,26 +26,26 @@
   --color-on-brand: #1a1d20;
   --color-brand-action-hover: #f97316;
   --color-brand-text: #c2410c;
-  --color-focus: #0284c7;
+  --color-focus: #0369a1;
 
   /* Evidence & Truth Badges */
   --color-evidence-proof: #4f46e5;
   --color-evidence-proof-bg: #eef2ff;
-  --color-evidence-verification: #059669;
+  --color-evidence-verification: #047857;
   --color-evidence-verification-bg: #ecfdf5;
-  --color-evidence-observation: #0284c7;
+  --color-evidence-observation: #0369a1;
   --color-evidence-observation-bg: #f0f9ff;
-  --color-evidence-claim: #d97706;
+  --color-evidence-claim: #b45309;
   --color-evidence-claim-bg: #fffbeb;
   --color-evidence-example: #64748b;
   --color-evidence-example-bg: #f8fafc;
 
   /* Status Colors */
-  --color-success: #16a34a;
+  --color-success: #15803d;
   --color-success-bg: #f0fdf4;
-  --color-warning: #d97706;
+  --color-warning: #b45309;
   --color-warning-bg: #fffbeb;
-  --color-danger: #dc2626;
+  --color-danger: #b91c1c;
   --color-danger-bg: #fef2f2;
 
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
@@ -233,6 +233,32 @@ a:hover {
   gap: 0.75rem;
 }
 
+/* Narrow screens: the navigation takes its own row and every row wraps, so the header
+   never makes the page scroll sideways. */
+.header-container,
+.header-nav,
+.header-actions {
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+@media (max-width: 1100px) {
+  .header-nav {
+    order: 3;
+    flex: 1 1 100%;
+    gap: 0.25rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-container {
+    padding: 0.75rem 1rem;
+  }
+  .header-nav a {
+    padding: 0.5rem 0.5rem;
+  }
+}
+
 /* Common Components */
 .btn {
   display: inline-flex;
@@ -368,6 +394,8 @@ a:hover {
 
 .panel-header {
   display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 1rem;

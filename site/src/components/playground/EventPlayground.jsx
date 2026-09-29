@@ -280,7 +280,7 @@ export function EventPlayground() {
               </p>
             </div>
           </div>
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem;">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); gap: 1.5rem;">
             <div style="display: flex; flex-direction: column; gap: 0.75rem;">
               <label style="display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.85rem; font-weight: 600;">
                 Subscription secret

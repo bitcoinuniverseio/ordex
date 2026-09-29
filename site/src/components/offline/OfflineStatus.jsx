@@ -76,7 +76,7 @@ export function OfflineStatus() {
   const saved = sw.state === 'saved' || sw.state === 'update-ready';
 
   return (
-    <div role="status" aria-live="polite" data-offline-state={sw.state}>
+    <div role="status" aria-live="polite" data-offline-state={sw.state} class={online && sw.state !== 'update-ready' ? 'ox-sr-only' : undefined}>
       {!online && (
         <div style={`${bar} background: var(--color-warning-bg); color: var(--color-text-primary);`}>
           You are offline.{' '}
@@ -93,7 +93,8 @@ export function OfflineStatus() {
           </button>
         </div>
       )}
-      {sw.state === 'failed' && online && <div class="ox-sr-only">Offline copy unavailable: {sw.error}</div>}
+      {sw.state === 'failed' && online && <div>Offline copy unavailable: {sw.error}</div>}
+      {sw.state === 'saved' && online && <div>This build is saved for offline use ({sw.status?.cached} files).</div>}
     </div>
   );
 }

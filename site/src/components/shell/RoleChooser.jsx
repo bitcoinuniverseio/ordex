@@ -57,7 +57,7 @@ export function RoleChooser({ onRoleChange }) {
         )}
       </div>
 
-      <div class="role-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.75rem;">
+      <div class="role-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(200px, 100%), 1fr)); gap: 0.75rem;">
         {ROLES.map((r) => {
           const isActive = selectedRole === r.id;
           return (

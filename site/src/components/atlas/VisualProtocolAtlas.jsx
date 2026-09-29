@@ -100,7 +100,7 @@ export function VisualProtocolAtlas({ initialDiagramId = null }) {
           </div>
 
           {/* Playback Controls */}
-          <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
             <button class="btn btn-outline" onClick={handlePrev} disabled={currentStep === 0}>
               ◀ Prev
             </button>
@@ -117,7 +117,7 @@ export function VisualProtocolAtlas({ initialDiagramId = null }) {
         </div>
 
         {/* Actor Lanes & Step Visualization SVG */}
-        <div style="background: var(--color-bg-subtle); border-radius: var(--radius-md); padding: 1.5rem; overflow-x: auto; margin-bottom: 1.5rem;">
+        <div tabIndex={0} role="region" aria-label={`Sequence diagram: ${diagram.title}`} style="background: var(--color-bg-subtle); border-radius: var(--radius-md); padding: 1.5rem; overflow-x: auto; margin-bottom: 1.5rem;">
           <svg
             id="protocol-atlas-svg"
             viewBox="0 0 900 240"

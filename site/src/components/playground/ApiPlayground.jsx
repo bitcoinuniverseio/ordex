@@ -157,7 +157,7 @@ export function ApiPlayground({ initialOperationId: fallbackId = null }) {
         <strong>What this sends:</strong> read operations go to the configured gateway. Writes and broadcasts are sent only in write mode, only to Signet, Testnet4 or Regtest, and only after you confirm the exact request. Nothing is signed here.
       </div>
 
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem;">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr)); gap: 1.5rem;">
         <div class="panel">
           <div class="panel-header" style="flex-wrap: wrap; gap: 0.5rem;">
             <div>
@@ -230,9 +230,11 @@ export function ApiPlayground({ initialOperationId: fallbackId = null }) {
 
           <div aria-live="polite">
             {!plan.ok && (
-              <ul role="alert" style="margin: 0 0 0.75rem 0; font-size: 0.8rem; color: var(--color-danger);">
-                {plan.errors.slice(0, 8).map((e) => <li key={e}>{e}</li>)}
-              </ul>
+              <div role="alert">
+                <ul style="margin: 0 0 0.75rem 0; font-size: 0.8rem; color: var(--color-danger);">
+                  {plan.errors.slice(0, 8).map((e) => <li key={e}>{e}</li>)}
+                </ul>
+              </div>
             )}
             {plan.ok && !auth.allowed && !auth.needsApproval && (
               <p role="status" style="font-size: 0.85rem; color: var(--color-danger); margin: 0 0 0.75rem 0;">{auth.reason}</p>

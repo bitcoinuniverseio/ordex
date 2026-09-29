@@ -172,7 +172,7 @@ export function LaunchpadEntry({ basePath = '/ordex' }: LaunchpadEntryProps): JS
           data-tour="launchpad-goals"
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(min(280px, 100%), 1fr))',
             gap: '0.75rem'
           }}
         >
@@ -319,7 +319,7 @@ export function LaunchpadEntry({ basePath = '/ordex' }: LaunchpadEntryProps): JS
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))',
             gap: '0.75rem'
           }}
         >

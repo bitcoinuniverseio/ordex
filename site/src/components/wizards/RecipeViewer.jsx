@@ -115,12 +115,14 @@ export function RecipeViewer({ recipeId = RECIPES[0].id }) {
           })}
         </ol>
 
-        <div role="tablist" aria-label="Code views" style="display: flex; gap: 0.3rem; flex-wrap: wrap; margin-bottom: 0.5rem;">
+        <div style="display: flex; gap: 0.3rem; flex-wrap: wrap; margin-bottom: 0.5rem;">
+        <div role="tablist" aria-label="Code views" style="display: flex; gap: 0.3rem; flex-wrap: wrap;">
           {TABS.map((t) => (
             <button {...tabProps('recipe', t.id, tab, setTab, onTabKey)} class={`btn ${tab === t.id ? 'btn-primary' : 'btn-outline'}`} style="font-size: 0.8rem; min-height: 32px;">
               {t.label}
             </button>
           ))}
+        </div>
           <button type="button" class="btn btn-outline" style="font-size: 0.8rem; min-height: 32px; margin-left: auto;" onClick={copy}>
             Copy
           </button>
