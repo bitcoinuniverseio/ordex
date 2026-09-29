@@ -21,7 +21,11 @@ export type StageId =
 export interface MissionPrerequisite {
   id: string;
   label: string;
-  satisfied: boolean;
+  /**
+   * OX-S03: how the workspace can check this prerequisite. Without a check it is the
+   * user's own responsibility and is shown as not checked, never as satisfied.
+   */
+  check?: 'gateway-origin' | 'web-worker';
   helpLink?: string;
 }
 
@@ -156,8 +160,8 @@ export const MISSIONS: MissionDefinition[] = [
     roles: ['Marketplace Integrator', 'Seller Wallet'],
     supportedProtocolVersions: ['1.0', '1.1', '1.2'],
     prerequisites: [
-      { id: 'prereq-seller-asset', label: 'Confirmed digital asset outpoint (Inscription or Rune)', satisfied: true },
-      { id: 'prereq-seller-payment-addr', label: 'Payment address receiving proceeds', satisfied: true }
+      { id: 'prereq-seller-asset', label: 'Confirmed digital asset outpoint (Inscription or Rune)' },
+      { id: 'prereq-seller-payment-addr', label: 'Payment address receiving proceeds' }
     ],
     stages: createStandardStages({
       understandDesc: 'Learn how SIGHASH_SINGLE enables trustless, portable listings without custodial escrow.',
@@ -196,8 +200,8 @@ export const MISSIONS: MissionDefinition[] = [
     roles: ['Marketplace Integrator', 'Buyer Wallet'],
     supportedProtocolVersions: ['1.0', '1.1', '1.2'],
     prerequisites: [
-      { id: 'prereq-open-asks', label: 'One or more OPEN public asks available', satisfied: true },
-      { id: 'prereq-buyer-utxo', label: 'Buyer funding UTXOs for price and miner fees', satisfied: true }
+      { id: 'prereq-open-asks', label: 'One or more OPEN public asks available' },
+      { id: 'prereq-buyer-utxo', label: 'Buyer funding UTXOs for price and miner fees' }
     ],
     stages: createStandardStages({
       understandDesc: 'Learn how atomic purchases combine seller inputs and buyer funding into one unspendable-if-altered tx.',
@@ -235,7 +239,7 @@ export const MISSIONS: MissionDefinition[] = [
     roles: ['Marketplace Integrator', 'Trader'],
     supportedProtocolVersions: ['1.1', '1.2'],
     prerequisites: [
-      { id: 'prereq-taproot', label: 'Taproot capable wallet or signer', satisfied: true }
+      { id: 'prereq-taproot', label: 'Taproot capable wallet or signer' }
     ],
     stages: createStandardStages({
       understandDesc: 'Examine Taproot script tree containing acceptance and CLTV recovery leaves.',
@@ -273,7 +277,7 @@ export const MISSIONS: MissionDefinition[] = [
     roles: ['Wallet Developer', 'Security Officer'],
     supportedProtocolVersions: ['1.0', '1.1', '1.2'],
     prerequisites: [
-      { id: 'prereq-verifier-worker', label: 'Local verifier Web Worker initialized', satisfied: true }
+      { id: 'prereq-verifier-worker', label: 'Local verifier Web Worker initialized', check: 'web-worker' }
     ],
     stages: createStandardStages({
       understandDesc: 'Review dangerous mutations: output reordering, sighash downgrades, fee inflation, and missing assets.',
@@ -311,7 +315,7 @@ export const MISSIONS: MissionDefinition[] = [
     roles: ['Marketplace Integrator', 'OTC Desk'],
     supportedProtocolVersions: ['1.1', '1.2'],
     prerequisites: [
-      { id: 'prereq-swap-maker', label: 'Maker asset outpoint and requested consideration defined', satisfied: true }
+      { id: 'prereq-swap-maker', label: 'Maker asset outpoint and requested consideration defined' }
     ],
     stages: createStandardStages({
       understandDesc: 'Learn how maker intent and taker acceptance combine without intermediate escrow.',
@@ -348,7 +352,7 @@ export const MISSIONS: MissionDefinition[] = [
     roles: ['Gateway Operator', 'DevOps Engineer'],
     supportedProtocolVersions: ['1.0', '1.1', '1.2'],
     prerequisites: [
-      { id: 'prereq-gateway-url', label: 'Ordex gateway origin or test environment', satisfied: true }
+      { id: 'prereq-gateway-url', label: 'Ordex gateway origin or test environment', check: 'gateway-origin' }
     ],
     stages: createStandardStages({
       understandDesc: 'Review stateless catalog endpoints, event cursors, and webhook signatures.',
@@ -386,7 +390,7 @@ export const MISSIONS: MissionDefinition[] = [
     roles: ['Creator', 'Curator', 'Marketplace'],
     supportedProtocolVersions: ['1.2'],
     prerequisites: [
-      { id: 'prereq-collection-root', label: 'Collection manifest with creator signature or Counterparty record', satisfied: true }
+      { id: 'prereq-collection-root', label: 'Collection manifest with creator signature or Counterparty record' }
     ],
     stages: createStandardStages({
       understandDesc: 'Understand O(log N) Merkle membership proofs and Counterparty sat-flow preservation.',
@@ -425,7 +429,7 @@ export const MISSIONS: MissionDefinition[] = [
     roles: ['Developer', 'Operator', 'Support'],
     supportedProtocolVersions: ['1.0', '1.1', '1.2'],
     prerequisites: [
-      { id: 'prereq-error-payload', label: 'Refusal code, verifier output, or error log available', satisfied: true }
+      { id: 'prereq-error-payload', label: 'Refusal code, verifier output, or error log available' }
     ],
     stages: createStandardStages({
       understandDesc: 'Paste refusal code or error JSON for automated deterministic diagnosis.',
@@ -461,7 +465,7 @@ export const MISSIONS: MissionDefinition[] = [
     roles: ['Security Auditor', 'Architect'],
     supportedProtocolVersions: ['1.0', '1.1', '1.2'],
     prerequisites: [
-      { id: 'prereq-audit-scope', label: 'Application integration architecture defined', satisfied: true }
+      { id: 'prereq-audit-scope', label: 'Application integration architecture defined' }
     ],
     stages: createStandardStages({
       understandDesc: 'Inspect trust boundaries between browser workers, gateways, indexers, and nodes.',

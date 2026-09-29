@@ -73,7 +73,7 @@ export function LaunchpadEntry({ basePath = '/ordex' }: LaunchpadEntryProps): JS
   const [activeSession, setActiveSession] = useState<OrdexJourneySession | null>(null);
 
   useEffect(() => {
-    journeyStore.getActiveSession().then((session) => {
+    journeyStore.getActiveSession().catch(() => null).then((session) => {
       setActiveSession(session);
     });
   }, []);

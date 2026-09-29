@@ -10,7 +10,8 @@ import {
   checkInputFor,
   toCheckpoint,
   fromCheckpoint,
-  HISTORY_LIMIT
+  HISTORY_LIMIT,
+  scenarioOutcome
 } from '../../site/src/lib/scenarios/engine.js';
 import { evaluateCandidate, FAMILY_REGISTRY } from '../../site/src/lib/conformance-engine.mjs';
 import { argsFromCase } from '../../site/src/lib/lab-report.mjs';
@@ -216,4 +217,16 @@ test('scenario fixtures built from vectors equal the vector arguments', () => {
   const check = vectorCheck('runes/unrecognized-even-tag');
   const v = vectors.find((x) => x.id === 'runes/unrecognized-even-tag');
   assert.deepEqual(check.args, argsFromCase('runes', 'burn-safety', v.case));
+});
+
+test('scenario outcome is passed only after a full walk that reaches the declared outcome', () => {
+  for (const sc of SCENARIOS) {
+    assert.equal(scenarioOutcome(createInitialScenarioState(sc), sc), sc.steps.some((s) => s.verifierCheck) ? 'incomplete' : scenarioOutcome(createInitialScenarioState(sc), sc));
+    const { state } = runAll(sc);
+    assert.equal(scenarioOutcome(state, sc), 'passed', sc.id);
+  }
+  const sc = getScenarioById('ask.publish-and-settle.success');
+  let state = runAll(sc).state;
+  state = scenarioReducer(state, { type: 'APPLY_FAILURE_INJECTION', injectionId: 'inject-underpay-seller' }, sc);
+  assert.equal(scenarioOutcome(state, sc), 'incomplete', 'an injected walk is never a scenario pass');
 });

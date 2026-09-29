@@ -17,6 +17,7 @@ import {
 } from '../../lib/lab-report.mjs';
 import { resolveUrl } from '../../lib/base-url.js';
 import { tabKeyHandler, tabProps, tabPanelProps } from '../../lib/a11y/tabs.js';
+import { recordToolEvidence } from '../../lib/session/evidence';
 
 const SOURCE_BUILD = import.meta.env.PUBLIC_ORDEX_BUILD_REVISION || 'unknown';
 const MAX_INPUT_BYTES = 2 * 1024 * 1024;
@@ -147,11 +148,22 @@ export function ProtocolLab() {
         { signal: controller.signal, timeoutMs: 15000 }
       );
       if (controller.signal.aborted) return;
+      const digest = inputDigest(args);
+      // OX-S03: the completed run is evidence for a mission stage opened from the workspace.
+      recordToolEvidence({
+        tool: 'lab',
+        operation: `${family}/${variant}`,
+        state: result.verdict.state,
+        code: result.verdict.code,
+        reason: result.verdict.reason,
+        evidenceClass: 'Protocol verification',
+        inputDigest: digest
+      });
       setRun({
         family,
         variant,
         args,
-        inputSha256: inputDigest(args),
+        inputSha256: digest,
         verdict: result.verdict,
         raw: result.raw,
         conformance: result.conformance || null,

@@ -1,7 +1,8 @@
 import type { JSX } from 'preact';
-import { useState, useEffect } from 'preact/hooks';
+import { useState, useEffect, useRef } from 'preact/hooks';
 import { SCENARIOS, ACTOR_LANES, getScenarioById } from '../../lib/scenarios/registry.js';
-import { createInitialScenarioState, scenarioReducer, pendingCheck, verdictFromResult } from '../../lib/scenarios/engine.js';
+import { createInitialScenarioState, scenarioReducer, pendingCheck, verdictFromResult, scenarioOutcome } from '../../lib/scenarios/engine.js';
+import { recordToolEvidence } from '../../lib/session/evidence.js';
 import type { ScenarioAction } from '../../lib/scenarios/engine.js';
 import type { ScenarioDefinition, ScenarioExecutionState } from '../../lib/scenarios/types.js';
 import { runVerifierJob } from '../../lib/verifier-client.mjs';
@@ -27,9 +28,11 @@ export function TransactionSandbox({
   initialScenarioId = 'ask.publish-and-settle.success',
   basePath = '/ordex'
 }: SandboxProps): JSX.Element {
-  const [selectedScenario, setSelectedScenario] = useState<ScenarioDefinition>(
-    getScenarioById(initialScenarioId) || SCENARIOS[0]
-  );
+  // A mission may open a specific scenario with ?scenario=<id>; unknown ids fall back.
+  const [selectedScenario, setSelectedScenario] = useState<ScenarioDefinition>(() => {
+    const fromUrl = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('scenario') : null;
+    return (fromUrl && getScenarioById(fromUrl)) || getScenarioById(initialScenarioId) || SCENARIOS[0];
+  });
   const [engineState, setEngineState] = useState<ScenarioExecutionState>(
     createInitialScenarioState(selectedScenario)
   );
@@ -74,6 +77,29 @@ export function TransactionSandbox({
       });
     return () => controller.abort();
   }, [pendingKey, selectedScenario]);
+
+  // OX-S03: a completed uninjected walk, or an injection the verifier refused, is evidence.
+  const recorded = useRef(new Set<string>());
+  useEffect(() => {
+    const v = engineState.verificationVerdict;
+    const injection = engineState.activeFailureInjectionId;
+    let key: string | null = null;
+    let run: Parameters<typeof recordToolEvidence>[0] | null = null;
+    if (injection && v.state === 'refused' && v.source === 'verifier') {
+      key = `injection:${selectedScenario.id}:${injection}`;
+      run = { tool: 'sandbox', operation: key, state: 'refused', code: v.code, reason: v.reason, evidenceClass: 'Deterministic example', inputDigest: v.inputDigest };
+    } else if (!injection) {
+      const outcome = scenarioOutcome(engineState, selectedScenario);
+      if (outcome !== 'incomplete') {
+        key = `scenario:${selectedScenario.id}`;
+        run = { tool: 'sandbox', operation: key, state: outcome, reason: `Deterministic walk of ${selectedScenario.steps.length} steps with reference verifier results.`, evidenceClass: 'Deterministic example' };
+      }
+    }
+    if (key && run && !recorded.current.has(key)) {
+      recorded.current.add(key);
+      recordToolEvidence(run);
+    }
+  }, [engineState, selectedScenario]);
 
   // Automated playback waits for each verifier result and stops at a refusal or the end.
   useEffect(() => {

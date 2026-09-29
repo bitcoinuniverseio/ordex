@@ -65,7 +65,7 @@ export function VersionDiff() {
               {baseObj.description}
             </p>
             <div style="font-size: 0.8rem; font-family: var(--font-mono); margin-bottom: 0.5rem; word-break: break-all;">
-              Contract Digest: {baseObj.contractDigest}
+              Contract Digest: {baseObj.contractDigest || 'Not recorded for this release'}
             </div>
             <div>
               <strong style="font-size: 0.8rem; text-transform: uppercase; color: var(--color-text-muted);">
@@ -89,7 +89,7 @@ export function VersionDiff() {
               {targetObj.description}
             </p>
             <div style="font-size: 0.8rem; font-family: var(--font-mono); margin-bottom: 0.5rem; word-break: break-all;">
-              Contract Digest: {targetObj.contractDigest}
+              Contract Digest: {targetObj.contractDigest || 'Not recorded for this release'}
             </div>
             <div>
               <strong style="font-size: 0.8rem; text-transform: uppercase; color: var(--color-brand);">
