@@ -14,7 +14,7 @@ import {
   safeopsUnsignedTransaction,
 } from '../verifier/safeops.js';
 import { encodePsbt, p2trKeyPath, p2wpkhScript, signP2wpkh, signTaprootKeyPath, testKey } from './vector-signer.mjs';
-import { SWAP_INTENT_SCHEMA, SWAP_ACCEPTANCE_SCHEMA, swapIntentDigest } from '../verifier/swaps.js';
+import { SWAP_INTENT_SCHEMA, SWAP_ACCEPTANCE_SCHEMA, swapAcceptanceDigest, swapIntentDigest } from '../verifier/swaps.js';
 import { signWebhookDelivery } from '../verifier/events.js';
 import {
   COLLECTION_MANIFEST_SCHEMA,
@@ -797,6 +797,138 @@ const safeopsCases = [
   },
 ];
 
+// OX-P02: swap acceptance v2 fixtures. Inventories are what the authorities
+// report for each input; the verifier derives every movement from them.
+const SWAP_MAKER_KEY = testKey('swap-maker');
+const SWAP_MAKER_TR = p2trKeyPath(SWAP_MAKER_KEY).scriptHex;
+const SWAP_TAKER_KEY = testKey('swap-taker');
+const SWAP_TAKER_WPKH = p2wpkhScript(SWAP_TAKER_KEY);
+const SWAP_TAKER_RECEIVE = '5120' + '7'.repeat(64);
+const SWAP_TAKER_CHANGE = '0014' + '8'.repeat(40);
+const SWAP_STRANGER = '0014' + '9'.repeat(40);
+const RARE_RANGE = 'uncommon-938263';
+const SWAP_ADAPTERS = [
+  { protocol: 'ordinals', version: '1.2' },
+  { protocol: 'runes', version: '1.2' },
+];
+
+function swapIntent(gives, requires, overrides = {}) {
+  return baseIntent({ gives, requires, adapterVersions: SWAP_ADAPTERS, ...overrides });
+}
+
+const swapInput = (outpoint, party, valueSats, scriptPubKeyHex, inventory = { examined: true }) => ({
+  outpoint,
+  party,
+  valueSats,
+  scriptPubKeyHex,
+  sequence: 0xfffffffd,
+  inventory,
+});
+
+function acceptanceV2(intent, { inputs, outputs, transitions = [], makerFeeSats, takerFeeSats, feeSats, overrides = {} }) {
+  const acceptance = {
+    schema: SWAP_ACCEPTANCE_SCHEMA,
+    intentDigest: intent.digest,
+    network: intent.network,
+    checkpoint: { height: 900005, blockHash: BLOCK_HASH },
+    taker: { receiveScriptHex: SWAP_TAKER_RECEIVE, changeScriptHex: SWAP_TAKER_CHANGE },
+    transaction: { version: 2, lockTime: 0 },
+    tx: { inputs, outputs },
+    assetTransitions: transitions,
+    fee: { feeSats, makerFeeSats, takerFeeSats },
+    signing: { sighashPolicy: 'ALL' },
+    ...overrides,
+  };
+  acceptance.digest = swapAcceptanceDigest(acceptance);
+  return acceptance;
+}
+
+// BTC for an inscription: the maker pays 100000 and the whole fee.
+const btcForOrdinalIntent = () =>
+  swapIntent(
+    [{ assetType: 'BTC', outpoint: OUTPOINT_A, quantitySats: '100000' }],
+    [{ assetType: 'ORDINAL', assetId: INSCRIPTION, minQuantitySats: '1' }],
+  );
+function btcForOrdinal(mutate) {
+  const intent = btcForOrdinalIntent();
+  const parts = {
+    inputs: [
+      swapInput(OUTPOINT_B, 'taker', '10000', SWAP_TAKER_WPKH, { examined: true, inscriptions: [{ inscriptionId: INSCRIPTION, offset: '0' }] }),
+      swapInput(OUTPOINT_A, 'maker', '101000', SWAP_MAKER_TR),
+    ],
+    outputs: [
+      { scriptHex: intent.makerReceiveScriptHex, valueSats: '10000' },
+      { scriptHex: SWAP_TAKER_RECEIVE, valueSats: '100000' },
+      { scriptHex: intent.makerReceiveScriptHex, valueSats: '400' },
+    ],
+    transitions: [{ assetType: 'ORDINAL', assetId: INSCRIPTION, fromInput: 0, toOutput: 0, quantity: '1' }],
+    feeSats: '600',
+    makerFeeSats: '600',
+    takerFeeSats: '0',
+  };
+  if (mutate) mutate(parts, intent);
+  return { intent, acceptance: acceptanceV2(intent, parts) };
+}
+
+// An inscription for BTC: the taker pays 50000 and the fee.
+const ordinalForBtcIntent = () =>
+  swapIntent(
+    [{ assetType: 'ORDINAL', assetId: INSCRIPTION, outpoint: OUTPOINT_C, quantitySats: '1' }],
+    [{ assetType: 'BTC', minQuantitySats: '50000' }],
+  );
+function ordinalForBtc(mutate) {
+  const intent = ordinalForBtcIntent();
+  const parts = {
+    inputs: [
+      swapInput(OUTPOINT_C, 'maker', '10000', SWAP_MAKER_TR, { examined: true, inscriptions: [{ inscriptionId: INSCRIPTION, offset: '0' }] }),
+      swapInput(OUTPOINT_B, 'taker', '60000', SWAP_TAKER_WPKH),
+    ],
+    outputs: [
+      { scriptHex: SWAP_TAKER_RECEIVE, valueSats: '10000' },
+      { scriptHex: intent.makerReceiveScriptHex, valueSats: '50000' },
+      { scriptHex: SWAP_TAKER_CHANGE, valueSats: '9400' },
+    ],
+    transitions: [{ assetType: 'ORDINAL', assetId: INSCRIPTION, fromInput: 0, toOutput: 0, quantity: '1' }],
+    feeSats: '600',
+    makerFeeSats: '0',
+    takerFeeSats: '600',
+  };
+  if (mutate) mutate(parts, intent);
+  return { intent, acceptance: acceptanceV2(intent, parts) };
+}
+
+// BTC for 500 of rune 840000:1. The taker holds 800 and keeps 300 by pointer.
+const RUNESTONE_500_TO_MAKER = '6a5d0a1602' + '00c0a23301f40301';
+const btcForRuneIntent = (runeId = '840000:1') =>
+  swapIntent(
+    [{ assetType: 'BTC', outpoint: OUTPOINT_A, quantitySats: '20000' }],
+    [{ assetType: 'RUNE', assetId: runeId, minQuantitySats: '500' }],
+  );
+function btcForRune(mutate, runeId) {
+  const intent = btcForRuneIntent(runeId);
+  const parts = {
+    inputs: [
+      swapInput(OUTPOINT_A, 'maker', '21000', SWAP_MAKER_TR),
+      swapInput(OUTPOINT_B, 'taker', '546', SWAP_TAKER_WPKH, { examined: true, runeAllocations: [{ runeId: '840000:1', amount: '800' }] }),
+    ],
+    outputs: [
+      { scriptHex: RUNESTONE_500_TO_MAKER, valueSats: '0' },
+      { scriptHex: intent.makerReceiveScriptHex, valueSats: '546' },
+      { scriptHex: SWAP_TAKER_RECEIVE, valueSats: '20000' },
+      { scriptHex: intent.makerReceiveScriptHex, valueSats: '400' },
+    ],
+    transitions: [
+      { assetType: 'RUNE', assetId: '840000:1', toOutput: 1, quantity: '500' },
+      { assetType: 'RUNE', assetId: '840000:1', toOutput: 2, quantity: '300' },
+    ],
+    feeSats: '600',
+    makerFeeSats: '54',
+    takerFeeSats: '546',
+  };
+  if (mutate) mutate(parts, intent);
+  return { intent, acceptance: acceptanceV2(intent, parts) };
+}
+
 const swapCases = [
   { name: 'a public intent with exact outpoints is accepted', intent: baseIntent(), expected: { ok: true } },
   {
@@ -842,91 +974,190 @@ const swapCases = [
     intent: baseIntent({ visibility: 'PRIVATE', takerBinding: { address: 'bc1qtaker000000000000000000000000000000000' } }),
     expected: { ok: true },
   },
-  {
-    name: 'an acceptance plan matching its intent is accepted',
-    intent: baseIntent(),
-    acceptance: acceptanceFor(baseIntent()),
-    expected: { ok: true },
-  },
-  {
-    name: 'an acceptance plan from a different intent is refused',
-    intent: baseIntent(),
-    acceptance: acceptanceFor(baseIntent({ nonce: 'nonce-87654321' })),
-    expected: { ok: false, code: 'INTENT_DIGEST_MISMATCH' },
-  },
-  {
-    name: 'a one sided transaction cannot settle atomically',
-    intent: baseIntent(),
-    acceptance: acceptanceFor(baseIntent(), {
-      tx: {
-        inputs: [MAKER_BTC_INPUT(baseIntent())],
-        outputs: SWAP_OUTPUTS(baseIntent(), '15400'),
-      },
-    }),
-    expected: { ok: false, code: 'ATOMICITY_IMPOSSIBLE' },
-  },
-  {
-    name: 'a sighash that does not close the transaction is refused',
-    intent: baseIntent(),
-    acceptance: acceptanceFor(baseIntent(), { signing: { sighashPolicy: 'SINGLE|ANYONECANPAY' } }),
-    expected: { ok: false, code: 'UNCLOSED_SIGHASH' },
-  },
-  {
-    name: 'an acceptance plan that drops a committed outpoint is refused',
-    intent: baseIntent(),
-    acceptance: acceptanceFor(baseIntent(), {
-      tx: {
-        inputs: [TAKER_ORDINAL_INPUT, { outpoint: OUTPOINT_C, party: 'taker', valueSats: '90000', assets: [] }],
-        outputs: SWAP_OUTPUTS(baseIntent(), '15400'),
-      },
-    }),
-    expected: { ok: false, code: 'MAKER_OUTPOINT_MISSING' },
-  },
-  {
-    name: 'a maker input the intent never committed is refused',
-    intent: baseIntent(),
-    acceptance: acceptanceFor(baseIntent(), {
-      tx: {
-        inputs: [
-          TAKER_ORDINAL_INPUT,
-          MAKER_BTC_INPUT(baseIntent()),
-          { outpoint: OUTPOINT_D, party: 'maker', valueSats: '5000', assets: [] },
-        ],
-        outputs: SWAP_OUTPUTS(baseIntent(), '20400'),
-      },
-      fee: { feeSats: '4600', makerFeeSats: '0', takerFeeSats: '4600' },
-    }),
-    expected: { ok: false, code: 'UNEXPECTED_MAKER_INPUT' },
-  },
-  {
-    name: 'a consideration shortfall is refused',
-    intent: baseIntent(),
-    acceptance: acceptanceFor(baseIntent(), {
-      tx: {
-        inputs: [TAKER_ORDINAL_INPUT, MAKER_BTC_INPUT(baseIntent())],
-        outputs: [
-          { scriptHex: SCRIPT_P2TR, valueSats: '10000', role: 'takerAsset' },
-          { scriptHex: SCRIPT_P2WPKH, valueSats: '79999', role: 'makerConsideration' },
-          { scriptHex: SCRIPT_P2TR, valueSats: '15401', role: 'takerChange' },
-        ],
-      },
-    }),
-    expected: { ok: false, code: 'CONSIDERATION_SHORTFALL' },
-  },
-  {
-    name: 'a maker fee above the intent budget is refused',
-    intent: baseIntent(),
-    acceptance: acceptanceFor(baseIntent(), {
-      fee: { feeSats: '4600', makerFeeSats: '4600', takerFeeSats: '0' },
-    }),
-    expected: { ok: false, code: 'FEE_BUDGET_EXCEEDED' },
-  },
-  {
-    name: 'a maker asset without a delivery transition is refused',
-    intent: baseIntent(),
-    acceptance: acceptanceFor(baseIntent(), { assetTransitions: [] }),
-    expected: { ok: false, code: 'MAKER_ASSET_UNASSIGNED' },
-  },
+  ...(() => {
+    const accepted = (name, built) => ({ name, intent: built.intent, acceptance: built.acceptance, expected: { ok: true } });
+    const refused = (name, built, code) => ({ name, intent: built.intent, acceptance: built.acceptance, expected: { ok: false, code } });
+    return [
+      accepted('BTC for an inscription settles with the inscription at the maker', btcForOrdinal()),
+      accepted('an inscription for BTC settles with the inscription at the taker', ordinalForBtc()),
+      accepted('BTC for a rune settles with the exact rune amount at the maker', btcForRune()),
+      refused(
+        'an acceptance plan from a different intent is refused',
+        btcForOrdinal((parts) => {
+          parts.overrides = { intentDigest: 'f'.repeat(64) };
+        }),
+        'INTENT_DIGEST_MISMATCH',
+      ),
+      refused(
+        'a v1 acceptance plan is refused rather than reinterpreted',
+        btcForOrdinal((parts) => {
+          parts.overrides = { schema: 'ordex.swap-acceptance-plan/v1' };
+        }),
+        'SCHEMA_UNSUPPORTED',
+      ),
+      refused(
+        'a one sided transaction cannot settle atomically',
+        btcForOrdinal((parts) => {
+          parts.inputs = [parts.inputs[1]];
+        }),
+        'ATOMICITY_IMPOSSIBLE',
+      ),
+      refused(
+        'a sighash that does not close the transaction is refused',
+        btcForOrdinal((parts) => {
+          parts.overrides = { signing: { sighashPolicy: 'SINGLE|ANYONECANPAY' } };
+        }),
+        'UNCLOSED_SIGHASH',
+      ),
+      refused(
+        'an acceptance plan that drops a committed outpoint is refused',
+        btcForOrdinal((parts) => {
+          parts.inputs[1] = swapInput(OUTPOINT_D, 'maker', '101000', SWAP_MAKER_TR);
+        }),
+        'MAKER_OUTPOINT_MISSING',
+      ),
+      refused(
+        'a maker input the intent never committed is refused',
+        btcForOrdinal((parts) => {
+          parts.inputs.push(swapInput(OUTPOINT_D, 'maker', '1000', SWAP_MAKER_TR));
+        }),
+        'UNEXPECTED_MAKER_INPUT',
+      ),
+      refused(
+        'P-R09: a required rune the taker never supplies is refused',
+        btcForRune(undefined, '1:999'),
+        'CONSIDERATION_SHORTFALL',
+      ),
+      refused(
+        'a required rune delivered short is refused',
+        btcForRune((parts) => {
+          parts.outputs[0] = { scriptHex: '6a5d0a1602' + '00c0a23301900301', valueSats: '0' };
+          parts.transitions = [
+            { assetType: 'RUNE', assetId: '840000:1', toOutput: 1, quantity: '400' },
+            { assetType: 'RUNE', assetId: '840000:1', toOutput: 2, quantity: '400' },
+          ];
+        }),
+        'CONSIDERATION_SHORTFALL',
+      ),
+      refused(
+        'P-R10: an inscription the maker gives, paid back to the maker, is refused',
+        ordinalForBtc((parts, intent) => {
+          parts.outputs[0] = { scriptHex: intent.makerReceiveScriptHex, valueSats: '10000' };
+        }),
+        'MAKER_ASSET_NOT_DELIVERED',
+      ),
+      refused(
+        'a taker receiving at a maker script is refused',
+        ordinalForBtc((parts, intent) => {
+          parts.overrides = { taker: { receiveScriptHex: intent.makerReceiveScriptHex } };
+        }),
+        'PARTY_SCRIPTS_OVERLAP',
+      ),
+      refused(
+        'BTC below the requirement is refused',
+        ordinalForBtc((parts) => {
+          parts.outputs[1] = { ...parts.outputs[1], valueSats: '48000' };
+          parts.outputs[2] = { ...parts.outputs[2], valueSats: '11400' };
+          parts.makerFeeSats = '2000';
+          parts.takerFeeSats = '0';
+        }),
+        'CONSIDERATION_SHORTFALL',
+      ),
+      refused(
+        'a maker fee above the intent budget is refused',
+        btcForOrdinal((parts, intent) => {
+          intent.maxMakerFeeSats = '500';
+          intent.digest = swapIntentDigest(intent);
+        }),
+        'FEE_BUDGET_EXCEEDED',
+      ),
+      refused(
+        'a declared fee split that is not the value flow is refused',
+        btcForOrdinal((parts) => {
+          parts.makerFeeSats = '0';
+          parts.takerFeeSats = '600';
+        }),
+        'FEE_SPLIT_INVALID',
+      ),
+      refused(
+        'an output to neither party is refused',
+        btcForOrdinal((parts) => {
+          parts.outputs[2] = { scriptHex: SWAP_STRANGER, valueSats: '400' };
+        }),
+        'OUTPUT_UNOWNED',
+      ),
+      refused(
+        'a maker outpoint that does not carry what it gives is refused',
+        ordinalForBtc((parts) => {
+          parts.inputs[0] = swapInput(OUTPOINT_C, 'maker', '10000', SWAP_MAKER_TR);
+          parts.transitions = [];
+        }),
+        'GIVE_NOT_HELD',
+      ),
+      refused(
+        'a taker asset nobody traded, landing with the maker, is refused',
+        ordinalForBtc((parts) => {
+          parts.inputs[1] = swapInput(OUTPOINT_B, 'taker', '60000', SWAP_TAKER_WPKH, {
+            examined: true,
+            rareSatRanges: [{ rangeId: RARE_RANGE, offset: '0', count: '1' }],
+          });
+          parts.transitions.push({ assetType: 'RARE_SAT', assetId: RARE_RANGE, fromInput: 1, toOutput: 1, quantity: '1' });
+        }),
+        'ASSET_MISDIRECTED',
+      ),
+      refused(
+        'a transition that states the wrong output is refused',
+        ordinalForBtc((parts) => {
+          parts.transitions = [{ assetType: 'ORDINAL', assetId: INSCRIPTION, fromInput: 0, toOutput: 2, quantity: '1' }];
+        }),
+        'TRANSITION_MISMATCH',
+      ),
+      refused(
+        'an inscription requirement with a quantity other than 1 is refused',
+        btcForOrdinal((parts, intent) => {
+          intent.requires = [{ assetType: 'ORDINAL', assetId: INSCRIPTION, minQuantitySats: '80000' }];
+          intent.digest = swapIntentDigest(intent);
+          parts.overrides = { intentDigest: intent.digest };
+        }),
+        'QUANTITY_UNSUPPORTED',
+      ),
+      refused(
+        'an intent relying on an adapter this verifier does not run is refused',
+        btcForRune((parts, intent) => {
+          intent.adapterVersions = [{ protocol: 'ordinals', version: '1.2' }];
+          intent.digest = swapIntentDigest(intent);
+          parts.overrides = { intentDigest: intent.digest };
+        }),
+        'ADAPTER_UNSUPPORTED',
+      ),
+      refused(
+        'a plan that could only confirm after the intent expires is refused',
+        btcForOrdinal((parts) => {
+          parts.overrides = { checkpoint: { height: 900099, blockHash: BLOCK_HASH } };
+        }),
+        'INTENT_EXPIRED',
+      ),
+      refused(
+        'a taker-bound intent needs that taker identity',
+        btcForOrdinal((parts, intent) => {
+          intent.visibility = 'PRIVATE';
+          intent.takerBinding = { address: 'bc1qboundtaker0000000000000000000000000000' };
+          intent.digest = swapIntentDigest(intent);
+          parts.overrides = { intentDigest: intent.digest };
+        }),
+        'TAKER_BINDING_MISMATCH',
+      ),
+      refused(
+        'an acceptance whose digest was edited is refused',
+        (() => {
+          const built = btcForOrdinal();
+          built.acceptance.digest = 'e'.repeat(64);
+          return built;
+        })(),
+        'DIGEST_MISMATCH',
+      ),
+    ];
+  })(),
 ];
 
 function validEvent(overrides = {}) {

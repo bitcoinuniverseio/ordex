@@ -146,9 +146,13 @@ export {
 export {
   SWAP_ACCEPTANCE_SCHEMA,
   SWAP_INTENT_SCHEMA,
+  SWAP_SIGNED_TRANSACTION_SCHEMA,
+  swapAcceptanceDigest,
   swapIntentDigest,
+  swapUnsignedTransaction,
   verifySwapAcceptance,
   verifySwapIntent,
+  verifySwapSignedTransaction,
   type SwapAcceptance,
   type SwapAcceptanceInput,
   type SwapAcceptanceOutput,
@@ -160,7 +164,23 @@ export {
   type SwapIntentVerdict,
   type SwapOutpoint,
   type SwapRequirement,
+  type SwapSettlementRefusalCode,
+  type SwapSettlementVerdict,
+  type SwapSignedTransaction,
+  type SwapTaker,
 } from './swaps.js';
+export {
+  checkTransitionShapes,
+  deriveAssetFlow,
+  matchTransitions,
+  readInventory,
+  type AssetFlowRefusal,
+  type AssetInventory,
+  type AssetMovement,
+  type FlowInput,
+  type InventoryAsset,
+  type StatedTransition,
+} from './asset-flow.js';
 export {
   ORDEX_EVENT_SCHEMA,
   WEBHOOK_DELIVERY_SCHEMA,

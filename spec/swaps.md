@@ -1,6 +1,6 @@
-# Atomic swap links and the OTC desk v1
+# Atomic swap links and the OTC desk
 
-Status: active at protocol 1.2. Artifacts: `ordex.swap-intent/v1`, `ordex.swap-acceptance-plan/v1`. Reference verifier: `verifier/swaps.js`. Vectors: `conformance/swap-vectors.json`.
+Status: active at protocol 1.2. Artifacts: `ordex.swap-intent/v1`, `ordex.swap-acceptance-plan/v2`, `ordex.swap-signed-transaction/v1`. Reference verifier: `verifier/swaps.js`. Vectors: `conformance/swap-vectors.json`.
 
 A swap is a non-custodial, asset-for-asset exchange settled in exactly one Bitcoin transaction: either both sides move exactly as agreed or nothing moves. There is no prefunded output, no escrow, no policy signer, no server signature, and no counterparty risk beyond the usual mempool economics. This is not the 1.1 funded offer system and does not share its runtime.
 
@@ -23,55 +23,24 @@ A private link is created client side: a random 256-bit key encrypts the intent 
 
 ## The acceptance plan
 
-The builder revalidates every maker outpoint, resolves the taker's selection, orders inputs for sat-flow safety, and produces one immutable unsigned-transaction digest. The verifier proves:
+The builder revalidates every maker outpoint at a checkpoint, resolves the taker's selection and its receive and change scripts, reads the authorities' inventory of every input, and produces one immutable plan, `ordex.swap-acceptance-plan/v2`, with its digest. The plan fixes the transaction version and locktime, every input's outpoint, party, value, script, sequence and inventory, every output, the asset transitions, and the fee split. A v1 plan is refused (`SCHEMA_UNSUPPORTED`) and built again.
 
-1. Both parties contribute inputs and outputs; a one-sided transaction cannot settle (`ATOMICITY_IMPOSSIBLE`).
+Every asset movement is derived, not declared: inscriptions and rare sat ranges follow their absolute sat position, runes the ord 0.29.0 allocation, and Counterparty attachments the Counterparty Core move rule. The stated transitions must equal the derived movements exactly. The verifier proves:
+
+1. Both parties contribute inputs and receive outputs; a one-sided transaction cannot settle (`ATOMICITY_IMPOSSIBLE`).
 2. Every input commits to every output with SIGHASH_ALL (`UNCLOSED_SIGHASH`). With that closure, a transaction carrying only one party's signatures cannot confirm, so refusing the final signature can stall a swap but can never take the other party's asset.
-3. Every maker-committed outpoint is spent exactly once, by the maker side (`MAKER_OUTPOINT_MISSING`, `MAKER_OUTPOINT_REASSIGNED`, `INPUT_DUPLICATED`), and no uncommitted maker input appears (`UNEXPECTED_MAKER_INPUT`).
-4. Every required criterion is paid to the maker receive script at no less than its minimum (`CONSIDERATION_SHORTFALL`).
-5. Fee conservation holds, the maker and taker contributions sum to it, and the maker share stays inside the intent budget (`FEE_CHANGED`, `FEE_SPLIT_INVALID`, `FEE_BUDGET_EXCEEDED`).
-6. Every given asset and every taker asset is delivered through an explicit transition to the output that receives the input's first sat, so no asset lands in the fee region, in unrelated change, or at the wrong party (`MAKER_ASSET_UNASSIGNED`, `TAKER_ASSET_UNASSIGNED`, `TRANSITION_SAT_FLOW_MISMATCH`).
+3. The plan was built from this intent, on its network, at a checkpoint no earlier than the intent's and in time to confirm before it expires (`INTENT_DIGEST_MISMATCH`, `NETWORK_MISMATCH`, `CHECKPOINT_INVALID`, `INTENT_EXPIRED`). A taker-bound intent needs that taker's identity proof (`TAKER_BINDING_MISMATCH`).
+4. Every maker-committed outpoint is spent exactly once, by the maker side, and carries what the intent gives (`MAKER_OUTPOINT_MISSING`, `MAKER_OUTPOINT_REASSIGNED`, `INPUT_DUPLICATED`, `GIVE_NOT_HELD`); no uncommitted maker input appears (`UNEXPECTED_MAKER_INPUT`).
+5. Every output pays the maker receive script or a taker script, and the two sets never overlap (`OUTPUT_UNOWNED`, `PARTY_SCRIPTS_OVERLAP`). The only other output allowed is one zero-value runestone when runes move.
+6. Every given asset reaches the taker receive script with its exact quantity (`MAKER_ASSET_NOT_DELIVERED`, `GIVE_QUANTITY_MISMATCH`). Every required asset reaches the maker receive script in at least its quantity, judged by asset identity and never by a BTC value: an inscription whole, a rare sat range by count, a rune or Counterparty asset by the maker's net gain (`CONSIDERATION_SHORTFALL`). Every other asset returns to its owner (`ASSET_MISDIRECTED`).
+7. The adapters the intent relies on are ones this verifier runs, and an inscription is exchanged with quantity 1 (`ADAPTER_UNSUPPORTED`, `QUANTITY_UNSUPPORTED`).
+8. Fee shares come from value flow, not labels. The postage of a sat-bound asset moves with the asset. With that, the maker's share is its BTC requirement, minus its BTC gives, minus its net BTC change; it must stay inside the intent budget, and the declared split must equal the computed one (`FEE_BUDGET_EXCEEDED`, `CONSIDERATION_SHORTFALL`, `FEE_SPLIT_INVALID`, `FEE_CHANGED`). The carrier sats of a rune or Counterparty output count as BTC.
 
-<!--
-IMPLEMENTATION-HANDOFF [OX-P02] Preparation only; functional status FAIL, repair NOT IMPLEMENTED.
-Coverage: OX-P-C024, OX-P-C025, OX-P-C026, OX-P-C027, OX-P-C028, OX-P-C029, OX-P-C030, OX-P-C031,
-OX-P-C032, OX-P-C033, OX-P-C034. Evidence: P-R09, P-R10 in handoff/evidence.
-Verified cause: verifySwapAcceptance satisfies every requires item with a BTC output value, ignores
-required asset identity/quantity, and accepts give transitions back to maker script. Shared
-first-sat shortcut is wrong for nonzero inscription offsets, Runes, and Counterparty.
-Required behavior: Verify bilateral swap consideration and actual destination ownership. Governing
-refs: P-S01 (Ord0.29.0 applicability; handbook accessed2026-09-29); P-S02 (Ord0.29.0
-commit7e37a3bd3391044b39f5f11f20dfdb8b3764cd0e; runestone
-blob98022fb2a25d587a59a4a2ac40cd9de9bc5a6d0b); P-S03 (Ord0.29.0;
-blobbce2ae16336368bba3f7d70eed2a1493a67f45c9); P-S06 (BIP341;
-blob0764e6cb762b6c17d3b3430af5532e0c63365993); complete URLs in reports/protocol.md.
-Prerequisites/order: OX-P01, OX-P03, OX-P04, OX-P10. Related files: verifier/swaps.js,
-sdk/src/swaps.ts; Core backend/src/ordex-v12 corresponding service and caller adapters.
-1. Resolve complete authoritative input inventories and both parties' controlled receive/change
-scripts before construction; enforce maker/taker ownership proof and optional taker binding.
-2. Evaluate each consideration by family+asset identity+atomic quantity delivered to
-makerReceiveScriptHex using actual protocol allocation, aggregate obligations without double
-counting one output; use BTC value only for BTC.
-3. Require every maker give reaches authenticated taker receive script with committed quantity and
-every unrelated asset is preserved to its owner; require both distinct party input sets and
-reconcile actual fee contribution from party value flow, not caller labels.
-4. Extend acceptance contract and intent binding where necessary; compare parsed full transaction,
-approved sighash, signatures and complete inventories; fail unknown capabilities closed. Correct
-spec/swaps.md and mirror SDK; wire Core planner to same verification.
-Validation (PROPOSED NEW tests, commands unverified until implemented):
-verifier/swaps.consideration.test.js, sdk/test/swaps.consideration.test.js. node --test
-verifier/swaps.test.js verifier/swaps.consideration.test.js; npm --prefix sdk run build; node --test
-sdk/test/swaps.test.js sdk/test/swaps.consideration.test.js.
-Assertions/evidence: Required Rune absent/wrong ID/wrong quantity refuses; Maker give returned to
-maker refuses even with taker role label; Distinct parties, no extra outputs/fee theft; every
-settlement cohort both directions settles one actual Signet tx; Taker
-refusal/expired/withdrawn/private tamper/replay/network mismatch/reorg leaves recoverable truthful
-state. Offline probes are not end-to-end PASS; require actual Signet transaction, authoritative
-indexed outcome and consumer readback where applicable.
-Rollback: Invalidate unbroadcast affected sessions and request fresh participant approval for new
-digest; retain private ciphertext, historical intents, signatures and chain outcomes. Stop matching
-if corrected adapters unavailable.
--->
+`verifySwapSignedTransaction` then proves the fully signed settlement from its bytes: it is exactly the planned transaction, and every input of both parties carries a signature that verifies with SIGHASH_ALL or the Taproot default (`TRANSACTION_CHANGED`, `SIGNATURE_MISSING`, `SIGNATURE_INVALID`, `UNCLOSED_SIGHASH`).
+
+<!-- OX-P02: v2 replaced a BTC-value consideration check and a first-sat shortcut
+with derived, protocol-specific movements judged per party, so a missing Rune
+(P-R09) or a maker asset paid back to the maker (P-R10) is refused. -->
 
 ## Lifecycle
 
