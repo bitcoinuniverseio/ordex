@@ -27,6 +27,22 @@ export function CommandCenter({
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
+  /* IMPLEMENTATION-HANDOFF [OX-S10]
+   * Defect OX-S-D10; coverage OX-S-C1304..OX-S-C1307. Command dialog focuses its input but has no complete focus
+   * trap/restore path; API links must match the OX-S05 deep-link contract.
+   * 1. Keep a trigger ref, focus the dialog only after mount, trap Tab while modal, prevent background
+   * interaction, close on Escape and restore focus. Use aria-controls, active-descendant, listbox/option
+   * semantics and stable IDs for keyboard selection.
+   * 2. Keep selectedIndex valid when filtering yields zero/fewer results, preserve editable control shortcuts
+   * and display a useful empty state. Use the common base-aware route builder and encode
+   * operation/refusal/mission parameters.
+   * 3. Verify Ctrl/Cmd+K, slash outside editors, arrows/Enter/Tab/Shift+Tab/Escape, no results, long names,
+   * mobile overlay and route changes with real browser accessibility assertions. Await OX-S05 operation
+   * selection on destination before claiming navigation worked.
+   * Dependencies: OX-S03 settings/missions, OX-S05, OX-S10 browser matrix. PROPOSED NEW
+   * tests/e2e/navigation-accessibility.test.js; existing static HTML checks are insufficient. Rollback
+   * routing/focus behavior together without losing keyboard access.
+   */
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {

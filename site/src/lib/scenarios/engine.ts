@@ -87,6 +87,23 @@ export function scenarioReducer(
       return createInitialScenarioState(scenario);
     }
 
+    /* IMPLEMENTATION-HANDOFF [OX-S08]
+     * Defect OX-S-D08; coverage OX-S-C215..OX-S-C244. Failure injection currently assigns expectedRefusalCode
+     * directly without changing input or calling a verifier; executeStep repeats that fabricated result.
+     * 1. Apply the registry's actual deterministic mutation to cloned scenario state, dispatch its verifier
+     * through OX-S07, and derive verdict/code from the result. Preserve input/output digests for before/after
+     * inspection; no success/refusal can originate only from expected text.
+     * 2. Make step replay deterministic from a checkpoint with consistent from/to state, bounded history and
+     * reversible stepping; clear injection on reset and show how to remove/retry it. Do not accumulate fake
+     * artifacts that depend on refused transitions.
+     * 3. Persist a versioned checkpoint/run reference through OX-S03; hydrate only compatible
+     * scenario/build/network and resume playback paused.
+     * 4. Extend tests/unit/scenario-engine.test.js to prove input changes cause the expected actual rejection,
+     * backward/reset restoration, idempotent replay, bound enforcement and stale checkpoint rejection. Browser
+     * /sandbox must match the same outputs for all15 scenarios.
+     * Dependencies: OX-S08 registry and OX-S07 worker, OX-S03 persistence. Rollback schema/state reducer together
+     * and keep old checkpoints read-only if incompatible.
+     */
     case 'APPLY_FAILURE_INJECTION': {
       const injection = scenario.failureInjections?.find((f) => f.id === action.injectionId);
       if (!injection) return state;

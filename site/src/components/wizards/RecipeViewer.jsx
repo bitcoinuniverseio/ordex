@@ -91,6 +91,24 @@ export function RecipeViewer({ recipeId = 'publish-and-purchase' }) {
     setCompletedSteps((prev) => ({ ...prev, [sNum]: !prev[sNum] }));
   };
 
+  /* IMPLEMENTATION-HANDOFF [OX-S11]
+   * Defect OX-S-D11; coverage OX-S-C1450..OX-S-C1456. SDK snippets pass a raw body instead of the actual request
+   * wrapper; TypeScript snippets stringify data into an interface and contain invalid syntax; recipeId is
+   * ignored and PSBT examples contain ellipses.
+   * 1. Generate snippets from the accepted SDK method and OpenAPI schemas using typed imports, exact
+   * request-body/path/query wrapper and valid literals. Use real deterministic fixture bytes where runnable
+   * content is promised; label illustrative excerpts instead of presenting ellipses as executable.
+   * 2. Validate every SDK/TypeScript/fetch/cURL tab against one shared step definition and correct inherited
+   * operation parameters. For existing recipes, carry returned IDs between steps and link to the matching
+   * Playground operation with OX-S03 state.
+   * 3. Wire recipeId only to offered known recipes, reject unknown IDs clearly, and preserve step
+   * acknowledgments as learning progress, not verified execution. Align WizardEngine outcome links/starter
+   * choice with actual routes and selected answers.
+   * 4. PROPOSED NEW tests/unit/recipe-snippets.test.js must compile TypeScript and run isolated SDK/fetch calls
+   * against real test services where required; browser checks each tab/copy/deep link/checklist. No mainnet
+   * writes or secrets in sample code.
+   * Dependencies: SDK/API fixes, OX-S05/06/07 generators, OX-S03. Rollback snippets and SDK pin together.
+   */
   const renderCodeSnippet = (step) => {
     const jsonBody = JSON.stringify(step.requestPayload, null, 2);
 

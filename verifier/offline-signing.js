@@ -42,6 +42,45 @@ export function sortedJson(value) {
  * SHA-256 over the exact unsigned transaction a signer must be presented:
  * network, inputs, outputs, and the sighash policy. Lowercase hex.
  */
+/*
+ * IMPLEMENTATION-HANDOFF [OX-P03] Preparation only; functional status FAIL, repair NOT IMPLEMENTED.
+ * Coverage: OX-P-C050, OX-P-C051, OX-P-C052, OX-P-C053, OX-P-C054, OX-P-C055, OX-P-C056. Evidence:
+ * P-R11, P-R12, P-R13 in handoff/evidence.
+ * Verified cause: expectedTransactionDigest omits transaction version/locktime/sequence and protection
+ * policy. Comparator accepts missing carriedAssets and does not prove complete expected asset
+ * preservation; signature booleans require authoritative caller integration.
+ * Required behavior: Bind cold signing to full transaction and authenticated protection policy.
+ * Governing refs: P-S05 (BIP174 at bips3a10b5b5f0a7586df8928d580a3009744ebb2079); P-S06 (BIP341;
+ * blob0764e6cb762b6c17d3b3430af5532e0c63365993); P-S07 (BIP370;
+ * blob93b56e883a3c1a64d7a3c1da66a542d52a37ee03); complete URLs in reports/protocol.md.
+ * Prerequisites/order: none; establish strict contracts first. Related files:
+ * sdk/src/offline-signing.ts, spec/cold-signing.md; Core backend/src/ordex-v12 corresponding service
+ * and caller adapters.
+ * 1. Introduce versioned full-transaction identity that commits exact unsigned bytes including
+ * version, locktime and each sequence, canonical input/output order and verified prevout data;
+ * preserve PSBTv0/v2 conversion fields according BIP174/370/371.
+ * 2. Separately bind immutable signing/asset policy including required signing indexes, input
+ * ownership, allowed sighashes, max fee, expected asset identities/quantities/destinations and
+ * network; distinguish excluded display text from security decisions.
+ * 3. Parse signed PSBT/transaction bytes before normalization; compare full identity, trusted prevout
+ * scripts, final witnesses/signatures and complete independently derived asset movements. Require
+ * equality of expected and observed multisets; omitted observations with expected assets must fail.
+ * 4. Record original foreign signatures and require unchanged preservation instead of interpreting
+ * their presence as new unauthorized signatures. Validate null/hostile nested shapes and unknown
+ * critical metadata, mirror SDK/spec, wire every signer path including partial seller signatures.
+ * Validation (PROPOSED NEW tests, commands unverified until implemented):
+ * verifier/offline-signing.binding.test.js, sdk/test/offline-signing.binding.test.js. node --test
+ * verifier/offline-signing.test.js verifier/offline-signing.binding.test.js; npm --prefix sdk run
+ * build; node --test sdk/test/offline-signing.test.js sdk/test/offline-signing.binding.test.js.
+ * Assertions/evidence: Changed version/locktime/sequence/protection policy changes commitment or
+ * refuses; Missing/extra/misplaced/quantity-changed protected asset refuses; Already signed seller
+ * input preserved; adding foreign signature or changing sighash refuses; Actual Signet purchase and
+ * SafeOps through wallet/file/QR/hardware supported providers preserve same tx. Offline probes are not
+ * end-to-end PASS; require actual Signet transaction, authoritative indexed outcome and consumer
+ * readback where applicable.
+ * Rollback: New version required; do not silently overwrite v1 digest semantics. Unbroadcast sessions
+ * require fresh consent; preserve historical records and monitor existing broadcasts.
+ */
 export function expectedTransactionDigest(manifest) {
   return createHash('sha256')
     .update(
@@ -198,6 +237,20 @@ export function verifyExpectedTransactionManifest(manifest) {
  * sighash appeared, a required input is still unsigned, a signature
  * covers an input the user does not control, or an unknown critical
  * field appeared.
+ */
+/*
+ * IMPLEMENTATION-HANDOFF [OX-P03] Local integration steps; ANNOTATED is not implemented.
+ * Coverage: OX-P-C050, OX-P-C051, OX-P-C052, OX-P-C053, OX-P-C054, OX-P-C055, OX-P-C056.
+ * P-R11 accepts omitted carriedAssets; transaction identity gaps are P-R12/P-R13. 1. Compare full
+ * parsed transaction version/locktime/sequences and trusted prevout scripts against versioned
+ * manifest/policy from expectedTransactionDigest. 2. Require exact equality of expected and
+ * independently observed asset multisets, quantities and output indexes; missing observations must
+ * refuse. 3. Preserve original foreign signatures and reject additions/changes, parse actual
+ * witnesses; never trust signaturePresent from user JSON. Related sdk/src/offline-signing.ts,
+ * spec/cold-signing.md, Core X15. PROPOSED NEW verifier/offline-signing.binding.test.js; node --test
+ * verifier/offline-signing.test.js verifier/offline-signing.binding.test.js (unverified).
+ * P-S05/P-S06/P-S07; Signet buyer flow must preserve seller signature. Rollback requires new consent
+ * for unbroadcast sessions, no mutation of historical signed evidence.
  */
 export function compareSignedResultToManifest(signed, manifest) {
   if (!signed || typeof signed !== 'object' || Array.isArray(signed)) {

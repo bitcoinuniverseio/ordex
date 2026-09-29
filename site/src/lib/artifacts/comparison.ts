@@ -32,6 +32,26 @@ export interface ComparisonReport {
   overallVerdict: 'PASS' | 'REVIEW_REQUIRED' | 'DANGEROUS' | 'UNKNOWN';
 }
 
+/* IMPLEMENTATION-HANDOFF [OX-S01]
+ * Defect OX-S-D01; coverage OX-S-C115..OX-S-C123. Current comparison checks counts/field presence only, calls
+ * different transaction bytes identical, and labels length-format strings as SHA-256. OX-S01-R02 changes an
+ * output amount from 1000 to 2000 sats yet returns PASS.
+ * 1. After OX-S01 parser repair, compare complete decoded inputs (outpoint/order/sequence/sighash), outputs
+ * (position/script/amount), transaction version/locktime, all map keys/values and signature additions.
+ * Classify expected signer additions separately; any unparsed/different bytes must produce UNKNOWN or review,
+ * never diff-none.
+ * 2. Compute real SHA-256 over original bytes, compare rawHex before asserting byte identity, and derive fees
+ * only from verified available prevout amounts. Evaluate relevant purchase/offline-signing invariants with the
+ * preserved manifest and return conclusive=false if context is absent.
+ * 3. Replace MUTATION_FIXTURES with valid PSBTs whose actual changed fields match their titles. Preserve
+ * acceptable unknown fields and expose dropped fields per map, not only global counts.
+ * 4. Extend tests/unit/artifact-parser.test.js and PROPOSED NEW tests/unit/artifact-comparison.test.js for
+ * equal-size amount/script/outpoint/sighash changes, same-count output permutations, locktime, metadata
+ * replacement and unsupported fields. Run npm run test:unit; browser /inspect compare accepts real A/B bytes
+ * and exported digest matches an independent hash.
+ * Dependencies: OX-S01 parser; OX-S07 browser verifier dispatch. Recheck wallet/signing missions and lab.
+ * Rollback parser/comparator/UI as one artifact and retain failing mutation evidence.
+ */
 export function compareParsedArtifacts(
   artifactA: ParsedArtifactResult,
   artifactB: ParsedArtifactResult

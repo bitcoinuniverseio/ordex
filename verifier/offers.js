@@ -47,6 +47,19 @@ export function offerTermsHash(terms) {
 
 const termsRefuse = (code, reason) => ({ ok: false, code, reason });
 
+/*
+ * IMPLEMENTATION-HANDOFF [OX-P05] Local integration steps; ANNOTATED is not implemented.
+ * Coverage: OX-P-C003, OX-P-C004, OX-P-C005, OX-P-C006, OX-P-C007.
+ * P-R16 accepts expiryHeight500000000 while recovery rejects it as timestamp. 1. Restrict
+ * height-domain expiry to safe integer0..499999999, and align exact Hex-suffixed field names with
+ * spec/offers.md. 2. Keep hash canonicalization unchanged for existing terms; version any incompatible
+ * new fields. 3. Run PROPOSED NEW verifier/offers.delivery-recovery.test.js plus existing
+ * verifier/offers.test.js, asserting499999999/500000000 boundary and no funded-output
+ * reinterpretation. Source P-S08 BIP65 and P-S07 BIP370 height domain; Core OX-B01 policy services
+ * depend on corrected terms. Test command node --test verifier/offers.test.js
+ * verifier/offers.delivery-recovery.test.js unverified until new file exists. Rollback keeps
+ * historical hashes and original recovery rights.
+ */
 export function verifyOfferTerms(terms) {
   if (!terms || typeof terms !== 'object' || Array.isArray(terms)) {
     return termsRefuse('MALFORMED_TERMS', 'Expected a terms object.');
@@ -138,6 +151,48 @@ export function verifyOfferTerms(terms) {
 
 const acceptanceRefuse = (code, reason) => ({ ok: false, code, reason });
 
+/*
+ * IMPLEMENTATION-HANDOFF [OX-P05] Preparation only; functional status FAIL, repair NOT IMPLEMENTED.
+ * Coverage: OX-P-C003, OX-P-C004, OX-P-C005, OX-P-C006, OX-P-C007. Evidence: P-R14, P-R15, P-R16 in
+ * handoff/evidence.
+ * Verified cause: Buyer script occurrence before seller index does not prove Feline delivery; recovery
+ * comparisons accept missing locktime; terms permit height>=500000000. Leaf substring checks do not
+ * prove exact script structure/commitment.
+ * Required behavior: Complete funded-offer acceptance/recovery contract. Governing refs: P-S01
+ * (Ord0.29.0 applicability; handbook accessed2026-09-29); P-S05 (BIP174 at
+ * bips3a10b5b5f0a7586df8928d580a3009744ebb2079); P-S06 (BIP341;
+ * blob0764e6cb762b6c17d3b3430af5532e0c63365993); P-S08 (BIP65 deployed;
+ * blob4bd292f8b45a2b2b68013b24f45c23e354b70e4f); complete URLs in reports/protocol.md.
+ * Prerequisites/order: OX-P03, OX-P04. Related files: sdk/src/offers.ts, spec/offers.md; Core/backend
+ * or site consumer named by the work package.
+ * 1. Normalize offer terms with exact shared field names buyerReceiveScriptHex/buyerRecoveryKeyHex;
+ * restrict height-domain expiry to safe integer0..499999999 and validate
+ * currentHeight/locktime/sequence/outpoints explicitly.
+ * 2. Require canonical acceptance/recovery tapscript bytes and verify committed Taproot tree/control
+ * block with two independent policy keys and buyer recovery key; cryptographic witness/node validation
+ * remains required before success.
+ * 3. Derive actual inscription satpoint and complete co-traveling inventory; require exact
+ * Feline-to-buyer interval/destination, preserve all other assets to seller, seller payout
+ * index/value/script, exact funded-input position, described outputs only and fee bounds.
+ * 4. Resolve currently unspecified buyer-padding spend authorization before construction: spec says
+ * buyer signs only funding, yet acceptance spends buyer padding. Record and implement an explicit
+ * consent/signing contract with backend policy services, no assumed signature.
+ * 5. Mirror reference/SDK and correct spec/offers.md field/expiry/authorization ambiguities; retain
+ * discovery-withdrawal vs on-chain recovery distinction.
+ * Validation (PROPOSED NEW tests, commands unverified until implemented):
+ * verifier/offers.delivery-recovery.test.js, sdk/test/offers.delivery-recovery.test.js. node --test
+ * verifier/offers.test.js verifier/offers.delivery-recovery.test.js; npm --prefix sdk run build; node
+ * --test sdk/test/offers.test.js sdk/test/offers.delivery-recovery.test.js.
+ * Assertions/evidence: Buyer-script swap that sends Feline to other output refuses;
+ * Absent/NaN/time-domain locktime, final sequence, fake opcode bytes inside data and mismatched tree
+ * refuse; ITEM/COLLECTION/TRAIT wrong root/trait and extra assets fail; correct ones settle through
+ * independent signers; Signet expiry boundary and buyer-only recovery confirmed;
+ * reorg/retry/withdrawal semantics truthful. Offline probes are not end-to-end PASS; require actual
+ * Signet transaction and indexed/consumer readback where applicable.
+ * Rollback: Do not reinterpret funded output trees or terms hashes. Existing funds retain original
+ * recovery terms; new schema/gated offers only after signet acceptance. Document recovery for any
+ * prior funded incompatible offer.
+ */
 export function verifyOfferAcceptance(acceptance, offer) {
   if (
     !acceptance ||
@@ -269,6 +324,19 @@ export function verifyOfferAcceptance(acceptance, offer) {
 
 const recoveryRefuse = (code, reason) => ({ ok: false, code, reason });
 
+/*
+ * IMPLEMENTATION-HANDOFF [OX-P05] Local integration steps; ANNOTATED is not implemented.
+ * Coverage: OX-P-C003, OX-P-C004, OX-P-C005, OX-P-C006, OX-P-C007.
+ * P-R15 accepts absent nLockTime; substring tests can mistake key/opcode bytes inside pushed data for
+ * script policy. 1. Parse/validate safe integer locktime<500000000, expiry, nonfinal uint32 sequence
+ * and exact outpoints before comparisons. 2. Rebuild canonical <expiry> CLTV DROP <buyerKey> CHECKSIG
+ * and verify Taproot leaf/control-block commitment plus node-valid signature; no substring acceptance.
+ * 3. Require exact permitted input/output set and fee contract. Related verifyOfferTerms,
+ * sdk/src/offers.ts, spec/offers.md, Core OX-B01. Sources P-S06/P-S08. PROPOSED NEW
+ * verifier/offers.delivery-recovery.test.js; node --test verifier/offers.test.js
+ * verifier/offers.delivery-recovery.test.js (unverified). Test missing/NaN/timestamp/final-sequence
+ * and Signet expiry recovery. Rollback never alters existing funded trees/recovery rights.
+ */
 export function verifyOfferRecovery(recovery, offer) {
   if (!recovery || !Array.isArray(recovery.inputs) || !Array.isArray(recovery.outputs)) {
     return recoveryRefuse('MALFORMED_RECOVERY', 'Expected inputs and outputs arrays.');

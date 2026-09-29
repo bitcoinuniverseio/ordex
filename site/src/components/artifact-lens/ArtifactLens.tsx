@@ -11,6 +11,23 @@ import {
   IconExternalLink
 } from '../experience/OrdexIcons.js';
 
+/* IMPLEMENTATION-HANDOFF [OX-S01]
+ * Defect OX-S-D01; coverage OX-S-C101..OX-S-C123. The initial SAMPLE_PSBT_HEX claims a value length of 0x52
+ * but is truncated; /inspect opens in an error state.
+ * 1. Use a valid, checked-in deterministic PSBT from the OX-S01 parser tests and route both hex/Base64 PSBT
+ * and raw transaction formats through the strict shared parser.
+ * 2. In executeParse and handleRunCompare, distinguish decoded, malformed, unsupported and semantically
+ * verified states; display parser errors and prevent comparison or a verification badge for invalid results.
+ * Clear stale comparison/selected ranges when the input changes.
+ * 3. Render complete input/output scripts, exact sat values, sighash and byte offsets from the repaired model.
+ * Keep signed bytes local and export only on the user's action after sanitation; connect typed artifact
+ * references from OX-S03.
+ * 4. Use OX-S10 keyboard tablist and responsive fixes. Browser checks at /inspect must cover initial render,
+ * every tab, selection sync, large/malformed input, A/B mutation, reload and navigation. Expected initial
+ * state is useful without red errors; changed transaction bytes never say Safe to proceed.
+ * Dependencies: OX-S01 parser/comparison, OX-S03 state, OX-S07 workers. Source unit repro alone is not browser
+ * or chain acceptance. Rollback the complete parser/view contract together.
+ */
 const SAMPLE_PSBT_HEX = '70736274ff010052020000000000';
 
 interface LensProps {

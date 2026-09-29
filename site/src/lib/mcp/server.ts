@@ -212,6 +212,32 @@ export const MCP_TOOLS: McpToolDefinition[] = [
   }
 ];
 
+/* IMPLEMENTATION-HANDOFF [OX-S04]
+ * Defect OX-S-D04; coverage OX-S-C950..OX-S-C969. Local tool dispatch fakes ok:true for allowed families other
+ * than purchase/safeops/runes, filters are ignored, provenance build is hardcoded, and discovery advertises
+ * resources/prompts without reads. Unbundled native Node linking fails on unused scenario imports;
+ * the production bundler may remove those imports.
+ * 1. After OX-S08 import repair, create one typed dispatch registry used by browser, stdio and
+ * worker/index.js. Validate arguments against advertised inputSchema, bound query limits/payloads, honor
+ * version/role filters, and route every verifier family to its actual exported function with exact argument
+ * contracts.
+ * 2. Use OX-S07 normalized family/vector IDs and preserve raw vector fields; never return successful
+ * verification for an unimplemented branch. Return authentic result data, correct outputSchema, build/source
+ * hashes and evidence type; document retrieval as retrieval, not chain proof.
+ * 3. Implement MCP 2026-07-28 server/discover, per-request metadata/version/capability handling and all
+ * advertised resource/prompt methods. Follow
+ * https://modelcontextprotocol.io/specification/2026-07-28/server/discover and /server/tools: resultType
+ * complete, unknown tool -32602, execution failure content+isError. Do not add obsolete initialize semantics
+ * merely to pass old clients.
+ * 4. Worker transport package must enforce modern headers/origin and call this shared dispatcher; stdio entry
+ * must use the built module. Preserve read-only tool boundaries, no keys/sign/broadcast.
+ * 5. Extend tests/unit/mcp-server.test.js with every tool valid/invalid schema, every family accepted/refused
+ * cases, missing source/vector, filters, discovery/resources/prompts and real result hashes. Run npm run
+ * test:mcp, then actual installed-client stdio and HTTP conformance at a configured endpoint.
+ * Dependencies: OX-S07/08, protocol worker work package, SDK export contract. Acceptance requires real
+ * consumer calls; browser local tools are not remote MCP evidence. Rollback both dispatch and advertised
+ * capability metadata together.
+ */
 export async function executeMcpTool(
   name: string,
   args: Record<string, unknown>

@@ -65,6 +65,44 @@ function jsonResponse(data, status = 200, origin = '*') {
   });
 }
 
+/*
+ * IMPLEMENTATION-HANDOFF [OX-P08] Preparation only; functional status FAIL, repair NOT IMPLEMENTED.
+ * Coverage: OX-P-C061, OX-P-C062, OX-P-C063, OX-P-C064. Evidence:
+ * evidence/sdk-worker-observations.json in handoff/evidence.
+ * Verified cause: Telemetry persists arbitrary categoryData and metadata unsanitized; feedback
+ * sanitizes comment only. Missing D1 binding still yields success; errors all become malformed400. Ask
+ * ignores protocolVersion and reads canonicalUrl while corpus exposes docUrl.
+ * Required behavior: Docs Worker typed validation, privacy and truthful persistence. Governing refs:
+ * P-S13 (prepared base); P-S14 (official guide accessed2026-09-29); complete URLs in
+ * reports/protocol.md.
+ * Prerequisites/order: define shared docs schema and Worker foundation here; OX-S11 consumes it.
+ * OX-S11 is coordinated UI/readback acceptance, not a blocking prerequisite. Related files:
+ * site/src/data/corpus.json; worker/migrations/0001_initial.sql; docs consumers in OX-S11.
+ * 1. Add bounded schema per docs endpoint before parsing/storing: event-specific enumerated category
+ * keys/values, normalized allowlisted route/product/role/version/build identity, bounded body size;
+ * redact all accepted free text and reject arbitrary nested payloads before any SQL/logging.
+ * 2. Make consent and collected fields explicit in docs UI; do not rely on clients to sanitize or
+ * claim zero tracking while Worker persists telemetry. Avoid seeds/PSBT/xpub/token/wallet data in
+ * persistent fields; apply retention policy to raw/hourly/feedback data.
+ * 3. Treat required D1 unavailable as service unavailable with honest user recovery; preserve storage
+ * failures as operational errors and support idempotent user retry; batch related D1 writes atomically
+ * so raw/hourly counts cannot partially commit.
+ * 4. For Ask validate query types/version/page context, retrieve only requested supported version, map
+ * citation URL from actual corpus schema, and return grounded refusal for unsupported version/no
+ * sources. Connect OX-S11 consumers to deployed endpoints and display truthful response state.
+ * Validation (PROPOSED NEW tests, commands unverified until implemented):
+ * tests/unit/worker-docs.test.js, tests/integration/worker-docs-d1.test.js. node --test
+ * tests/unit/worker-docs.test.js; node --test tests/integration/worker-docs-d1.test.js.
+ * Assertions/evidence: Synthetic sensitive category/route/etc cannot reach any D1 bind/log;
+ * Missing/failed DB not reported persisted; atomic raw+hourly writes recover without duplicates;
+ * Unsupported version refuses; citations open correct generated source routes; Real
+ * request->D1->readback verified with isolated nonpersonal data; disabled telemetry writes nothing.
+ * Offline probes are not end-to-end PASS; require actual Signet transaction and indexed/consumer
+ * readback where applicable.
+ * Rollback: Back up then apply reviewed D1 schema/retention changes only in implementation; no
+ * destructive purge without exact affected-row analysis. Revert Worker+consumer contract together;
+ * report rejected/unsaved feedback honestly.
+ */
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -94,6 +132,18 @@ export default {
       }, 200, origin);
     }
 
+/*
+ * IMPLEMENTATION-HANDOFF [OX-P08] Local integration steps; ANNOTATED is not implemented.
+ * Coverage: OX-P-C061, OX-P-C062, OX-P-C063, OX-P-C064.
+ * Corpus343 records use docUrl, consumer expects docUrl||url, but this handler emits canonicalUrl and
+ * ignores requested version. 1. Define shared bounded request/citation contract with OX-S11, return
+ * docUrl consistently and derive configured base-path links. 2. Validate query/pageContext types and
+ * supported version, filter retrieval or explicitly refuse unsupported version. 3. Add PROPOSED NEW
+ * tests/unit/worker-docs.test.js; node --test tests/unit/worker-docs.test.js unverified. Assert all
+ * four citation URLs resolve and999.9 refuses in actual deployed consumer. Sources actual
+ * site/src/data/corpus.json and OX-S11 consumer contract; evidence sdk-worker-observations. Rollback
+ * worker+consumer contract together; preserve truthful local-fallback provenance.
+ */
     // 2. Ask Ordex Assistant
     if (url.pathname === '/api/docs/ask' && request.method === 'POST') {
       try {
@@ -179,6 +229,19 @@ export default {
       }
     }
 
+/*
+ * IMPLEMENTATION-HANDOFF [OX-P08] Local integration steps; ANNOTATED is not implemented.
+ * Coverage: OX-P-C061, OX-P-C062, OX-P-C063, OX-P-C064.
+ * Only comment is redacted; route/heading persist arbitrary secrets, and missingDB still returns
+ * success. 1. Validate/redact every persisted string, normalize allowlisted pathname without
+ * query/hash, reject unexpected fields/types and enforce body/field bounds before DB/log. 2. Make
+ * missing/failed required storage explicit503/degraded state, distinguish input400 and operational
+ * failures, retain user retry without duplicate submissions. 3. Add PROPOSED NEW
+ * tests/unit/worker-docs.test.js and tests/integration/worker-docs-d1.test.js; node --test each file
+ * after creation (unverified). P-S13 storage privacy contract, P-S14 D1; related
+ * migration0001_initial.sql and OX-S11 feedback UI. Assert synthetic marker absent from every bind and
+ * real isolated D1 readback. Rollback preserves accepted feedback and reports unsaved state.
+ */
     // 3. Reader Feedback
     if (url.pathname === '/api/docs/feedback' && request.method === 'POST') {
       try {
@@ -221,6 +284,19 @@ export default {
       }
     }
 
+/*
+ * IMPLEMENTATION-HANDOFF [OX-P08] Local integration steps; ANNOTATED is not implemented.
+ * Coverage: OX-P-C061, OX-P-C062, OX-P-C063, OX-P-C064.
+ * Event-name allowlist does not sanitize categoryData/route/product/role; arbitrary synthetic markers
+ * reach D1. 1. Enforce event-specific bounded categorical schema; derive known build/version identity,
+ * normalize route, reject unknown nested data and redact every free-text field. 2. Serialize only
+ * validated complete JSON; never truncate serialized JSON mid-value. 3. Batch raw/hourly writes
+ * atomically and implement truthful unavailable/idempotent retry behavior; test exact D1 binds, absent
+ * binding and second-statement failure. Dependencies OX-S11 consent/UI; sources P-S13/P-S14. PROPOSED
+ * NEW tests/unit/worker-docs.test.js and tests/integration/worker-docs-d1.test.js, node --test both
+ * (unverified). Acceptance uses real isolated D1 readback, no real personal test data. Rollback
+ * respects retention and does not delete historic rows blindly.
+ */
     // 4. Privacy-First Telemetry Events
     if (url.pathname === '/api/docs/events' && request.method === 'POST') {
       try {
@@ -273,6 +349,41 @@ export default {
       }
     }
 
+/*
+ * IMPLEMENTATION-HANDOFF [OX-P07] Preparation only; functional status FAIL, repair NOT IMPLEMENTED.
+ * Coverage: OX-P-C065, OX-P-C066, OX-P-C067, OX-P-C068, OX-P-C069, OX-P-C070, OX-P-C071, OX-P-C072,
+ * OX-P-C073, OX-P-C074, OX-P-C075. Evidence: evidence/sdk-worker-observations.json in
+ * handoff/evidence.
+ * Verified cause: Worker tools/call ignores name/args and returns fixed executed/ok:true plus stale
+ * hardcoded commit. Server/discover and modern version/header binding/CORS requirements are
+ * absent.2026-07-28 is real stateless spec; initialize removal is intentional, not this defect.
+ * Required behavior: Execute real Worker MCP tools and implement declared2026 transport. Governing
+ * refs: P-S11 (2026-07-28); P-S12 (2026-07-28); complete URLs in reports/protocol.md.
+ * Prerequisites/order: OX-S04. Related files: spec/openapi.json and sdk/test/client.test.js;
+ * Core/backend or site consumer named by the work package.
+ * 1. Replace placeholder tools/call branch with shared validated executable MCP engine repaired by
+ * OX-S04. Advertise only actual implemented tools; unknown tool and invalid args produce
+ * protocol/schema errors; verifier output must be actual verdict.
+ * 2. Implement declared2026-07-28 stateless server/discover and per-request _meta protocol
+ * negotiation, required HTTP/body header mirror checks and proper JSON-RPC/MCP results. Use pinned
+ * official SDK/adapters or exact transport requirements, no fabricated handshake assumptions.
+ * 3. Allow required MCP request headers in OPTIONS; preserve correlation id including0; apply
+ * body/content-type/method validation and structured result/content shape; expose actual build
+ * revision from built artifact.
+ * 4. Test hosted Worker adapter and shared engine separately then together with real client; do not
+ * treat AgentBridge local call as hosted route acceptance. Run all10 tool contracts and invalid
+ * families.
+ * Validation (PROPOSED NEW tests, commands unverified until implemented):
+ * tests/unit/worker-mcp.test.js, tests/integration/mcp-worker.test.js. node --test
+ * tests/unit/worker-mcp.test.js; node --test tests/integration/mcp-worker.test.js.
+ * Assertions/evidence: Unknown tool/empty invalid verifier never report executed success;
+ * server/discover shape/version,required mirroring,CORS match MCP2026-07-28; All10 advertised tools
+ * return independently verified content and failures; Real supported remote client can discover/call
+ * hosted endpoint. Offline probes are not end-to-end PASS; require actual Signet transaction and
+ * indexed/consumer readback where applicable.
+ * Rollback: Revert Worker and engine together; preserve compatible paths. If deployment verification
+ * fails return honest unavailable/refusal instead of fake success; do not redeploy in preparation.
+ */
     // 5. MCP 2026-07-28 Streamable HTTP Endpoint
     if (url.pathname === '/mcp') {
       if (request.method !== 'POST') {

@@ -19,6 +19,25 @@ const tours = JSON.parse(fs.readFileSync(path.join(root, 'site', 'src', 'data', 
 console.log(`Generating deterministic tour capture assets for ${tours.length} tours...`);
 
 // Helper to create a clean deterministic SVG-based PNG fallback or real browser render
+/* IMPLEMENTATION-HANDOFF [OX-S10]
+ * Defect OX-S-D10; coverage OX-S-C1100..OX-S-C1134. This function draws an illustrative SVG and rasterizes it;
+ * it never captures the real app. Six advertised PNG paths are missing when Sharp falls back to SVG, and
+ * tests/e2e/screenshots.test.js checks only story-name constants.
+ * 1. Replace illustration generation with Playwright capture of the single coordinated existing application
+ * URL after each declared real interaction reaches its asserted state. Freeze clock only for deterministic
+ * examples; never inject completion or replace authoritative services.
+ * 2. Record route, viewport, theme, revision, operation/state assertions, console/network errors and capture
+ * digest. Use the same tour manifest for target routes/steps and image paths. Fail clearly if a capture
+ * prerequisite is unavailable; a fallback illustration cannot be published as a real screenshot.
+ * 3. Capture desktop/tablet/mobile and light/dark states; OX-S10 actual DOM tour target must exist for each
+ * step. Store accessible captions and useful crop/hotspot coordinates from the real render.
+ * 4. Replace static screenshot-name tests with real browser interaction/assertions and file decode checks.
+ * Update scripts/build.mjs so capture doesn't require a nonexistent or duplicate dev server before Astro
+ * build; coordinate build-once, one port, one tab.
+ * Acceptance: all advertised PNG/SVG paths render and represent the named actual state, no fake verification
+ * copy. Reuse valid captures only when relevant inputs are unchanged. Rollback manifest and media atomically;
+ * never preserve missing links or fabricated evidence.
+ */
 async function generateDeterministicCapture(fileName, title, subtitle, theme, isMobile) {
   const filePath = path.join(outDir, fileName);
   const width = isMobile ? 375 : 1280;

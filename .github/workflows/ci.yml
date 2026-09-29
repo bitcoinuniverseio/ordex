@@ -48,6 +48,33 @@ jobs:
       - name: Build the documentation site
         run: npm run build
 
+      # IMPLEMENTATION-HANDOFF [OX-R03] Executed coverage and browser release evidence; ANNOTATED.
+      # Current: a clean build, 243 verifier tests and 34 platform tests pass even
+      # when deployed ConformanceStudio/ProtocolLab hydration fails and Gateway
+      # Doctor returns 8/8 success for an unreachable endpoint. Presence/source
+      # assertions and mock API tests do not prove the advertised journeys.
+      # Sources: tests/targeted-results.json, evidence/browser screenshots/logs,
+      # reports/site.md and reports/coverage-matrix.json in the handoff.
+      # Prerequisites: OX-S03 evidence/context foundation; OX-S01/02 hydration and
+      # real tool checks; OX-P07 MCP; all product-specific repair packages.
+      # 1. Add real built-site browser tests that fail on page/console errors,
+      # unhandled rejections, false-success checks and inactive visible controls.
+      # Cover mobile/desktop, keyboard, empty/error/loading/retry, SDK kit install,
+      # actual event replay and MCP tools with isolated deterministic services.
+      # 2. Keep local/component evidence separate from genuine Signet or justified
+      # Testnet wallet/node/indexer acceptance. Each independent operation needs
+      # exact source/artifact/network identity and authoritative outcome evidence.
+      # 3. Build a machine-checkable immutable Ordex coverage receipt. Missing,
+      # disabled, blocked or untested offered features remain required NO-GO rows.
+      # 4. Publish docs/site, worker and SDK only at the accepted contract SHA;
+      # verify deployed identity and use the receipt in Core OX-R02 publication.
+      # Verify: existing npm run build/test/conformance and SDK checks stay green;
+      # browser tests must reproduce current hydration/false-PASS defects first.
+      # Acceptance: every required row PASS; actual public release is separate
+      # evidence. Preserve self-hosted runners and the fork-PR isolation rule.
+      # Rollback: coordinated previous site/worker/SDK artifacts with compatible
+      # persistence; retain user journeys and evidence without fabricating PASS.
+      # END IMPLEMENTATION-HANDOFF [OX-R03]
       - name: Run the reference verifiers and unit tests
         run: npm test
 

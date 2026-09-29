@@ -37,6 +37,26 @@ export function ProtocolLab() {
     setVerdictResult(null);
   };
 
+  /* IMPLEMENTATION-HANDOFF [OX-S07]
+   * Defect OX-S-D07; coverage OX-S-C900..OX-S-C908. Lab always wraps candidate as transaction/input/order and
+   * expected.ok=true; other families require plan/manifest/record/intent/kind fields and runes returns safe.
+   * Accepted SafeOps example becomes MALFORMED_PLAN in reproduction.
+   * 1. Render a typed editor for each OX-S07 operation schema, preserving complete variant inputs (offer
+   * terms/acceptance/recovery, signed SafeOps/cold-signing, swap acceptance, events/webhook,
+   * membership/revocation, attachment spend and runes).
+   * 2. Dispatch candidates through the shared browser Worker without a manufactured expected verdict; keep
+   * separate conformance-case comparison. Normalize candidate validity and rune safe result into explicit
+   * accepted/refused/unknown states while retaining raw verifier output.
+   * 3. Replace ad hoc secret regex with the bounded shared sanitizer before parsing/export, clear stale results
+   * on any input/family/order change, and prevent report generation before a completed run.
+   * 4. Export exact family/variant, sanitized input digest, network/context, source build, timestamp and actual
+   * verdict. Display sat-flow only for a decoded compatible transaction; no invented flow from absent data.
+   * 5. Browser /lab must load and run accepted/refused examples for all nine families and each variant, edit
+   * malformed/oversized input, compare A/B, export JSON/Markdown and reopen a mission. Tests:
+   * tests/unit/conformance-engine.test.js plus PROPOSED NEW tests/e2e/lab.test.js.
+   * Dependencies: OX-S01, OX-S03, OX-S07 executor/generator. Browser/UI evidence is required in addition to Node
+   * component checks. Rollback editor, dispatcher and report schema together.
+   */
   const handleVerify = () => {
     setSafetyWarning(null);
 

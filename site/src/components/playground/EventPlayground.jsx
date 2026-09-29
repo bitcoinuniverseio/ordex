@@ -13,6 +13,27 @@ export function EventPlayground() {
   const [signedHeader, setSignedHeader] = useState('');
   const [verificationResult, setVerificationResult] = useState(null);
 
+  /* IMPLEMENTATION-HANDOFF [OX-S05]
+   * Defect OX-S-D05; coverage OX-S-C880..OX-S-C889. SSE/WS UI only generates random events with fake mainnet
+   * IDs; pause/resume resets the list/counter. Webhook verifier receives now although the exported contract
+   * expects nowSeconds.
+   * 1. Add explicit deterministic-example and connected transports. Seed deterministic fixtures, use
+   * ordex-event/v1 schema and stable replay IDs, and keep playback state across pause; do not call random output
+   * a deterministic replay.
+   * 2. For connected mode, consume the SDK SSE/WS clients for the selected Universe-owned network endpoint.
+   * Validate envelopes, retain cursor only after processing, deduplicate, bound buffers, reconnect with backoff,
+   * handle expired cursor/resync, disconnect cleanly, and keep event finality states distinct.
+   * 3. Use actual events verifier with nowSeconds and raw body bytes for webhook verification. Keep delivery
+   * secret transient, never persist/export it, show parse/crypto/time-window errors, and bind test delivery to a
+   * real isolated subscription where applicable.
+   * 4. Connect OX-S03 mission/run evidence. Test both transports with a real Signet service and authoritative
+   * event readback, cursor replay across reload/reconnect, duplicate/out-of-order/expired events and a real
+   * signed test webhook; local fixtures remain component evidence.
+   * Dependencies: protocol event service/SDK work, OX-S07 browser crypto and OX-S05 request context. PROPOSED
+   * NEW tests/e2e/event-playground.test.js; existing verifier/events.test.js guards byte/signature contracts.
+   * Rollback stream client and cursor schema together; retain last acknowledged cursor and never synthesize
+   * missed events.
+   */
   // Simulated events generator
   useEffect(() => {
     let count = 1;

@@ -34,6 +34,49 @@ of against "whatever the collection is this week". When the collection
 publishes a new root, existing offers keep binding the root they were posted
 with, and a buyer who wants the new root posts new offers.
 
+<!--
+IMPLEMENTATION-HANDOFF [OX-P05] Preparation only; functional status FAIL, repair NOT IMPLEMENTED.
+Coverage: OX-P-C003, OX-P-C004, OX-P-C005, OX-P-C006, OX-P-C007. Evidence: P-R14, P-R15, P-R16 in
+handoff/evidence.
+Verified cause: Buyer script occurrence before seller index does not prove Feline delivery; recovery
+comparisons accept missing locktime; terms permit height>=500000000. Leaf substring checks do not
+prove exact script structure/commitment.
+Required behavior: Complete funded-offer acceptance/recovery contract. Governing refs: P-S01
+(Ord0.29.0 applicability; handbook accessed2026-09-29); P-S05 (BIP174 at
+bips3a10b5b5f0a7586df8928d580a3009744ebb2079); P-S06 (BIP341;
+blob0764e6cb762b6c17d3b3430af5532e0c63365993); P-S08 (BIP65 deployed;
+blob4bd292f8b45a2b2b68013b24f45c23e354b70e4f); complete URLs in reports/protocol.md.
+Prerequisites/order: OX-P03, OX-P04. Related files: verifier/offers.js, sdk/src/offers.ts;
+Core/backend or site consumer named by the work package.
+1. Normalize offer terms with exact shared field names buyerReceiveScriptHex/buyerRecoveryKeyHex;
+restrict height-domain expiry to safe integer0..499999999 and validate
+currentHeight/locktime/sequence/outpoints explicitly.
+2. Require canonical acceptance/recovery tapscript bytes and verify committed Taproot tree/control
+block with two independent policy keys and buyer recovery key; cryptographic witness/node validation
+remains required before success.
+3. Derive actual inscription satpoint and complete co-traveling inventory; require exact
+Feline-to-buyer interval/destination, preserve all other assets to seller, seller payout
+index/value/script, exact funded-input position, described outputs only and fee bounds.
+4. Resolve currently unspecified buyer-padding spend authorization before construction: spec says
+buyer signs only funding, yet acceptance spends buyer padding. Record and implement an explicit
+consent/signing contract with backend policy services, no assumed signature.
+5. Mirror reference/SDK and correct spec/offers.md field/expiry/authorization ambiguities; retain
+discovery-withdrawal vs on-chain recovery distinction.
+Validation (PROPOSED NEW tests, commands unverified until implemented):
+verifier/offers.delivery-recovery.test.js, sdk/test/offers.delivery-recovery.test.js. node --test
+verifier/offers.test.js verifier/offers.delivery-recovery.test.js; npm --prefix sdk run build; node
+--test sdk/test/offers.test.js sdk/test/offers.delivery-recovery.test.js.
+Assertions/evidence: Buyer-script swap that sends Feline to other output refuses;
+Absent/NaN/time-domain locktime, final sequence, fake opcode bytes inside data and mismatched tree
+refuse; ITEM/COLLECTION/TRAIT wrong root/trait and extra assets fail; correct ones settle through
+independent signers; Signet expiry boundary and buyer-only recovery confirmed;
+reorg/retry/withdrawal semantics truthful. Offline probes are not end-to-end PASS; require actual
+Signet transaction and indexed/consumer readback where applicable.
+Rollback: Do not reinterpret funded output trees or terms hashes. Existing funds retain original
+recovery terms; new schema/gated offers only after signet acceptance. Document recovery for any
+prior funded incompatible offer.
+-->
+
 ## Offer terms
 
 The terms are an object with schema `ordex.offer-terms/v1`:

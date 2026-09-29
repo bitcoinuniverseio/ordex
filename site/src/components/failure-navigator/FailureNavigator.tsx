@@ -66,6 +66,27 @@ export function FailureNavigator({
     }
   };
 
+  /* IMPLEMENTATION-HANDOFF [OX-S09]
+   * Defect OX-S-D09; coverage OX-S-C300..OX-S-C471 and OX-S-C500..OX-S-C671. Minimal reproducer only declares
+   * malformedInput and prints the expected code, never invokes a verifier; all non-purchase families import
+   * verifySafeOpsPlan regardless of actual rule.
+   * 1. Replace the string template with a generated registry of checked-in minimal fixtures keyed by exact
+   * refusal and verifier variant. Import the actual pinned verifier/SDK entry, call it with complete arguments,
+   * and assert the returned code using node:assert/strict.
+   * 2. Bind each rule to source file/symbol/spec pointer, exact triggering predicate, affected lifecycle/network
+   * and appropriate recovery action. A generic UTXO check is wrong for non-transaction failures such as
+   * ACCOUNT_INVALID.
+   * 3. Reproduce in the local bounded worker and display actual output beside expected; copy/export a
+   * self-contained runnable fixture with dependency pins and sanitized bytes, never raw user secrets.
+   * 4. Extend tests/unit/diagnostic-detector.test.js and PROPOSED NEW tests/unit/diagnostic-reproducers.test.js
+   * to execute every advertised rule fixture, test API/verifier/Doctor/event/artifact input envelopes,
+   * unknown/malformed input and no false conclusive diagnosis.
+   * 5. Browser /diagnose must preserve code deep links, report copy errors and link correct next tool with
+   * OX-S03 references. Run npm run test:unit plus browser cases, retaining each rule's code/assertion evidence.
+   * Dependencies: OX-S07 actual verifier adapter, OX-S09 diagnostic data generator, OX-S02 Doctor schema.
+   * Rollback rules and fixture registry atomically; a rule with no verified reproducer stays explicitly
+   * unavailable rather than fabricating a result.
+   */
   const generateMinimalReproducer = (rule: DiagnosticRule) => {
     const code = `// Minimal Reproducer for ${rule.exactCodes[0]}
 import { ${rule.family === 'purchase' ? 'verifyPublicAskCompletion' : 'verifySafeOpsPlan'} } from '@bitcoinuniverse/ordex-sdk';

@@ -17,6 +17,22 @@ export function FeedbackWidget({ route = '/', heading = '' }) {
     { id: 'other', label: '💬 Other' }
   ];
 
+  /* IMPLEMENTATION-HANDOFF [OX-S11]
+   * Defect OX-S-D11; coverage OX-S-C1410..OX-S-C1418. Network exceptions are displayed as successful feedback
+   * even when nothing was stored.
+   * 1. Use the OX-P08 owned docs API origin/schema and sanitize bounded route, heading, role, comment and other
+   * strings before transport. Include actual build/version; no user secrets in feedback or metrics.
+   * 2. Success requires an acknowledged persisted receipt. On offline/timeout show retryable failure or explicit
+   * local pending queue, never success. If queueing is offered, use stable idempotency IDs, bounded retention
+   * and delivery acknowledgement.
+   * 3. Disable duplicate submissions while pending, preserve user-entered draft on failure, and announce status
+   * accessibly. Keep consent/zero-tracking promises reflected in actual implementation.
+   * 4. Test each existing category, empty required choice, actual API persistence/readback,
+   * failure/retry/duplicate/offline/reload. PROPOSED NEW tests/e2e/docs-feedback.test.js depends on the real
+   * isolated docs database and worker; HTTP200 without persisted record is insufficient.
+   * Dependencies: OX-P08 persistence, OX-S10 status UI, OX-S03 optional local queue. Rollback additive queue
+   * schema safely and do not discard pending user feedback.
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!selectedCategory) return;

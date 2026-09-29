@@ -25,6 +25,43 @@ Leaves are `SHA-256(sorted-key JSON of { domain: "ordex.collection-member/v1", c
 
 `buildMembershipProof` walks the sorted tree and returns the sibling path. `verifyMembershipProof` needs only the manifest, the member identity, and the proof: no network call, no gateway. A stranger's identity, a tampered sibling, and a member removed in a newer version all refuse with `MEMBER_NOT_PROVEN`.
 
+<!--
+IMPLEMENTATION-HANDOFF [OX-P09] Preparation only; functional status FAIL, repair NOT IMPLEMENTED.
+Coverage: OX-P-C044. Evidence: P-R17 in handoff/evidence.
+Verified cause: verifyManifestRevocation checks manifest digest and signer address but never
+compares revocation network or collectionId to supplied manifest; contradictory revocation passes.
+Actual BIP322 proof remains integrator's responsibility.
+Required behavior: Bind collection revocation to exact network, collection and signer context.
+Governing refs: P-S15 (Ordex1.2 collection-manifest/v1); P-S16 (BIP322 version2.0.0 Complete;
+blob66fd047f6783c76e9e6ec938218349f4fb967c60); complete URLs in reports/protocol.md.
+Prerequisites/order: none; establish strict contracts first. Related files:
+verifier/collection-manifest.js, sdk/src/collection-manifest.ts; Core
+backend/src/ordex-v12/ordex-v12.module.ts and corresponding registry/heritage/webhook service.
+1. When target manifest supplied require revocation.network===manifest.network and
+collectionId===manifest.collectionId before digest/signature acceptance; require exact
+schema-version compatibility and signature material shape.
+2. Require a validated target manifest for state-changing revocation; a structural offline check
+without target must report its limited scope and never authorize registry state.
+3. Verify BIP322 signature over the canonical domain-bound revocation through trusted verifier,
+store signed revocation immutably, and project lifecycle status outside immutable creator document;
+preserve history and distinguish anchored state.
+4. Mirror reference/SDK/spec and test cross-network/cross-collection replay, wrong creator, null
+target fields, supersession and repeated revocation.
+Validation (PROPOSED NEW tests, commands unverified until implemented):
+verifier/collection-revocation-context.test.js, sdk/test/collection-revocation-context.test.js. node
+--test verifier/collection-manifest.test.js verifier/collection-revocation-context.test.js; npm
+--prefix sdk run build; node --test sdk/test/collection-manifest.test.js
+sdk/test/collection-revocation-context.test.js.
+Assertions/evidence: Same digest/wrong collection/network refuses before state mutation; Valid
+creator-signed revocation applies exactly once; signature verified independently; Membership/history
+remains reproducible for old versions; no unsigned status change rewrites creator digest. Offline
+probes are not end-to-end PASS; require actual Signet transaction and indexed/consumer readback
+where applicable.
+Rollback: Append corrected context validation with schema compatibility; retain immutable prior
+signed records and record invalid contextual documents without pretending them valid. Reproject
+state from verified events, never delete history.
+-->
+
 ## Publication, versioning, revocation
 
 A manifest is drafted, validated locally, signed by the creator, and then published. Publication is immutable. Corrections are a new version whose digest names the previous one. Supersession and revocation are creator-signed documents; a revocation (`ordex.collection-manifest-revocation/v1`) binds the exact manifest digest, states a reason, and is refused when signed by any address other than the creator. History is never deleted: superseded and revoked versions remain visible with their statuses.

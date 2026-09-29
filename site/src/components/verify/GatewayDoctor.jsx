@@ -18,6 +18,27 @@ export function GatewayDoctor() {
     { id: 'decimal_strings', name: 'Decimal-String Atomic Sat Preservation', critical: true }
   ];
 
+  /* IMPLEMENTATION-HANDOFF [OX-S02]
+   * Defect OX-S-D02; coverage OX-S-C930..OX-S-C937. runDoctor turns an unreachable health endpoint into success,
+   * hardcodes seven further checks, and returns a fixed digest. Browser repro at /verify with http://127.0.0.1:1
+   * displays simulated success.
+   * 1. Replace each DOCTOR_STEPS branch with an actual bounded read-only request and exact assertions grounded
+   * in spec/openapi.json and spec/api.md at the accepted revision. Use AbortController, origin/network snapshot,
+   * cancellation and per-check request/response evidence; never fall back to simulation inside connected mode.
+   * 2. Health must assert storage/readiness, protocol/network and node/indexer freshness fields, not HTTP 200
+   * alone. Fetch protocol and catalog; validate schemas, decimal strings, page limits/cursor behavior, and an
+   * intentional invalid read request's error envelope. For CORS, report browser-readable evidence versus
+   * server-header evidence accurately.
+   * 3. Preserve failed/unreachable/not-run states; prerequisites may block dependent checks. Compute a real
+   * digest over the sanitized report contents and include actual build, network, timestamp and origin.
+   * 4. Share the request builder with OX-S05 and completion records with OX-S03. Add PROPOSED NEW
+   * tests/unit/gateway-doctor.test.js and browser /verify cases for unavailable, malformed-200, stale,
+   * wrong-network, compliant gateway and cancelled runs.
+   * Acceptance: no unavailable or invalid gateway yields a passed check. Complete read-only integration uses a
+   * real configured Universe-owned Signet gateway and authoritative readback; no transaction is required for
+   * this tool. Save response evidence and report hash. Rollback leaves false-success fallback removed, keeps
+   * last known valid deployed checker, and does not change gateway state.
+   */
   const runDoctor = async () => {
     setIsRunning(true);
     setReport(null);

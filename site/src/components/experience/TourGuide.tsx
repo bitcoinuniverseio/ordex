@@ -26,6 +26,24 @@ export function TourGuide({
   const [viewMode, setViewMode] = useState<'interactive' | 'captures'>('captures');
   const [captureTheme, setCaptureTheme] = useState<'desktopLight' | 'desktopDark' | 'mobileLight'>('desktopLight');
 
+  /* IMPLEMENTATION-HANDOFF [OX-S10]
+   * Defect OX-S-D10; coverage OX-S-C1100..OX-S-C1134. In-DOM Highlighting renders a text card with
+   * targetSelector but never queries/highlights the target; capture view uses one image per tour for all steps
+   * and previous/next icon buttons have no accessible names.
+   * 1. Add route-aware tour steps and mount a real highlight/tooltip against a verified element using
+   * getBoundingClientRect, resize/scroll observers and safe missing-target fallback. Coordinate navigation so
+   * selectors refer to the current page, not absent /tour content.
+   * 2. Persist pause/step as an OX-S03 journey preference; restore focus on close, Escape to exit, scope arrow
+   * keys to tour UI and avoid hijacking text inputs. Supply accessible button names, status announcements,
+   * focus-visible styles and reduced-motion behavior.
+   * 3. Use OX-S10 genuine per-step captures with descriptive captions as fallback. Resolve paths from BASE_URL
+   * and verify each file exists; no synthetic mock capture is evidence of a live journey.
+   * 4. PROPOSED NEW tests/e2e/tours.test.js must run every step of all five tours, interactive/capture modes,
+   * forward/back/end/pause/resume, absent target, keyboard/screen reader and mobile scroll cases.
+   * tests/e2e/screenshots.test.js currently is only static source assertions.
+   * Dependencies: OX-S10 capture pipeline, OX-S03 session. Keep established design tokens; rollback
+   * engine/manifest/media together and preserve accessible noninteractive guidance during failure.
+   */
   const currentStep: TourStep | undefined = selectedTour.steps[activeStepIndex];
 
   // Keyboard navigation

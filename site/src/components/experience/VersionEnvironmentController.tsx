@@ -16,6 +16,22 @@ export function VersionEnvironmentController({
   onEnvironmentChange,
   buildCommit = 'f6df565'
 }: ControllerProps): JSX.Element {
+  /* IMPLEMENTATION-HANDOFF [OX-S03]
+   * Defect OX-S-D03; coverage OX-S-C082..OX-S-C089. Menu always says Bitcoin Mainnet and build f6df565 while
+   * changing environment only saves an unused setting; SafeOps/swaps are mislabeled as1.1 despite their1.2 spec.
+   * 1. Consume validated shared network/origin/version/build state from OX-S03; expose required configured
+   * gateway origin and capability/readiness evidence. The displayed network must reflect the selected verified
+   * endpoint or explicit fixture, never a fixed label.
+   * 2. Filter operations/missions by protocol capabilities and propagate settings to every tool via
+   * subscription. Network/origin changes invalidate stale runs and require refreshed evidence without changing
+   * production defaults.
+   * 3. Generate release labels from spec/version registry and actual build; resolve local/Signet/testnet/mainnet
+   * separately from read-only/write permission. Apply OX-S10 accessible popup focus/Escape/close behavior.
+   * 4. Browser checks: change every version/environment, traverse all tools, reload and reopen menu, verify
+   * exact consistency and blocked wrong-network requests. Test cross-tab updates and stale stored settings.
+   * Dependencies: OX-S03 journey store, OX-S05 request guard, protocol network contract. Rollback settings
+   * schema and UI together, preserving saved context but not trusting stale evidence.
+   */
   const [isOpen, setIsOpen] = useState(false);
 
   return (
