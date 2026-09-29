@@ -32,7 +32,7 @@ test('Lab candidates built from vector arguments reproduce every vector verdict'
       n++;
     }
   }
-  assert.equal(n, 353);
+  assert.equal(n, 356);
 });
 
 test('candidate validation rejects missing, unknown and non-object input', () => {
