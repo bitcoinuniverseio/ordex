@@ -62,6 +62,47 @@ export async function startStaticServer({ base = BASE, dist = DIST } = {}) {
   return { origin: `http://127.0.0.1:${port}`, url: (p = '/') => `http://127.0.0.1:${port}${base}${p}`, close: () => new Promise((r) => server.close(r)) };
 }
 
+/**
+ * A deterministic local gateway for connected browser checks. `routes` maps
+ * "METHOD /path" to (req, res, body) handlers. CORS allows the site origin only.
+ */
+export async function startFakeGateway(routes, siteOrigin) {
+  const server = createServer(async (req, res) => {
+    const chunks = [];
+    for await (const c of req) chunks.push(c);
+    const body = Buffer.concat(chunks).toString('utf8');
+    res.setHeader('access-control-allow-origin', siteOrigin);
+    res.setHeader('access-control-allow-headers', 'content-type, accept, last-event-id');
+    res.setHeader('access-control-allow-methods', 'GET, POST, DELETE, OPTIONS');
+    if (req.method === 'OPTIONS') {
+      res.writeHead(204).end();
+      return;
+    }
+    const url = new URL(req.url, 'http://localhost');
+    const handler = routes[`${req.method} ${url.pathname}`];
+    if (!handler) {
+      res.writeHead(404, { 'content-type': 'application/json' }).end(JSON.stringify({ statusCode: 404, error: 'Not Found', message: 'no route', requestId: 'r' }));
+      return;
+    }
+    await handler(req, res, body, url);
+  });
+  await new Promise((r) => server.listen(0, '127.0.0.1', r));
+  const { port } = server.address();
+  const requests = [];
+  server.on('request', (req) => requests.push(`${req.method} ${req.url}`));
+  return { origin: `http://127.0.0.1:${port}`, requests, close: () => new Promise((r) => { server.closeAllConnections?.(); server.close(r); }) };
+}
+
+/** Configure the shared settings through the real settings dialog. */
+export async function configureGateway(page, origin, { network = 'signet', mode = 'read-only' } = {}) {
+  await page.getByRole('button', { name: /^Settings:/ }).click();
+  await page.getByLabel('Network').selectOption(network);
+  await page.getByLabel('Gateway origin').fill(origin);
+  await page.getByRole('button', { name: 'Save' }).click();
+  await page.getByLabel('Request mode').selectOption(mode);
+  await page.getByRole('button', { name: 'Close' }).click();
+}
+
 export async function launch() {
   const { chromium } = await import('playwright');
   return chromium.launch();

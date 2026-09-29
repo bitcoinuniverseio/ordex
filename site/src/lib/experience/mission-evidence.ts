@@ -150,7 +150,7 @@ export const MISSION_EVIDENCE: Record<string, StageMap> = {
     inspect: lens,
     verify: lab(['purchase', 'offers', 'runes', 'safeops', 'swaps', 'events', 'collection-manifest', 'counterparty-asset', 'offline-signing'], ['refused']),
     integrate: kit('diagnostics'),
-    validate: api('Receive a schema-valid error envelope from the configured gateway in the API Playground', ['api:'])
+    validate: { ...api('Receive a refusal whose error envelope matches the contract from the configured gateway in the API Playground', ['api:']), states: ['refused'] }
   },
   'perform-security-review': {
     understand: read('perform-security-review'),
