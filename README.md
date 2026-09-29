@@ -21,7 +21,7 @@ Every component of Ordex runs client-side with zero custody, zero tracking, and 
 | 🧪 **Transaction Sandbox** | 15 deterministic multi-actor protocol scenarios | [Transaction Sandbox](https://bitcoinuniverseio.github.io/ordex/sandbox/) |
 | 🔍 **Artifact Lens** | PSBT parser, byte inspector, and mutation detector | [Artifact Lens](https://bitcoinuniverseio.github.io/ordex/inspect/) |
 | 🛑 **Failure Navigator** | 172-rule diagnostic engine and remediation assistant | [Failure Navigator](https://bitcoinuniverseio.github.io/ordex/diagnose/) |
-| 🤖 **Agent Bridge** | Claude Desktop, Codex, MCP endpoint & integration guides | [Agent Bridge](https://bitcoinuniverseio.github.io/ordex/agents/) |
+| 🤖 **Agent Bridge** | MCP server setup for Claude Code, Cursor and Codex; HTTP endpoint check | [Agent Bridge](https://bitcoinuniverseio.github.io/ordex/agents/) |
 | 🎬 **Guided Product Tours** | Step-by-step interactive visual tours | [Product Tours](https://bitcoinuniverseio.github.io/ordex/tour/) |
 | 🔬 **Protocol Lab** | Sat-flow diagrams and live client-side verifiers | [Protocol Lab](https://bitcoinuniverseio.github.io/ordex/lab/) |
 | ⚖️ **Conformance Studio** | 157 deterministic vector test runner & gateway doctor | [Conformance Studio](https://bitcoinuniverseio.github.io/ordex/verify/) |

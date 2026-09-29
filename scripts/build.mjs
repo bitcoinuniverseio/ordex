@@ -1,4 +1,4 @@
-import { cp, mkdir, readFile, rm, writeFile, readdir } from 'node:fs/promises';
+import { cp, readFile, rm, writeFile, readdir } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execSync } from 'node:child_process';
@@ -80,12 +80,10 @@ await cp(resolve(dist, 'client'), resolve(root, 'docs'), { recursive: true });
 await writeFile(resolve(root, 'docs', 'api-reference.html'), renderApiReference(contract));
 await cp(resolve(root, 'docs', 'api-reference.html'), resolve(dist, 'client', 'api-reference.html'));
 
-console.log('--- Step 7: Prepare Server Deployment Assets ---');
-await mkdir(resolve(dist, 'server'), { recursive: true });
-await cp(resolve(root, 'worker', 'index.js'), resolve(dist, 'server', 'index.js'));
-if (await readFile(resolve(root, 'worker', 'migrations', '0001_initial.sql')).catch(() => null)) {
-  await cp(resolve(root, 'worker', 'migrations'), resolve(dist, 'server', 'migrations'), { recursive: true });
-}
+console.log('--- Step 7: Build the docs service, MCP engine and stdio server ---');
+// OX-S04 / OX-P07: bundled handler (dist/server/index.js), Node host, migrations and build
+// identity; the MCP engine and the self-contained stdio server in dist/mcp.
+execSync('node scripts/docs/build-services.mjs', { cwd: root, stdio: 'inherit' });
 
 /* IMPLEMENTATION-HANDOFF [OX-S10]
  * Defect OX-S-D10; coverage all OX-S browser rows and OX-S-C1313. Build verifies file presence/link syntax,

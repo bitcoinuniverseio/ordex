@@ -30,6 +30,22 @@ function buildRevision() {
   }
 }
 
+// OX-P08: origin of the self-hosted docs service (worker/node-host.mjs) that Ask, Feedback,
+// Insights and the Agent Bridge call. Empty means the site's own origin. Anything else must
+// be an absolute http(s) origin, or the build stops.
+function docsApiBase() {
+  const raw = (process.env.PUBLIC_ORDEX_DOCS_API_BASE || '').trim().replace(/\/+$/, '');
+  if (raw === '') return '';
+  let url;
+  try {
+    url = new URL(raw);
+  } catch {
+    throw new Error(`PUBLIC_ORDEX_DOCS_API_BASE is not an absolute URL: ${raw}`);
+  }
+  if (!['https:', 'http:'].includes(url.protocol) || url.search || url.hash) throw new Error(`PUBLIC_ORDEX_DOCS_API_BASE must be an http(s) URL without query or fragment: ${raw}`);
+  return raw;
+}
+
 export default defineConfig({
   site: 'https://bitcoinuniverseio.github.io',
   base: '/ordex',
@@ -46,7 +62,8 @@ export default defineConfig({
       plugins: () => [browserVerifierCrypto()]
     },
     define: {
-      'import.meta.env.PUBLIC_ORDEX_BUILD_REVISION': JSON.stringify(buildRevision())
+      'import.meta.env.PUBLIC_ORDEX_BUILD_REVISION': JSON.stringify(buildRevision()),
+      'import.meta.env.PUBLIC_ORDEX_DOCS_API_BASE': JSON.stringify(docsApiBase())
     }
   }
 });

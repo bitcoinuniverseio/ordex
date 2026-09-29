@@ -302,17 +302,19 @@ const versions = {
 };
 
 // 7. Compatibility Matrix
+// OX-S03: SafeOps and swaps start at protocol 1.2 (verifier/safeops.js SAFEOPS_PROTOCOL_MIN and
+// the swaps intent version check); offline rows describe local verification, not a mock.
 const compatibilityMatrix = [
-  { capability: 'Public Asks Composition', protocol: '1.0+', gateway: 'Supported', sdk: 'Supported', browser: 'Supported', node: 'Supported', offline: 'Supported (Mock)', transport: 'REST', authority: 'Publisher claim', signing: 'Wallet / Air-gap' },
+  { capability: 'Public Asks Composition', protocol: '1.0+', gateway: 'Supported', sdk: 'Supported', browser: 'Supported', node: 'Supported', offline: 'Not applicable (needs a gateway)', transport: 'REST', authority: 'Publisher claim', signing: 'Wallet / Air-gap' },
   { capability: 'Public Ask Purchase Verification', protocol: '1.0+', gateway: 'Supported', sdk: 'Supported', browser: 'Supported (Worker)', node: 'Supported', offline: 'Supported', transport: 'Local Engine', authority: 'Protocol verification', signing: 'None required' },
-  { capability: 'Batch Purchase Composition', protocol: '1.1+', gateway: 'Supported', sdk: 'Supported', browser: 'Supported', node: 'Supported', offline: 'Supported (Mock)', transport: 'REST', authority: 'Protocol verification', signing: 'Buyer Wallet' },
-  { capability: 'Buyer-Funded Offers v1', protocol: '1.1+', gateway: 'Supported', sdk: 'Supported', browser: 'Supported', node: 'Supported', offline: 'Supported (Mock)', transport: 'REST', authority: 'Chain proof + Policy', signing: 'Taproot Signer' },
+  { capability: 'Batch Purchase Composition', protocol: '1.1+', gateway: 'Supported', sdk: 'Supported', browser: 'Supported', node: 'Supported', offline: 'Not applicable (needs a gateway)', transport: 'REST', authority: 'Protocol verification', signing: 'Buyer Wallet' },
+  { capability: 'Buyer-Funded Offers v1', protocol: '1.1+', gateway: 'Supported', sdk: 'Supported', browser: 'Supported', node: 'Supported', offline: 'Not applicable (needs a gateway)', transport: 'REST', authority: 'Chain proof + Policy', signing: 'Taproot Signer' },
   { capability: 'Offer Recovery Path', protocol: '1.1+', gateway: 'Supported', sdk: 'Supported', browser: 'Supported (Worker)', node: 'Supported', offline: 'Supported', transport: 'Local Engine', authority: 'Protocol verification', signing: 'Buyer Key' },
-  { capability: 'SafeOps Execution Shield', protocol: '1.1+', gateway: 'Supported', sdk: 'Supported', browser: 'Supported', node: 'Supported', offline: 'Supported (Mock)', transport: 'REST', authority: 'Protocol verification', signing: 'Operator Key' },
+  { capability: 'SafeOps Execution Shield', protocol: '1.2+', gateway: 'Supported', sdk: 'Supported', browser: 'Supported', node: 'Supported', offline: 'Not applicable (needs a gateway)', transport: 'REST', authority: 'Protocol verification', signing: 'Operator Key' },
   { capability: 'Rune Burn & Cenotaph Guard', protocol: '1.1+', gateway: 'Supported', sdk: 'Supported', browser: 'Supported (Worker)', node: 'Supported', offline: 'Supported', transport: 'Local Engine', authority: 'Protocol verification', signing: 'None required' },
-  { capability: 'Atomic Swaps OTC', protocol: '1.1+', gateway: 'Supported', sdk: 'Supported', browser: 'Supported', node: 'Supported', offline: 'Supported (Mock)', transport: 'REST', authority: 'Protocol verification', signing: 'Dual Signer' },
-  { capability: 'Event Stream Replay', protocol: '1.2+', gateway: 'Supported', sdk: 'Supported', browser: 'Supported', node: 'Supported', offline: 'Supported (Mock)', transport: 'SSE / WS', authority: 'Gateway observation', signing: 'None required' },
-  { capability: 'Signed Webhooks', protocol: '1.2+', gateway: 'Supported', sdk: 'Supported', browser: 'Supported', node: 'Supported', offline: 'Supported (Mock)', transport: 'HTTP POST', authority: 'Gateway HMAC', signing: 'HMAC-SHA256' },
+  { capability: 'Atomic Swaps OTC', protocol: '1.2+', gateway: 'Supported', sdk: 'Supported', browser: 'Supported', node: 'Supported', offline: 'Not applicable (needs a gateway)', transport: 'REST', authority: 'Protocol verification', signing: 'Dual Signer' },
+  { capability: 'Event Stream Replay', protocol: '1.2+', gateway: 'Supported', sdk: 'Supported', browser: 'Supported', node: 'Supported', offline: 'Not applicable (needs a gateway)', transport: 'SSE / WS', authority: 'Gateway observation', signing: 'None required' },
+  { capability: 'Signed Webhooks', protocol: '1.2+', gateway: 'Supported', sdk: 'Supported', browser: 'Supported', node: 'Supported', offline: 'Supported (signature verification)', transport: 'HTTP POST', authority: 'Gateway HMAC', signing: 'HMAC-SHA256' },
   { capability: 'Collection Provenance Manifests', protocol: '1.2+', gateway: 'Supported', sdk: 'Supported', browser: 'Supported (Worker)', node: 'Supported', offline: 'Supported', transport: 'REST / Local', authority: 'Chain proof', signing: 'Creator BIP-322' },
   { capability: 'Counterparty Heritage Assets', protocol: '1.2+', gateway: 'Supported', sdk: 'Supported', browser: 'Supported (Worker)', node: 'Supported', offline: 'Supported', transport: 'REST / Local', authority: 'Chain proof', signing: 'Owner UTXO' },
   { capability: 'Air-Gapped Cold-Signing Manifests', protocol: '1.2+', gateway: 'Supported', sdk: 'Supported', browser: 'Supported (Worker)', node: 'Supported', offline: 'Supported', transport: 'Local / JSON', authority: 'Protocol verification', signing: 'Cold Signer' }
@@ -928,8 +930,11 @@ const corpusChunks = [];
 let chunkId = 0;
 
 // Chunk specifications
+// OX-S11: read specs with LF line endings (a Windows checkout must not leak carriage returns
+// into titles), and link each section to a page that exists: the spec's card on
+// /reference/specifications/.
 for (const spec of specs) {
-  const content = fs.readFileSync(path.join(specDir, spec.file), 'utf8');
+  const content = fs.readFileSync(path.join(specDir, spec.file), 'utf8').replace(/\r\n/g, '\n');
   const sections = content.split(/\n(?=##?\s)/);
   for (const sec of sections) {
     const lines = sec.trim().split('\n');
@@ -949,7 +954,7 @@ for (const spec of specs) {
       title: `${spec.title} - ${title}`,
       content: body.slice(0, 1200),
       digest,
-      docUrl: `/reference/specifications/${spec.id}`
+      docUrl: `/reference/specifications/#spec-${spec.id}`
     });
   }
 }
@@ -987,7 +992,7 @@ for (const ref of refusalList) {
     contentType: 'refusal-code',
     title: `Refusal: ${ref.code}`,
     content: `${ref.explanation} Category: ${ref.category}. Remediation: ${ref.remediation}`,
-    digest: 'sha256:refusal',
+    digest: crypto.createHash('sha256').update(text, 'utf8').digest('hex').slice(0, 16),
     docUrl: `/reference/refusal-codes/#${ref.code}`
   });
 }
