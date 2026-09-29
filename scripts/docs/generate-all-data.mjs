@@ -4,6 +4,10 @@ import crypto from 'node:crypto';
 import { FAMILY_REGISTRY, FAMILIES, variantOf } from '../../site/src/lib/conformance-registry.mjs';
 import { assertNoUnregisteredVectorFiles, buildVectorManifest, loadVectorFile } from './vector-loader.mjs';
 import { exampleForSchema } from '../../site/src/lib/api/schema.mjs';
+import { invokeVerifier, normalizeVerdict } from '../../site/src/lib/conformance-engine.mjs';
+import { applyPatch } from '../../site/src/lib/diagnostics/patch.mjs';
+import { FAMILY_INTRODUCED_IN, RULE_CONTEXT, resolutionSteps } from '../../site/src/lib/diagnostics/rule-context.mjs';
+import { scanRefusalSources } from './refusal-sources.mjs';
 
 const root = path.resolve('.');
 const dataOutDir = path.join(root, 'site', 'src', 'data');
@@ -155,48 +159,7 @@ if (allVectorsList.length !== vectorManifest.total) {
   throw new Error(`Generated ${allVectorsList.length} vectors but the sources hold ${vectorManifest.total}`);
 }
 
-// 4. Verifiers and Refusal Codes
-const verifierDir = path.join(root, 'verifier');
-const verifierFiles = fs.readdirSync(verifierDir).filter(f => f.endsWith('.js') && !f.endsWith('.test.js'));
-const refusalCodeMap = {};
-
-for (const file of verifierFiles) {
-  const content = fs.readFileSync(path.join(verifierDir, file), 'utf8');
-  const family = file.replace('.js', '');
-
-  const matches = content.matchAll(/(?:refuse|termsRefuse|acceptanceRefuse|recoveryRefuse)\s*\(\s*['"]([A-Z0-9_-]+)['"](?:\s*,\s*(?:`([^`]+)`|'([^']+)'|"([^"]+)"))?/g);
-  for (const m of matches) {
-    const code = m[1];
-    const reason = m[2] || m[3] || m[4] || '';
-    if (!refusalCodeMap[code]) {
-      refusalCodeMap[code] = {
-        code,
-        verifiers: new Set(),
-        reasons: new Set(),
-        category: categorizeRefusal(code)
-      };
-    }
-    refusalCodeMap[code].verifiers.add(family);
-    if (reason) refusalCodeMap[code].reasons.add(reason.trim());
-  }
-
-  const matches2 = content.matchAll(/code:\s*['"]([A-Z0-9_-]+)['"]/g);
-  for (const m of matches2) {
-    const code = m[1];
-    if (code !== 'utf8') {
-      if (!refusalCodeMap[code]) {
-        refusalCodeMap[code] = {
-          code,
-          verifiers: new Set(),
-          reasons: new Set(),
-          category: categorizeRefusal(code)
-        };
-      }
-      refusalCodeMap[code].verifiers.add(family);
-    }
-  }
-}
-
+// 4. Refusal categories (the rules themselves are built in section 6b)
 function categorizeRefusal(code) {
   if (code.startsWith('MALFORMED_') || code.includes('SCHEMA_') || code.includes('EMPTY') || code.includes('INVALID') || code.includes('UNKNOWN')) return 'structural';
   if (code.includes('SIGNATURE') || code.includes('SIGHASH') || code.includes('SIGNER')) return 'signature';
@@ -207,18 +170,6 @@ function categorizeRefusal(code) {
   if (code.includes('CAPABILITY') || code.includes('PROTOCOL_UNSUPPORTED')) return 'capability';
   return 'structural';
 }
-
-const refusalList = Object.values(refusalCodeMap).map(r => {
-  const explanation = r.reasons.size > 0 ? [...r.reasons][0] : `Refusal condition triggered for ${r.code.toLowerCase().replace(/_/g, ' ')}.`;
-  return {
-    code: r.code,
-    verifiers: [...r.verifiers],
-    reasons: [...r.reasons],
-    category: r.category,
-    explanation,
-    remediation: `Inspect the transaction parameters and ensure compliance with ${r.code}. Verify outpoints, scriptPubKeys, and value conservation.`
-  };
-}).sort((a, b) => a.code.localeCompare(b.code));
 
 // 5. Specs
 const specDir = path.join(root, 'spec');
@@ -300,6 +251,108 @@ const versions = {
     }
   ]
 };
+
+// 6b. Refusal codes and diagnostic rules (OX-S09)
+// Every code the verifiers can return (scripts/docs/refusal-sources.mjs), bound to its
+// source sites, the spec statement that names it, the variant context authored in
+// site/src/lib/diagnostics/rule-context.mjs and a reproducer from
+// site/src/lib/diagnostics/reproducers.json that is executed here. Generation stops on a
+// dangling reference, an unknown version or a reproducer that does not return its code.
+const refusalSources = scanRefusalSources();
+const reproducerFile = JSON.parse(fs.readFileSync(path.join(root, 'site', 'src', 'lib', 'diagnostics', 'reproducers.json'), 'utf8'));
+const protocolVersionList = versions.history.map((h) => h.version);
+const specTexts = Object.fromEntries(
+  fs.readdirSync(specDir).filter((f) => f.endsWith('.md')).map((f) => [f, fs.readFileSync(path.join(specDir, f), 'utf8').replace(/\r\n/g, '\n')])
+);
+const headingAnchor = (title) => title.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '-').replace(/-+/g, '-');
+
+for (const [family, introduced] of Object.entries(FAMILY_INTRODUCED_IN)) {
+  if (!FAMILIES.includes(family)) throw new Error(`rule-context names unknown family ${family}`);
+  if (!protocolVersionList.includes(introduced)) throw new Error(`${family} introduced in unknown protocol version ${introduced}`);
+  const status = specTexts[path.basename(FAMILY_REGISTRY[family].spec)]?.match(/^Status: active at protocol (\d+\.\d+)/m);
+  if (status && status[1] !== introduced) throw new Error(`${FAMILY_REGISTRY[family].spec} says protocol ${status[1]}, rule-context says ${introduced}`);
+}
+for (const family of FAMILIES) if (!FAMILY_INTRODUCED_IN[family]) throw new Error(`No introduction version for ${family}`);
+
+/** Where a spec names the code: file, nearest heading above, line and the sentence. */
+function specPointer(code) {
+  for (const [file, text] of Object.entries(specTexts)) {
+    const lines = text.split('\n');
+    const i = lines.findIndex((l) => l.includes(code));
+    if (i < 0) continue;
+    let heading = null;
+    for (let j = i; j >= 0; j--) {
+      const m = lines[j].match(/^#{1,4}\s+(.+)$/);
+      if (m) {
+        heading = m[1].trim();
+        break;
+      }
+    }
+    const statement = lines[i].replace(/^\s*(?:[-*]|\d+\.)\s+/, '').replace(/`/g, '').trim();
+    return { path: `spec/${file}`, line: i + 1, heading, anchor: heading ? headingAnchor(heading) : null, statement };
+  }
+  return null;
+}
+
+const vectorById = new Map(allVectorsList.map((v) => [v.id, v]));
+const diagnostics = [];
+if (reproducerFile.unavailable?.length) throw new Error(`Refusal branches without a reproducer: ${reproducerFile.unavailable.join(', ')}`);
+for (const [code, entry] of refusalSources) {
+  const families = [...new Set(entry.sites.map((s) => s.family))].sort();
+  const list = reproducerFile.reproducers[code] || [];
+  const unreachable = families.filter((f) => reproducerFile.unreachable?.[`${code}|${f}`]).map((f) => ({ family: f, reason: reproducerFile.unreachable[`${code}|${f}`] }));
+  for (const f of families) {
+    if (!list.some((r) => r.family === f) && !unreachable.some((u) => u.family === f)) throw new Error(`No reproducer for ${code} in ${f}; run node scripts/docs/discover-reproducers.mjs`);
+  }
+  if (!list.length) throw new Error(`${code} has no reproducer in any family`);
+  const reproducers = list.map((r) => {
+    const base = vectorById.get(r.base);
+    if (!base) throw new Error(`Reproducer for ${code} names missing vector ${r.base}`);
+    if (base.family !== r.family || base.variant !== r.variant) throw new Error(`Reproducer for ${code} names ${r.family}:${r.variant} but ${base.id} is ${base.family}:${base.variant}`);
+    if (!families.includes(r.family)) throw new Error(`Reproducer for ${code} runs ${r.family}, which never returns it`);
+    const verdict = normalizeVerdict(r.family, invokeVerifier(r.family, applyPatch(base.case, r.patch), r.variant));
+    if (verdict.state !== 'refused' || verdict.code !== code) throw new Error(`Reproducer for ${code} in ${r.family} returned ${verdict.state} ${verdict.code}`);
+    const context = RULE_CONTEXT[`${r.family}:${r.variant}`];
+    if (!context) throw new Error(`No rule context for ${r.family}:${r.variant}`);
+    return { family: r.family, variant: r.variant, base: r.base, baseName: base.name, patch: r.patch, derivation: r.derivation, ...(r.note ? { note: r.note } : {}), verifiedReason: verdict.reason, lifecycle: context.lifecycle, inputs: context.inputs, recovery: context.recovery };
+  });
+  const primary = reproducers[0];
+  const introduced = families.map((f) => FAMILY_INTRODUCED_IN[f]).sort()[0];
+  const spec = specPointer(code);
+  const primaryReasons = entry.sites.filter((s) => s.family === primary.family).map((s) => s.reason).filter(Boolean);
+  diagnostics.push({
+    id: `diag-${code.toLowerCase().replace(/_/g, '-')}`,
+    exactCodes: [code],
+    family: primary.family,
+    families,
+    variant: primary.variant,
+    category: categorizeRefusal(code),
+    lifecyclePhases: [...new Set(reproducers.map((r) => r.lifecycle))],
+    supportedProtocolVersions: protocolVersionList.filter((v) => Number(v) >= Number(introduced)),
+    summary: primaryReasons[0] || entry.sites[0].reason,
+    invariant: spec ? spec.statement : null,
+    causes: entry.sites.map((s) => ({ family: s.family, predicate: s.reason, source: { path: s.file, line: s.line, symbol: s.symbol }, reachable: !unreachable.some((u) => u.family === s.family) })),
+    evidenceRequirements: primary.inputs.map((evidenceType) => ({ evidenceType, required: true })),
+    resolutionSteps: resolutionSteps(primary, FAMILY_REGISTRY[primary.family].label),
+    reproducers,
+    unreachable,
+    nextTools: reproducers.map((r) => ({ tool: 'lab', label: `Open the ${FAMILY_REGISTRY[r.family].label} reproducer in Protocol Lab`, href: `/lab/?reproduce=${code}&family=${encodeURIComponent(r.family)}` })),
+    sourceRefs: [
+      ...entry.sites.map((s) => ({ title: `${s.file}:${s.line}${s.symbol ? ` (${s.symbol})` : ''}`, path: s.file, line: s.line, type: 'verifier' })),
+      ...(spec ? [{ title: `${spec.path}${spec.heading ? `: ${spec.heading}` : ''}`, path: spec.path, line: spec.line, type: 'spec' }] : []),
+      ...reproducers.map((r) => ({ title: `${vectorById.get(r.base).sourceFile}: ${r.baseName}`, path: vectorById.get(r.base).sourceFile, line: null, type: 'vector' }))
+    ]
+  });
+}
+
+const refusalList = diagnostics.map((d) => ({
+  code: d.exactCodes[0],
+  verifiers: d.families,
+  reasons: [...new Set(d.causes.map((c) => c.predicate).filter(Boolean))],
+  category: d.category,
+  explanation: d.summary,
+  remediation: d.resolutionSteps.map((s) => s.action).join(' ')
+}));
 
 // 7. Compatibility Matrix
 // OX-S03: SafeOps and swaps start at protocol 1.2 (verifier/safeops.js SAFEOPS_PROTOCOL_MIN and
@@ -1011,64 +1064,8 @@ function resolveRef(ref, doc) {
   return curr || {};
 }
 
-/* IMPLEMENTATION-HANDOFF [OX-S09]
- * Defect OX-S-D09; coverage OX-S-C300..OX-S-C471 and OX-S-C500..OX-S-C671. Every code receives the same
- * lifecycle, PSBT evidence requirements, generic UTXO cause and a reproducerFactoryId for a factory that does
- * not exist.
- * 1. Replace generic mapping with a versioned authored rule registry tied to verifier branch/spec requirement,
- * lifecycle and concrete validated reproducer. Preserve shared codes across all relevant families instead of
- * always choosing verifiers[0].
- * 2. Use existing conformance refusals where sufficient; add minimal source fixtures for uncovered codes with
- * an actual verifier call and exact assertion. Derive valid supportedProtocolVersions from spec metadata
- * (SafeOps/swaps are1.2 in README/spec), not family name guesses.
- * 3. Generate diagnostics/refusal catalog from that source and fail generation for dangling source/factory
- * refs, unknown versions or unexecuted examples. Do not edit generated JSON directly.
- * 4. PROPOSED NEW tests/unit/diagnostic-reproducers.test.js executes all172 advertised code examples and
- * asserts actual code/remediation provenance; tests/unit/diagnostic-detector.test.js covers envelope
- * classification and cautious confidence for unrecognized codes.
- * Dependencies: OX-S09 UI, OX-S07 normalized verifier registry, governing protocol work packages. Rollback
- * generated rules, fixtures and references together; preserve intentional unknown states.
- */
-// 10. Diagnostics Registry Generation for Failure Navigator
-const diagnostics = refusalList.map(r => {
-  const family = r.verifiers[0] || 'purchase';
-  let versions = ['1.0', '1.1', '1.2'];
-  if (['offers', 'safeops', 'swaps', 'runes'].includes(family)) {
-    versions = ['1.1', '1.2'];
-  } else if (['collection-manifest', 'counterparty-asset', 'offline-signing', 'events'].includes(family)) {
-    versions = ['1.2'];
-  }
-
-  const destinationProduct = family === 'purchase' ? 'sandbox' : family === 'doctor' ? 'doctor' : 'lab';
-
-  return {
-    id: `diag-${r.code.toLowerCase().replace(/_/g, '-')}`,
-    exactCodes: [r.code],
-    family,
-    lifecyclePhases: ['composition', 'preflight', 'verification'],
-    supportedProtocolVersions: versions,
-    summary: r.explanation,
-    invariant: `Rule ${r.code}: All parameters must satisfy ${family} invariant requirements before signing.`,
-    likelyCauses: [
-      { cause: r.explanation, probability: 'High' },
-      { cause: 'Client state out of sync with current UTXO set', probability: 'Medium' }
-    ],
-    evidenceRequirements: [
-      { evidenceType: 'PSBT binary or transaction hex', required: true },
-      { evidenceType: 'Offered outpoint prevout value and script', required: true }
-    ],
-    resolutionSteps: [
-      { step: 1, action: r.remediation },
-      { step: 2, action: 'Inspect field values in Artifact Lens' },
-      { step: 3, action: 'Execute reference verifier in Protocol Lab' }
-    ],
-    reproducerFactoryId: `reproducer-${r.code.toLowerCase().replace(/_/g, '-')}`,
-    destinationProduct,
-    sourceRefs: [
-      { title: `${family} Verifier`, path: `verifier/${family}.js`, type: 'verifier' }
-    ]
-  };
-});
+// 11. Diagnostics (OX-S09): built in section 6b from the verifier sources, the authored variant
+// context and executed reproducers; every rule carries its source lines and reproducer.
 
 // Write out all files
 fs.writeFileSync(path.join(dataOutDir, 'operations.json'), JSON.stringify(operations, null, 2));

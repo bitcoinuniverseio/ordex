@@ -2107,7 +2107,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: ACCOUNT_INVALID",
-    "content": "The account may carry only an output descriptor string. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with ACCOUNT_INVALID. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The account may carry only an output descriptor string. Category: structural. Remediation: Rebuild the expected-transaction manifest on the online machine and transfer it to the signer again. Run the Offline signing verifier on the corrected input and continue only when it accepts.",
     "digest": "8f3029408157d63a",
     "docUrl": "/reference/refusal-codes/#ACCOUNT_INVALID"
   },
@@ -2119,7 +2119,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: ADAPTER_VERSIONS_MISSING",
-    "content": "The intent must name the protocol adapter versions it relies on. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with ADAPTER_VERSIONS_MISSING. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The intent must name the protocol adapter versions it relies on. Category: structural. Remediation: Correct the intent and publish it again. Run the Swaps verifier on the corrected input and continue only when it accepts.",
     "digest": "c24d4fdda1bce562",
     "docUrl": "/reference/refusal-codes/#ADAPTER_VERSIONS_MISSING"
   },
@@ -2131,7 +2131,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: ADDRESS_MISSING",
-    "content": "The record must name the address that controls the outpoint. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with ADDRESS_MISSING. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The record must name the address that controls the outpoint. Category: structural. Remediation: Treat the attachment as unknown until a valid record is obtained again from the Counterparty source. Run the Counterparty asset verifier on the corrected input and continue only when it accepts.",
     "digest": "da2826475619d881",
     "docUrl": "/reference/refusal-codes/#ADDRESS_MISSING"
   },
@@ -2143,7 +2143,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: AGGREGATE_INVALID",
-    "content": "The event must name an aggregate type, id, and version. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with AGGREGATE_INVALID. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The event must name an aggregate type, id, and version. Category: structural. Remediation: Reject the event and do not apply it. Fetch it again from the replayable stream from your last checkpoint. Run the Events and webhooks verifier on the corrected input and continue only when it accepts.",
     "digest": "37950846d0958968",
     "docUrl": "/reference/refusal-codes/#AGGREGATE_INVALID"
   },
@@ -2155,7 +2155,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: ANCHOR_INVALID",
-    "content": "An anchor must name a lowercase 64 hex transaction id. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with ANCHOR_INVALID. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "An anchor must name a lowercase 64 hex transaction id. Category: structural. Remediation: Treat the collection as unverified and ask the creator for a corrected, re-signed manifest. Run the Collection manifest verifier on the corrected input and continue only when it accepts.",
     "digest": "5567f7fe87e4e37b",
     "docUrl": "/reference/refusal-codes/#ANCHOR_INVALID"
   },
@@ -2167,7 +2167,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: ARTIFACT_DIGEST_INVALID",
-    "content": "Every artifact digest must be 64 lowercase hex characters. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with ARTIFACT_DIGEST_INVALID. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "Every artifact digest must be 64 lowercase hex characters. Category: structural. Remediation: Reject the event and do not apply it. Fetch it again from the replayable stream from your last checkpoint. Run the Events and webhooks verifier on the corrected input and continue only when it accepts.",
     "digest": "9154022b8a3d0800",
     "docUrl": "/reference/refusal-codes/#ARTIFACT_DIGEST_INVALID"
   },
@@ -2179,8 +2179,8 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: ASSET_EXPECTATION_INVALID",
-    "content": "Output ${i} carries a malformed asset expectation. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with ASSET_EXPECTATION_INVALID. Verify outpoints, scriptPubKeys, and value conservation.",
-    "digest": "45e10f984fa6570b",
+    "content": "Output <i> carries a malformed asset expectation. Category: structural. Remediation: Rebuild the expected-transaction manifest on the online machine and transfer it to the signer again. Run the Offline signing verifier on the corrected input and continue only when it accepts.",
+    "digest": "f40233c71084515a",
     "docUrl": "/reference/refusal-codes/#ASSET_EXPECTATION_INVALID"
   },
   {
@@ -2191,7 +2191,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: ASSET_ID_REQUIRED",
-    "content": "Asset identity is the authoritative numeric Counterparty asset id; a name alone is never an identity. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with ASSET_ID_REQUIRED. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "Asset identity is the authoritative numeric Counterparty asset id; a name alone is never an identity. Category: structural. Remediation: Treat the attachment as unknown until a valid record is obtained again from the Counterparty source. Run the Counterparty asset verifier on the corrected input and continue only when it accepts.",
     "digest": "b498991adc71fc58",
     "docUrl": "/reference/refusal-codes/#ASSET_ID_REQUIRED"
   },
@@ -2203,7 +2203,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: ASSET_IDENTITY_MISSING",
-    "content": "The record must describe the attached asset. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with ASSET_IDENTITY_MISSING. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The record must describe the attached asset. Category: structural. Remediation: Treat the attachment as unknown until a valid record is obtained again from the Counterparty source. Run the Counterparty asset verifier on the corrected input and continue only when it accepts.",
     "digest": "4d01122035d290f5",
     "docUrl": "/reference/refusal-codes/#ASSET_IDENTITY_MISSING"
   },
@@ -2215,8 +2215,8 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: ASSET_IN_CARDINAL_OPERATION",
-    "content": "Input ${i} carries ${assets[0].assetType} ${assets[0].assetId}; this operation moves cardinal value only. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with ASSET_IN_CARDINAL_OPERATION. Verify outpoints, scriptPubKeys, and value conservation.",
-    "digest": "42cdc3b458832322",
+    "content": "Input <i> carries <assets[0].assetType> <assets[0].assetId>; this operation moves cardinal value only. Category: structural. Remediation: Regenerate the plan from the wallet as it is now and review it again before signing. Run the SafeOps verifier on the corrected input and continue only when it accepts.",
+    "digest": "047fca9fccfd4f11",
     "docUrl": "/reference/refusal-codes/#ASSET_IN_CARDINAL_OPERATION"
   },
   {
@@ -2227,8 +2227,8 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: ASSET_TRANSITION_DUPLICATED",
-    "content": "Asset ${key} is assigned to more than one transition. Category: spent. Remediation: Inspect the transaction parameters and ensure compliance with ASSET_TRANSITION_DUPLICATED. Verify outpoints, scriptPubKeys, and value conservation.",
-    "digest": "dfbc989b97517fab",
+    "content": "Asset <key> is assigned to more than one transition. Category: spent. Remediation: Regenerate the plan from the wallet as it is now and review it again before signing. Run the SafeOps verifier on the corrected input and continue only when it accepts.",
+    "digest": "223f42cf0dc4ab34",
     "docUrl": "/reference/refusal-codes/#ASSET_TRANSITION_DUPLICATED"
   },
   {
@@ -2239,7 +2239,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: ATOMICITY_IMPOSSIBLE",
-    "content": "A swap settles both sides in one transaction with inputs and outputs from both parties. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with ATOMICITY_IMPOSSIBLE. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "A swap settles both sides in one transaction with inputs and outputs from both parties. Category: structural. Remediation: Do not sign. Rebuild the acceptance plan from the published intent. Run the Swaps verifier on the corrected input and continue only when it accepts.",
     "digest": "e14c8b77aa8b2b08",
     "docUrl": "/reference/refusal-codes/#ATOMICITY_IMPOSSIBLE"
   },
@@ -2251,7 +2251,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: ATTACHMENT_STATE_UNKNOWN",
-    "content": "The record must state that the attachment currently exists. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with ATTACHMENT_STATE_UNKNOWN. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The record must state that the attachment currently exists. Category: structural. Remediation: Treat the attachment as unknown until a valid record is obtained again from the Counterparty source. Run the Counterparty asset verifier on the corrected input and continue only when it accepts.",
     "digest": "31db19bbc30e310a",
     "docUrl": "/reference/refusal-codes/#ATTACHMENT_STATE_UNKNOWN"
   },
@@ -2263,7 +2263,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: AUTHORITY_NOT_READY",
-    "content": "The record may only be produced while the self hosted Counterparty Core authority reports ready. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with AUTHORITY_NOT_READY. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The record may only be produced while the self hosted Counterparty Core authority reports ready. Category: structural. Remediation: Treat the attachment as unknown until a valid record is obtained again from the Counterparty source. Run the Counterparty asset verifier on the corrected input and continue only when it accepts.",
     "digest": "6e7ede0e625c7cfe",
     "docUrl": "/reference/refusal-codes/#AUTHORITY_NOT_READY"
   },
@@ -2275,7 +2275,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: BODY_INVALID",
-    "content": "The body must be the exact string that was received. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with BODY_INVALID. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The body must be the exact string that was received. Category: structural. Remediation: Reject the delivery. Verify the raw body as received, with the current secret and your timestamp tolerance; the sender retries. Run the Events and webhooks verifier on the corrected input and continue only when it accepts.",
     "digest": "a8d8b5bd401b9f85",
     "docUrl": "/reference/refusal-codes/#BODY_INVALID"
   },
@@ -2287,7 +2287,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: BUYER_ASSET_OUTPUT_MISSING",
-    "content": "The buyer receive script must appear exactly once ahead of the seller payment. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with BUYER_ASSET_OUTPUT_MISSING. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The buyer receive script must appear exactly once ahead of the seller payment. Category: structural. Remediation: Do not sign the acceptance. Rebuild it from the offer as published. Run the Offers verifier on the corrected input and continue only when it accepts.",
     "digest": "7be1255020dec000",
     "docUrl": "/reference/refusal-codes/#BUYER_ASSET_OUTPUT_MISSING"
   },
@@ -2299,8 +2299,8 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: CENOTAPH_BURNS_BALANCE",
-    "content": "Refusal condition triggered for cenotaph burns balance. Category: rune. Remediation: Inspect the transaction parameters and ensure compliance with CENOTAPH_BURNS_BALANCE. Verify outpoints, scriptPubKeys, and value conservation.",
-    "digest": "6e9e2c24849a159d",
+    "content": "This transaction carries a malformed runestone. Confirming it would destroy every rune balance it spends. Category: rune. Remediation: Do not sign or broadcast: confirming this transaction would burn runes. Fix or remove the runestone and check again. Run the Rune burn safety verifier on the corrected input and continue only when it accepts.",
+    "digest": "6281b8d8252f2b4b",
     "docUrl": "/reference/refusal-codes/#CENOTAPH_BURNS_BALANCE"
   },
   {
@@ -2311,8 +2311,8 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: CENOTAPH_WITH_UNPROVEN_INPUT",
-    "content": "Refusal condition triggered for cenotaph with unproven input. Category: rune. Remediation: Inspect the transaction parameters and ensure compliance with CENOTAPH_WITH_UNPROVEN_INPUT. Verify outpoints, scriptPubKeys, and value conservation.",
-    "digest": "627280f98ff38645",
+    "content": "This transaction carries a malformed runestone and spends an output the rune index has not examined, so it cannot be proven to hold no runes. Category: rune. Remediation: Do not sign or broadcast: confirming this transaction would burn runes. Fix or remove the runestone and check again. Run the Rune burn safety verifier on the corrected input and continue only when it accepts.",
+    "digest": "c1806e4d42363c07",
     "docUrl": "/reference/refusal-codes/#CENOTAPH_WITH_UNPROVEN_INPUT"
   },
   {
@@ -2323,7 +2323,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: CHECKPOINT_INVALID",
-    "content": "The record must carry the block height, block hash, and Counterparty ledger hash it was read at. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with CHECKPOINT_INVALID. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The record must carry the block height, block hash, and Counterparty ledger hash it was read at. Category: structural. Remediation: Treat the attachment as unknown until a valid record is obtained again from the Counterparty source. Run the Counterparty asset verifier on the corrected input and continue only when it accepts.",
     "digest": "0ab7fb407b725843",
     "docUrl": "/reference/refusal-codes/#CHECKPOINT_INVALID"
   },
@@ -2335,7 +2335,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: COLLECTION_ID_INVALID",
-    "content": "The manifest must name a collection id of at most 200 characters. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with COLLECTION_ID_INVALID. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The manifest must name a collection id of at most 200 characters. Category: structural. Remediation: Treat the collection as unverified and ask the creator for a corrected, re-signed manifest. Run the Collection manifest verifier on the corrected input and continue only when it accepts.",
     "digest": "6dd41c54ffd48c93",
     "docUrl": "/reference/refusal-codes/#COLLECTION_ID_INVALID"
   },
@@ -2347,8 +2347,8 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: CONSIDERATION_SHORTFALL",
-    "content": "No output pays the maker receive script at least ${criterion.minQuantitySats} for ${criterion.assetType}. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with CONSIDERATION_SHORTFALL. Verify outpoints, scriptPubKeys, and value conservation.",
-    "digest": "d9c489ab095f9b6a",
+    "content": "No output pays the maker receive script at least <criterion.minQuantitySats> for <criterion.assetType>. Category: structural. Remediation: Do not sign. Rebuild the acceptance plan from the published intent. Run the Swaps verifier on the corrected input and continue only when it accepts.",
+    "digest": "fcfdd9347a8877e1",
     "docUrl": "/reference/refusal-codes/#CONSIDERATION_SHORTFALL"
   },
   {
@@ -2359,7 +2359,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: COTRAVELING_INVALID",
-    "content": "coTravelingAssets must be an array. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with COTRAVELING_INVALID. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "coTravelingAssets must be an array. Category: structural. Remediation: Treat the attachment as unknown until a valid record is obtained again from the Counterparty source. Run the Counterparty asset verifier on the corrected input and continue only when it accepts.",
     "digest": "57838b870043f6d8",
     "docUrl": "/reference/refusal-codes/#COTRAVELING_INVALID"
   },
@@ -2371,7 +2371,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: CREATED_AT_INVALID",
-    "content": "createdAtHeight must be a non-negative block height. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with CREATED_AT_INVALID. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "createdAtHeight must be a non-negative block height. Category: structural. Remediation: Treat the collection as unverified and ask the creator for a corrected, re-signed manifest. Run the Collection manifest verifier on the corrected input and continue only when it accepts.",
     "digest": "8ab5dd3d85aa6449",
     "docUrl": "/reference/refusal-codes/#CREATED_AT_INVALID"
   },
@@ -2383,7 +2383,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: CREATOR_ADDRESS_INVALID",
-    "content": "The manifest must name the creator signing address. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with CREATOR_ADDRESS_INVALID. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The manifest must name the creator signing address. Category: structural. Remediation: Treat the collection as unverified and ask the creator for a corrected, re-signed manifest. Run the Collection manifest verifier on the corrected input and continue only when it accepts.",
     "digest": "f068b9fbf61959af",
     "docUrl": "/reference/refusal-codes/#CREATOR_ADDRESS_INVALID"
   },
@@ -2395,7 +2395,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: CREATOR_SIGNATURE_INVALID",
-    "content": "The manifest must carry a bip322 creator signature. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with CREATOR_SIGNATURE_INVALID. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The manifest must carry a bip322 creator signature. Category: structural. Remediation: Treat the collection as unverified and ask the creator for a corrected, re-signed manifest. Run the Collection manifest verifier on the corrected input and continue only when it accepts.",
     "digest": "0e0239b6b421f02e",
     "docUrl": "/reference/refusal-codes/#CREATOR_SIGNATURE_INVALID"
   },
@@ -2407,8 +2407,8 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: DESTINATION_MISMATCH",
-    "content": "The sat range lands on output ${carriedToIndex}, not the planned output ${expectedOutputIndex}. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with DESTINATION_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation.",
-    "digest": "f86db4240b00e3bb",
+    "content": "The sat range lands on output <carriedToIndex>, not the planned output <expectedOutputIndex>. Category: structural. Remediation: Do not sign. Rebuild the spend so the attached asset lands at the intended output. Run the Counterparty asset verifier on the corrected input and continue only when it accepts.",
+    "digest": "2eaaaacc7238160a",
     "docUrl": "/reference/refusal-codes/#DESTINATION_MISMATCH"
   },
   {
@@ -2419,7 +2419,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: DESTINATION_MISSING",
-    "content": "The plan names an output that does not exist. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with DESTINATION_MISSING. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The plan names an output that does not exist. Category: structural. Remediation: Do not sign. Rebuild the spend so the attached asset lands at the intended output. Run the Counterparty asset verifier on the corrected input and continue only when it accepts.",
     "digest": "d35990e913f361c4",
     "docUrl": "/reference/refusal-codes/#DESTINATION_MISSING"
   },
@@ -2431,7 +2431,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: DIGEST_MISMATCH",
-    "content": "The manifest digest does not match its content. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with DIGEST_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The manifest digest does not match its content. Category: structural. Remediation: Treat the collection as unverified and ask the creator for a corrected, re-signed manifest. Run the Collection manifest verifier on the corrected input and continue only when it accepts.",
     "digest": "b115d37b4cd8028a",
     "docUrl": "/reference/refusal-codes/#DIGEST_MISMATCH"
   },
@@ -2443,7 +2443,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: DISPLAY_NAME_INVALID",
-    "content": "The manifest must name a display name of at most 200 characters. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with DISPLAY_NAME_INVALID. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The manifest must name a display name of at most 200 characters. Category: structural. Remediation: Treat the collection as unverified and ask the creator for a corrected, re-signed manifest. Run the Collection manifest verifier on the corrected input and continue only when it accepts.",
     "digest": "d507669cc9279bcf",
     "docUrl": "/reference/refusal-codes/#DISPLAY_NAME_INVALID"
   },
@@ -2455,8 +2455,8 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: DUST_OUTPUT",
-    "content": "Output ${i} is below the 546 sat dust floor. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with DUST_OUTPUT. Verify outpoints, scriptPubKeys, and value conservation.",
-    "digest": "b9e9faff54f76bc3",
+    "content": "Output <i> is below the 546 sat dust floor. Category: structural. Remediation: Rebuild the expected-transaction manifest on the online machine and transfer it to the signer again. Run the Offline signing verifier on the corrected input and continue only when it accepts.",
+    "digest": "51abde43b387a7c1",
     "docUrl": "/reference/refusal-codes/#DUST_OUTPUT"
   },
   {
@@ -2467,7 +2467,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: EVENT_ID_INVALID",
-    "content": "The event id must be a lowercase uuid. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with EVENT_ID_INVALID. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The event id must be a lowercase uuid. Category: structural. Remediation: Reject the event and do not apply it. Fetch it again from the replayable stream from your last checkpoint. Run the Events and webhooks verifier on the corrected input and continue only when it accepts.",
     "digest": "3ffc9f27194b4213",
     "docUrl": "/reference/refusal-codes/#EVENT_ID_INVALID"
   },
@@ -2479,7 +2479,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: EVENT_TYPE_INVALID",
-    "content": "The event type must look like ordex.<family>.<name>. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with EVENT_TYPE_INVALID. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The event type must look like ordex.<family>.<name>. Category: structural. Remediation: Reject the event and do not apply it. Fetch it again from the replayable stream from your last checkpoint. Run the Events and webhooks verifier on the corrected input and continue only when it accepts.",
     "digest": "b75edb043bc30948",
     "docUrl": "/reference/refusal-codes/#EVENT_TYPE_INVALID"
   },
@@ -2491,7 +2491,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: EXPIRY_INVALID",
-    "content": "The expiry height must be a block after the checkpoint height. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with EXPIRY_INVALID. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The expiry height must be a block after the checkpoint height. Category: structural. Remediation: Regenerate the plan from the wallet as it is now and review it again before signing. Run the SafeOps verifier on the corrected input and continue only when it accepts.",
     "digest": "e6143133fc9e1a17",
     "docUrl": "/reference/refusal-codes/#EXPIRY_INVALID"
   },
@@ -2503,7 +2503,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: FEE_BUDGET_EXCEEDED",
-    "content": "The maker contribution exceeds the budget the intent approved. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with FEE_BUDGET_EXCEEDED. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The maker contribution exceeds the budget the intent approved. Category: structural. Remediation: Do not sign. Rebuild the acceptance plan from the published intent. Run the Swaps verifier on the corrected input and continue only when it accepts.",
     "digest": "6d6ba747cd06b06f",
     "docUrl": "/reference/refusal-codes/#FEE_BUDGET_EXCEEDED"
   },
@@ -2515,7 +2515,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: FEE_BUDGET_INVALID",
-    "content": "maxMakerFeeSats must be an exact non-negative decimal string. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with FEE_BUDGET_INVALID. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "maxMakerFeeSats must be an exact non-negative decimal string. Category: structural. Remediation: Correct the intent and publish it again. Run the Swaps verifier on the corrected input and continue only when it accepts.",
     "digest": "ea46392095ac3747",
     "docUrl": "/reference/refusal-codes/#FEE_BUDGET_INVALID"
   },
@@ -2527,8 +2527,8 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: FEE_CHANGED",
-    "content": "The signed transaction fee no longer matches the planned fee. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with FEE_CHANGED. Verify outpoints, scriptPubKeys, and value conservation.",
-    "digest": "daa8b37e0a89cdc0",
+    "content": "The declared fee does not match the transaction. Category: structural. Remediation: Do not sign. Rebuild the acceptance plan from the published intent. Run the Swaps verifier on the corrected input and continue only when it accepts.",
+    "digest": "e99da2d403ad171c",
     "docUrl": "/reference/refusal-codes/#FEE_CHANGED"
   },
   {
@@ -2539,7 +2539,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: FEE_INVALID",
-    "content": "feeSats and maxFeeSats must be exact decimal strings and fee <= maxFee. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with FEE_INVALID. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "feeSats and maxFeeSats must be exact decimal strings and fee <= maxFee. Category: structural. Remediation: Rebuild the expected-transaction manifest on the online machine and transfer it to the signer again. Run the Offline signing verifier on the corrected input and continue only when it accepts.",
     "digest": "3cc91026722270bf",
     "docUrl": "/reference/refusal-codes/#FEE_INVALID"
   },
@@ -2551,7 +2551,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: FEE_OUT_OF_BOUNDS",
-    "content": "The signed transaction fee left the bound the manifest approved. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with FEE_OUT_OF_BOUNDS. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The signed transaction fee left the bound the manifest approved. Category: structural. Remediation: Do not broadcast: the signed transaction is not the manifest. Sign again from a verified manifest. Run the Offline signing verifier on the corrected input and continue only when it accepts.",
     "digest": "8e94e01e0e2ad409",
     "docUrl": "/reference/refusal-codes/#FEE_OUT_OF_BOUNDS"
   },
@@ -2563,7 +2563,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: FEE_OVER_MAXIMUM",
-    "content": "The fee exceeds the maximum the terms committed to. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with FEE_OVER_MAXIMUM. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The fee exceeds the maximum the terms committed to. Category: structural. Remediation: Do not sign the acceptance. Rebuild it from the offer as published. Run the Offers verifier on the corrected input and continue only when it accepts.",
     "digest": "9d29eea0f6d79996",
     "docUrl": "/reference/refusal-codes/#FEE_OVER_MAXIMUM"
   },
@@ -2575,7 +2575,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: FEE_SPLIT_INVALID",
-    "content": "The maker and taker contributions must equal the declared fee. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with FEE_SPLIT_INVALID. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The maker and taker contributions must equal the declared fee. Category: structural. Remediation: Do not sign. Rebuild the acceptance plan from the published intent. Run the Swaps verifier on the corrected input and continue only when it accepts.",
     "digest": "d1d8539da6a3a89c",
     "docUrl": "/reference/refusal-codes/#FEE_SPLIT_INVALID"
   },
@@ -2587,7 +2587,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: FELINE_OUTPOINT_DUPLICATED",
-    "content": "The Feline outpoint appears at more than one index. Category: spent. Remediation: Inspect the transaction parameters and ensure compliance with FELINE_OUTPOINT_DUPLICATED. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The Feline outpoint appears at more than one index. Category: spent. Remediation: Do not sign the acceptance. Rebuild it from the offer as published. Run the Offers verifier on the corrected input and continue only when it accepts.",
     "digest": "add2d4e7ab2ee91c",
     "docUrl": "/reference/refusal-codes/#FELINE_OUTPOINT_DUPLICATED"
   },
@@ -2599,7 +2599,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: FELINE_OUTPOINT_MISSING",
-    "content": "No input spends the seller Feline output. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with FELINE_OUTPOINT_MISSING. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "No input spends the seller Feline output. Category: structural. Remediation: Do not sign the acceptance. Rebuild it from the offer as published. Run the Offers verifier on the corrected input and continue only when it accepts.",
     "digest": "067a6ae1a92e3a1a",
     "docUrl": "/reference/refusal-codes/#FELINE_OUTPOINT_MISSING"
   },
@@ -2611,7 +2611,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: GIVES_INVALID",
-    "content": "The intent must give at least one exact outpoint with an exact quantity. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with GIVES_INVALID. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The intent must give at least one exact outpoint with an exact quantity. Category: structural. Remediation: Correct the intent and publish it again. Run the Swaps verifier on the corrected input and continue only when it accepts.",
     "digest": "625adeaa3523f326",
     "docUrl": "/reference/refusal-codes/#GIVES_INVALID"
   },
@@ -2623,7 +2623,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: HEADER_MALFORMED",
-    "content": "The header must look like t=<unix>,d=<id>,v1=<hex>. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with HEADER_MALFORMED. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The header must look like t=<unix>,d=<id>,v1=<hex>. Category: structural. Remediation: Reject the delivery. Verify the raw body as received, with the current secret and your timestamp tolerance; the sender retries. Run the Events and webhooks verifier on the corrected input and continue only when it accepts.",
     "digest": "356036c44b9c7a94",
     "docUrl": "/reference/refusal-codes/#HEADER_MALFORMED"
   },
@@ -2635,7 +2635,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: HEADER_MISSING",
-    "content": "Expected an X-Ordex-Signature header value. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with HEADER_MISSING. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "Expected an X-Ordex-Signature header value. Category: structural. Remediation: Reject the delivery. Verify the raw body as received, with the current secret and your timestamp tolerance; the sender retries. Run the Events and webhooks verifier on the corrected input and continue only when it accepts.",
     "digest": "5a6b5b0b0df64d30",
     "docUrl": "/reference/refusal-codes/#HEADER_MISSING"
   },
@@ -2647,7 +2647,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: IDENTITY_TYPE_UNKNOWN",
-    "content": "The member identity type is not one this registry names. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with IDENTITY_TYPE_UNKNOWN. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The member identity type is not one this registry names. Category: structural. Remediation: Treat the collection as unverified and ask the creator for a corrected, re-signed manifest. Run the Collection manifest verifier on the corrected input and continue only when it accepts.",
     "digest": "38341f25e52100c8",
     "docUrl": "/reference/refusal-codes/#IDENTITY_TYPE_UNKNOWN"
   },
@@ -2659,8 +2659,8 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: INPUT_DESCRIPTION_INVALID",
-    "content": "Input ${i} needs an outpoint, an exact value and script, whether the user controls it, and why it is spent. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with INPUT_DESCRIPTION_INVALID. Verify outpoints, scriptPubKeys, and value conservation.",
-    "digest": "ad0258c89dcc0315",
+    "content": "Input <i> needs an outpoint, an exact value and script, whether the user controls it, and why it is spent. Category: structural. Remediation: Rebuild the expected-transaction manifest on the online machine and transfer it to the signer again. Run the Offline signing verifier on the corrected input and continue only when it accepts.",
+    "digest": "99263f3fdb56a487",
     "docUrl": "/reference/refusal-codes/#INPUT_DESCRIPTION_INVALID"
   },
   {
@@ -2671,8 +2671,8 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: INPUT_DUPLICATED",
-    "content": "Input ${key} appears more than once. Category: spent. Remediation: Inspect the transaction parameters and ensure compliance with INPUT_DUPLICATED. Verify outpoints, scriptPubKeys, and value conservation.",
-    "digest": "85e769729eb200f3",
+    "content": "Input <key> appears more than once. Category: spent. Remediation: Do not sign. Rebuild the acceptance plan from the published intent. Run the Swaps verifier on the corrected input and continue only when it accepts.",
+    "digest": "fdf1b11dd3ed4d44",
     "docUrl": "/reference/refusal-codes/#INPUT_DUPLICATED"
   },
   {
@@ -2683,8 +2683,8 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: INPUT_ORDER_CHANGED",
-    "content": "Input ${i} was reordered or substituted after the plan was agreed. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with INPUT_ORDER_CHANGED. Verify outpoints, scriptPubKeys, and value conservation.",
-    "digest": "ec4fa374c708ca60",
+    "content": "Input <i> was reordered or substituted after the plan was agreed. Category: structural. Remediation: Do not broadcast. The signed transaction is not the approved plan: discard it and sign the approved plan again. Run the SafeOps verifier on the corrected input and continue only when it accepts.",
+    "digest": "5d7e1ad3dd470418",
     "docUrl": "/reference/refusal-codes/#INPUT_ORDER_CHANGED"
   },
   {
@@ -2695,8 +2695,8 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: INPUT_OUTPOINT_INVALID",
-    "content": "Input ${i} does not carry a lowercase txid and vout. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with INPUT_OUTPOINT_INVALID. Verify outpoints, scriptPubKeys, and value conservation.",
-    "digest": "d79c9d76393f3a0d",
+    "content": "Input <i> does not carry a lowercase txid and vout. Category: structural. Remediation: Regenerate the plan from the wallet as it is now and review it again before signing. Run the SafeOps verifier on the corrected input and continue only when it accepts.",
+    "digest": "942301206283d7c9",
     "docUrl": "/reference/refusal-codes/#INPUT_OUTPOINT_INVALID"
   },
   {
@@ -2707,8 +2707,8 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: INPUT_PARTY_INVALID",
-    "content": "Input ${i} must name the maker or the taker. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with INPUT_PARTY_INVALID. Verify outpoints, scriptPubKeys, and value conservation.",
-    "digest": "a31c1f4010771331",
+    "content": "Input <i> must name the maker or the taker. Category: structural. Remediation: Do not sign. Rebuild the acceptance plan from the published intent. Run the Swaps verifier on the corrected input and continue only when it accepts.",
+    "digest": "068050c5a43d9d36",
     "docUrl": "/reference/refusal-codes/#INPUT_PARTY_INVALID"
   },
   {
@@ -2719,8 +2719,8 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: INPUT_REORDERED",
-    "content": "Input ${i} was reordered or substituted. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with INPUT_REORDERED. Verify outpoints, scriptPubKeys, and value conservation.",
-    "digest": "7c29200b91ef5c60",
+    "content": "Input <i> was reordered or substituted. Category: structural. Remediation: Do not broadcast: the signed transaction is not the manifest. Sign again from a verified manifest. Run the Offline signing verifier on the corrected input and continue only when it accepts.",
+    "digest": "e219eeae28e518d5",
     "docUrl": "/reference/refusal-codes/#INPUT_REORDERED"
   },
   {
@@ -2731,7 +2731,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: INPUT_SET_CHANGED",
-    "content": "The signed transaction spends a different set of inputs than the manifest presented. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with INPUT_SET_CHANGED. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The signed transaction spends a different set of inputs than the manifest presented. Category: structural. Remediation: Do not broadcast: the signed transaction is not the manifest. Sign again from a verified manifest. Run the Offline signing verifier on the corrected input and continue only when it accepts.",
     "digest": "5f4661dd4c15d077",
     "docUrl": "/reference/refusal-codes/#INPUT_SET_CHANGED"
   },
@@ -2743,8 +2743,8 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: INPUT_VALUE_CHANGED",
-    "content": "Input ${i} no longer carries its planned value. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with INPUT_VALUE_CHANGED. Verify outpoints, scriptPubKeys, and value conservation.",
-    "digest": "45c903cf4d96a86c",
+    "content": "Input <i> no longer carries its planned value. Category: structural. Remediation: Do not broadcast. The signed transaction is not the approved plan: discard it and sign the approved plan again. Run the SafeOps verifier on the corrected input and continue only when it accepts.",
+    "digest": "32772c1a583a3076",
     "docUrl": "/reference/refusal-codes/#INPUT_VALUE_CHANGED"
   },
   {
@@ -2755,8 +2755,8 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: INPUT_VALUE_INVALID",
-    "content": "Input ${i} does not carry an exact decimal value. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with INPUT_VALUE_INVALID. Verify outpoints, scriptPubKeys, and value conservation.",
-    "digest": "f58313b01f3eb1c9",
+    "content": "Input <i> does not carry an exact decimal value. Category: structural. Remediation: Regenerate the plan from the wallet as it is now and review it again before signing. Run the SafeOps verifier on the corrected input and continue only when it accepts.",
+    "digest": "7d0ad8a817a0788e",
     "docUrl": "/reference/refusal-codes/#INPUT_VALUE_INVALID"
   },
   {
@@ -2767,8 +2767,8 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: INPUT_VALUE_UNKNOWN",
-    "content": "Input ${i} has no readable value, so the sat range cannot be traced. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with INPUT_VALUE_UNKNOWN. Verify outpoints, scriptPubKeys, and value conservation.",
-    "digest": "a42dfb1ab885a77a",
+    "content": "Input <i> has no readable value, so the sat range cannot be traced. Category: structural. Remediation: Do not sign. Rebuild the spend so the attached asset lands at the intended output. Run the Counterparty asset verifier on the corrected input and continue only when it accepts.",
+    "digest": "bb0ac3be85c18422",
     "docUrl": "/reference/refusal-codes/#INPUT_VALUE_UNKNOWN"
   },
   {
@@ -2779,7 +2779,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: INPUTS_EMPTY",
-    "content": "A plan must select at least one input. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with INPUTS_EMPTY. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "A plan must select at least one input. Category: structural. Remediation: Regenerate the plan from the wallet as it is now and review it again before signing. Run the SafeOps verifier on the corrected input and continue only when it accepts.",
     "digest": "f55afd3932bf8c47",
     "docUrl": "/reference/refusal-codes/#INPUTS_EMPTY"
   },
@@ -2791,7 +2791,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: INTENT_DIGEST_MISMATCH",
-    "content": "The acceptance plan was not built from this intent. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with INTENT_DIGEST_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The acceptance plan was not built from this intent. Category: structural. Remediation: Do not sign. Rebuild the acceptance plan from the published intent. Run the Swaps verifier on the corrected input and continue only when it accepts.",
     "digest": "84da9f390ee0578e",
     "docUrl": "/reference/refusal-codes/#INTENT_DIGEST_MISMATCH"
   },
@@ -2803,9 +2803,21 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: INVENTORY_UNEXAMINED",
-    "content": "Input ${i} was never examined against the protocol authorities. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with INVENTORY_UNEXAMINED. Verify outpoints, scriptPubKeys, and value conservation.",
-    "digest": "2f784756c9ced087",
+    "content": "Input <i> was never examined against the protocol authorities. Category: structural. Remediation: Regenerate the plan from the wallet as it is now and review it again before signing. Run the SafeOps verifier on the corrected input and continue only when it accepts.",
+    "digest": "c248df94b4c8e87a",
     "docUrl": "/reference/refusal-codes/#INVENTORY_UNEXAMINED"
+  },
+  {
+    "id": "ref-MAKER_ASSET_UNASSIGNED",
+    "sourcePath": "verifier/swaps.js",
+    "pointer": "refusal:MAKER_ASSET_UNASSIGNED",
+    "product": "refusals",
+    "protocolVersion": "1.2",
+    "contentType": "refusal-code",
+    "title": "Refusal: MAKER_ASSET_UNASSIGNED",
+    "content": "Asset <key> has no destination in the asset transitions. Category: structural. Remediation: Do not sign. Rebuild the acceptance plan from the published intent. Run the Swaps verifier on the corrected input and continue only when it accepts.",
+    "digest": "aee0a95861b36fca",
+    "docUrl": "/reference/refusal-codes/#MAKER_ASSET_UNASSIGNED"
   },
   {
     "id": "ref-MAKER_OUTPOINT_MISSING",
@@ -2815,8 +2827,8 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: MAKER_OUTPOINT_MISSING",
-    "content": "The committed outpoint ${key} is not spent by the acceptance plan. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with MAKER_OUTPOINT_MISSING. Verify outpoints, scriptPubKeys, and value conservation.",
-    "digest": "d9953b6b4b722a85",
+    "content": "The committed outpoint <key> is not spent by the acceptance plan. Category: structural. Remediation: Do not sign. Rebuild the acceptance plan from the published intent. Run the Swaps verifier on the corrected input and continue only when it accepts.",
+    "digest": "68b92b60a3290b22",
     "docUrl": "/reference/refusal-codes/#MAKER_OUTPOINT_MISSING"
   },
   {
@@ -2827,8 +2839,8 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: MAKER_OUTPOINT_REASSIGNED",
-    "content": "The committed outpoint ${key} is claimed by the taker. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with MAKER_OUTPOINT_REASSIGNED. Verify outpoints, scriptPubKeys, and value conservation.",
-    "digest": "99f371e1016838e5",
+    "content": "The committed outpoint <key> is claimed by the taker. Category: structural. Remediation: Do not sign. Rebuild the acceptance plan from the published intent. Run the Swaps verifier on the corrected input and continue only when it accepts.",
+    "digest": "b6ea411fbe143c68",
     "docUrl": "/reference/refusal-codes/#MAKER_OUTPOINT_REASSIGNED"
   },
   {
@@ -2839,7 +2851,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: MAKER_PROOF_INVALID",
-    "content": "The intent must carry a bip322 maker identity proof with an address. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with MAKER_PROOF_INVALID. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The intent must carry a bip322 maker identity proof with an address. Category: structural. Remediation: Correct the intent and publish it again. Run the Swaps verifier on the corrected input and continue only when it accepts.",
     "digest": "ac9ec616daeb33a1",
     "docUrl": "/reference/refusal-codes/#MAKER_PROOF_INVALID"
   },
@@ -2851,7 +2863,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: MALFORMED_ACCEPTANCE",
-    "content": "Expected inputs, outputs, and a policy signature count. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with MALFORMED_ACCEPTANCE. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "Expected inputs, outputs, and a policy signature count. Category: structural. Remediation: Do not sign the acceptance. Rebuild it from the offer as published. Run the Offers verifier on the corrected input and continue only when it accepts.",
     "digest": "4ed5129ca699c33e",
     "docUrl": "/reference/refusal-codes/#MALFORMED_ACCEPTANCE"
   },
@@ -2863,7 +2875,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: MALFORMED_EVENT",
-    "content": "Expected an event object. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with MALFORMED_EVENT. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "Expected an event object. Category: structural. Remediation: Reject the event and do not apply it. Fetch it again from the replayable stream from your last checkpoint. Run the Events and webhooks verifier on the corrected input and continue only when it accepts.",
     "digest": "3c68864839bd1e59",
     "docUrl": "/reference/refusal-codes/#MALFORMED_EVENT"
   },
@@ -2875,7 +2887,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: MALFORMED_INTENT",
-    "content": "Expected an intent object. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with MALFORMED_INTENT. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "Expected an intent object. Category: structural. Remediation: Correct the intent and publish it again. Run the Swaps verifier on the corrected input and continue only when it accepts.",
     "digest": "585f11fe44c3b43d",
     "docUrl": "/reference/refusal-codes/#MALFORMED_INTENT"
   },
@@ -2887,7 +2899,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: MALFORMED_MANIFEST",
-    "content": "Expected a manifest object. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with MALFORMED_MANIFEST. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "Expected a manifest object. Category: structural. Remediation: Treat the collection as unverified and ask the creator for a corrected, re-signed manifest. Run the Collection manifest verifier on the corrected input and continue only when it accepts.",
     "digest": "cdf760513bd2562e",
     "docUrl": "/reference/refusal-codes/#MALFORMED_MANIFEST"
   },
@@ -2899,7 +2911,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: MALFORMED_OFFER",
-    "content": "Expected both outpoints and the terms hash. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with MALFORMED_OFFER. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "Expected both outpoints and the terms hash. Category: structural. Remediation: Do not sign the acceptance. Rebuild it from the offer as published. Run the Offers verifier on the corrected input and continue only when it accepts.",
     "digest": "d2fac3c1dd01c8da",
     "docUrl": "/reference/refusal-codes/#MALFORMED_OFFER"
   },
@@ -2911,7 +2923,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: MALFORMED_ORDER",
-    "content": "Expected an offered outpoint with txid and vout. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with MALFORMED_ORDER. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "Expected an offered outpoint with txid and vout. Category: structural. Remediation: Do not sign. Rebuild the purchase from the order as currently published, then verify it again. Run the Purchase verifier on the corrected input and continue only when it accepts.",
     "digest": "7d3f34269fbc9c3f",
     "docUrl": "/reference/refusal-codes/#MALFORMED_ORDER"
   },
@@ -2923,7 +2935,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: MALFORMED_PLAN",
-    "content": "Expected a plan object. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with MALFORMED_PLAN. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "Expected a plan object. Category: structural. Remediation: Regenerate the plan from the wallet as it is now and review it again before signing. Run the SafeOps verifier on the corrected input and continue only when it accepts.",
     "digest": "8199ca1734b39032",
     "docUrl": "/reference/refusal-codes/#MALFORMED_PLAN"
   },
@@ -2935,7 +2947,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: MALFORMED_RECORD",
-    "content": "Expected an attachment record object. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with MALFORMED_RECORD. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "Expected an attachment record object. Category: structural. Remediation: Treat the attachment as unknown until a valid record is obtained again from the Counterparty source. Run the Counterparty asset verifier on the corrected input and continue only when it accepts.",
     "digest": "5c98402aaa19b817",
     "docUrl": "/reference/refusal-codes/#MALFORMED_RECORD"
   },
@@ -2947,7 +2959,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: MALFORMED_RECOVERY",
-    "content": "Expected inputs and outputs arrays. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with MALFORMED_RECOVERY. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "Expected inputs and outputs arrays. Category: structural. Remediation: Rebuild the recovery so it spends only the funded offer output back to the buyer, after the offer expires. Run the Offers verifier on the corrected input and continue only when it accepts.",
     "digest": "3107de26a36426a6",
     "docUrl": "/reference/refusal-codes/#MALFORMED_RECOVERY"
   },
@@ -2959,7 +2971,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: MALFORMED_REVOCATION",
-    "content": "Expected a revocation object. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with MALFORMED_REVOCATION. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "Expected a revocation object. Category: structural. Remediation: Ignore the revocation: it does not validly revoke this manifest. Keep the manifest status unchanged. Run the Collection manifest verifier on the corrected input and continue only when it accepts.",
     "digest": "f5dfd61e8d078a0c",
     "docUrl": "/reference/refusal-codes/#MALFORMED_REVOCATION"
   },
@@ -2971,7 +2983,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: MALFORMED_SIGNED_RESULT",
-    "content": "Expected a signed result object. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with MALFORMED_SIGNED_RESULT. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "Expected a signed result object. Category: structural. Remediation: Do not broadcast: the signed transaction is not the manifest. Sign again from a verified manifest. Run the Offline signing verifier on the corrected input and continue only when it accepts.",
     "digest": "ad720e89bbbf6b21",
     "docUrl": "/reference/refusal-codes/#MALFORMED_SIGNED_RESULT"
   },
@@ -2983,7 +2995,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: MALFORMED_TERMS",
-    "content": "Expected a terms object. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with MALFORMED_TERMS. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "Expected a terms object. Category: structural. Remediation: Correct the terms and publish them again. Any change to the terms changes their hash. Run the Offers verifier on the corrected input and continue only when it accepts.",
     "digest": "074da9e82d569b65",
     "docUrl": "/reference/refusal-codes/#MALFORMED_TERMS"
   },
@@ -2995,7 +3007,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: MALFORMED_TRANSACTION",
-    "content": "Expected inputs and outputs arrays. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with MALFORMED_TRANSACTION. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "Expected inputs and outputs arrays. Category: structural. Remediation: Do not sign. Rebuild the spend so the attached asset lands at the intended output. Run the Counterparty asset verifier on the corrected input and continue only when it accepts.",
     "digest": "5aac90423a4e81e1",
     "docUrl": "/reference/refusal-codes/#MALFORMED_TRANSACTION"
   },
@@ -3007,7 +3019,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: MANIFEST_DIGEST_INVALID",
-    "content": "The revocation must name the manifest digest it revokes. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with MANIFEST_DIGEST_INVALID. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The revocation must name the manifest digest it revokes. Category: structural. Remediation: Ignore the revocation: it does not validly revoke this manifest. Keep the manifest status unchanged. Run the Collection manifest verifier on the corrected input and continue only when it accepts.",
     "digest": "89c0eda41bfedb32",
     "docUrl": "/reference/refusal-codes/#MANIFEST_DIGEST_INVALID"
   },
@@ -3019,7 +3031,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: MANIFEST_DIGEST_MISMATCH",
-    "content": "The revocation names a different manifest than the one supplied. Category: provenance. Remediation: Inspect the transaction parameters and ensure compliance with MANIFEST_DIGEST_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The revocation names a different manifest than the one supplied. Category: provenance. Remediation: Ignore the revocation: it does not validly revoke this manifest. Keep the manifest status unchanged. Run the Collection manifest verifier on the corrected input and continue only when it accepts.",
     "digest": "49b76b109afd6826",
     "docUrl": "/reference/refusal-codes/#MANIFEST_DIGEST_MISMATCH"
   },
@@ -3031,7 +3043,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: MEMBER_NOT_PROVEN",
-    "content": "The proof does not resolve to the membership root, so this identity is not a member. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with MEMBER_NOT_PROVEN. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The proof does not resolve to the membership root, so this identity is not a member. Category: structural. Remediation: Treat the item as not proven a member. Request a fresh proof for the current manifest version. Run the Collection manifest verifier on the corrected input and continue only when it accepts.",
     "digest": "b315a41e13b9204c",
     "docUrl": "/reference/refusal-codes/#MEMBER_NOT_PROVEN"
   },
@@ -3043,8 +3055,8 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: MEMBERS_DUPLICATED",
-    "content": "The member ${sortedMembers[i]} appears more than once. Category: spent. Remediation: Inspect the transaction parameters and ensure compliance with MEMBERS_DUPLICATED. Verify outpoints, scriptPubKeys, and value conservation.",
-    "digest": "e9d73c1fdafd8a1a",
+    "content": "The member <sortedMembers[i]> appears more than once. Category: spent. Remediation: Treat the collection as unverified and ask the creator for a corrected, re-signed manifest. Run the Collection manifest verifier on the corrected input and continue only when it accepts.",
+    "digest": "b5db5eab12c5768b",
     "docUrl": "/reference/refusal-codes/#MEMBERS_DUPLICATED"
   },
   {
@@ -3055,7 +3067,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: MEMBERS_EMPTY",
-    "content": "A manifest must list at least one member identity. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with MEMBERS_EMPTY. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "A manifest must list at least one member identity. Category: structural. Remediation: Treat the collection as unverified and ask the creator for a corrected, re-signed manifest. Run the Collection manifest verifier on the corrected input and continue only when it accepts.",
     "digest": "706b18faa901cb1d",
     "docUrl": "/reference/refusal-codes/#MEMBERS_EMPTY"
   },
@@ -3067,7 +3079,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: MEMBERS_INVALID",
-    "content": "Every member identity must be a string of at most 256 characters. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with MEMBERS_INVALID. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "Every member identity must be a string of at most 256 characters. Category: structural. Remediation: Treat the collection as unverified and ask the creator for a corrected, re-signed manifest. Run the Collection manifest verifier on the corrected input and continue only when it accepts.",
     "digest": "21b208a108f329ea",
     "docUrl": "/reference/refusal-codes/#MEMBERS_INVALID"
   },
@@ -3079,7 +3091,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: MEMBERS_UNSORTED",
-    "content": "The member list must be stored in ascending sorted order. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with MEMBERS_UNSORTED. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The member list must be stored in ascending sorted order. Category: structural. Remediation: Treat the collection as unverified and ask the creator for a corrected, re-signed manifest. Run the Collection manifest verifier on the corrected input and continue only when it accepts.",
     "digest": "1032920509aff1e6",
     "docUrl": "/reference/refusal-codes/#MEMBERS_UNSORTED"
   },
@@ -3091,7 +3103,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: MEMBERSHIP_ROOT_MISMATCH",
-    "content": "The membership root does not match the member list. Category: provenance. Remediation: Inspect the transaction parameters and ensure compliance with MEMBERSHIP_ROOT_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The membership root does not match the member list. Category: provenance. Remediation: Treat the collection as unverified and ask the creator for a corrected, re-signed manifest. Run the Collection manifest verifier on the corrected input and continue only when it accepts.",
     "digest": "d96a9ca1869c40a1",
     "docUrl": "/reference/refusal-codes/#MEMBERSHIP_ROOT_MISMATCH"
   },
@@ -3103,7 +3115,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: NETWORK_MISMATCH",
-    "content": "The acceptance plan was built for a different network. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with NETWORK_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The acceptance plan was built for a different network. Category: structural. Remediation: Do not sign. Rebuild the acceptance plan from the published intent. Run the Swaps verifier on the corrected input and continue only when it accepts.",
     "digest": "53d93c7ce90e383d",
     "docUrl": "/reference/refusal-codes/#NETWORK_MISMATCH"
   },
@@ -3115,7 +3127,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: NETWORK_UNKNOWN",
-    "content": "The network is not one this protocol names. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with NETWORK_UNKNOWN. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The network is not one this protocol names. Category: structural. Remediation: Treat the collection as unverified and ask the creator for a corrected, re-signed manifest. Run the Collection manifest verifier on the corrected input and continue only when it accepts.",
     "digest": "7460e2415db23b8f",
     "docUrl": "/reference/refusal-codes/#NETWORK_UNKNOWN"
   },
@@ -3127,7 +3139,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: NONCE_INVALID",
-    "content": "The intent must carry a nonce of 8 to 128 characters. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with NONCE_INVALID. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The intent must carry a nonce of 8 to 128 characters. Category: structural. Remediation: Correct the intent and publish it again. Run the Swaps verifier on the corrected input and continue only when it accepts.",
     "digest": "b706521dca1f99dc",
     "docUrl": "/reference/refusal-codes/#NONCE_INVALID"
   },
@@ -3139,7 +3151,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: OBSERVED_AT_INVALID",
-    "content": "observedAt must be an ISO-8601 timestamp ending in Z. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with OBSERVED_AT_INVALID. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "observedAt must be an ISO-8601 timestamp ending in Z. Category: structural. Remediation: Reject the event and do not apply it. Fetch it again from the replayable stream from your last checkpoint. Run the Events and webhooks verifier on the corrected input and continue only when it accepts.",
     "digest": "2202e661a05c3c94",
     "docUrl": "/reference/refusal-codes/#OBSERVED_AT_INVALID"
   },
@@ -3151,7 +3163,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: OFFER_EXPIRED",
-    "content": "The expiry height has passed; recovery is the only remaining path. Category: stale. Remediation: Inspect the transaction parameters and ensure compliance with OFFER_EXPIRED. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The expiry height has passed; recovery is the only remaining path. Category: stale. Remediation: Do not sign the acceptance. Rebuild it from the offer as published. Run the Offers verifier on the corrected input and continue only when it accepts.",
     "digest": "0c8a127d14e6641f",
     "docUrl": "/reference/refusal-codes/#OFFER_EXPIRED"
   },
@@ -3163,7 +3175,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: OFFER_OUTPOINT_DUPLICATED",
-    "content": "The funded output appears at more than one index. Category: spent. Remediation: Inspect the transaction parameters and ensure compliance with OFFER_OUTPOINT_DUPLICATED. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The funded output appears at more than one index. Category: spent. Remediation: Rebuild the recovery so it spends only the funded offer output back to the buyer, after the offer expires. Run the Offers verifier on the corrected input and continue only when it accepts.",
     "digest": "d94c63cc479ca57f",
     "docUrl": "/reference/refusal-codes/#OFFER_OUTPOINT_DUPLICATED"
   },
@@ -3175,7 +3187,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: OFFER_OUTPOINT_MISSING",
-    "content": "No input spends the funded offer output. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with OFFER_OUTPOINT_MISSING. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "No input spends the funded offer output. Category: structural. Remediation: Rebuild the recovery so it spends only the funded offer output back to the buyer, after the offer expires. Run the Offers verifier on the corrected input and continue only when it accepts.",
     "digest": "bf7003c029dc5b6a",
     "docUrl": "/reference/refusal-codes/#OFFER_OUTPOINT_MISSING"
   },
@@ -3187,7 +3199,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: OFFERED_OUTPOINT_DUPLICATED",
-    "content": "The offered outpoint appears at more than one index, so one signature would answer for two positions. Category: spent. Remediation: Inspect the transaction parameters and ensure compliance with OFFERED_OUTPOINT_DUPLICATED. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The offered outpoint appears at more than one index, so one signature would answer for two positions. Category: spent. Remediation: Do not sign. Rebuild the purchase from the order as currently published, then verify it again. Run the Purchase verifier on the corrected input and continue only when it accepts.",
     "digest": "d71032b048579505",
     "docUrl": "/reference/refusal-codes/#OFFERED_OUTPOINT_DUPLICATED"
   },
@@ -3199,7 +3211,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: OFFERED_OUTPOINT_MISSING",
-    "content": "No input spends the offered output. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with OFFERED_OUTPOINT_MISSING. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "No input spends the offered output. Category: structural. Remediation: Do not sign. Rebuild the purchase from the order as currently published, then verify it again. Run the Purchase verifier on the corrected input and continue only when it accepts.",
     "digest": "58b3531e9403fcc9",
     "docUrl": "/reference/refusal-codes/#OFFERED_OUTPOINT_MISSING"
   },
@@ -3211,7 +3223,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: OPERATION_KIND_UNKNOWN",
-    "content": "The operation kind is not one this protocol names. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with OPERATION_KIND_UNKNOWN. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The operation kind is not one this protocol names. Category: structural. Remediation: Regenerate the plan from the wallet as it is now and review it again before signing. Run the SafeOps verifier on the corrected input and continue only when it accepts.",
     "digest": "78a10451f32b8ced",
     "docUrl": "/reference/refusal-codes/#OPERATION_KIND_UNKNOWN"
   },
@@ -3223,7 +3235,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: OUTPOINT_DUPLICATED",
-    "content": "The attached outpoint appears at more than one index. Category: spent. Remediation: Inspect the transaction parameters and ensure compliance with OUTPOINT_DUPLICATED. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The attached outpoint appears at more than one index. Category: spent. Remediation: Do not sign. Rebuild the spend so the attached asset lands at the intended output. Run the Counterparty asset verifier on the corrected input and continue only when it accepts.",
     "digest": "b9a05404053e3f9d",
     "docUrl": "/reference/refusal-codes/#OUTPOINT_DUPLICATED"
   },
@@ -3235,7 +3247,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: OUTPOINT_INVALID",
-    "content": "The record must name a lowercase txid and vout. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with OUTPOINT_INVALID. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The record must name a lowercase txid and vout. Category: structural. Remediation: Treat the attachment as unknown until a valid record is obtained again from the Counterparty source. Run the Counterparty asset verifier on the corrected input and continue only when it accepts.",
     "digest": "5a76006059402d70",
     "docUrl": "/reference/refusal-codes/#OUTPOINT_INVALID"
   },
@@ -3247,7 +3259,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: OUTPOINT_NOT_SPENT",
-    "content": "No input spends the attached outpoint. Category: spent. Remediation: Inspect the transaction parameters and ensure compliance with OUTPOINT_NOT_SPENT. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "No input spends the attached outpoint. Category: spent. Remediation: Do not sign. Rebuild the spend so the attached asset lands at the intended output. Run the Counterparty asset verifier on the corrected input and continue only when it accepts.",
     "digest": "7926424ddf872e34",
     "docUrl": "/reference/refusal-codes/#OUTPOINT_NOT_SPENT"
   },
@@ -3259,8 +3271,8 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: OUTPUT_DESCRIPTION_INVALID",
-    "content": "Output ${i} needs an exact script and value, a role, and who receives it. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with OUTPUT_DESCRIPTION_INVALID. Verify outpoints, scriptPubKeys, and value conservation.",
-    "digest": "c607020febb22915",
+    "content": "Output <i> needs an exact script and value, a role, and who receives it. Category: structural. Remediation: Rebuild the expected-transaction manifest on the online machine and transfer it to the signer again. Run the Offline signing verifier on the corrected input and continue only when it accepts.",
+    "digest": "ac629867234fe9e0",
     "docUrl": "/reference/refusal-codes/#OUTPUT_DESCRIPTION_INVALID"
   },
   {
@@ -3271,8 +3283,8 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: OUTPUT_ROLE_UNKNOWN",
-    "content": "Output ${i} does not name a recipient, change, or preserve role. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with OUTPUT_ROLE_UNKNOWN. Verify outpoints, scriptPubKeys, and value conservation.",
-    "digest": "90ea46cb130cfa3b",
+    "content": "Output <i> does not name a recipient, change, or preserve role. Category: structural. Remediation: Regenerate the plan from the wallet as it is now and review it again before signing. Run the SafeOps verifier on the corrected input and continue only when it accepts.",
+    "digest": "ce51bf72356c4f17",
     "docUrl": "/reference/refusal-codes/#OUTPUT_ROLE_UNKNOWN"
   },
   {
@@ -3283,8 +3295,8 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: OUTPUT_SCRIPT_INVALID",
-    "content": "Output ${i} does not carry lowercase hex script bytes. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with OUTPUT_SCRIPT_INVALID. Verify outpoints, scriptPubKeys, and value conservation.",
-    "digest": "d417ff8a1959d613",
+    "content": "Output <i> does not carry lowercase hex script bytes. Category: structural. Remediation: Regenerate the plan from the wallet as it is now and review it again before signing. Run the SafeOps verifier on the corrected input and continue only when it accepts.",
+    "digest": "79d4cc030bf19659",
     "docUrl": "/reference/refusal-codes/#OUTPUT_SCRIPT_INVALID"
   },
   {
@@ -3295,7 +3307,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: OUTPUT_SET_CHANGED",
-    "content": "The signed transaction carries a different set of outputs than the manifest presented. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with OUTPUT_SET_CHANGED. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The signed transaction carries a different set of outputs than the manifest presented. Category: structural. Remediation: Do not broadcast: the signed transaction is not the manifest. Sign again from a verified manifest. Run the Offline signing verifier on the corrected input and continue only when it accepts.",
     "digest": "d752f3960067567e",
     "docUrl": "/reference/refusal-codes/#OUTPUT_SET_CHANGED"
   },
@@ -3307,8 +3319,8 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: OUTPUT_VALUE_INVALID",
-    "content": "Output ${i} does not carry an exact decimal value. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with OUTPUT_VALUE_INVALID. Verify outpoints, scriptPubKeys, and value conservation.",
-    "digest": "42c37ab22f19e77b",
+    "content": "Output <i> does not carry an exact decimal value. Category: structural. Remediation: Regenerate the plan from the wallet as it is now and review it again before signing. Run the SafeOps verifier on the corrected input and continue only when it accepts.",
+    "digest": "89e0eadb48f27349",
     "docUrl": "/reference/refusal-codes/#OUTPUT_VALUE_INVALID"
   },
   {
@@ -3319,8 +3331,8 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: OUTPUT_VALUE_UNKNOWN",
-    "content": "Output ${i} has no readable value, so the sat range cannot be traced. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with OUTPUT_VALUE_UNKNOWN. Verify outpoints, scriptPubKeys, and value conservation.",
-    "digest": "5f33ca2b6037febd",
+    "content": "Output <i> has no readable value, so the sat range cannot be traced. Category: structural. Remediation: Do not sign. Rebuild the spend so the attached asset lands at the intended output. Run the Counterparty asset verifier on the corrected input and continue only when it accepts.",
+    "digest": "10ce216f37b2c106",
     "docUrl": "/reference/refusal-codes/#OUTPUT_VALUE_UNKNOWN"
   },
   {
@@ -3331,7 +3343,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: PAYLOAD_INVALID",
-    "content": "The payload must be an object. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with PAYLOAD_INVALID. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The payload must be an object. Category: structural. Remediation: Reject the event and do not apply it. Fetch it again from the replayable stream from your last checkpoint. Run the Events and webhooks verifier on the corrected input and continue only when it accepts.",
     "digest": "703ca4df601a1aaf",
     "docUrl": "/reference/refusal-codes/#PAYLOAD_INVALID"
   },
@@ -3343,7 +3355,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: PLAN_DIGEST_MISMATCH",
-    "content": "The signed result was not produced from this plan. Refresh the plan and sign again. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with PLAN_DIGEST_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The signed result was not produced from this plan. Refresh the plan and sign again. Category: structural. Remediation: Do not broadcast. The signed transaction is not the approved plan: discard it and sign the approved plan again. Run the SafeOps verifier on the corrected input and continue only when it accepts.",
     "digest": "a33927c56d02416c",
     "docUrl": "/reference/refusal-codes/#PLAN_DIGEST_MISMATCH"
   },
@@ -3355,7 +3367,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: POLICY_SIGNATURES_MISSING",
-    "content": "A valid acceptance carries exactly one signature from each independent policy signer. Category: signature. Remediation: Inspect the transaction parameters and ensure compliance with POLICY_SIGNATURES_MISSING. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "A valid acceptance carries exactly one signature from each independent policy signer. Category: signature. Remediation: Do not sign the acceptance. Rebuild it from the offer as published. Run the Offers verifier on the corrected input and continue only when it accepts.",
     "digest": "3a95831dc5baebe8",
     "docUrl": "/reference/refusal-codes/#POLICY_SIGNATURES_MISSING"
   },
@@ -3367,7 +3379,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: PREVIOUS_DIGEST_FORBIDDEN",
-    "content": "Version 1 cannot name a previous manifest. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with PREVIOUS_DIGEST_FORBIDDEN. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "Version 1 cannot name a previous manifest. Category: structural. Remediation: Treat the collection as unverified and ask the creator for a corrected, re-signed manifest. Run the Collection manifest verifier on the corrected input and continue only when it accepts.",
     "digest": "5fe0c9f859ca113b",
     "docUrl": "/reference/refusal-codes/#PREVIOUS_DIGEST_FORBIDDEN"
   },
@@ -3379,7 +3391,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: PREVIOUS_DIGEST_REQUIRED",
-    "content": "A manifest after version 1 must name the manifest it supersedes. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with PREVIOUS_DIGEST_REQUIRED. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "A manifest after version 1 must name the manifest it supersedes. Category: structural. Remediation: Treat the collection as unverified and ask the creator for a corrected, re-signed manifest. Run the Collection manifest verifier on the corrected input and continue only when it accepts.",
     "digest": "3543dbe429c1a98e",
     "docUrl": "/reference/refusal-codes/#PREVIOUS_DIGEST_REQUIRED"
   },
@@ -3391,7 +3403,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: PROOF_MALFORMED",
-    "content": "Every proof step needs a sibling digest and a position. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with PROOF_MALFORMED. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "Every proof step needs a sibling digest and a position. Category: structural. Remediation: Treat the item as not proven a member. Request a fresh proof for the current manifest version. Run the Collection manifest verifier on the corrected input and continue only when it accepts.",
     "digest": "1173ce14e4cf5383",
     "docUrl": "/reference/refusal-codes/#PROOF_MALFORMED"
   },
@@ -3403,8 +3415,8 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: PROTECTED_ASSET_MISPLACED",
-    "content": "Asset ${key} was not part of the presented plan at all. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with PROTECTED_ASSET_MISPLACED. Verify outpoints, scriptPubKeys, and value conservation.",
-    "digest": "00950b30fc2ab91d",
+    "content": "Asset <key> was not part of the presented plan at all. Category: structural. Remediation: Do not broadcast: the signed transaction is not the manifest. Sign again from a verified manifest. Run the Offline signing verifier on the corrected input and continue only when it accepts.",
+    "digest": "4f89153ddc8bf727",
     "docUrl": "/reference/refusal-codes/#PROTECTED_ASSET_MISPLACED"
   },
   {
@@ -3415,7 +3427,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: PROTOCOL_FAMILY_UNKNOWN",
-    "content": "The protocol family is not one this registry names. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with PROTOCOL_FAMILY_UNKNOWN. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The protocol family is not one this registry names. Category: structural. Remediation: Treat the collection as unverified and ask the creator for a corrected, re-signed manifest. Run the Collection manifest verifier on the corrected input and continue only when it accepts.",
     "digest": "3adfddf3e2e92db6",
     "docUrl": "/reference/refusal-codes/#PROTOCOL_FAMILY_UNKNOWN"
   },
@@ -3427,7 +3439,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: PROTOCOL_UNSUPPORTED",
-    "content": "The manifest protocol version must be 1.2 or a later 1.x. Category: capability. Remediation: Inspect the transaction parameters and ensure compliance with PROTOCOL_UNSUPPORTED. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The manifest protocol version must be 1.2 or a later 1.x. Category: capability. Remediation: Treat the collection as unverified and ask the creator for a corrected, re-signed manifest. Run the Collection manifest verifier on the corrected input and continue only when it accepts.",
     "digest": "14143b85b73b26de",
     "docUrl": "/reference/refusal-codes/#PROTOCOL_UNSUPPORTED"
   },
@@ -3439,7 +3451,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: PURPOSE_MISSING",
-    "content": "The manifest must state in one line what the transaction is for. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with PURPOSE_MISSING. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The manifest must state in one line what the transaction is for. Category: structural. Remediation: Rebuild the expected-transaction manifest on the online machine and transfer it to the signer again. Run the Offline signing verifier on the corrected input and continue only when it accepts.",
     "digest": "78acab2fbb9aa60e",
     "docUrl": "/reference/refusal-codes/#PURPOSE_MISSING"
   },
@@ -3451,7 +3463,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: QUANTITY_INVALID",
-    "content": "quantitySats must be an exact decimal string of atomic units. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with QUANTITY_INVALID. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "quantitySats must be an exact decimal string of atomic units. Category: structural. Remediation: Treat the attachment as unknown until a valid record is obtained again from the Counterparty source. Run the Counterparty asset verifier on the corrected input and continue only when it accepts.",
     "digest": "e6dba52abad61529",
     "docUrl": "/reference/refusal-codes/#QUANTITY_INVALID"
   },
@@ -3463,7 +3475,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: REASON_REQUIRED",
-    "content": "The revocation must state a reason of at most 500 characters. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with REASON_REQUIRED. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The revocation must state a reason of at most 500 characters. Category: structural. Remediation: Ignore the revocation: it does not validly revoke this manifest. Keep the manifest status unchanged. Run the Collection manifest verifier on the corrected input and continue only when it accepts.",
     "digest": "aed0224c1fb573b4",
     "docUrl": "/reference/refusal-codes/#REASON_REQUIRED"
   },
@@ -3475,7 +3487,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: RECEIVE_SCRIPT_INVALID",
-    "content": "The maker receive script must be lowercase hex bytes. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with RECEIVE_SCRIPT_INVALID. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The maker receive script must be lowercase hex bytes. Category: structural. Remediation: Correct the intent and publish it again. Run the Swaps verifier on the corrected input and continue only when it accepts.",
     "digest": "b73be144282a995f",
     "docUrl": "/reference/refusal-codes/#RECEIVE_SCRIPT_INVALID"
   },
@@ -3487,7 +3499,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: RECOVERY_BEFORE_EXPIRY",
-    "content": "The locktime is below the expiry height. Category: stale. Remediation: Inspect the transaction parameters and ensure compliance with RECOVERY_BEFORE_EXPIRY. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The locktime is below the expiry height. Category: stale. Remediation: Rebuild the recovery so it spends only the funded offer output back to the buyer, after the offer expires. Run the Offers verifier on the corrected input and continue only when it accepts.",
     "digest": "9b32ea125bdbd95d",
     "docUrl": "/reference/refusal-codes/#RECOVERY_BEFORE_EXPIRY"
   },
@@ -3499,7 +3511,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: RECOVERY_LEAF_MISMATCH",
-    "content": "The recovery leaf must be lowercase hex bytes. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with RECOVERY_LEAF_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The recovery leaf must be lowercase hex bytes. Category: structural. Remediation: Rebuild the recovery so it spends only the funded offer output back to the buyer, after the offer expires. Run the Offers verifier on the corrected input and continue only when it accepts.",
     "digest": "8653bf0f8947241a",
     "docUrl": "/reference/refusal-codes/#RECOVERY_LEAF_MISMATCH"
   },
@@ -3511,7 +3523,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: RECOVERY_OUTPUT_WRONG",
-    "content": "A recovery pays one output, the buyer receive script. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with RECOVERY_OUTPUT_WRONG. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "A recovery pays one output, the buyer receive script. Category: structural. Remediation: Rebuild the recovery so it spends only the funded offer output back to the buyer, after the offer expires. Run the Offers verifier on the corrected input and continue only when it accepts.",
     "digest": "7746ea322d6763a0",
     "docUrl": "/reference/refusal-codes/#RECOVERY_OUTPUT_WRONG"
   },
@@ -3523,8 +3535,8 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: REQUIRED_SIGNATURE_MISSING",
-    "content": "Input ${i} is still unsigned; the result is incomplete. Category: signature. Remediation: Inspect the transaction parameters and ensure compliance with REQUIRED_SIGNATURE_MISSING. Verify outpoints, scriptPubKeys, and value conservation.",
-    "digest": "b2cb7cf5f797b439",
+    "content": "Input <i> is still unsigned; the result is incomplete. Category: signature. Remediation: Do not broadcast: the signed transaction is not the manifest. Sign again from a verified manifest. Run the Offline signing verifier on the corrected input and continue only when it accepts.",
+    "digest": "032237cb53f8afdd",
     "docUrl": "/reference/refusal-codes/#REQUIRED_SIGNATURE_MISSING"
   },
   {
@@ -3535,7 +3547,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: REQUIRES_INVALID",
-    "content": "The intent must require at least one exact asset with a minimum quantity. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with REQUIRES_INVALID. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The intent must require at least one exact asset with a minimum quantity. Category: structural. Remediation: Correct the intent and publish it again. Run the Swaps verifier on the corrected input and continue only when it accepts.",
     "digest": "a5f8faf76d3a3a9d",
     "docUrl": "/reference/refusal-codes/#REQUIRES_INVALID"
   },
@@ -3547,7 +3559,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: REVERTED_EVENT_REQUIRED",
-    "content": "A reverted event must name the event id it reverses. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with REVERTED_EVENT_REQUIRED. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "A reverted event must name the event id it reverses. Category: structural. Remediation: Reject the event and do not apply it. Fetch it again from the replayable stream from your last checkpoint. Run the Events and webhooks verifier on the corrected input and continue only when it accepts.",
     "digest": "79bbc34e82876f3a",
     "docUrl": "/reference/refusal-codes/#REVERTED_EVENT_REQUIRED"
   },
@@ -3559,8 +3571,8 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: RUNE_INPUT_MISSING_ALLOCATION",
-    "content": "Input ${i} carries no rune allocation. Category: rune. Remediation: Inspect the transaction parameters and ensure compliance with RUNE_INPUT_MISSING_ALLOCATION. Verify outpoints, scriptPubKeys, and value conservation.",
-    "digest": "6a4947a31b5e5a4a",
+    "content": "Input <i> carries no rune allocation. Category: rune. Remediation: Regenerate the plan from the wallet as it is now and review it again before signing. Run the SafeOps verifier on the corrected input and continue only when it accepts.",
+    "digest": "0ff9ec4477897e14",
     "docUrl": "/reference/refusal-codes/#RUNE_INPUT_MISSING_ALLOCATION"
   },
   {
@@ -3571,7 +3583,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: SAT_FLOW_SHORTFALL",
-    "content": "No output absorbs the start of the attached outpoint range; the attachment would be lost. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with SAT_FLOW_SHORTFALL. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "No output absorbs the start of the attached outpoint range; the attachment would be lost. Category: structural. Remediation: Do not sign. Rebuild the spend so the attached asset lands at the intended output. Run the Counterparty asset verifier on the corrected input and continue only when it accepts.",
     "digest": "0271256582052e68",
     "docUrl": "/reference/refusal-codes/#SAT_FLOW_SHORTFALL"
   },
@@ -3583,7 +3595,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: SCHEMA_UNSUPPORTED",
-    "content": "The manifest schema is not ordex.collection-manifest/v1. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with SCHEMA_UNSUPPORTED. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The manifest schema is not ordex.collection-manifest/v1. Category: structural. Remediation: Treat the collection as unverified and ask the creator for a corrected, re-signed manifest. Run the Collection manifest verifier on the corrected input and continue only when it accepts.",
     "digest": "451469a31073f813",
     "docUrl": "/reference/refusal-codes/#SCHEMA_UNSUPPORTED"
   },
@@ -3595,8 +3607,8 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: SCRIPT_CHANGED",
-    "content": "Output ${i} no longer pays its presented script. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with SCRIPT_CHANGED. Verify outpoints, scriptPubKeys, and value conservation.",
-    "digest": "d7bc919f25686da1",
+    "content": "Output <i> no longer pays its presented script. Category: structural. Remediation: Do not broadcast: the signed transaction is not the manifest. Sign again from a verified manifest. Run the Offline signing verifier on the corrected input and continue only when it accepts.",
+    "digest": "8847a259299f0f8e",
     "docUrl": "/reference/refusal-codes/#SCRIPT_CHANGED"
   },
   {
@@ -3607,7 +3619,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: SECRET_INVALID",
-    "content": "The subscription secret must be a nonempty string. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with SECRET_INVALID. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The subscription secret must be a nonempty string. Category: structural. Remediation: Reject the delivery. Verify the raw body as received, with the current secret and your timestamp tolerance; the sender retries. Run the Events and webhooks verifier on the corrected input and continue only when it accepts.",
     "digest": "c12781184156572b",
     "docUrl": "/reference/refusal-codes/#SECRET_INVALID"
   },
@@ -3619,8 +3631,8 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: SELLER_OUTPUT_MISSING",
-    "content": "No output exists at index ${n}, the index the seller signed. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with SELLER_OUTPUT_MISSING. Verify outpoints, scriptPubKeys, and value conservation.",
-    "digest": "9c2e0f5d0423b2d4",
+    "content": "No output exists at index <n>, the index the seller signed. Category: structural. Remediation: Do not sign the acceptance. Rebuild it from the offer as published. Run the Offers verifier on the corrected input and continue only when it accepts.",
+    "digest": "7fd95fc4a9962000",
     "docUrl": "/reference/refusal-codes/#SELLER_OUTPUT_MISSING"
   },
   {
@@ -3631,7 +3643,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: SELLER_SCRIPT_MISMATCH",
-    "content": "The output at the seller index does not pay the signed script. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with SELLER_SCRIPT_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The output at the seller index does not pay the signed script. Category: structural. Remediation: Do not sign the acceptance. Rebuild it from the offer as published. Run the Offers verifier on the corrected input and continue only when it accepts.",
     "digest": "ae56561802eff045",
     "docUrl": "/reference/refusal-codes/#SELLER_SCRIPT_MISMATCH"
   },
@@ -3643,7 +3655,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: SELLER_VALUE_MISMATCH",
-    "content": "The seller payment is not the exact offer price. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with SELLER_VALUE_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The seller payment is not the exact offer price. Category: structural. Remediation: Do not sign the acceptance. Rebuild it from the offer as published. Run the Offers verifier on the corrected input and continue only when it accepts.",
     "digest": "05d32e0da652b801",
     "docUrl": "/reference/refusal-codes/#SELLER_VALUE_MISMATCH"
   },
@@ -3655,7 +3667,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: SEQUENCE_INVALID",
-    "content": "The sequence must be a positive integer that never decreases. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with SEQUENCE_INVALID. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The sequence must be a positive integer that never decreases. Category: structural. Remediation: Reject the event and do not apply it. Fetch it again from the replayable stream from your last checkpoint. Run the Events and webhooks verifier on the corrected input and continue only when it accepts.",
     "digest": "cea72550814166b5",
     "docUrl": "/reference/refusal-codes/#SEQUENCE_INVALID"
   },
@@ -3667,7 +3679,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: SEQUENCE_NOT_REPLACEABLE",
-    "content": "A final sequence disables the locktime the recovery relies on. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with SEQUENCE_NOT_REPLACEABLE. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "A final sequence disables the locktime the recovery relies on. Category: structural. Remediation: Rebuild the recovery so it spends only the funded offer output back to the buyer, after the offer expires. Run the Offers verifier on the corrected input and continue only when it accepts.",
     "digest": "d1b6f7d8179ca21c",
     "docUrl": "/reference/refusal-codes/#SEQUENCE_NOT_REPLACEABLE"
   },
@@ -3679,8 +3691,8 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: SIGHASH_CHANGED",
-    "content": "Input ${i} was signed with a different sighash than the plan approved. Category: signature. Remediation: Inspect the transaction parameters and ensure compliance with SIGHASH_CHANGED. Verify outpoints, scriptPubKeys, and value conservation.",
-    "digest": "140fd9da261cabcc",
+    "content": "Input <i> was signed with a different sighash than the plan approved. Category: signature. Remediation: Do not broadcast. The signed transaction is not the approved plan: discard it and sign the approved plan again. Run the SafeOps verifier on the corrected input and continue only when it accepts.",
+    "digest": "7769038bff6325f1",
     "docUrl": "/reference/refusal-codes/#SIGHASH_CHANGED"
   },
   {
@@ -3691,8 +3703,8 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: SIGHASH_UNEXPECTED",
-    "content": "Input ${i} was signed with a sighash the manifest did not approve. Category: signature. Remediation: Inspect the transaction parameters and ensure compliance with SIGHASH_UNEXPECTED. Verify outpoints, scriptPubKeys, and value conservation.",
-    "digest": "3dc6f92034f6e752",
+    "content": "Input <i> was signed with a sighash the manifest did not approve. Category: signature. Remediation: Do not broadcast: the signed transaction is not the manifest. Sign again from a verified manifest. Run the Offline signing verifier on the corrected input and continue only when it accepts.",
+    "digest": "2922f46cc7cd66e3",
     "docUrl": "/reference/refusal-codes/#SIGHASH_UNEXPECTED"
   },
   {
@@ -3703,8 +3715,8 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: SIGHASH_UNKNOWN",
-    "content": "Input ${i} names a sighash this protocol does not define. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with SIGHASH_UNKNOWN. Verify outpoints, scriptPubKeys, and value conservation.",
-    "digest": "bf301ae9f3ff3fce",
+    "content": "Input <i> names a sighash this protocol does not define. Category: structural. Remediation: Rebuild the expected-transaction manifest on the online machine and transfer it to the signer again. Run the Offline signing verifier on the corrected input and continue only when it accepts.",
+    "digest": "489bc0d5d6de4675",
     "docUrl": "/reference/refusal-codes/#SIGHASH_UNKNOWN"
   },
   {
@@ -3715,7 +3727,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: SIGNATURE_INVALID",
-    "content": "The signature does not match this secret, delivery id, and body. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with SIGNATURE_INVALID. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The signature does not match this secret, delivery id, and body. Category: structural. Remediation: Reject the delivery. Verify the raw body as received, with the current secret and your timestamp tolerance; the sender retries. Run the Events and webhooks verifier on the corrected input and continue only when it accepts.",
     "digest": "d201ea42a816f4e3",
     "docUrl": "/reference/refusal-codes/#SIGNATURE_INVALID"
   },
@@ -3727,8 +3739,8 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: SIGNATURE_MISSING",
-    "content": "Input ${i} is required to sign and is still unsigned. Category: signature. Remediation: Inspect the transaction parameters and ensure compliance with SIGNATURE_MISSING. Verify outpoints, scriptPubKeys, and value conservation.",
-    "digest": "e7c0402ba5a845c9",
+    "content": "Input <i> is required to sign and is still unsigned. Category: signature. Remediation: Do not broadcast. The signed transaction is not the approved plan: discard it and sign the approved plan again. Run the SafeOps verifier on the corrected input and continue only when it accepts.",
+    "digest": "e2cedaa3ea317c09",
     "docUrl": "/reference/refusal-codes/#SIGNATURE_MISSING"
   },
   {
@@ -3739,8 +3751,8 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: SIGNATURE_ON_FOREIGN_INPUT",
-    "content": "Input ${i} belongs to another party and must never be signed here. Category: signature. Remediation: Inspect the transaction parameters and ensure compliance with SIGNATURE_ON_FOREIGN_INPUT. Verify outpoints, scriptPubKeys, and value conservation.",
-    "digest": "62a1d955428e9d14",
+    "content": "Input <i> belongs to another party and must never be signed here. Category: signature. Remediation: Do not broadcast: the signed transaction is not the manifest. Sign again from a verified manifest. Run the Offline signing verifier on the corrected input and continue only when it accepts.",
+    "digest": "49ce4d7432b1df74",
     "docUrl": "/reference/refusal-codes/#SIGNATURE_ON_FOREIGN_INPUT"
   },
   {
@@ -3751,7 +3763,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: SIGNER_IDENTITY_MISMATCH",
-    "content": "The signature address is not the creator address. Category: signature. Remediation: Inspect the transaction parameters and ensure compliance with SIGNER_IDENTITY_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The signature address is not the creator address. Category: signature. Remediation: Treat the collection as unverified and ask the creator for a corrected, re-signed manifest. Run the Collection manifest verifier on the corrected input and continue only when it accepts.",
     "digest": "438a61579658a46b",
     "docUrl": "/reference/refusal-codes/#SIGNER_IDENTITY_MISMATCH"
   },
@@ -3763,7 +3775,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: SIGNING_INVALID",
-    "content": "The plan must carry a signing object. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with SIGNING_INVALID. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The plan must carry a signing object. Category: structural. Remediation: Regenerate the plan from the wallet as it is now and review it again before signing. Run the SafeOps verifier on the corrected input and continue only when it accepts.",
     "digest": "63d6ee7c87d9cdc0",
     "docUrl": "/reference/refusal-codes/#SIGNING_INVALID"
   },
@@ -3775,7 +3787,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: SOURCE_VALUE_INVALID",
-    "content": "sourceValueSats must be an exact decimal string. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with SOURCE_VALUE_INVALID. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "sourceValueSats must be an exact decimal string. Category: structural. Remediation: Treat the attachment as unknown until a valid record is obtained again from the Counterparty source. Run the Counterparty asset verifier on the corrected input and continue only when it accepts.",
     "digest": "d15e67f7479ef4a4",
     "docUrl": "/reference/refusal-codes/#SOURCE_VALUE_INVALID"
   },
@@ -3787,7 +3799,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: SOURCE_VALUE_MISMATCH",
-    "content": "The spent value does not match the record, so the sat range cannot be traced. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with SOURCE_VALUE_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The spent value does not match the record, so the sat range cannot be traced. Category: structural. Remediation: Do not sign. Rebuild the spend so the attached asset lands at the intended output. Run the Counterparty asset verifier on the corrected input and continue only when it accepts.",
     "digest": "1deb65419b21a16d",
     "docUrl": "/reference/refusal-codes/#SOURCE_VALUE_MISMATCH"
   },
@@ -3799,7 +3811,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: STATUS_INVALID",
-    "content": "The manifest status is not one this registry names. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with STATUS_INVALID. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The manifest status is not one this registry names. Category: structural. Remediation: Treat the collection as unverified and ask the creator for a corrected, re-signed manifest. Run the Collection manifest verifier on the corrected input and continue only when it accepts.",
     "digest": "99d06de4201d57e6",
     "docUrl": "/reference/refusal-codes/#STATUS_INVALID"
   },
@@ -3811,7 +3823,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: SUPPLY_MISMATCH",
-    "content": "A FIXED supply must declare exactly the member count. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with SUPPLY_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "A FIXED supply must declare exactly the member count. Category: structural. Remediation: Treat the collection as unverified and ask the creator for a corrected, re-signed manifest. Run the Collection manifest verifier on the corrected input and continue only when it accepts.",
     "digest": "dce5648ea7f85877",
     "docUrl": "/reference/refusal-codes/#SUPPLY_MISMATCH"
   },
@@ -3823,9 +3835,21 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: SUPPLY_STATEMENT_INVALID",
-    "content": "The supply statement must be FIXED or OPEN with an exact declared count. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with SUPPLY_STATEMENT_INVALID. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The supply statement must be FIXED or OPEN with an exact declared count. Category: structural. Remediation: Treat the collection as unverified and ask the creator for a corrected, re-signed manifest. Run the Collection manifest verifier on the corrected input and continue only when it accepts.",
     "digest": "a25d53946e25a229",
     "docUrl": "/reference/refusal-codes/#SUPPLY_STATEMENT_INVALID"
+  },
+  {
+    "id": "ref-TAKER_ASSET_UNASSIGNED",
+    "sourcePath": "verifier/swaps.js",
+    "pointer": "refusal:TAKER_ASSET_UNASSIGNED",
+    "product": "refusals",
+    "protocolVersion": "1.2",
+    "contentType": "refusal-code",
+    "title": "Refusal: TAKER_ASSET_UNASSIGNED",
+    "content": "Asset <key> has no destination in the asset transitions. Category: structural. Remediation: Do not sign. Rebuild the acceptance plan from the published intent. Run the Swaps verifier on the corrected input and continue only when it accepts.",
+    "digest": "986e3d2dcf77fb8b",
+    "docUrl": "/reference/refusal-codes/#TAKER_ASSET_UNASSIGNED"
   },
   {
     "id": "ref-TAKER_BINDING_INVALID",
@@ -3835,7 +3859,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: TAKER_BINDING_INVALID",
-    "content": "A taker binding must name an address. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with TAKER_BINDING_INVALID. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "A taker binding must name an address. Category: structural. Remediation: Correct the intent and publish it again. Run the Swaps verifier on the corrected input and continue only when it accepts.",
     "digest": "c917d4f77272ad3b",
     "docUrl": "/reference/refusal-codes/#TAKER_BINDING_INVALID"
   },
@@ -3847,7 +3871,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: TERMS_AMOUNT_INVALID",
-    "content": "priceSats must be an exact decimal string. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with TERMS_AMOUNT_INVALID. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "priceSats must be an exact decimal string. Category: structural. Remediation: Correct the terms and publish them again. Any change to the terms changes their hash. Run the Offers verifier on the corrected input and continue only when it accepts.",
     "digest": "55f13512766ae163",
     "docUrl": "/reference/refusal-codes/#TERMS_AMOUNT_INVALID"
   },
@@ -3859,7 +3883,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: TERMS_CRITERIA_INVALID",
-    "content": "The criteria hash must be 64 lowercase hex characters. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with TERMS_CRITERIA_INVALID. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The criteria hash must be 64 lowercase hex characters. Category: structural. Remediation: Correct the terms and publish them again. Any change to the terms changes their hash. Run the Offers verifier on the corrected input and continue only when it accepts.",
     "digest": "fbc6f865177b17d2",
     "docUrl": "/reference/refusal-codes/#TERMS_CRITERIA_INVALID"
   },
@@ -3871,7 +3895,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: TERMS_EXPIRY_INVALID",
-    "content": "expiryHeight must be a block height a node can carry. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with TERMS_EXPIRY_INVALID. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "expiryHeight must be a block height a node can carry. Category: structural. Remediation: Correct the terms and publish them again. Any change to the terms changes their hash. Run the Offers verifier on the corrected input and continue only when it accepts.",
     "digest": "2cf9fb9a38bc9ed9",
     "docUrl": "/reference/refusal-codes/#TERMS_EXPIRY_INVALID"
   },
@@ -3883,7 +3907,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: TERMS_HASH_NOT_COMMITTED",
-    "content": "The revealed acceptance leaf does not commit to this offer terms hash. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with TERMS_HASH_NOT_COMMITTED. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The revealed acceptance leaf does not commit to this offer terms hash. Category: structural. Remediation: Do not sign the acceptance. Rebuild it from the offer as published. Run the Offers verifier on the corrected input and continue only when it accepts.",
     "digest": "bc4925ff3e8006a3",
     "docUrl": "/reference/refusal-codes/#TERMS_HASH_NOT_COMMITTED"
   },
@@ -3895,7 +3919,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: TERMS_KIND_UNKNOWN",
-    "content": "The offer kind is not one this protocol names. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with TERMS_KIND_UNKNOWN. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The offer kind is not one this protocol names. Category: structural. Remediation: Correct the terms and publish them again. Any change to the terms changes their hash. Run the Offers verifier on the corrected input and continue only when it accepts.",
     "digest": "63c594796480d9ea",
     "docUrl": "/reference/refusal-codes/#TERMS_KIND_UNKNOWN"
   },
@@ -3907,7 +3931,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: TERMS_NETWORK_UNKNOWN",
-    "content": "The network is not one this protocol names. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with TERMS_NETWORK_UNKNOWN. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The network is not one this protocol names. Category: structural. Remediation: Correct the terms and publish them again. Any change to the terms changes their hash. Run the Offers verifier on the corrected input and continue only when it accepts.",
     "digest": "38ac09f9d29f4a34",
     "docUrl": "/reference/refusal-codes/#TERMS_NETWORK_UNKNOWN"
   },
@@ -3919,7 +3943,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: TERMS_PROTOCOL_UNSUPPORTED",
-    "content": "The terms protocol version must be 1.1 or a later 1.x. Category: capability. Remediation: Inspect the transaction parameters and ensure compliance with TERMS_PROTOCOL_UNSUPPORTED. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The terms protocol version must be 1.1 or a later 1.x. Category: capability. Remediation: Correct the terms and publish them again. Any change to the terms changes their hash. Run the Offers verifier on the corrected input and continue only when it accepts.",
     "digest": "0ea983fbcbc86729",
     "docUrl": "/reference/refusal-codes/#TERMS_PROTOCOL_UNSUPPORTED"
   },
@@ -3931,7 +3955,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: TERMS_RECOVERY_KEY_INVALID",
-    "content": "The buyer recovery key must be 64 lowercase hex characters. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with TERMS_RECOVERY_KEY_INVALID. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The buyer recovery key must be 64 lowercase hex characters. Category: structural. Remediation: Correct the terms and publish them again. Any change to the terms changes their hash. Run the Offers verifier on the corrected input and continue only when it accepts.",
     "digest": "e5e0b393f0d9086a",
     "docUrl": "/reference/refusal-codes/#TERMS_RECOVERY_KEY_INVALID"
   },
@@ -3943,7 +3967,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: TERMS_ROOT_INVALID",
-    "content": "The collection root must be 64 lowercase hex characters. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with TERMS_ROOT_INVALID. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The collection root must be 64 lowercase hex characters. Category: structural. Remediation: Correct the terms and publish them again. Any change to the terms changes their hash. Run the Offers verifier on the corrected input and continue only when it accepts.",
     "digest": "ea7318a8cf481583",
     "docUrl": "/reference/refusal-codes/#TERMS_ROOT_INVALID"
   },
@@ -3955,7 +3979,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: TERMS_SCHEMA_UNSUPPORTED",
-    "content": "The terms schema is not ordex.offer-terms/v1. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with TERMS_SCHEMA_UNSUPPORTED. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The terms schema is not ordex.offer-terms/v1. Category: structural. Remediation: Correct the terms and publish them again. Any change to the terms changes their hash. Run the Offers verifier on the corrected input and continue only when it accepts.",
     "digest": "7121f982b841e3fb",
     "docUrl": "/reference/refusal-codes/#TERMS_SCHEMA_UNSUPPORTED"
   },
@@ -3967,7 +3991,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: TERMS_SCOPE_FIELDS",
-    "content": "An ITEM offer must name exactly one inscription id. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with TERMS_SCOPE_FIELDS. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "An ITEM offer must name exactly one inscription id. Category: structural. Remediation: Correct the terms and publish them again. Any change to the terms changes their hash. Run the Offers verifier on the corrected input and continue only when it accepts.",
     "digest": "ccd589db9c817889",
     "docUrl": "/reference/refusal-codes/#TERMS_SCOPE_FIELDS"
   },
@@ -3979,7 +4003,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: TERMS_SCRIPT_INVALID",
-    "content": "The buyer receive script must be lowercase hex bytes. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with TERMS_SCRIPT_INVALID. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The buyer receive script must be lowercase hex bytes. Category: structural. Remediation: Correct the terms and publish them again. Any change to the terms changes their hash. Run the Offers verifier on the corrected input and continue only when it accepts.",
     "digest": "b06136f0be9d9280",
     "docUrl": "/reference/refusal-codes/#TERMS_SCRIPT_INVALID"
   },
@@ -3991,7 +4015,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: TIMESTAMP_OUT_OF_TOLERANCE",
-    "content": "The delivery timestamp is outside the allowed clock skew. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with TIMESTAMP_OUT_OF_TOLERANCE. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The delivery timestamp is outside the allowed clock skew. Category: structural. Remediation: Reject the delivery. Verify the raw body as received, with the current secret and your timestamp tolerance; the sender retries. Run the Events and webhooks verifier on the corrected input and continue only when it accepts.",
     "digest": "813741bf91ce1929",
     "docUrl": "/reference/refusal-codes/#TIMESTAMP_OUT_OF_TOLERANCE"
   },
@@ -4003,7 +4027,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: TRACE_ID_INVALID",
-    "content": "The event must carry a trace id of at most 128 characters. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with TRACE_ID_INVALID. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The event must carry a trace id of at most 128 characters. Category: structural. Remediation: Reject the event and do not apply it. Fetch it again from the replayable stream from your last checkpoint. Run the Events and webhooks verifier on the corrected input and continue only when it accepts.",
     "digest": "ac70d7fcf5c5edb9",
     "docUrl": "/reference/refusal-codes/#TRACE_ID_INVALID"
   },
@@ -4015,8 +4039,8 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: TRACKED_ASSET_UNASSIGNED",
-    "content": "Asset ${key} has no destination in the asset transitions. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with TRACKED_ASSET_UNASSIGNED. Verify outpoints, scriptPubKeys, and value conservation.",
-    "digest": "96459d453c846cb6",
+    "content": "Asset <key> has no destination in the asset transitions. Category: structural. Remediation: Regenerate the plan from the wallet as it is now and review it again before signing. Run the SafeOps verifier on the corrected input and continue only when it accepts.",
+    "digest": "eee6ff6da7c06393",
     "docUrl": "/reference/refusal-codes/#TRACKED_ASSET_UNASSIGNED"
   },
   {
@@ -4027,8 +4051,8 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: TRANSITION_OUTPUT_MISSING",
-    "content": "Asset ${key} names output ${transition.toOutput}, which does not exist. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with TRANSITION_OUTPUT_MISSING. Verify outpoints, scriptPubKeys, and value conservation.",
-    "digest": "fe8ba8f55d5e23ba",
+    "content": "Asset <key> names output <transition.toOutput>, which does not exist. Category: structural. Remediation: Regenerate the plan from the wallet as it is now and review it again before signing. Run the SafeOps verifier on the corrected input and continue only when it accepts.",
+    "digest": "07d6be3d18530a9d",
     "docUrl": "/reference/refusal-codes/#TRANSITION_OUTPUT_MISSING"
   },
   {
@@ -4039,8 +4063,8 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: TRANSITION_SAT_FLOW_MISMATCH",
-    "content": "Asset ${key} declares output ${transition.toOutput}, but the sat range of input ${i} begins in a different output. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with TRANSITION_SAT_FLOW_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation.",
-    "digest": "487d71b2658f4fff",
+    "content": "Asset <key> declares output <transition.toOutput>, but the sat range of input <i> begins in a different output. Category: structural. Remediation: Regenerate the plan from the wallet as it is now and review it again before signing. Run the SafeOps verifier on the corrected input and continue only when it accepts.",
+    "digest": "65ca437b904d30cd",
     "docUrl": "/reference/refusal-codes/#TRANSITION_SAT_FLOW_MISMATCH"
   },
   {
@@ -4051,8 +4075,8 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: TRANSITION_SOURCE_MISMATCH",
-    "content": "Asset ${key} declares input ${transition.fromInput} but rides on input ${i}. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with TRANSITION_SOURCE_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation.",
-    "digest": "194dd28e1f1a3508",
+    "content": "Asset <key> declares input <transition.fromInput> but rides on input <i>. Category: structural. Remediation: Regenerate the plan from the wallet as it is now and review it again before signing. Run the SafeOps verifier on the corrected input and continue only when it accepts.",
+    "digest": "bef6c343b80dc7fa",
     "docUrl": "/reference/refusal-codes/#TRANSITION_SOURCE_MISMATCH"
   },
   {
@@ -4063,7 +4087,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: UNCLOSED_SIGHASH",
-    "content": "Every input must commit to every output (SIGHASH_ALL), or one party could move its asset without the other receiving theirs. Category: signature. Remediation: Inspect the transaction parameters and ensure compliance with UNCLOSED_SIGHASH. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "Every input must commit to every output (SIGHASH_ALL), or one party could move its asset without the other receiving theirs. Category: signature. Remediation: Do not sign. Rebuild the acceptance plan from the published intent. Run the Swaps verifier on the corrected input and continue only when it accepts.",
     "digest": "8df4bb98c06e5da0",
     "docUrl": "/reference/refusal-codes/#UNCLOSED_SIGHASH"
   },
@@ -4075,8 +4099,8 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: UNEXPECTED_MAKER_INPUT",
-    "content": "Input ${key} spends an outpoint the intent never committed. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with UNEXPECTED_MAKER_INPUT. Verify outpoints, scriptPubKeys, and value conservation.",
-    "digest": "b38fcba5471af01e",
+    "content": "Input <key> spends an outpoint the intent never committed. Category: structural. Remediation: Do not sign. Rebuild the acceptance plan from the published intent. Run the Swaps verifier on the corrected input and continue only when it accepts.",
+    "digest": "ca559f277637762c",
     "docUrl": "/reference/refusal-codes/#UNEXPECTED_MAKER_INPUT"
   },
   {
@@ -4087,8 +4111,8 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: UNEXPECTED_SIGNATURE",
-    "content": "Input ${i} was not part of the signing policy but carries a signature. Category: signature. Remediation: Inspect the transaction parameters and ensure compliance with UNEXPECTED_SIGNATURE. Verify outpoints, scriptPubKeys, and value conservation.",
-    "digest": "8a958b7b961333ad",
+    "content": "Input <i> was not part of the signing policy but carries a signature. Category: signature. Remediation: Do not broadcast. The signed transaction is not the approved plan: discard it and sign the approved plan again. Run the SafeOps verifier on the corrected input and continue only when it accepts.",
+    "digest": "ab09aa978f34f729",
     "docUrl": "/reference/refusal-codes/#UNEXPECTED_SIGNATURE"
   },
   {
@@ -4099,8 +4123,8 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: UNKNOWN_CLAIM_FAILS_CLOSED",
-    "content": "Input ${i} carries an unrecognized claim (${asset.assetId}); resolve it before planning. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with UNKNOWN_CLAIM_FAILS_CLOSED. Verify outpoints, scriptPubKeys, and value conservation.",
-    "digest": "c0691005f2b60787",
+    "content": "Input <i> carries an unrecognized claim (<asset.assetId>); resolve it before planning. Category: structural. Remediation: Regenerate the plan from the wallet as it is now and review it again before signing. Run the SafeOps verifier on the corrected input and continue only when it accepts.",
+    "digest": "b086b516ededd227",
     "docUrl": "/reference/refusal-codes/#UNKNOWN_CLAIM_FAILS_CLOSED"
   },
   {
@@ -4111,8 +4135,8 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: UNKNOWN_CRITICAL_FIELDS",
-    "content": "The signed result carries fields this protocol does not define: ${signed.unknownCriticalFields.join(', ')}. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with UNKNOWN_CRITICAL_FIELDS. Verify outpoints, scriptPubKeys, and value conservation.",
-    "digest": "8f6659685fa1fa4b",
+    "content": "The signed result carries fields this protocol does not define: <signed.unknownCriticalFields.join(', ')>. Category: structural. Remediation: Do not broadcast: the signed transaction is not the manifest. Sign again from a verified manifest. Run the Offline signing verifier on the corrected input and continue only when it accepts.",
+    "digest": "ee2c4a22729bbfdb",
     "docUrl": "/reference/refusal-codes/#UNKNOWN_CRITICAL_FIELDS"
   },
   {
@@ -4123,8 +4147,8 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: VALUE_CHANGED",
-    "content": "Input ${i} no longer carries its presented value. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with VALUE_CHANGED. Verify outpoints, scriptPubKeys, and value conservation.",
-    "digest": "a1ba7151bfd33ee5",
+    "content": "Input <i> no longer carries its presented value. Category: structural. Remediation: Do not broadcast: the signed transaction is not the manifest. Sign again from a verified manifest. Run the Offline signing verifier on the corrected input and continue only when it accepts.",
+    "digest": "5fb9966c784c9099",
     "docUrl": "/reference/refusal-codes/#VALUE_CHANGED"
   },
   {
@@ -4135,7 +4159,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: VALUE_NOT_CONSERVED",
-    "content": "The inputs do not equal the outputs plus the declared fee. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with VALUE_NOT_CONSERVED. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The inputs do not equal the outputs plus the declared fee. Category: structural. Remediation: Rebuild the expected-transaction manifest on the online machine and transfer it to the signer again. Run the Offline signing verifier on the corrected input and continue only when it accepts.",
     "digest": "8b7ad0274225d9ad",
     "docUrl": "/reference/refusal-codes/#VALUE_NOT_CONSERVED"
   },
@@ -4147,7 +4171,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: VERSION_INVALID",
-    "content": "The manifest version must be a positive integer. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with VERSION_INVALID. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "The manifest version must be a positive integer. Category: structural. Remediation: Treat the collection as unverified and ask the creator for a corrected, re-signed manifest. Run the Collection manifest verifier on the corrected input and continue only when it accepts.",
     "digest": "ed560f6ff51ee2dc",
     "docUrl": "/reference/refusal-codes/#VERSION_INVALID"
   },
@@ -4159,7 +4183,7 @@
     "protocolVersion": "1.2",
     "contentType": "refusal-code",
     "title": "Refusal: VISIBILITY_INVALID",
-    "content": "Visibility must be PUBLIC or PRIVATE. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with VISIBILITY_INVALID. Verify outpoints, scriptPubKeys, and value conservation.",
+    "content": "Visibility must be PUBLIC or PRIVATE. Category: structural. Remediation: Correct the intent and publish it again. Run the Swaps verifier on the corrected input and continue only when it accepts.",
     "digest": "b1bc468850a2657b",
     "docUrl": "/reference/refusal-codes/#VISIBILITY_INVALID"
   }

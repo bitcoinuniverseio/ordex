@@ -89,12 +89,12 @@ test('contract, vector, refusal and source tools return exactly what the checked
   }
   const codes = new Set();
   for (const family of FAMILIES) for (const c of loadVectorFile(family).cases) if (c.expected.code) codes.add(c.expected.code);
-  const registry = new Set(JSON.parse(readFileSync(join(ROOT, 'site', 'src', 'data', 'diagnostics.json'), 'utf8')).flatMap((r) => r.exactCodes));
+  // Every code a vector expects has a rule (OX-S09 completed the registry, including
+  // template codes such as MAKER_ASSET_UNASSIGNED).
   for (const code of codes) {
     const result = await callOk('ordex.explain_refusal', { code });
-    // A code missing from the diagnostic registry is a tool error, never an invented rule.
-    if (registry.has(code)) assert.ok(result.structuredContent.rule.exactCodes.includes(code), code);
-    else assert.equal(result.isError, true, code);
+    assert.equal(result.isError, false, code);
+    assert.ok(result.structuredContent.rule.exactCodes.includes(code), code);
   }
   const specText = readFileSync(join(ROOT, 'spec', 'purchase.md'), 'utf8');
   const src = (await callOk('ordex.read_source', { sourcePath: 'spec/purchase.md' })).structuredContent;

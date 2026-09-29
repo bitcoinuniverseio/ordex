@@ -9,7 +9,7 @@
     ],
     "category": "structural",
     "explanation": "The account may carry only an output descriptor string.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with ACCOUNT_INVALID. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Rebuild the expected-transaction manifest on the online machine and transfer it to the signer again. Run the Offline signing verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "ADAPTER_VERSIONS_MISSING",
@@ -21,7 +21,7 @@
     ],
     "category": "structural",
     "explanation": "The intent must name the protocol adapter versions it relies on.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with ADAPTER_VERSIONS_MISSING. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Correct the intent and publish it again. Run the Swaps verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "ADDRESS_MISSING",
@@ -33,7 +33,7 @@
     ],
     "category": "structural",
     "explanation": "The record must name the address that controls the outpoint.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with ADDRESS_MISSING. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Treat the attachment as unknown until a valid record is obtained again from the Counterparty source. Run the Counterparty asset verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "AGGREGATE_INVALID",
@@ -45,7 +45,7 @@
     ],
     "category": "structural",
     "explanation": "The event must name an aggregate type, id, and version.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with AGGREGATE_INVALID. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Reject the event and do not apply it. Fetch it again from the replayable stream from your last checkpoint. Run the Events and webhooks verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "ANCHOR_INVALID",
@@ -57,7 +57,7 @@
     ],
     "category": "structural",
     "explanation": "An anchor must name a lowercase 64 hex transaction id.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with ANCHOR_INVALID. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Treat the collection as unverified and ask the creator for a corrected, re-signed manifest. Run the Collection manifest verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "ARTIFACT_DIGEST_INVALID",
@@ -69,7 +69,7 @@
     ],
     "category": "structural",
     "explanation": "Every artifact digest must be 64 lowercase hex characters.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with ARTIFACT_DIGEST_INVALID. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Reject the event and do not apply it. Fetch it again from the replayable stream from your last checkpoint. Run the Events and webhooks verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "ASSET_EXPECTATION_INVALID",
@@ -77,11 +77,11 @@
       "offline-signing"
     ],
     "reasons": [
-      "Output ${i} carries a malformed asset expectation."
+      "Output <i> carries a malformed asset expectation."
     ],
     "category": "structural",
-    "explanation": "Output ${i} carries a malformed asset expectation.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with ASSET_EXPECTATION_INVALID. Verify outpoints, scriptPubKeys, and value conservation."
+    "explanation": "Output <i> carries a malformed asset expectation.",
+    "remediation": "Rebuild the expected-transaction manifest on the online machine and transfer it to the signer again. Run the Offline signing verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "ASSET_ID_REQUIRED",
@@ -93,7 +93,7 @@
     ],
     "category": "structural",
     "explanation": "Asset identity is the authoritative numeric Counterparty asset id; a name alone is never an identity.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with ASSET_ID_REQUIRED. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Treat the attachment as unknown until a valid record is obtained again from the Counterparty source. Run the Counterparty asset verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "ASSET_IDENTITY_MISSING",
@@ -107,7 +107,7 @@
     ],
     "category": "structural",
     "explanation": "The record must describe the attached asset.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with ASSET_IDENTITY_MISSING. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Treat the attachment as unknown until a valid record is obtained again from the Counterparty source. Run the Counterparty asset verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "ASSET_IN_CARDINAL_OPERATION",
@@ -115,11 +115,11 @@
       "safeops"
     ],
     "reasons": [
-      "Input ${i} carries ${assets[0].assetType} ${assets[0].assetId}; this operation moves cardinal value only."
+      "Input <i> carries <assets[0].assetType> <assets[0].assetId>; this operation moves cardinal value only."
     ],
     "category": "structural",
-    "explanation": "Input ${i} carries ${assets[0].assetType} ${assets[0].assetId}; this operation moves cardinal value only.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with ASSET_IN_CARDINAL_OPERATION. Verify outpoints, scriptPubKeys, and value conservation."
+    "explanation": "Input <i> carries <assets[0].assetType> <assets[0].assetId>; this operation moves cardinal value only.",
+    "remediation": "Regenerate the plan from the wallet as it is now and review it again before signing. Run the SafeOps verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "ASSET_TRANSITION_DUPLICATED",
@@ -128,11 +128,11 @@
       "swaps"
     ],
     "reasons": [
-      "Asset ${key} is assigned to more than one transition."
+      "Asset <key> is assigned to more than one transition."
     ],
     "category": "spent",
-    "explanation": "Asset ${key} is assigned to more than one transition.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with ASSET_TRANSITION_DUPLICATED. Verify outpoints, scriptPubKeys, and value conservation."
+    "explanation": "Asset <key> is assigned to more than one transition.",
+    "remediation": "Regenerate the plan from the wallet as it is now and review it again before signing. Run the SafeOps verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "ATOMICITY_IMPOSSIBLE",
@@ -144,7 +144,7 @@
     ],
     "category": "structural",
     "explanation": "A swap settles both sides in one transaction with inputs and outputs from both parties.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with ATOMICITY_IMPOSSIBLE. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Do not sign. Rebuild the acceptance plan from the published intent. Run the Swaps verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "ATTACHMENT_STATE_UNKNOWN",
@@ -156,7 +156,7 @@
     ],
     "category": "structural",
     "explanation": "The record must state that the attachment currently exists.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with ATTACHMENT_STATE_UNKNOWN. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Treat the attachment as unknown until a valid record is obtained again from the Counterparty source. Run the Counterparty asset verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "AUTHORITY_NOT_READY",
@@ -168,7 +168,7 @@
     ],
     "category": "structural",
     "explanation": "The record may only be produced while the self hosted Counterparty Core authority reports ready.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with AUTHORITY_NOT_READY. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Treat the attachment as unknown until a valid record is obtained again from the Counterparty source. Run the Counterparty asset verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "BODY_INVALID",
@@ -180,7 +180,7 @@
     ],
     "category": "structural",
     "explanation": "The body must be the exact string that was received.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with BODY_INVALID. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Reject the delivery. Verify the raw body as received, with the current secret and your timestamp tolerance; the sender retries. Run the Events and webhooks verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "BUYER_ASSET_OUTPUT_MISSING",
@@ -192,27 +192,31 @@
     ],
     "category": "structural",
     "explanation": "The buyer receive script must appear exactly once ahead of the seller payment.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with BUYER_ASSET_OUTPUT_MISSING. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Do not sign the acceptance. Rebuild it from the offer as published. Run the Offers verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "CENOTAPH_BURNS_BALANCE",
     "verifiers": [
       "runes"
     ],
-    "reasons": [],
+    "reasons": [
+      "This transaction carries a malformed runestone. Confirming it would destroy every rune balance it spends."
+    ],
     "category": "rune",
-    "explanation": "Refusal condition triggered for cenotaph burns balance.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with CENOTAPH_BURNS_BALANCE. Verify outpoints, scriptPubKeys, and value conservation."
+    "explanation": "This transaction carries a malformed runestone. Confirming it would destroy every rune balance it spends.",
+    "remediation": "Do not sign or broadcast: confirming this transaction would burn runes. Fix or remove the runestone and check again. Run the Rune burn safety verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "CENOTAPH_WITH_UNPROVEN_INPUT",
     "verifiers": [
       "runes"
     ],
-    "reasons": [],
+    "reasons": [
+      "This transaction carries a malformed runestone and spends an output the rune index has not examined, so it cannot be proven to hold no runes."
+    ],
     "category": "rune",
-    "explanation": "Refusal condition triggered for cenotaph with unproven input.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with CENOTAPH_WITH_UNPROVEN_INPUT. Verify outpoints, scriptPubKeys, and value conservation."
+    "explanation": "This transaction carries a malformed runestone and spends an output the rune index has not examined, so it cannot be proven to hold no runes.",
+    "remediation": "Do not sign or broadcast: confirming this transaction would burn runes. Fix or remove the runestone and check again. Run the Rune burn safety verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "CHECKPOINT_INVALID",
@@ -230,7 +234,7 @@
     ],
     "category": "structural",
     "explanation": "The record must carry the block height, block hash, and Counterparty ledger hash it was read at.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with CHECKPOINT_INVALID. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Treat the attachment as unknown until a valid record is obtained again from the Counterparty source. Run the Counterparty asset verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "COLLECTION_ID_INVALID",
@@ -243,7 +247,7 @@
     ],
     "category": "structural",
     "explanation": "The manifest must name a collection id of at most 200 characters.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with COLLECTION_ID_INVALID. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Treat the collection as unverified and ask the creator for a corrected, re-signed manifest. Run the Collection manifest verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "CONSIDERATION_SHORTFALL",
@@ -251,11 +255,11 @@
       "swaps"
     ],
     "reasons": [
-      "No output pays the maker receive script at least ${criterion.minQuantitySats} for ${criterion.assetType}."
+      "No output pays the maker receive script at least <criterion.minQuantitySats> for <criterion.assetType>."
     ],
     "category": "structural",
-    "explanation": "No output pays the maker receive script at least ${criterion.minQuantitySats} for ${criterion.assetType}.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with CONSIDERATION_SHORTFALL. Verify outpoints, scriptPubKeys, and value conservation."
+    "explanation": "No output pays the maker receive script at least <criterion.minQuantitySats> for <criterion.assetType>.",
+    "remediation": "Do not sign. Rebuild the acceptance plan from the published intent. Run the Swaps verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "COTRAVELING_INVALID",
@@ -268,7 +272,7 @@
     ],
     "category": "structural",
     "explanation": "coTravelingAssets must be an array.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with COTRAVELING_INVALID. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Treat the attachment as unknown until a valid record is obtained again from the Counterparty source. Run the Counterparty asset verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "CREATED_AT_INVALID",
@@ -280,7 +284,7 @@
     ],
     "category": "structural",
     "explanation": "createdAtHeight must be a non-negative block height.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with CREATED_AT_INVALID. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Treat the collection as unverified and ask the creator for a corrected, re-signed manifest. Run the Collection manifest verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "CREATOR_ADDRESS_INVALID",
@@ -292,7 +296,7 @@
     ],
     "category": "structural",
     "explanation": "The manifest must name the creator signing address.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with CREATOR_ADDRESS_INVALID. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Treat the collection as unverified and ask the creator for a corrected, re-signed manifest. Run the Collection manifest verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "CREATOR_SIGNATURE_INVALID",
@@ -305,7 +309,7 @@
     ],
     "category": "structural",
     "explanation": "The manifest must carry a bip322 creator signature.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with CREATOR_SIGNATURE_INVALID. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Treat the collection as unverified and ask the creator for a corrected, re-signed manifest. Run the Collection manifest verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "DESTINATION_MISMATCH",
@@ -313,11 +317,11 @@
       "counterparty-asset"
     ],
     "reasons": [
-      "The sat range lands on output ${carriedToIndex}, not the planned output ${expectedOutputIndex}."
+      "The sat range lands on output <carriedToIndex>, not the planned output <expectedOutputIndex>."
     ],
     "category": "structural",
-    "explanation": "The sat range lands on output ${carriedToIndex}, not the planned output ${expectedOutputIndex}.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with DESTINATION_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation."
+    "explanation": "The sat range lands on output <carriedToIndex>, not the planned output <expectedOutputIndex>.",
+    "remediation": "Do not sign. Rebuild the spend so the attached asset lands at the intended output. Run the Counterparty asset verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "DESTINATION_MISSING",
@@ -329,7 +333,7 @@
     ],
     "category": "structural",
     "explanation": "The plan names an output that does not exist.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with DESTINATION_MISSING. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Do not sign. Rebuild the spend so the attached asset lands at the intended output. Run the Counterparty asset verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "DIGEST_MISMATCH",
@@ -348,7 +352,7 @@
     ],
     "category": "structural",
     "explanation": "The manifest digest does not match its content.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with DIGEST_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Treat the collection as unverified and ask the creator for a corrected, re-signed manifest. Run the Collection manifest verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "DISPLAY_NAME_INVALID",
@@ -360,7 +364,7 @@
     ],
     "category": "structural",
     "explanation": "The manifest must name a display name of at most 200 characters.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with DISPLAY_NAME_INVALID. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Treat the collection as unverified and ask the creator for a corrected, re-signed manifest. Run the Collection manifest verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "DUST_OUTPUT",
@@ -370,11 +374,11 @@
       "swaps"
     ],
     "reasons": [
-      "Output ${i} is below the 546 sat dust floor."
+      "Output <i> is below the 546 sat dust floor."
     ],
     "category": "structural",
-    "explanation": "Output ${i} is below the 546 sat dust floor.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with DUST_OUTPUT. Verify outpoints, scriptPubKeys, and value conservation."
+    "explanation": "Output <i> is below the 546 sat dust floor.",
+    "remediation": "Rebuild the expected-transaction manifest on the online machine and transfer it to the signer again. Run the Offline signing verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "EVENT_ID_INVALID",
@@ -386,7 +390,7 @@
     ],
     "category": "structural",
     "explanation": "The event id must be a lowercase uuid.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with EVENT_ID_INVALID. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Reject the event and do not apply it. Fetch it again from the replayable stream from your last checkpoint. Run the Events and webhooks verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "EVENT_TYPE_INVALID",
@@ -398,7 +402,7 @@
     ],
     "category": "structural",
     "explanation": "The event type must look like ordex.<family>.<name>.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with EVENT_TYPE_INVALID. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Reject the event and do not apply it. Fetch it again from the replayable stream from your last checkpoint. Run the Events and webhooks verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "EXPIRY_INVALID",
@@ -411,7 +415,7 @@
     ],
     "category": "structural",
     "explanation": "The expiry height must be a block after the checkpoint height.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with EXPIRY_INVALID. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Regenerate the plan from the wallet as it is now and review it again before signing. Run the SafeOps verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "FEE_BUDGET_EXCEEDED",
@@ -423,7 +427,7 @@
     ],
     "category": "structural",
     "explanation": "The maker contribution exceeds the budget the intent approved.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with FEE_BUDGET_EXCEEDED. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Do not sign. Rebuild the acceptance plan from the published intent. Run the Swaps verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "FEE_BUDGET_INVALID",
@@ -435,7 +439,7 @@
     ],
     "category": "structural",
     "explanation": "maxMakerFeeSats must be an exact non-negative decimal string.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with FEE_BUDGET_INVALID. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Correct the intent and publish it again. Run the Swaps verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "FEE_CHANGED",
@@ -448,8 +452,8 @@
       "The declared fee does not match the transaction."
     ],
     "category": "structural",
-    "explanation": "The signed transaction fee no longer matches the planned fee.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with FEE_CHANGED. Verify outpoints, scriptPubKeys, and value conservation."
+    "explanation": "The declared fee does not match the transaction.",
+    "remediation": "Do not sign. Rebuild the acceptance plan from the published intent. Run the Swaps verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "FEE_INVALID",
@@ -466,7 +470,7 @@
     ],
     "category": "structural",
     "explanation": "feeSats and maxFeeSats must be exact decimal strings and fee <= maxFee.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with FEE_INVALID. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Rebuild the expected-transaction manifest on the online machine and transfer it to the signer again. Run the Offline signing verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "FEE_OUT_OF_BOUNDS",
@@ -478,7 +482,7 @@
     ],
     "category": "structural",
     "explanation": "The signed transaction fee left the bound the manifest approved.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with FEE_OUT_OF_BOUNDS. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Do not broadcast: the signed transaction is not the manifest. Sign again from a verified manifest. Run the Offline signing verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "FEE_OVER_MAXIMUM",
@@ -490,7 +494,7 @@
     ],
     "category": "structural",
     "explanation": "The fee exceeds the maximum the terms committed to.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with FEE_OVER_MAXIMUM. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Do not sign the acceptance. Rebuild it from the offer as published. Run the Offers verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "FEE_SPLIT_INVALID",
@@ -502,7 +506,7 @@
     ],
     "category": "structural",
     "explanation": "The maker and taker contributions must equal the declared fee.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with FEE_SPLIT_INVALID. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Do not sign. Rebuild the acceptance plan from the published intent. Run the Swaps verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "FELINE_OUTPOINT_DUPLICATED",
@@ -514,7 +518,7 @@
     ],
     "category": "spent",
     "explanation": "The Feline outpoint appears at more than one index.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with FELINE_OUTPOINT_DUPLICATED. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Do not sign the acceptance. Rebuild it from the offer as published. Run the Offers verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "FELINE_OUTPOINT_MISSING",
@@ -526,7 +530,7 @@
     ],
     "category": "structural",
     "explanation": "No input spends the seller Feline output.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with FELINE_OUTPOINT_MISSING. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Do not sign the acceptance. Rebuild it from the offer as published. Run the Offers verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "GIVES_INVALID",
@@ -538,7 +542,7 @@
     ],
     "category": "structural",
     "explanation": "The intent must give at least one exact outpoint with an exact quantity.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with GIVES_INVALID. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Correct the intent and publish it again. Run the Swaps verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "HEADER_MALFORMED",
@@ -551,7 +555,7 @@
     ],
     "category": "structural",
     "explanation": "The header must look like t=<unix>,d=<id>,v1=<hex>.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with HEADER_MALFORMED. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Reject the delivery. Verify the raw body as received, with the current secret and your timestamp tolerance; the sender retries. Run the Events and webhooks verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "HEADER_MISSING",
@@ -563,7 +567,7 @@
     ],
     "category": "structural",
     "explanation": "Expected an X-Ordex-Signature header value.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with HEADER_MISSING. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Reject the delivery. Verify the raw body as received, with the current secret and your timestamp tolerance; the sender retries. Run the Events and webhooks verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "IDENTITY_TYPE_UNKNOWN",
@@ -575,7 +579,7 @@
     ],
     "category": "structural",
     "explanation": "The member identity type is not one this registry names.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with IDENTITY_TYPE_UNKNOWN. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Treat the collection as unverified and ask the creator for a corrected, re-signed manifest. Run the Collection manifest verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "INPUT_DESCRIPTION_INVALID",
@@ -583,11 +587,11 @@
       "offline-signing"
     ],
     "reasons": [
-      "Input ${i} needs an outpoint, an exact value and script, whether the user controls it, and why it is spent."
+      "Input <i> needs an outpoint, an exact value and script, whether the user controls it, and why it is spent."
     ],
     "category": "structural",
-    "explanation": "Input ${i} needs an outpoint, an exact value and script, whether the user controls it, and why it is spent.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with INPUT_DESCRIPTION_INVALID. Verify outpoints, scriptPubKeys, and value conservation."
+    "explanation": "Input <i> needs an outpoint, an exact value and script, whether the user controls it, and why it is spent.",
+    "remediation": "Rebuild the expected-transaction manifest on the online machine and transfer it to the signer again. Run the Offline signing verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "INPUT_DUPLICATED",
@@ -595,11 +599,11 @@
       "swaps"
     ],
     "reasons": [
-      "Input ${key} appears more than once."
+      "Input <key> appears more than once."
     ],
     "category": "spent",
-    "explanation": "Input ${key} appears more than once.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with INPUT_DUPLICATED. Verify outpoints, scriptPubKeys, and value conservation."
+    "explanation": "Input <key> appears more than once.",
+    "remediation": "Do not sign. Rebuild the acceptance plan from the published intent. Run the Swaps verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "INPUT_ORDER_CHANGED",
@@ -607,11 +611,11 @@
       "safeops"
     ],
     "reasons": [
-      "Input ${i} was reordered or substituted after the plan was agreed."
+      "Input <i> was reordered or substituted after the plan was agreed."
     ],
     "category": "structural",
-    "explanation": "Input ${i} was reordered or substituted after the plan was agreed.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with INPUT_ORDER_CHANGED. Verify outpoints, scriptPubKeys, and value conservation."
+    "explanation": "Input <i> was reordered or substituted after the plan was agreed.",
+    "remediation": "Do not broadcast. The signed transaction is not the approved plan: discard it and sign the approved plan again. Run the SafeOps verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "INPUT_OUTPOINT_INVALID",
@@ -620,11 +624,11 @@
       "swaps"
     ],
     "reasons": [
-      "Input ${i} does not carry a lowercase txid and vout."
+      "Input <i> does not carry a lowercase txid and vout."
     ],
     "category": "structural",
-    "explanation": "Input ${i} does not carry a lowercase txid and vout.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with INPUT_OUTPOINT_INVALID. Verify outpoints, scriptPubKeys, and value conservation."
+    "explanation": "Input <i> does not carry a lowercase txid and vout.",
+    "remediation": "Regenerate the plan from the wallet as it is now and review it again before signing. Run the SafeOps verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "INPUT_PARTY_INVALID",
@@ -632,11 +636,11 @@
       "swaps"
     ],
     "reasons": [
-      "Input ${i} must name the maker or the taker."
+      "Input <i> must name the maker or the taker."
     ],
     "category": "structural",
-    "explanation": "Input ${i} must name the maker or the taker.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with INPUT_PARTY_INVALID. Verify outpoints, scriptPubKeys, and value conservation."
+    "explanation": "Input <i> must name the maker or the taker.",
+    "remediation": "Do not sign. Rebuild the acceptance plan from the published intent. Run the Swaps verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "INPUT_REORDERED",
@@ -644,11 +648,11 @@
       "offline-signing"
     ],
     "reasons": [
-      "Input ${i} was reordered or substituted."
+      "Input <i> was reordered or substituted."
     ],
     "category": "structural",
-    "explanation": "Input ${i} was reordered or substituted.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with INPUT_REORDERED. Verify outpoints, scriptPubKeys, and value conservation."
+    "explanation": "Input <i> was reordered or substituted.",
+    "remediation": "Do not broadcast: the signed transaction is not the manifest. Sign again from a verified manifest. Run the Offline signing verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "INPUT_SET_CHANGED",
@@ -662,7 +666,7 @@
     ],
     "category": "structural",
     "explanation": "The signed transaction spends a different set of inputs than the manifest presented.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with INPUT_SET_CHANGED. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Do not broadcast: the signed transaction is not the manifest. Sign again from a verified manifest. Run the Offline signing verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "INPUT_VALUE_CHANGED",
@@ -670,11 +674,11 @@
       "safeops"
     ],
     "reasons": [
-      "Input ${i} no longer carries its planned value."
+      "Input <i> no longer carries its planned value."
     ],
     "category": "structural",
-    "explanation": "Input ${i} no longer carries its planned value.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with INPUT_VALUE_CHANGED. Verify outpoints, scriptPubKeys, and value conservation."
+    "explanation": "Input <i> no longer carries its planned value.",
+    "remediation": "Do not broadcast. The signed transaction is not the approved plan: discard it and sign the approved plan again. Run the SafeOps verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "INPUT_VALUE_INVALID",
@@ -683,11 +687,11 @@
       "swaps"
     ],
     "reasons": [
-      "Input ${i} does not carry an exact decimal value."
+      "Input <i> does not carry an exact decimal value."
     ],
     "category": "structural",
-    "explanation": "Input ${i} does not carry an exact decimal value.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with INPUT_VALUE_INVALID. Verify outpoints, scriptPubKeys, and value conservation."
+    "explanation": "Input <i> does not carry an exact decimal value.",
+    "remediation": "Regenerate the plan from the wallet as it is now and review it again before signing. Run the SafeOps verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "INPUT_VALUE_UNKNOWN",
@@ -697,16 +701,16 @@
       "purchase"
     ],
     "reasons": [
-      "Input ${i} has no readable value, so the sat range cannot be traced.",
-      "The value of input ${i} could not be read, so the invariant cannot be proved.",
+      "Input <i> has no readable value, so the sat range cannot be traced.",
+      "The value of input <i> could not be read, so the invariant cannot be proved.",
       "The Feline output value could not be read, so the invariant cannot be proved.",
       "An input value could not be read, so the fee cannot be proved.",
-      "The value of input ${i} could not be read, so the sat flow invariant cannot be evaluated.",
+      "The value of input <i> could not be read, so the sat flow invariant cannot be evaluated.",
       "The value of the offered output could not be read, so the sat flow invariant cannot be evaluated."
     ],
     "category": "structural",
-    "explanation": "Input ${i} has no readable value, so the sat range cannot be traced.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with INPUT_VALUE_UNKNOWN. Verify outpoints, scriptPubKeys, and value conservation."
+    "explanation": "Input <i> has no readable value, so the sat range cannot be traced.",
+    "remediation": "Do not sign. Rebuild the spend so the attached asset lands at the intended output. Run the Counterparty asset verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "INPUTS_EMPTY",
@@ -718,7 +722,7 @@
     ],
     "category": "structural",
     "explanation": "A plan must select at least one input.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with INPUTS_EMPTY. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Regenerate the plan from the wallet as it is now and review it again before signing. Run the SafeOps verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "INTENT_DIGEST_MISMATCH",
@@ -730,7 +734,7 @@
     ],
     "category": "structural",
     "explanation": "The acceptance plan was not built from this intent.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with INTENT_DIGEST_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Do not sign. Rebuild the acceptance plan from the published intent. Run the Swaps verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "INVENTORY_UNEXAMINED",
@@ -738,11 +742,23 @@
       "safeops"
     ],
     "reasons": [
-      "Input ${i} was never examined against the protocol authorities."
+      "Input <i> was never examined against the protocol authorities."
     ],
     "category": "structural",
-    "explanation": "Input ${i} was never examined against the protocol authorities.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with INVENTORY_UNEXAMINED. Verify outpoints, scriptPubKeys, and value conservation."
+    "explanation": "Input <i> was never examined against the protocol authorities.",
+    "remediation": "Regenerate the plan from the wallet as it is now and review it again before signing. Run the SafeOps verifier on the corrected input and continue only when it accepts."
+  },
+  {
+    "code": "MAKER_ASSET_UNASSIGNED",
+    "verifiers": [
+      "swaps"
+    ],
+    "reasons": [
+      "Asset <key> has no destination in the asset transitions."
+    ],
+    "category": "structural",
+    "explanation": "Asset <key> has no destination in the asset transitions.",
+    "remediation": "Do not sign. Rebuild the acceptance plan from the published intent. Run the Swaps verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "MAKER_OUTPOINT_MISSING",
@@ -750,11 +766,11 @@
       "swaps"
     ],
     "reasons": [
-      "The committed outpoint ${key} is not spent by the acceptance plan."
+      "The committed outpoint <key> is not spent by the acceptance plan."
     ],
     "category": "structural",
-    "explanation": "The committed outpoint ${key} is not spent by the acceptance plan.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with MAKER_OUTPOINT_MISSING. Verify outpoints, scriptPubKeys, and value conservation."
+    "explanation": "The committed outpoint <key> is not spent by the acceptance plan.",
+    "remediation": "Do not sign. Rebuild the acceptance plan from the published intent. Run the Swaps verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "MAKER_OUTPOINT_REASSIGNED",
@@ -762,11 +778,11 @@
       "swaps"
     ],
     "reasons": [
-      "The committed outpoint ${key} is claimed by the taker."
+      "The committed outpoint <key> is claimed by the taker."
     ],
     "category": "structural",
-    "explanation": "The committed outpoint ${key} is claimed by the taker.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with MAKER_OUTPOINT_REASSIGNED. Verify outpoints, scriptPubKeys, and value conservation."
+    "explanation": "The committed outpoint <key> is claimed by the taker.",
+    "remediation": "Do not sign. Rebuild the acceptance plan from the published intent. Run the Swaps verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "MAKER_PROOF_INVALID",
@@ -778,7 +794,7 @@
     ],
     "category": "structural",
     "explanation": "The intent must carry a bip322 maker identity proof with an address.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with MAKER_PROOF_INVALID. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Correct the intent and publish it again. Run the Swaps verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "MALFORMED_ACCEPTANCE",
@@ -789,14 +805,14 @@
     "reasons": [
       "Expected inputs, outputs, and a policy signature count.",
       "The acceptance leaf must be lowercase hex bytes.",
-      "Output ${i} does not carry an exact decimal value.",
+      "Output <i> does not carry an exact decimal value.",
       "An output value is not an exact decimal string.",
       "The outputs carry more than the inputs.",
       "Expected an acceptance plan object."
     ],
     "category": "structural",
     "explanation": "Expected inputs, outputs, and a policy signature count.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with MALFORMED_ACCEPTANCE. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Do not sign the acceptance. Rebuild it from the offer as published. Run the Offers verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "MALFORMED_EVENT",
@@ -808,7 +824,7 @@
     ],
     "category": "structural",
     "explanation": "Expected an event object.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with MALFORMED_EVENT. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Reject the event and do not apply it. Fetch it again from the replayable stream from your last checkpoint. Run the Events and webhooks verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "MALFORMED_INTENT",
@@ -820,7 +836,7 @@
     ],
     "category": "structural",
     "explanation": "Expected an intent object.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with MALFORMED_INTENT. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Correct the intent and publish it again. Run the Swaps verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "MALFORMED_MANIFEST",
@@ -835,7 +851,7 @@
     ],
     "category": "structural",
     "explanation": "Expected a manifest object.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with MALFORMED_MANIFEST. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Treat the collection as unverified and ask the creator for a corrected, re-signed manifest. Run the Collection manifest verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "MALFORMED_OFFER",
@@ -850,7 +866,7 @@
     ],
     "category": "structural",
     "explanation": "Expected both outpoints and the terms hash.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with MALFORMED_OFFER. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Do not sign the acceptance. Rebuild it from the offer as published. Run the Offers verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "MALFORMED_ORDER",
@@ -864,7 +880,7 @@
     ],
     "category": "structural",
     "explanation": "Expected an offered outpoint with txid and vout.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with MALFORMED_ORDER. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Do not sign. Rebuild the purchase from the order as currently published, then verify it again. Run the Purchase verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "MALFORMED_PLAN",
@@ -877,7 +893,7 @@
     ],
     "category": "structural",
     "explanation": "Expected a plan object.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with MALFORMED_PLAN. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Regenerate the plan from the wallet as it is now and review it again before signing. Run the SafeOps verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "MALFORMED_RECORD",
@@ -889,7 +905,7 @@
     ],
     "category": "structural",
     "explanation": "Expected an attachment record object.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with MALFORMED_RECORD. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Treat the attachment as unknown until a valid record is obtained again from the Counterparty source. Run the Counterparty asset verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "MALFORMED_RECOVERY",
@@ -902,7 +918,7 @@
     ],
     "category": "structural",
     "explanation": "Expected inputs and outputs arrays.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with MALFORMED_RECOVERY. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Rebuild the recovery so it spends only the funded offer output back to the buyer, after the offer expires. Run the Offers verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "MALFORMED_REVOCATION",
@@ -914,7 +930,7 @@
     ],
     "category": "structural",
     "explanation": "Expected a revocation object.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with MALFORMED_REVOCATION. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Ignore the revocation: it does not validly revoke this manifest. Keep the manifest status unchanged. Run the Collection manifest verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "MALFORMED_SIGNED_RESULT",
@@ -931,7 +947,7 @@
     ],
     "category": "structural",
     "explanation": "Expected a signed result object.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with MALFORMED_SIGNED_RESULT. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Do not broadcast: the signed transaction is not the manifest. Sign again from a verified manifest. Run the Offline signing verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "MALFORMED_TERMS",
@@ -940,12 +956,12 @@
     ],
     "reasons": [
       "Expected a terms object.",
-      "Unknown field ${key}.",
+      "Unknown field <key>.",
       "The terms must name a collection id."
     ],
     "category": "structural",
     "explanation": "Expected a terms object.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with MALFORMED_TERMS. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Correct the terms and publish them again. Any change to the terms changes their hash. Run the Offers verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "MALFORMED_TRANSACTION",
@@ -955,11 +971,11 @@
     ],
     "reasons": [
       "Expected inputs and outputs arrays.",
-      "Output ${i} does not carry an exact decimal value."
+      "Output <i> does not carry an exact decimal value."
     ],
     "category": "structural",
     "explanation": "Expected inputs and outputs arrays.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with MALFORMED_TRANSACTION. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Do not sign. Rebuild the spend so the attached asset lands at the intended output. Run the Counterparty asset verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "MANIFEST_DIGEST_INVALID",
@@ -971,7 +987,7 @@
     ],
     "category": "structural",
     "explanation": "The revocation must name the manifest digest it revokes.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with MANIFEST_DIGEST_INVALID. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Ignore the revocation: it does not validly revoke this manifest. Keep the manifest status unchanged. Run the Collection manifest verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "MANIFEST_DIGEST_MISMATCH",
@@ -985,7 +1001,7 @@
     ],
     "category": "provenance",
     "explanation": "The revocation names a different manifest than the one supplied.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with MANIFEST_DIGEST_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Ignore the revocation: it does not validly revoke this manifest. Keep the manifest status unchanged. Run the Collection manifest verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "MEMBER_NOT_PROVEN",
@@ -997,7 +1013,7 @@
     ],
     "category": "structural",
     "explanation": "The proof does not resolve to the membership root, so this identity is not a member.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with MEMBER_NOT_PROVEN. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Treat the item as not proven a member. Request a fresh proof for the current manifest version. Run the Collection manifest verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "MEMBERS_DUPLICATED",
@@ -1005,11 +1021,11 @@
       "collection-manifest"
     ],
     "reasons": [
-      "The member ${sortedMembers[i]} appears more than once."
+      "The member <sortedMembers[i]> appears more than once."
     ],
     "category": "spent",
-    "explanation": "The member ${sortedMembers[i]} appears more than once.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with MEMBERS_DUPLICATED. Verify outpoints, scriptPubKeys, and value conservation."
+    "explanation": "The member <sortedMembers[i]> appears more than once.",
+    "remediation": "Treat the collection as unverified and ask the creator for a corrected, re-signed manifest. Run the Collection manifest verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "MEMBERS_EMPTY",
@@ -1021,7 +1037,7 @@
     ],
     "category": "structural",
     "explanation": "A manifest must list at least one member identity.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with MEMBERS_EMPTY. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Treat the collection as unverified and ask the creator for a corrected, re-signed manifest. Run the Collection manifest verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "MEMBERS_INVALID",
@@ -1033,7 +1049,7 @@
     ],
     "category": "structural",
     "explanation": "Every member identity must be a string of at most 256 characters.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with MEMBERS_INVALID. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Treat the collection as unverified and ask the creator for a corrected, re-signed manifest. Run the Collection manifest verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "MEMBERS_UNSORTED",
@@ -1045,7 +1061,7 @@
     ],
     "category": "structural",
     "explanation": "The member list must be stored in ascending sorted order.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with MEMBERS_UNSORTED. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Treat the collection as unverified and ask the creator for a corrected, re-signed manifest. Run the Collection manifest verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "MEMBERSHIP_ROOT_MISMATCH",
@@ -1057,7 +1073,7 @@
     ],
     "category": "provenance",
     "explanation": "The membership root does not match the member list.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with MEMBERSHIP_ROOT_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Treat the collection as unverified and ask the creator for a corrected, re-signed manifest. Run the Collection manifest verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "NETWORK_MISMATCH",
@@ -1069,7 +1085,7 @@
     ],
     "category": "structural",
     "explanation": "The acceptance plan was built for a different network.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with NETWORK_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Do not sign. Rebuild the acceptance plan from the published intent. Run the Swaps verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "NETWORK_UNKNOWN",
@@ -1086,7 +1102,7 @@
     ],
     "category": "structural",
     "explanation": "The network is not one this protocol names.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with NETWORK_UNKNOWN. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Treat the collection as unverified and ask the creator for a corrected, re-signed manifest. Run the Collection manifest verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "NONCE_INVALID",
@@ -1098,7 +1114,7 @@
     ],
     "category": "structural",
     "explanation": "The intent must carry a nonce of 8 to 128 characters.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with NONCE_INVALID. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Correct the intent and publish it again. Run the Swaps verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "OBSERVED_AT_INVALID",
@@ -1110,7 +1126,7 @@
     ],
     "category": "structural",
     "explanation": "observedAt must be an ISO-8601 timestamp ending in Z.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with OBSERVED_AT_INVALID. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Reject the event and do not apply it. Fetch it again from the replayable stream from your last checkpoint. Run the Events and webhooks verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "OFFER_EXPIRED",
@@ -1122,7 +1138,7 @@
     ],
     "category": "stale",
     "explanation": "The expiry height has passed; recovery is the only remaining path.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with OFFER_EXPIRED. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Do not sign the acceptance. Rebuild it from the offer as published. Run the Offers verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "OFFER_OUTPOINT_DUPLICATED",
@@ -1135,7 +1151,7 @@
     ],
     "category": "spent",
     "explanation": "The funded output appears at more than one index.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with OFFER_OUTPOINT_DUPLICATED. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Rebuild the recovery so it spends only the funded offer output back to the buyer, after the offer expires. Run the Offers verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "OFFER_OUTPOINT_MISSING",
@@ -1148,7 +1164,7 @@
     ],
     "category": "structural",
     "explanation": "No input spends the funded offer output.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with OFFER_OUTPOINT_MISSING. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Rebuild the recovery so it spends only the funded offer output back to the buyer, after the offer expires. Run the Offers verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "OFFERED_OUTPOINT_DUPLICATED",
@@ -1160,7 +1176,7 @@
     ],
     "category": "spent",
     "explanation": "The offered outpoint appears at more than one index, so one signature would answer for two positions.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with OFFERED_OUTPOINT_DUPLICATED. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Do not sign. Rebuild the purchase from the order as currently published, then verify it again. Run the Purchase verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "OFFERED_OUTPOINT_MISSING",
@@ -1172,7 +1188,7 @@
     ],
     "category": "structural",
     "explanation": "No input spends the offered output.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with OFFERED_OUTPOINT_MISSING. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Do not sign. Rebuild the purchase from the order as currently published, then verify it again. Run the Purchase verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "OPERATION_KIND_UNKNOWN",
@@ -1184,7 +1200,7 @@
     ],
     "category": "structural",
     "explanation": "The operation kind is not one this protocol names.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with OPERATION_KIND_UNKNOWN. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Regenerate the plan from the wallet as it is now and review it again before signing. Run the SafeOps verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "OUTPOINT_DUPLICATED",
@@ -1196,7 +1212,7 @@
     ],
     "category": "spent",
     "explanation": "The attached outpoint appears at more than one index.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with OUTPOINT_DUPLICATED. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Do not sign. Rebuild the spend so the attached asset lands at the intended output. Run the Counterparty asset verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "OUTPOINT_INVALID",
@@ -1208,7 +1224,7 @@
     ],
     "category": "structural",
     "explanation": "The record must name a lowercase txid and vout.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with OUTPOINT_INVALID. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Treat the attachment as unknown until a valid record is obtained again from the Counterparty source. Run the Counterparty asset verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "OUTPOINT_NOT_SPENT",
@@ -1220,7 +1236,7 @@
     ],
     "category": "spent",
     "explanation": "No input spends the attached outpoint.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with OUTPOINT_NOT_SPENT. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Do not sign. Rebuild the spend so the attached asset lands at the intended output. Run the Counterparty asset verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "OUTPUT_DESCRIPTION_INVALID",
@@ -1228,11 +1244,11 @@
       "offline-signing"
     ],
     "reasons": [
-      "Output ${i} needs an exact script and value, a role, and who receives it."
+      "Output <i> needs an exact script and value, a role, and who receives it."
     ],
     "category": "structural",
-    "explanation": "Output ${i} needs an exact script and value, a role, and who receives it.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with OUTPUT_DESCRIPTION_INVALID. Verify outpoints, scriptPubKeys, and value conservation."
+    "explanation": "Output <i> needs an exact script and value, a role, and who receives it.",
+    "remediation": "Rebuild the expected-transaction manifest on the online machine and transfer it to the signer again. Run the Offline signing verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "OUTPUT_ROLE_UNKNOWN",
@@ -1240,11 +1256,11 @@
       "safeops"
     ],
     "reasons": [
-      "Output ${i} does not name a recipient, change, or preserve role."
+      "Output <i> does not name a recipient, change, or preserve role."
     ],
     "category": "structural",
-    "explanation": "Output ${i} does not name a recipient, change, or preserve role.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with OUTPUT_ROLE_UNKNOWN. Verify outpoints, scriptPubKeys, and value conservation."
+    "explanation": "Output <i> does not name a recipient, change, or preserve role.",
+    "remediation": "Regenerate the plan from the wallet as it is now and review it again before signing. Run the SafeOps verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "OUTPUT_SCRIPT_INVALID",
@@ -1253,11 +1269,11 @@
       "swaps"
     ],
     "reasons": [
-      "Output ${i} does not carry lowercase hex script bytes."
+      "Output <i> does not carry lowercase hex script bytes."
     ],
     "category": "structural",
-    "explanation": "Output ${i} does not carry lowercase hex script bytes.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with OUTPUT_SCRIPT_INVALID. Verify outpoints, scriptPubKeys, and value conservation."
+    "explanation": "Output <i> does not carry lowercase hex script bytes.",
+    "remediation": "Regenerate the plan from the wallet as it is now and review it again before signing. Run the SafeOps verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "OUTPUT_SET_CHANGED",
@@ -1271,7 +1287,7 @@
     ],
     "category": "structural",
     "explanation": "The signed transaction carries a different set of outputs than the manifest presented.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with OUTPUT_SET_CHANGED. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Do not broadcast: the signed transaction is not the manifest. Sign again from a verified manifest. Run the Offline signing verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "OUTPUT_VALUE_INVALID",
@@ -1280,11 +1296,11 @@
       "swaps"
     ],
     "reasons": [
-      "Output ${i} does not carry an exact decimal value."
+      "Output <i> does not carry an exact decimal value."
     ],
     "category": "structural",
-    "explanation": "Output ${i} does not carry an exact decimal value.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with OUTPUT_VALUE_INVALID. Verify outpoints, scriptPubKeys, and value conservation."
+    "explanation": "Output <i> does not carry an exact decimal value.",
+    "remediation": "Regenerate the plan from the wallet as it is now and review it again before signing. Run the SafeOps verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "OUTPUT_VALUE_UNKNOWN",
@@ -1292,11 +1308,11 @@
       "counterparty-asset"
     ],
     "reasons": [
-      "Output ${i} has no readable value, so the sat range cannot be traced."
+      "Output <i> has no readable value, so the sat range cannot be traced."
     ],
     "category": "structural",
-    "explanation": "Output ${i} has no readable value, so the sat range cannot be traced.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with OUTPUT_VALUE_UNKNOWN. Verify outpoints, scriptPubKeys, and value conservation."
+    "explanation": "Output <i> has no readable value, so the sat range cannot be traced.",
+    "remediation": "Do not sign. Rebuild the spend so the attached asset lands at the intended output. Run the Counterparty asset verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "PAYLOAD_INVALID",
@@ -1308,7 +1324,7 @@
     ],
     "category": "structural",
     "explanation": "The payload must be an object.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with PAYLOAD_INVALID. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Reject the event and do not apply it. Fetch it again from the replayable stream from your last checkpoint. Run the Events and webhooks verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "PLAN_DIGEST_MISMATCH",
@@ -1320,7 +1336,7 @@
     ],
     "category": "structural",
     "explanation": "The signed result was not produced from this plan. Refresh the plan and sign again.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with PLAN_DIGEST_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Do not broadcast. The signed transaction is not the approved plan: discard it and sign the approved plan again. Run the SafeOps verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "POLICY_SIGNATURES_MISSING",
@@ -1332,7 +1348,7 @@
     ],
     "category": "signature",
     "explanation": "A valid acceptance carries exactly one signature from each independent policy signer.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with POLICY_SIGNATURES_MISSING. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Do not sign the acceptance. Rebuild it from the offer as published. Run the Offers verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "PREVIOUS_DIGEST_FORBIDDEN",
@@ -1344,7 +1360,7 @@
     ],
     "category": "structural",
     "explanation": "Version 1 cannot name a previous manifest.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with PREVIOUS_DIGEST_FORBIDDEN. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Treat the collection as unverified and ask the creator for a corrected, re-signed manifest. Run the Collection manifest verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "PREVIOUS_DIGEST_REQUIRED",
@@ -1356,7 +1372,7 @@
     ],
     "category": "structural",
     "explanation": "A manifest after version 1 must name the manifest it supersedes.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with PREVIOUS_DIGEST_REQUIRED. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Treat the collection as unverified and ask the creator for a corrected, re-signed manifest. Run the Collection manifest verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "PROOF_MALFORMED",
@@ -1368,7 +1384,7 @@
     ],
     "category": "structural",
     "explanation": "Every proof step needs a sibling digest and a position.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with PROOF_MALFORMED. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Treat the item as not proven a member. Request a fresh proof for the current manifest version. Run the Collection manifest verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "PROTECTED_ASSET_MISPLACED",
@@ -1376,12 +1392,12 @@
       "offline-signing"
     ],
     "reasons": [
-      "Asset ${key} was not part of the presented plan at all.",
-      "Asset ${key} landed on output ${movement.outputIndex} instead of the presented output ${expectedIndex}."
+      "Asset <key> was not part of the presented plan at all.",
+      "Asset <key> landed on output <movement.outputIndex> instead of the presented output <expectedIndex>."
     ],
     "category": "structural",
-    "explanation": "Asset ${key} was not part of the presented plan at all.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with PROTECTED_ASSET_MISPLACED. Verify outpoints, scriptPubKeys, and value conservation."
+    "explanation": "Asset <key> was not part of the presented plan at all.",
+    "remediation": "Do not broadcast: the signed transaction is not the manifest. Sign again from a verified manifest. Run the Offline signing verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "PROTOCOL_FAMILY_UNKNOWN",
@@ -1393,7 +1409,7 @@
     ],
     "category": "structural",
     "explanation": "The protocol family is not one this registry names.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with PROTOCOL_FAMILY_UNKNOWN. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Treat the collection as unverified and ask the creator for a corrected, re-signed manifest. Run the Collection manifest verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "PROTOCOL_UNSUPPORTED",
@@ -1410,7 +1426,7 @@
     ],
     "category": "capability",
     "explanation": "The manifest protocol version must be 1.2 or a later 1.x.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with PROTOCOL_UNSUPPORTED. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Treat the collection as unverified and ask the creator for a corrected, re-signed manifest. Run the Collection manifest verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "PURPOSE_MISSING",
@@ -1422,7 +1438,7 @@
     ],
     "category": "structural",
     "explanation": "The manifest must state in one line what the transaction is for.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with PURPOSE_MISSING. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Rebuild the expected-transaction manifest on the online machine and transfer it to the signer again. Run the Offline signing verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "QUANTITY_INVALID",
@@ -1434,7 +1450,7 @@
     ],
     "category": "structural",
     "explanation": "quantitySats must be an exact decimal string of atomic units.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with QUANTITY_INVALID. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Treat the attachment as unknown until a valid record is obtained again from the Counterparty source. Run the Counterparty asset verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "REASON_REQUIRED",
@@ -1446,7 +1462,7 @@
     ],
     "category": "structural",
     "explanation": "The revocation must state a reason of at most 500 characters.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with REASON_REQUIRED. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Ignore the revocation: it does not validly revoke this manifest. Keep the manifest status unchanged. Run the Collection manifest verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "RECEIVE_SCRIPT_INVALID",
@@ -1458,7 +1474,7 @@
     ],
     "category": "structural",
     "explanation": "The maker receive script must be lowercase hex bytes.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with RECEIVE_SCRIPT_INVALID. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Correct the intent and publish it again. Run the Swaps verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "RECOVERY_BEFORE_EXPIRY",
@@ -1471,7 +1487,7 @@
     ],
     "category": "stale",
     "explanation": "The locktime is below the expiry height.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with RECOVERY_BEFORE_EXPIRY. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Rebuild the recovery so it spends only the funded offer output back to the buyer, after the offer expires. Run the Offers verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "RECOVERY_LEAF_MISMATCH",
@@ -1485,7 +1501,7 @@
     ],
     "category": "structural",
     "explanation": "The recovery leaf must be lowercase hex bytes.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with RECOVERY_LEAF_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Rebuild the recovery so it spends only the funded offer output back to the buyer, after the offer expires. Run the Offers verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "RECOVERY_OUTPUT_WRONG",
@@ -1498,7 +1514,7 @@
     ],
     "category": "structural",
     "explanation": "A recovery pays one output, the buyer receive script.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with RECOVERY_OUTPUT_WRONG. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Rebuild the recovery so it spends only the funded offer output back to the buyer, after the offer expires. Run the Offers verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "REQUIRED_SIGNATURE_MISSING",
@@ -1506,11 +1522,11 @@
       "offline-signing"
     ],
     "reasons": [
-      "Input ${i} is still unsigned; the result is incomplete."
+      "Input <i> is still unsigned; the result is incomplete."
     ],
     "category": "signature",
-    "explanation": "Input ${i} is still unsigned; the result is incomplete.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with REQUIRED_SIGNATURE_MISSING. Verify outpoints, scriptPubKeys, and value conservation."
+    "explanation": "Input <i> is still unsigned; the result is incomplete.",
+    "remediation": "Do not broadcast: the signed transaction is not the manifest. Sign again from a verified manifest. Run the Offline signing verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "REQUIRES_INVALID",
@@ -1522,7 +1538,7 @@
     ],
     "category": "structural",
     "explanation": "The intent must require at least one exact asset with a minimum quantity.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with REQUIRES_INVALID. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Correct the intent and publish it again. Run the Swaps verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "REVERTED_EVENT_REQUIRED",
@@ -1535,7 +1551,7 @@
     ],
     "category": "structural",
     "explanation": "A reverted event must name the event id it reverses.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with REVERTED_EVENT_REQUIRED. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Reject the event and do not apply it. Fetch it again from the replayable stream from your last checkpoint. Run the Events and webhooks verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "RUNE_INPUT_MISSING_ALLOCATION",
@@ -1543,11 +1559,11 @@
       "safeops"
     ],
     "reasons": [
-      "Input ${i} carries no rune allocation."
+      "Input <i> carries no rune allocation."
     ],
     "category": "rune",
-    "explanation": "Input ${i} carries no rune allocation.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with RUNE_INPUT_MISSING_ALLOCATION. Verify outpoints, scriptPubKeys, and value conservation."
+    "explanation": "Input <i> carries no rune allocation.",
+    "remediation": "Regenerate the plan from the wallet as it is now and review it again before signing. Run the SafeOps verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "SAT_FLOW_SHORTFALL",
@@ -1563,7 +1579,7 @@
     ],
     "category": "structural",
     "explanation": "No output absorbs the start of the attached outpoint range; the attachment would be lost.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with SAT_FLOW_SHORTFALL. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Do not sign. Rebuild the spend so the attached asset lands at the intended output. Run the Counterparty asset verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "SCHEMA_UNSUPPORTED",
@@ -1589,7 +1605,7 @@
     ],
     "category": "structural",
     "explanation": "The manifest schema is not ordex.collection-manifest/v1.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with SCHEMA_UNSUPPORTED. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Treat the collection as unverified and ask the creator for a corrected, re-signed manifest. Run the Collection manifest verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "SCRIPT_CHANGED",
@@ -1598,12 +1614,12 @@
       "safeops"
     ],
     "reasons": [
-      "Output ${i} no longer pays its presented script.",
-      "Output ${i} no longer pays the planned script."
+      "Output <i> no longer pays its presented script.",
+      "Output <i> no longer pays the planned script."
     ],
     "category": "structural",
-    "explanation": "Output ${i} no longer pays its presented script.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with SCRIPT_CHANGED. Verify outpoints, scriptPubKeys, and value conservation."
+    "explanation": "Output <i> no longer pays its presented script.",
+    "remediation": "Do not broadcast: the signed transaction is not the manifest. Sign again from a verified manifest. Run the Offline signing verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "SECRET_INVALID",
@@ -1615,7 +1631,7 @@
     ],
     "category": "structural",
     "explanation": "The subscription secret must be a nonempty string.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with SECRET_INVALID. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Reject the delivery. Verify the raw body as received, with the current secret and your timestamp tolerance; the sender retries. Run the Events and webhooks verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "SELLER_OUTPUT_MISSING",
@@ -1624,12 +1640,12 @@
       "purchase"
     ],
     "reasons": [
-      "No output exists at index ${n}, the index the seller signed.",
-      "No output exists at index ${n}, the index the seller's signed input occupies."
+      "No output exists at index <n>, the index the seller signed.",
+      "No output exists at index <n>, the index the seller's signed input occupies."
     ],
     "category": "structural",
-    "explanation": "No output exists at index ${n}, the index the seller signed.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with SELLER_OUTPUT_MISSING. Verify outpoints, scriptPubKeys, and value conservation."
+    "explanation": "No output exists at index <n>, the index the seller signed.",
+    "remediation": "Do not sign the acceptance. Rebuild it from the offer as published. Run the Offers verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "SELLER_SCRIPT_MISMATCH",
@@ -1639,11 +1655,11 @@
     ],
     "reasons": [
       "The output at the seller index does not pay the signed script.",
-      "The output at index ${n} does not pay the script the seller's signature commits to."
+      "The output at index <n> does not pay the script the seller's signature commits to."
     ],
     "category": "structural",
     "explanation": "The output at the seller index does not pay the signed script.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with SELLER_SCRIPT_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Do not sign the acceptance. Rebuild it from the offer as published. Run the Offers verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "SELLER_VALUE_MISMATCH",
@@ -1653,11 +1669,11 @@
     ],
     "reasons": [
       "The seller payment is not the exact offer price.",
-      "The output at index ${n} does not carry the exact asking price."
+      "The output at index <n> does not carry the exact asking price."
     ],
     "category": "structural",
     "explanation": "The seller payment is not the exact offer price.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with SELLER_VALUE_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Do not sign the acceptance. Rebuild it from the offer as published. Run the Offers verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "SEQUENCE_INVALID",
@@ -1669,7 +1685,7 @@
     ],
     "category": "structural",
     "explanation": "The sequence must be a positive integer that never decreases.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with SEQUENCE_INVALID. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Reject the event and do not apply it. Fetch it again from the replayable stream from your last checkpoint. Run the Events and webhooks verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "SEQUENCE_NOT_REPLACEABLE",
@@ -1681,7 +1697,7 @@
     ],
     "category": "structural",
     "explanation": "A final sequence disables the locktime the recovery relies on.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with SEQUENCE_NOT_REPLACEABLE. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Rebuild the recovery so it spends only the funded offer output back to the buyer, after the offer expires. Run the Offers verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "SIGHASH_CHANGED",
@@ -1689,11 +1705,11 @@
       "safeops"
     ],
     "reasons": [
-      "Input ${i} was signed with a different sighash than the plan approved."
+      "Input <i> was signed with a different sighash than the plan approved."
     ],
     "category": "signature",
-    "explanation": "Input ${i} was signed with a different sighash than the plan approved.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with SIGHASH_CHANGED. Verify outpoints, scriptPubKeys, and value conservation."
+    "explanation": "Input <i> was signed with a different sighash than the plan approved.",
+    "remediation": "Do not broadcast. The signed transaction is not the approved plan: discard it and sign the approved plan again. Run the SafeOps verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "SIGHASH_UNEXPECTED",
@@ -1701,11 +1717,11 @@
       "offline-signing"
     ],
     "reasons": [
-      "Input ${i} was signed with a sighash the manifest did not approve."
+      "Input <i> was signed with a sighash the manifest did not approve."
     ],
     "category": "signature",
-    "explanation": "Input ${i} was signed with a sighash the manifest did not approve.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with SIGHASH_UNEXPECTED. Verify outpoints, scriptPubKeys, and value conservation."
+    "explanation": "Input <i> was signed with a sighash the manifest did not approve.",
+    "remediation": "Do not broadcast: the signed transaction is not the manifest. Sign again from a verified manifest. Run the Offline signing verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "SIGHASH_UNKNOWN",
@@ -1713,11 +1729,11 @@
       "offline-signing"
     ],
     "reasons": [
-      "Input ${i} names a sighash this protocol does not define."
+      "Input <i> names a sighash this protocol does not define."
     ],
     "category": "structural",
-    "explanation": "Input ${i} names a sighash this protocol does not define.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with SIGHASH_UNKNOWN. Verify outpoints, scriptPubKeys, and value conservation."
+    "explanation": "Input <i> names a sighash this protocol does not define.",
+    "remediation": "Rebuild the expected-transaction manifest on the online machine and transfer it to the signer again. Run the Offline signing verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "SIGNATURE_INVALID",
@@ -1729,7 +1745,7 @@
     ],
     "category": "structural",
     "explanation": "The signature does not match this secret, delivery id, and body.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with SIGNATURE_INVALID. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Reject the delivery. Verify the raw body as received, with the current secret and your timestamp tolerance; the sender retries. Run the Events and webhooks verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "SIGNATURE_MISSING",
@@ -1737,11 +1753,11 @@
       "safeops"
     ],
     "reasons": [
-      "Input ${i} is required to sign and is still unsigned."
+      "Input <i> is required to sign and is still unsigned."
     ],
     "category": "signature",
-    "explanation": "Input ${i} is required to sign and is still unsigned.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with SIGNATURE_MISSING. Verify outpoints, scriptPubKeys, and value conservation."
+    "explanation": "Input <i> is required to sign and is still unsigned.",
+    "remediation": "Do not broadcast. The signed transaction is not the approved plan: discard it and sign the approved plan again. Run the SafeOps verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "SIGNATURE_ON_FOREIGN_INPUT",
@@ -1749,11 +1765,11 @@
       "offline-signing"
     ],
     "reasons": [
-      "Input ${i} belongs to another party and must never be signed here."
+      "Input <i> belongs to another party and must never be signed here."
     ],
     "category": "signature",
-    "explanation": "Input ${i} belongs to another party and must never be signed here.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with SIGNATURE_ON_FOREIGN_INPUT. Verify outpoints, scriptPubKeys, and value conservation."
+    "explanation": "Input <i> belongs to another party and must never be signed here.",
+    "remediation": "Do not broadcast: the signed transaction is not the manifest. Sign again from a verified manifest. Run the Offline signing verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "SIGNER_IDENTITY_MISMATCH",
@@ -1766,7 +1782,7 @@
     ],
     "category": "signature",
     "explanation": "The signature address is not the creator address.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with SIGNER_IDENTITY_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Treat the collection as unverified and ask the creator for a corrected, re-signed manifest. Run the Collection manifest verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "SIGNING_INVALID",
@@ -1776,11 +1792,11 @@
     "reasons": [
       "The plan must carry a signing object.",
       "The plan must name at least one required signing index.",
-      "Signing index ${String(index)} is not one of the selected inputs."
+      "Signing index <String(index)> is not one of the selected inputs."
     ],
     "category": "structural",
     "explanation": "The plan must carry a signing object.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with SIGNING_INVALID. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Regenerate the plan from the wallet as it is now and review it again before signing. Run the SafeOps verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "SOURCE_VALUE_INVALID",
@@ -1792,7 +1808,7 @@
     ],
     "category": "structural",
     "explanation": "sourceValueSats must be an exact decimal string.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with SOURCE_VALUE_INVALID. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Treat the attachment as unknown until a valid record is obtained again from the Counterparty source. Run the Counterparty asset verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "SOURCE_VALUE_MISMATCH",
@@ -1804,7 +1820,7 @@
     ],
     "category": "structural",
     "explanation": "The spent value does not match the record, so the sat range cannot be traced.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with SOURCE_VALUE_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Do not sign. Rebuild the spend so the attached asset lands at the intended output. Run the Counterparty asset verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "STATUS_INVALID",
@@ -1819,7 +1835,7 @@
     ],
     "category": "structural",
     "explanation": "The manifest status is not one this registry names.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with STATUS_INVALID. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Treat the collection as unverified and ask the creator for a corrected, re-signed manifest. Run the Collection manifest verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "SUPPLY_MISMATCH",
@@ -1831,7 +1847,7 @@
     ],
     "category": "structural",
     "explanation": "A FIXED supply must declare exactly the member count.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with SUPPLY_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Treat the collection as unverified and ask the creator for a corrected, re-signed manifest. Run the Collection manifest verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "SUPPLY_STATEMENT_INVALID",
@@ -1843,7 +1859,19 @@
     ],
     "category": "structural",
     "explanation": "The supply statement must be FIXED or OPEN with an exact declared count.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with SUPPLY_STATEMENT_INVALID. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Treat the collection as unverified and ask the creator for a corrected, re-signed manifest. Run the Collection manifest verifier on the corrected input and continue only when it accepts."
+  },
+  {
+    "code": "TAKER_ASSET_UNASSIGNED",
+    "verifiers": [
+      "swaps"
+    ],
+    "reasons": [
+      "Asset <key> has no destination in the asset transitions."
+    ],
+    "category": "structural",
+    "explanation": "Asset <key> has no destination in the asset transitions.",
+    "remediation": "Do not sign. Rebuild the acceptance plan from the published intent. Run the Swaps verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "TAKER_BINDING_INVALID",
@@ -1855,7 +1883,7 @@
     ],
     "category": "structural",
     "explanation": "A taker binding must name an address.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with TAKER_BINDING_INVALID. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Correct the intent and publish it again. Run the Swaps verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "TERMS_AMOUNT_INVALID",
@@ -1868,7 +1896,7 @@
     ],
     "category": "structural",
     "explanation": "priceSats must be an exact decimal string.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with TERMS_AMOUNT_INVALID. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Correct the terms and publish them again. Any change to the terms changes their hash. Run the Offers verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "TERMS_CRITERIA_INVALID",
@@ -1880,7 +1908,7 @@
     ],
     "category": "structural",
     "explanation": "The criteria hash must be 64 lowercase hex characters.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with TERMS_CRITERIA_INVALID. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Correct the terms and publish them again. Any change to the terms changes their hash. Run the Offers verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "TERMS_EXPIRY_INVALID",
@@ -1892,7 +1920,7 @@
     ],
     "category": "structural",
     "explanation": "expiryHeight must be a block height a node can carry.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with TERMS_EXPIRY_INVALID. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Correct the terms and publish them again. Any change to the terms changes their hash. Run the Offers verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "TERMS_HASH_NOT_COMMITTED",
@@ -1904,7 +1932,7 @@
     ],
     "category": "structural",
     "explanation": "The revealed acceptance leaf does not commit to this offer terms hash.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with TERMS_HASH_NOT_COMMITTED. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Do not sign the acceptance. Rebuild it from the offer as published. Run the Offers verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "TERMS_KIND_UNKNOWN",
@@ -1916,7 +1944,7 @@
     ],
     "category": "structural",
     "explanation": "The offer kind is not one this protocol names.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with TERMS_KIND_UNKNOWN. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Correct the terms and publish them again. Any change to the terms changes their hash. Run the Offers verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "TERMS_NETWORK_UNKNOWN",
@@ -1928,7 +1956,7 @@
     ],
     "category": "structural",
     "explanation": "The network is not one this protocol names.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with TERMS_NETWORK_UNKNOWN. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Correct the terms and publish them again. Any change to the terms changes their hash. Run the Offers verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "TERMS_PROTOCOL_UNSUPPORTED",
@@ -1940,7 +1968,7 @@
     ],
     "category": "capability",
     "explanation": "The terms protocol version must be 1.1 or a later 1.x.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with TERMS_PROTOCOL_UNSUPPORTED. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Correct the terms and publish them again. Any change to the terms changes their hash. Run the Offers verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "TERMS_RECOVERY_KEY_INVALID",
@@ -1952,7 +1980,7 @@
     ],
     "category": "structural",
     "explanation": "The buyer recovery key must be 64 lowercase hex characters.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with TERMS_RECOVERY_KEY_INVALID. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Correct the terms and publish them again. Any change to the terms changes their hash. Run the Offers verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "TERMS_ROOT_INVALID",
@@ -1964,7 +1992,7 @@
     ],
     "category": "structural",
     "explanation": "The collection root must be 64 lowercase hex characters.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with TERMS_ROOT_INVALID. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Correct the terms and publish them again. Any change to the terms changes their hash. Run the Offers verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "TERMS_SCHEMA_UNSUPPORTED",
@@ -1976,7 +2004,7 @@
     ],
     "category": "structural",
     "explanation": "The terms schema is not ordex.offer-terms/v1.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with TERMS_SCHEMA_UNSUPPORTED. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Correct the terms and publish them again. Any change to the terms changes their hash. Run the Offers verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "TERMS_SCOPE_FIELDS",
@@ -1993,7 +2021,7 @@
     ],
     "category": "structural",
     "explanation": "An ITEM offer must name exactly one inscription id.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with TERMS_SCOPE_FIELDS. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Correct the terms and publish them again. Any change to the terms changes their hash. Run the Offers verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "TERMS_SCRIPT_INVALID",
@@ -2005,7 +2033,7 @@
     ],
     "category": "structural",
     "explanation": "The buyer receive script must be lowercase hex bytes.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with TERMS_SCRIPT_INVALID. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Correct the terms and publish them again. Any change to the terms changes their hash. Run the Offers verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "TIMESTAMP_OUT_OF_TOLERANCE",
@@ -2017,7 +2045,7 @@
     ],
     "category": "structural",
     "explanation": "The delivery timestamp is outside the allowed clock skew.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with TIMESTAMP_OUT_OF_TOLERANCE. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Reject the delivery. Verify the raw body as received, with the current secret and your timestamp tolerance; the sender retries. Run the Events and webhooks verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "TRACE_ID_INVALID",
@@ -2029,7 +2057,7 @@
     ],
     "category": "structural",
     "explanation": "The event must carry a trace id of at most 128 characters.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with TRACE_ID_INVALID. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Reject the event and do not apply it. Fetch it again from the replayable stream from your last checkpoint. Run the Events and webhooks verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "TRACKED_ASSET_UNASSIGNED",
@@ -2037,11 +2065,11 @@
       "safeops"
     ],
     "reasons": [
-      "Asset ${key} has no destination in the asset transitions."
+      "Asset <key> has no destination in the asset transitions."
     ],
     "category": "structural",
-    "explanation": "Asset ${key} has no destination in the asset transitions.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with TRACKED_ASSET_UNASSIGNED. Verify outpoints, scriptPubKeys, and value conservation."
+    "explanation": "Asset <key> has no destination in the asset transitions.",
+    "remediation": "Regenerate the plan from the wallet as it is now and review it again before signing. Run the SafeOps verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "TRANSITION_OUTPUT_MISSING",
@@ -2050,11 +2078,11 @@
       "swaps"
     ],
     "reasons": [
-      "Asset ${key} names output ${transition.toOutput}, which does not exist."
+      "Asset <key> names output <transition.toOutput>, which does not exist."
     ],
     "category": "structural",
-    "explanation": "Asset ${key} names output ${transition.toOutput}, which does not exist.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with TRANSITION_OUTPUT_MISSING. Verify outpoints, scriptPubKeys, and value conservation."
+    "explanation": "Asset <key> names output <transition.toOutput>, which does not exist.",
+    "remediation": "Regenerate the plan from the wallet as it is now and review it again before signing. Run the SafeOps verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "TRANSITION_SAT_FLOW_MISMATCH",
@@ -2063,12 +2091,12 @@
       "swaps"
     ],
     "reasons": [
-      "Asset ${key} declares output ${transition.toOutput}, but the sat range of input ${i} begins in a different output.",
-      "Asset ${key} declares output ${transition.toOutput}, but the sat range of input ${fromIndex} begins in a different output."
+      "Asset <key> declares output <transition.toOutput>, but the sat range of input <i> begins in a different output.",
+      "Asset <key> declares output <transition.toOutput>, but the sat range of input <fromIndex> begins in a different output."
     ],
     "category": "structural",
-    "explanation": "Asset ${key} declares output ${transition.toOutput}, but the sat range of input ${i} begins in a different output.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with TRANSITION_SAT_FLOW_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation."
+    "explanation": "Asset <key> declares output <transition.toOutput>, but the sat range of input <i> begins in a different output.",
+    "remediation": "Regenerate the plan from the wallet as it is now and review it again before signing. Run the SafeOps verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "TRANSITION_SOURCE_MISMATCH",
@@ -2077,12 +2105,12 @@
       "swaps"
     ],
     "reasons": [
-      "Asset ${key} declares input ${transition.fromInput} but rides on input ${i}.",
-      "Asset ${key} declares input ${transition.fromInput} but rides on input ${fromIndex}."
+      "Asset <key> declares input <transition.fromInput> but rides on input <i>.",
+      "Asset <key> declares input <transition.fromInput> but rides on input <fromIndex>."
     ],
     "category": "structural",
-    "explanation": "Asset ${key} declares input ${transition.fromInput} but rides on input ${i}.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with TRANSITION_SOURCE_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation."
+    "explanation": "Asset <key> declares input <transition.fromInput> but rides on input <i>.",
+    "remediation": "Regenerate the plan from the wallet as it is now and review it again before signing. Run the SafeOps verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "UNCLOSED_SIGHASH",
@@ -2094,7 +2122,7 @@
     ],
     "category": "signature",
     "explanation": "Every input must commit to every output (SIGHASH_ALL), or one party could move its asset without the other receiving theirs.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with UNCLOSED_SIGHASH. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Do not sign. Rebuild the acceptance plan from the published intent. Run the Swaps verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "UNEXPECTED_MAKER_INPUT",
@@ -2102,11 +2130,11 @@
       "swaps"
     ],
     "reasons": [
-      "Input ${key} spends an outpoint the intent never committed."
+      "Input <key> spends an outpoint the intent never committed."
     ],
     "category": "structural",
-    "explanation": "Input ${key} spends an outpoint the intent never committed.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with UNEXPECTED_MAKER_INPUT. Verify outpoints, scriptPubKeys, and value conservation."
+    "explanation": "Input <key> spends an outpoint the intent never committed.",
+    "remediation": "Do not sign. Rebuild the acceptance plan from the published intent. Run the Swaps verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "UNEXPECTED_SIGNATURE",
@@ -2114,11 +2142,11 @@
       "safeops"
     ],
     "reasons": [
-      "Input ${i} was not part of the signing policy but carries a signature."
+      "Input <i> was not part of the signing policy but carries a signature."
     ],
     "category": "signature",
-    "explanation": "Input ${i} was not part of the signing policy but carries a signature.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with UNEXPECTED_SIGNATURE. Verify outpoints, scriptPubKeys, and value conservation."
+    "explanation": "Input <i> was not part of the signing policy but carries a signature.",
+    "remediation": "Do not broadcast. The signed transaction is not the approved plan: discard it and sign the approved plan again. Run the SafeOps verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "UNKNOWN_CLAIM_FAILS_CLOSED",
@@ -2126,11 +2154,11 @@
       "safeops"
     ],
     "reasons": [
-      "Input ${i} carries an unrecognized claim (${asset.assetId}); resolve it before planning."
+      "Input <i> carries an unrecognized claim (<asset.assetId>); resolve it before planning."
     ],
     "category": "structural",
-    "explanation": "Input ${i} carries an unrecognized claim (${asset.assetId}); resolve it before planning.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with UNKNOWN_CLAIM_FAILS_CLOSED. Verify outpoints, scriptPubKeys, and value conservation."
+    "explanation": "Input <i> carries an unrecognized claim (<asset.assetId>); resolve it before planning.",
+    "remediation": "Regenerate the plan from the wallet as it is now and review it again before signing. Run the SafeOps verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "UNKNOWN_CRITICAL_FIELDS",
@@ -2138,11 +2166,11 @@
       "offline-signing"
     ],
     "reasons": [
-      "The signed result carries fields this protocol does not define: ${signed.unknownCriticalFields.join(', ')}."
+      "The signed result carries fields this protocol does not define: <signed.unknownCriticalFields.join(', ')>."
     ],
     "category": "structural",
-    "explanation": "The signed result carries fields this protocol does not define: ${signed.unknownCriticalFields.join(', ')}.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with UNKNOWN_CRITICAL_FIELDS. Verify outpoints, scriptPubKeys, and value conservation."
+    "explanation": "The signed result carries fields this protocol does not define: <signed.unknownCriticalFields.join(', ')>.",
+    "remediation": "Do not broadcast: the signed transaction is not the manifest. Sign again from a verified manifest. Run the Offline signing verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "VALUE_CHANGED",
@@ -2151,13 +2179,13 @@
       "safeops"
     ],
     "reasons": [
-      "Input ${i} no longer carries its presented value.",
-      "Output ${i} no longer carries its presented value.",
-      "Output ${i} no longer carries its planned value."
+      "Input <i> no longer carries its presented value.",
+      "Output <i> no longer carries its presented value.",
+      "Output <i> no longer carries its planned value."
     ],
     "category": "structural",
-    "explanation": "Input ${i} no longer carries its presented value.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with VALUE_CHANGED. Verify outpoints, scriptPubKeys, and value conservation."
+    "explanation": "Input <i> no longer carries its presented value.",
+    "remediation": "Do not broadcast: the signed transaction is not the manifest. Sign again from a verified manifest. Run the Offline signing verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "VALUE_NOT_CONSERVED",
@@ -2173,7 +2201,7 @@
     ],
     "category": "structural",
     "explanation": "The inputs do not equal the outputs plus the declared fee.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with VALUE_NOT_CONSERVED. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Rebuild the expected-transaction manifest on the online machine and transfer it to the signer again. Run the Offline signing verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "VERSION_INVALID",
@@ -2185,7 +2213,7 @@
     ],
     "category": "structural",
     "explanation": "The manifest version must be a positive integer.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with VERSION_INVALID. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Treat the collection as unverified and ask the creator for a corrected, re-signed manifest. Run the Collection manifest verifier on the corrected input and continue only when it accepts."
   },
   {
     "code": "VISIBILITY_INVALID",
@@ -2197,6 +2225,6 @@
     ],
     "category": "structural",
     "explanation": "Visibility must be PUBLIC or PRIVATE.",
-    "remediation": "Inspect the transaction parameters and ensure compliance with VISIBILITY_INVALID. Verify outpoints, scriptPubKeys, and value conservation."
+    "remediation": "Correct the intent and publish it again. Run the Swaps verifier on the corrected input and continue only when it accepts."
   }
 ]
