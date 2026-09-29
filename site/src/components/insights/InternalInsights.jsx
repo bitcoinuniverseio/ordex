@@ -83,7 +83,7 @@ export function InternalInsights() {
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
         <div class="panel" style="background: var(--color-bg-subtle); padding: 1rem;">
           <div style="font-size: 0.8rem; color: var(--color-text-muted);">Total Documentation Views</div>
-          <div style="font-size: 1.8rem; font-weight: 800; color: var(--color-brand);">{mockInsights.totalViews.toLocaleString()}</div>
+          <div style="font-size: 1.8rem; font-weight: 800; color: var(--color-brand-text);">{mockInsights.totalViews.toLocaleString()}</div>
         </div>
         <div class="panel" style="background: var(--color-bg-subtle); padding: 1rem;">
           <div style="font-size: 0.8rem; color: var(--color-text-muted);">Total Searches</div>
@@ -95,11 +95,11 @@ export function InternalInsights() {
         </div>
         <div class="panel" style="background: var(--color-bg-subtle); padding: 1rem;">
           <div style="font-size: 0.8rem; color: var(--color-text-muted);">Reader Satisfaction</div>
-          <div style="font-size: 1.8rem; font-weight: 800; color: var(--color-brand);">93.4%</div>
+          <div style="font-size: 1.8rem; font-weight: 800; color: var(--color-brand-text);">93.4%</div>
         </div>
       </div>
 
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); gap: 1.5rem;">
         {/* Top Pages */}
         <div>
           <h4 style="margin: 0 0 0.5rem 0; font-size: 0.95rem;">Most Viewed Documentation</h4>

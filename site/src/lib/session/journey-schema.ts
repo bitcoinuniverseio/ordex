@@ -103,6 +103,14 @@ export interface UserSettings {
   /** Read-only never sends a request with an effect. Write requires explicit confirmation. */
   mode: 'read-only' | 'write';
   theme: 'light' | 'dark';
+  /** OX-S10: a paused guided tour to resume, or null. Optional in stored settings. */
+  tour?: TourProgress | null;
+}
+
+export interface TourProgress {
+  id: string;
+  step: number;
+  paused: boolean;
 }
 
 export const DEFAULT_SETTINGS: UserSettings = Object.freeze({
@@ -112,7 +120,8 @@ export const DEFAULT_SETTINGS: UserSettings = Object.freeze({
   network: 'mainnet',
   gatewayOrigin: '',
   mode: 'read-only',
-  theme: 'light'
+  theme: 'light',
+  tour: null
 }) as UserSettings;
 
 type Result<T> = { ok: true; value: T } | { ok: false; errors: string[] };
@@ -303,6 +312,12 @@ export function validateSettings(value: unknown): Result<UserSettings> {
   if (!o || !o.ok || o.origin !== value.gatewayOrigin) errors.push('settings.gatewayOrigin must be empty or a normalized origin');
   if (!['read-only', 'write'].includes(value.mode as string)) errors.push('settings.mode is invalid');
   if (!['light', 'dark'].includes(value.theme as string)) errors.push('settings.theme is invalid');
+  if (value.tour !== undefined && value.tour !== null) {
+    const t = value.tour as Record<string, unknown>;
+    if (!isObj(t) || typeof t.id !== 'string' || !/^tour-[a-z0-9-]{1,60}$/.test(t.id) || !Number.isInteger(t.step) || (t.step as number) < 0 || (t.step as number) > 50 || typeof t.paused !== 'boolean' || Object.keys(t).some((k) => !['id', 'step', 'paused'].includes(k))) {
+      errors.push('settings.tour is invalid');
+    }
+  }
   return errors.length ? { ok: false, errors } : { ok: true, value: value as unknown as UserSettings };
 }
 

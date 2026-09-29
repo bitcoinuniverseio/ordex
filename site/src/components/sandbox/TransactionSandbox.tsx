@@ -174,7 +174,7 @@ export function TransactionSandbox({
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-              <span style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--ox-bitcoin-orange)' }}>
+              <span style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--ox-accent-text)' }}>
                 Transaction Sandbox
               </span>
               <span style={{ fontSize: '0.75rem', color: 'var(--ox-text-muted)' }}>•</span>
@@ -186,7 +186,7 @@ export function TransactionSandbox({
           </div>
 
           {/* Scenario Selector Dropdown */}
-          <div style={{ minWidth: '260px' }}>
+          <div style={{ minWidth: 'min(260px, 100%)' }}>
             <label htmlFor="scenario-select" style={{ display: 'block', fontSize: '0.6875rem', fontWeight: 700, color: 'var(--ox-text-muted)', marginBottom: '0.25rem' }}>
               Choose Scenario
             </label>
@@ -233,6 +233,7 @@ export function TransactionSandbox({
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <button
               type="button"
+              data-tour="sandbox-playback"
               onClick={() => setIsPlaying(!isPlaying)}
               aria-pressed={isPlaying ? 'true' : 'false'}
               style={{
@@ -242,14 +243,14 @@ export function TransactionSandbox({
                 padding: '0.35rem 0.75rem',
                 borderRadius: 'var(--ox-radius-md)',
                 backgroundColor: 'var(--ox-bitcoin-orange)',
-                color: '#ffffff',
+                color: 'var(--ox-action-fg)',
                 border: 'none',
                 cursor: 'pointer',
                 fontSize: '0.75rem',
                 fontWeight: 600
               }}
             >
-              {isPlaying ? <IconPause size={12} color="#ffffff" /> : <IconPlay size={12} color="#ffffff" />}
+              {isPlaying ? <IconPause size={12} color="var(--ox-action-fg)" /> : <IconPlay size={12} color="var(--ox-action-fg)" />}
               <span>{isPlaying ? 'Pause' : 'Play Simulation'}</span>
             </button>
 
@@ -324,7 +325,7 @@ export function TransactionSandbox({
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(4, 1fr)',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 10rem), 1fr))',
           gap: '0.75rem'
         }}
       >
@@ -346,7 +347,7 @@ export function TransactionSandbox({
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: isActorActive ? 'var(--ox-bitcoin-orange)' : 'var(--ox-text-muted)' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: isActorActive ? 'var(--ox-accent-text)' : 'var(--ox-text-muted)' }}>
                   {lane.label}
                 </span>
                 {isActorActive && (
@@ -517,7 +518,7 @@ export function TransactionSandbox({
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '0.25rem',
-                  color: 'var(--ox-bitcoin-orange)',
+                  color: 'var(--ox-accent-text)',
                   textDecoration: 'none'
                 }}
               >

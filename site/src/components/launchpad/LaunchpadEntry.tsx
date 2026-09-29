@@ -95,7 +95,7 @@ export function LaunchpadEntry({ basePath = '/ordex' }: LaunchpadEntryProps): JS
           gap: '1rem'
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--ox-bitcoin-orange)', fontWeight: 700, fontSize: '0.8125rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--ox-accent-text)', fontWeight: 700, fontSize: '0.8125rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
           <IconShieldCheck size={16} />
           <span>Verifiable Bitcoin Marketplace Protocol</span>
         </div>
@@ -142,7 +142,7 @@ export function LaunchpadEntry({ basePath = '/ordex' }: LaunchpadEntryProps): JS
                 padding: '0.4rem 0.875rem',
                 borderRadius: 'var(--ox-radius-md)',
                 backgroundColor: 'var(--ox-bitcoin-orange)',
-                color: '#ffffff',
+                color: 'var(--ox-action-fg)',
                 fontWeight: 600,
                 fontSize: '0.8125rem',
                 textDecoration: 'none'
@@ -169,6 +169,7 @@ export function LaunchpadEntry({ basePath = '/ordex' }: LaunchpadEntryProps): JS
         <div
           role="radiogroup"
           aria-label="High Level Goals"
+          data-tour="launchpad-goals"
           style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
@@ -237,7 +238,7 @@ export function LaunchpadEntry({ basePath = '/ordex' }: LaunchpadEntryProps): JS
             >
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                  <span style={{ fontSize: '0.6875rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--ox-bitcoin-orange)' }}>
+                  <span style={{ fontSize: '0.6875rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--ox-accent-text)' }}>
                     {mission.category}
                   </span>
                   <span style={{ fontSize: '0.6875rem', padding: '0.1rem 0.35rem', borderRadius: 'var(--ox-radius-sm)', backgroundColor: 'var(--ox-surface-subtle)', color: 'var(--ox-text-muted)' }}>

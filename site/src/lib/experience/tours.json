@@ -1,0 +1,156 @@
+[
+  {
+    "id": "tour-overview",
+    "title": "Ordex overview",
+    "summary": "The workspace header: home, detail level, search and the network and gateway settings, then the goals on the Launchpad.",
+    "relatedMissionId": null,
+    "steps": [
+      {
+        "id": "brand",
+        "route": "/",
+        "target": "brand",
+        "title": "Home",
+        "content": "The Ordex mark always returns to the Launchpad, where every task starts."
+      },
+      {
+        "id": "disclosure",
+        "route": "/",
+        "target": "disclosure",
+        "title": "Level of detail",
+        "content": "Choose Plain English for outcomes, Builder for API fields, or Protocol Proof for the exact verifier rules."
+      },
+      {
+        "id": "command",
+        "route": "/",
+        "target": "command-center",
+        "title": "Search and jump",
+        "content": "Press Ctrl+K or / to find a mission, an API operation or a refusal code and go straight to it."
+      },
+      {
+        "id": "environment",
+        "route": "/",
+        "target": "environment",
+        "title": "Network and gateway",
+        "content": "Settings hold the network (mainnet by default), an optional gateway origin and read-only or write mode. Tools label every result with them."
+      },
+      {
+        "id": "goals",
+        "route": "/",
+        "target": "launchpad-goals",
+        "title": "Start from a goal",
+        "content": "Pick what you want to do; the Launchpad suggests the missions that get you there."
+      }
+    ]
+  },
+  {
+    "id": "tour-public-asks",
+    "title": "Publish and settle public asks",
+    "summary": "Follow the public ask mission, see what evidence completes a stage, then replay a purchase in the Sandbox.",
+    "relatedMissionId": "integrate-public-asks",
+    "steps": [
+      {
+        "id": "stages",
+        "route": "/workspace/?mission=integrate-public-asks",
+        "target": "mission-stages",
+        "title": "Eight stages",
+        "content": "A mission moves from Understand to Finish. A stage completes only when a tool records matching evidence, never from a click."
+      },
+      {
+        "id": "evidence",
+        "route": "/workspace/?mission=integrate-public-asks",
+        "target": "stage-evidence",
+        "title": "What completes a stage",
+        "content": "Each stage names the tool run that counts as evidence and links to that tool."
+      },
+      {
+        "id": "sandbox",
+        "route": "/sandbox/?scenario=ask.publish-and-settle.success",
+        "target": "sandbox-playback",
+        "title": "Replay the purchase",
+        "content": "Play the scenario step by step. Every verdict comes from the reference verifier running in your browser."
+      }
+    ]
+  },
+  {
+    "id": "tour-wallet-mutations",
+    "title": "Inspect what a wallet changed",
+    "summary": "Paste a PSBT or transaction, read it field by field, and compare it with what came back from a wallet.",
+    "relatedMissionId": "protect-wallet-signing",
+    "steps": [
+      {
+        "id": "input",
+        "route": "/inspect/",
+        "target": "lens-input",
+        "title": "Paste an artifact",
+        "content": "Paste a PSBT (hex or Base64) or a raw transaction. It is decoded strictly, in your browser."
+      },
+      {
+        "id": "views",
+        "route": "/inspect/",
+        "target": "lens-tabs",
+        "title": "Views and comparison",
+        "content": "Read the summary, the structure and the bytes, or compare two artifacts to see every change and how much it matters.",
+        "hint": "The views appear once an artifact is decoded."
+      }
+    ]
+  },
+  {
+    "id": "tour-failure-diagnose",
+    "title": "Diagnose a refusal",
+    "summary": "Paste a refusal code or error, read where the verifier refuses and why, and reproduce it.",
+    "relatedMissionId": "diagnose-protocol-failure",
+    "steps": [
+      {
+        "id": "input",
+        "route": "/diagnose/",
+        "target": "diagnose-input",
+        "title": "Paste the failure",
+        "content": "A refusal code, a verifier result, a gateway error, a Doctor report or an event."
+      },
+      {
+        "id": "reproduce",
+        "route": "/diagnose/?code=SELLER_VALUE_MISMATCH",
+        "target": "diagnose-reproduce",
+        "title": "Reproduce it",
+        "content": "Every refusal has a checked-in reproducer. Run it here or download a script that runs the reference verifier.",
+        "hint": "This part appears once a code is diagnosed."
+      }
+    ]
+  },
+  {
+    "id": "tour-agent-bridge",
+    "title": "Connect an AI coding agent",
+    "summary": "Build the MCP stdio server, add it to your client, check an HTTP endpoint and try the tools.",
+    "relatedMissionId": null,
+    "steps": [
+      {
+        "id": "install",
+        "route": "/agents/",
+        "target": "mcp-install",
+        "title": "Build the stdio server",
+        "content": "One self-contained file, built at the exact revision of this page, with a command to check the install."
+      },
+      {
+        "id": "clients",
+        "route": "/agents/",
+        "target": "mcp-clients",
+        "title": "Add it to your client",
+        "content": "Setup for Claude Code, Cursor and Codex, with what each client documents about MCP 2026-07-28."
+      },
+      {
+        "id": "remote",
+        "route": "/agents/",
+        "target": "mcp-remote",
+        "title": "Check an HTTP endpoint",
+        "content": "Real requests from your browser to a docs service: discover, list and one tool call."
+      },
+      {
+        "id": "tools",
+        "route": "/agents/",
+        "target": "mcp-tools",
+        "title": "Try the tools",
+        "content": "Run any of the ten read-only tools locally in this page, or send the same call to the endpoint."
+      }
+    ]
+  }
+]

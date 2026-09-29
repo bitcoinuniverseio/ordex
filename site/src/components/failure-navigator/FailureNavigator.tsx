@@ -181,7 +181,7 @@ export function FailureNavigator({ initialCode = '', basePath = '/ordex' }: Navi
       </div>
 
       <div style={card}>
-        <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--ox-bitcoin-orange)' }}>Failure Navigator</div>
+        <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--ox-accent-text)' }}>Failure Navigator</div>
         <h1 style={{ fontSize: '1.5rem', fontWeight: 800, margin: 0, color: 'var(--ox-text-primary)' }}>Diagnose a refusal or error</h1>
         <p style={{ fontSize: '0.875rem', color: 'var(--ox-text-secondary)', margin: 0, lineHeight: 1.5 }}>
           Paste a refusal code, a verifier result, a gateway error, a Gateway Doctor report, an Artifact Lens comparison or an Ordex event. Nothing you paste leaves this page.
@@ -191,6 +191,7 @@ export function FailureNavigator({ initialCode = '', basePath = '/ordex' }: Navi
         </label>
         <textarea
           id="diagnose-input"
+          data-tour="diagnose-input"
           value={inputText}
           rows={inputText.includes('\n') || inputText.startsWith('{') ? 6 : 2}
           spellcheck={false}
@@ -328,7 +329,7 @@ export function FailureNavigator({ initialCode = '', basePath = '/ordex' }: Navi
           </div>
 
           <div>
-            <h3 style={heading}>Reproduce it</h3>
+            <h3 style={heading} data-tour="diagnose-reproduce">Reproduce it</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               {rule.reproducers.map((r) => {
                 const key = `${code}|${r.family}`;

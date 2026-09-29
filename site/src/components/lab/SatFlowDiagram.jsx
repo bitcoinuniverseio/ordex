@@ -34,7 +34,7 @@ export function SatFlowDiagram({ transaction, order, sharedIndex, onSelectElemen
         </span>
       </div>
 
-      <div style="display: grid; grid-template-columns: 1fr 60px 1fr; gap: 1rem; align-items: stretch;">
+      <div style="display: grid; grid-template-columns: minmax(0, 1fr) 2.5rem minmax(0, 1fr); gap: 0.75rem; align-items: stretch;">
         {/* Left: Inputs */}
         <div style="display: flex; flex-direction: column; gap: 0.5rem;">
           <div style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--color-text-muted);">

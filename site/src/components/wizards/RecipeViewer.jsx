@@ -201,7 +201,7 @@ console.log(data);`;
               >
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
                   <div style="display: flex; align-items: center; gap: 0.6rem;">
-                    <span style="font-weight: 800; font-size: 1.1rem; color: var(--color-brand);">
+                    <span style="font-weight: 800; font-size: 1.1rem; color: var(--color-brand-text);">
                       0{st.step}
                     </span>
                     <h3 style="margin: 0; font-size: 1.1rem;">{st.name}</h3>
@@ -238,7 +238,7 @@ console.log(data);`;
                 </div>
 
                 {/* Expected Response & Refusal */}
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); gap: 1rem;">
                   <div style="background: var(--color-bg-subtle); padding: 0.75rem; border-radius: var(--radius-md); border: 1px solid var(--color-border);">
                     <div style="font-size: 0.75rem; font-weight: 700; color: var(--color-success); margin-bottom: 0.35rem;">
                       Expected Success Response (200 OK)

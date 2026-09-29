@@ -16,12 +16,16 @@
 
   --color-text-primary: #18181b;
   --color-text-secondary: #52525b;
-  --color-text-muted: #71717a;
+  --color-text-muted: #62626b;
   --color-text-inverse: #ffffff;
 
   --color-brand: #ea580c;
   --color-brand-hover: #c2410c;
   --color-brand-subtle: #fff7ed;
+  /* OX-S10: AA pairs. Text on the brand fill is dark ink; brand as text uses the darker shade. */
+  --color-on-brand: #1a1d20;
+  --color-brand-action-hover: #f97316;
+  --color-brand-text: #c2410c;
   --color-focus: #0284c7;
 
   /* Evidence & Truth Badges */
@@ -65,12 +69,15 @@
 
   --color-text-primary: #f4f4f5;
   --color-text-secondary: #a1a1aa;
-  --color-text-muted: #71717a;
+  --color-text-muted: #8e8e97;
   --color-text-inverse: #09090b;
 
   --color-brand: #f97316;
   --color-brand-hover: #ea580c;
   --color-brand-subtle: #431407;
+  --color-on-brand: #1a1d20;
+  --color-brand-action-hover: #fb923c;
+  --color-brand-text: #f97316;
   --color-focus: #38bdf8;
 
   --color-evidence-proof: #818cf8;
@@ -139,7 +146,7 @@ a:hover {
   top: -999px;
   left: 1rem;
   background: var(--color-brand);
-  color: #fff;
+  color: var(--color-on-brand);
   padding: 0.5rem 1rem;
   z-index: 1000;
   border-radius: var(--radius-sm);
@@ -246,10 +253,10 @@ a:hover {
 
 .btn-primary {
   background-color: var(--color-brand);
-  color: #ffffff;
+  color: var(--color-on-brand);
 }
 .btn-primary:hover {
-  background-color: var(--color-brand-hover);
+  background-color: var(--color-brand-action-hover);
   text-decoration: none;
 }
 
