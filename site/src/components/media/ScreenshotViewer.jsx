@@ -72,7 +72,7 @@ export function ScreenshotViewer({
               height: '24px',
               borderRadius: '50%',
               backgroundColor: 'var(--color-brand)',
-              color: '#ffffff',
+              color: 'var(--color-on-brand)',
               border: '2px solid #ffffff',
               display: 'flex',
               alignItems: 'center',

@@ -1,92 +1,151 @@
 /**
- * Ordex Deterministic Tour Capture Script
- * 
- * Generates authoritative, deterministic real captures for guided product tours.
- * Freezes time, viewport, and theme state. Writes PNG assets to site/public/assets/tours/.
+ * OX-S10: real tour screenshots.
+ *
+ * Serves the built site (dist/client, from npm run build) on a loopback port under /ordex,
+ * opens every tour step in Chromium through the live tour overlay, waits until the step's
+ * [data-tour] target is found and highlighted, and captures the viewport in three variants.
+ * A step fails the run when its target is missing, the page logs an error or a request fails;
+ * nothing is drawn or simulated. Writes PNGs and site/src/data/tourCaptures.json with the
+ * revision, route, viewport, theme, digest and hotspot of each capture.
+ *
+ *   node scripts/capture-walkthroughs.mjs                  write into site/public/assets/tours
+ *   node scripts/capture-walkthroughs.mjs --out <dir>      write elsewhere (CI check), no manifest
+ *
+ * Needs Playwright with Chromium (npx playwright install chromium); runs on a CI runner or a
+ * workstation with a browser, never as part of npm run build.
  */
 
-import fs from 'node:fs';
-import path from 'node:path';
+import { createHash } from 'node:crypto';
+import { execSync } from 'node:child_process';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { createServer } from 'node:http';
+import { extname, join, normalize, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const outDir = path.join(root, 'site', 'public', 'assets', 'tours');
-fs.mkdirSync(outDir, { recursive: true });
+const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const DIST = join(root, 'dist', 'client');
+const BASE = '/ordex';
+const args = process.argv.slice(2);
+const outArg = args.includes('--out') ? resolve(args[args.indexOf('--out') + 1]) : null;
+const outDir = outArg || join(root, 'site', 'public', 'assets', 'tours');
+const writeManifest = !outArg;
 
-// Read authoritative tour manifest
-const tours = JSON.parse(fs.readFileSync(path.join(root, 'site', 'src', 'data', 'tours.json'), 'utf8'));
+export const VARIANTS = [
+  { id: 'desktop-light', viewport: { width: 1280, height: 800 }, theme: 'light' },
+  { id: 'desktop-dark', viewport: { width: 1280, height: 800 }, theme: 'dark' },
+  { id: 'mobile-light', viewport: { width: 375, height: 812 }, theme: 'light' }
+];
 
-console.log(`Generating deterministic tour capture assets for ${tours.length} tours...`);
+const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.webmanifest': 'application/manifest+json', '.txt': 'text/plain', '.xml': 'application/xml', '.wasm': 'application/wasm' };
 
-// Helper to create a clean deterministic SVG-based PNG fallback or real browser render
-/* IMPLEMENTATION-HANDOFF [OX-S10]
- * Defect OX-S-D10; coverage OX-S-C1100..OX-S-C1134. This function draws an illustrative SVG and rasterizes it;
- * it never captures the real app. Six advertised PNG paths are missing when Sharp falls back to SVG, and
- * tests/e2e/screenshots.test.js checks only story-name constants.
- * 1. Replace illustration generation with Playwright capture of the single coordinated existing application
- * URL after each declared real interaction reaches its asserted state. Freeze clock only for deterministic
- * examples; never inject completion or replace authoritative services.
- * 2. Record route, viewport, theme, revision, operation/state assertions, console/network errors and capture
- * digest. Use the same tour manifest for target routes/steps and image paths. Fail clearly if a capture
- * prerequisite is unavailable; a fallback illustration cannot be published as a real screenshot.
- * 3. Capture desktop/tablet/mobile and light/dark states; OX-S10 actual DOM tour target must exist for each
- * step. Store accessible captions and useful crop/hotspot coordinates from the real render.
- * 4. Replace static screenshot-name tests with real browser interaction/assertions and file decode checks.
- * Update scripts/build.mjs so capture doesn't require a nonexistent or duplicate dev server before Astro
- * build; coordinate build-once, one port, one tab.
- * Acceptance: all advertised PNG/SVG paths render and represent the named actual state, no fake verification
- * copy. Reuse valid captures only when relevant inputs are unchanged. Rollback manifest and media atomically;
- * never preserve missing links or fabricated evidence.
- */
-async function generateDeterministicCapture(fileName, title, subtitle, theme, isMobile) {
-  const filePath = path.join(outDir, fileName);
-  const width = isMobile ? 375 : 1280;
-  const height = isMobile ? 667 : 800;
-  const bg = theme === 'dark' ? '#0d1117' : '#f8f9fa';
-  const panelBg = theme === 'dark' ? '#161b22' : '#ffffff';
-  const textColor = theme === 'dark' ? '#f0f6fc' : '#1a1d20';
-  const mutedColor = theme === 'dark' ? '#8b949e' : '#6c757d';
+function serve() {
+  const server = createServer((req, res) => {
+    const url = new URL(req.url, 'http://localhost');
+    if (!url.pathname.startsWith(`${BASE}/`) && url.pathname !== BASE) return res.writeHead(404).end();
+    let rel = decodeURIComponent(url.pathname.slice(BASE.length)) || '/';
+    if (rel.endsWith('/')) rel += 'index.html';
+    const file = normalize(join(DIST, rel));
+    if (!file.startsWith(DIST)) return res.writeHead(403).end();
+    const target = existsSync(file) ? file : existsSync(`${file}/index.html`) ? `${file}/index.html` : null;
+    if (!target) return res.writeHead(404).end();
+    res.writeHead(200, { 'content-type': TYPES[extname(target)] || 'application/octet-stream' }).end(readFileSync(target));
+  });
+  return new Promise((r) => server.listen(0, '127.0.0.1', () => r({ origin: `http://127.0.0.1:${server.address().port}`, close: () => new Promise((c) => server.close(c)) })));
+}
 
-  // SVG canvas with exact dimensions, typography, and visual layout
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
-    <rect width="${width}" height="${height}" fill="${bg}" />
-    <!-- Header bar -->
-    <rect width="${width}" height="56" fill="${panelBg}" stroke="${theme === 'dark' ? '#30363d' : '#dee2e6'}" stroke-width="1" />
-    <rect x="20" y="14" width="28" height="28" rx="6" fill="#1a1d20" />
-    <path d="M34 20 L40 24 V30 L34 34 L28 30 V24 Z" stroke="#f7931a" stroke-width="2" fill="none" />
-    <text x="56" y="33" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="16" font-weight="700" fill="${textColor}">Ordex</text>
-    <text x="${width - 120}" y="33" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="12" fill="${mutedColor}">v1.2 (Prod)</text>
+function stepUrl(origin, tour, index) {
+  const url = new URL(`${BASE}${tour.steps[index].route}`, origin);
+  url.searchParams.set('tour', tour.id);
+  url.searchParams.set('step', String(index + 1));
+  return url.href;
+}
 
-    <!-- Main stage card -->
-    <rect x="${isMobile ? 15 : 60}" y="80" width="${width - (isMobile ? 30 : 120)}" height="${height - 120}" rx="8" fill="${panelBg}" stroke="${theme === 'dark' ? '#30363d' : '#dee2e6'}" stroke-width="1" />
-    
-    <text x="${isMobile ? 30 : 90}" y="130" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="${isMobile ? 18 : 24}" font-weight="800" fill="${textColor}">${title}</text>
-    <text x="${isMobile ? 30 : 90}" y="165" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="13" fill="${mutedColor}">${subtitle}</text>
-
-    <!-- Simulated UI Controls -->
-    <rect x="${isMobile ? 30 : 90}" y="200" width="${width - (isMobile ? 60 : 180)}" height="60" rx="6" fill="${theme === 'dark' ? '#21262d' : '#f1f3f5'}" />
-    <text x="${isMobile ? 45 : 110}" y="235" font-family="monospace" font-size="12" fill="#f7931a">Invariants 1 &amp; 2 Verified Locally in Web Worker • Fail-Closed</text>
-  </svg>`;
-
+async function main() {
+  if (!existsSync(join(DIST, 'index.html'))) throw new Error('dist/client is missing: run npm run build first.');
+  let chromium;
   try {
-    // If sharp is available, convert SVG to PNG
-    const sharp = (await import('sharp')).default;
-    await sharp(Buffer.from(svg)).png().toFile(filePath);
+    ({ chromium } = await import('playwright'));
   } catch {
-    // Write directly if needed
-    fs.writeFileSync(filePath.replace('.png', '.svg'), svg);
+    throw new Error('Playwright is not installed. Captures run where Playwright and Chromium are available.');
   }
+  const tours = JSON.parse(readFileSync(join(root, 'site', 'src', 'lib', 'experience', 'tours.json'), 'utf8'));
+  const revision = (() => {
+    try {
+      return process.env.GITHUB_SHA || execSync('git rev-parse HEAD', { cwd: root }).toString().trim();
+    } catch {
+      return 'unknown';
+    }
+  })();
+  const site = await serve();
+  const browser = await chromium.launch();
+  const manifest = { schema: 'ordex.tour-captures/v1', revision, capturedAt: new Date().toISOString(), captures: {} };
+  const failures = [];
+  try {
+    if (writeManifest) rmSync(outDir, { recursive: true, force: true });
+    mkdirSync(outDir, { recursive: true });
+    for (const tour of tours) {
+      for (const [index, step] of tour.steps.entries()) {
+        for (const variant of VARIANTS) {
+          const context = await browser.newContext({ viewport: variant.viewport, colorScheme: variant.theme, reducedMotion: 'reduce' });
+          await context.addInitScript((theme) => {
+            try {
+              localStorage.setItem('ordex_theme', theme);
+            } catch {}
+          }, variant.theme);
+          const page = await context.newPage();
+          const errors = [];
+          page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
+          page.on('console', (m) => m.type() === 'error' && errors.push(`console: ${m.text()}`));
+          page.on('requestfailed', (r) => errors.push(`requestfailed: ${r.url()}`));
+          const label = `${tour.id}/${step.id} ${variant.id}`;
+          try {
+            await page.goto(stepUrl(site.origin, tour, index), { waitUntil: 'networkidle' });
+            await page.waitForFunction(() => [...document.querySelectorAll('astro-island')].every((el) => !el.hasAttribute('ssr')), null, { timeout: 15000 });
+            const card = page.locator(`[data-tour-step="${step.id}"]`);
+            await card.waitFor({ timeout: 10000 });
+            await page.locator(`[data-tour-step="${step.id}"][data-tour-state="found"]`).waitFor({ timeout: 10000 });
+            const box = await page.locator(`[data-tour="${step.target}"]`).first().boundingBox();
+            if (!box) throw new Error('the target has no box');
+            await page.waitForTimeout(150);
+            if (errors.length) throw new Error(errors.join('; '));
+            const png = await page.screenshot({ type: 'png' });
+            const file = `assets/tours/${tour.id}/${step.id}-${variant.id}.png`;
+            mkdirSync(join(outDir, tour.id), { recursive: true });
+            writeFileSync(join(outDir, tour.id, `${step.id}-${variant.id}.png`), png);
+            (manifest.captures[`${tour.id}/${step.id}`] ||= []).push({
+              variant: variant.id,
+              file,
+              route: step.route,
+              theme: variant.theme,
+              width: variant.viewport.width,
+              height: variant.viewport.height,
+              sha256: createHash('sha256').update(png).digest('hex'),
+              hotspot: { x: Math.round(box.x), y: Math.round(box.y), width: Math.round(box.width), height: Math.round(box.height) }
+            });
+            console.log(`captured ${label}`);
+          } catch (err) {
+            failures.push(`${label}: ${err.message}`);
+            console.error(`FAILED ${label}: ${err.message}`);
+          } finally {
+            await context.close();
+          }
+        }
+      }
+    }
+  } finally {
+    await browser.close();
+    await site.close();
+  }
+  if (failures.length) {
+    // Never keep a partial set: a missing capture must not look like a complete tour.
+    if (writeManifest) rmSync(outDir, { recursive: true, force: true });
+    throw new Error(`${failures.length} capture(s) failed:\n${failures.join('\n')}`);
+  }
+  if (writeManifest) writeFileSync(join(root, 'site', 'src', 'data', 'tourCaptures.json'), `${JSON.stringify(manifest, null, 2)}\n`);
+  console.log(`Captured ${Object.values(manifest.captures).flat().length} screenshots at ${revision}.`);
 }
 
-for (const tour of tours) {
-  const desktopLightName = path.basename(tour.captures.desktopLight);
-  const desktopDarkName = path.basename(tour.captures.desktopDark);
-  const mobileLightName = path.basename(tour.captures.mobileLight);
-
-  await generateDeterministicCapture(desktopLightName, tour.title, tour.summary, 'light', false);
-  await generateDeterministicCapture(desktopDarkName, tour.title, tour.summary, 'dark', false);
-  await generateDeterministicCapture(mobileLightName, tour.title, tour.summary, 'light', true);
-  console.log(`✓ Generated captures for ${tour.id}`);
-}
-
-console.log('✓ All deterministic tour captures compiled successfully.');
+main().catch((err) => {
+  console.error(err.message);
+  process.exit(1);
+});

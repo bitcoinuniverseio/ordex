@@ -1,7 +1,8 @@
 import { h } from 'preact';
 import { useState } from 'preact/hooks';
+import { assetOutputIndex } from '../../lib/lab-report.mjs';
 
-export function SatFlowDiagram({ transaction, order, onSelectElement }) {
+export function SatFlowDiagram({ transaction, order, sharedIndex, onSelectElement }) {
   const [selectedItem, setSelectedItem] = useState(null);
 
   if (!transaction || !transaction.inputs || !transaction.outputs) {
@@ -14,6 +15,10 @@ export function SatFlowDiagram({ transaction, order, onSelectElement }) {
 
   const inputs = transaction.inputs || [];
   const outputs = transaction.outputs || [];
+  const offeredIndex = inputs.findIndex((inp) =>
+    order?.offeredOutpoint && order.offeredOutpoint.txid === inp?.txid && Number(order.offeredOutpoint.vout) === Number(inp?.vout)
+  );
+  const assetIndex = assetOutputIndex(inputs, outputs, offeredIndex);
 
   const handleSelect = (item) => {
     setSelectedItem(item);
@@ -29,16 +34,14 @@ export function SatFlowDiagram({ transaction, order, onSelectElement }) {
         </span>
       </div>
 
-      <div style="display: grid; grid-template-columns: 1fr 60px 1fr; gap: 1rem; align-items: stretch;">
+      <div style="display: grid; grid-template-columns: minmax(0, 1fr) 2.5rem minmax(0, 1fr); gap: 0.75rem; align-items: stretch;">
         {/* Left: Inputs */}
         <div style="display: flex; flex-direction: column; gap: 0.5rem;">
           <div style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--color-text-muted);">
             Transaction Inputs ({inputs.length})
           </div>
           {inputs.map((inp, idx) => {
-            const isOffered = order?.offeredOutpoint &&
-              order.offeredOutpoint.txid === inp.txid &&
-              Number(order.offeredOutpoint.vout) === Number(inp.vout);
+            const isOffered = idx === offeredIndex;
             const isSelected = selectedItem?.type === 'input' && selectedItem?.index === idx;
 
             return (
@@ -53,10 +56,14 @@ export function SatFlowDiagram({ transaction, order, onSelectElement }) {
                   backgroundColor: isSelected ? 'var(--color-bg-muted)' : 'var(--color-bg-surface)',
                   boxShadow: 'none'
                 }}
+                role="button"
+                tabIndex={0}
+                aria-pressed={isSelected ? 'true' : 'false'}
                 onClick={() => handleSelect({ type: 'input', index: idx, data: inp, isOffered })}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSelect({ type: 'input', index: idx, data: inp, isOffered }); } }}
               >
                 <div style="display: flex; justify-content: space-between; font-weight: 700;">
-                  <span>Input #{idx} {isOffered ? '🏷️ [Seller Asset]' : '💰 [Buyer Funding]'}</span>
+                  <span>Input #{idx} {isOffered ? '[Seller asset]' : '[Buyer input]'}</span>
                   <span>{inp.valueSats || '0'} sats</span>
                 </div>
                 <div style="font-size: 0.75rem; font-family: var(--font-mono); color: var(--color-text-muted); word-break: break-all;">
@@ -68,7 +75,7 @@ export function SatFlowDiagram({ transaction, order, onSelectElement }) {
         </div>
 
         {/* Center: Flow connector arrows */}
-        <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; color: var(--color-text-muted); font-size: 1.5rem;">
+        <div aria-hidden="true" style="display: flex; flex-direction: column; justify-content: center; align-items: center; color: var(--color-text-muted); font-size: 1.5rem;">
           ➔
         </div>
 
@@ -78,9 +85,10 @@ export function SatFlowDiagram({ transaction, order, onSelectElement }) {
             Transaction Outputs ({outputs.length})
           </div>
           {outputs.map((out, idx) => {
-            const isSellerPayment = order?.sellerPaymentScriptHex &&
-              out.scriptHex === order.sellerPaymentScriptHex;
-            const isBuyerAsset = idx === 0 && !isSellerPayment; // Asset output
+            const isSellerPayment = Number.isInteger(sharedIndex)
+              ? idx === sharedIndex
+              : !!order?.sellerPaymentScriptHex && out.scriptHex === order.sellerPaymentScriptHex;
+            const isBuyerAsset = idx === assetIndex && !isSellerPayment;
             const isSelected = selectedItem?.type === 'output' && selectedItem?.index === idx;
 
             return (
@@ -95,11 +103,15 @@ export function SatFlowDiagram({ transaction, order, onSelectElement }) {
                   backgroundColor: isSelected ? 'var(--color-bg-muted)' : 'var(--color-bg-surface)',
                   boxShadow: 'none'
                 }}
+                role="button"
+                tabIndex={0}
+                aria-pressed={isSelected ? 'true' : 'false'}
                 onClick={() => handleSelect({ type: 'output', index: idx, data: out, isSellerPayment, isBuyerAsset })}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSelect({ type: 'output', index: idx, data: out, isSellerPayment, isBuyerAsset }); } }}
               >
                 <div style="display: flex; justify-content: space-between; font-weight: 700;">
                   <span>
-                    Output #{idx} {isSellerPayment ? '💵 [Seller Payment]' : isBuyerAsset ? '🎁 [Buyer Asset]' : '🔄 [Buyer Change]'}
+                    Output #{idx} {isSellerPayment ? '[Seller payment]' : isBuyerAsset ? '[Receives the asset]' : '[Other output]'}
                   </span>
                   <span>{out.valueSats || '0'} sats</span>
                 </div>
@@ -119,10 +131,10 @@ export function SatFlowDiagram({ transaction, order, onSelectElement }) {
             Inspecting {selectedItem.type.toUpperCase()} #{selectedItem.index}
           </div>
           <div style="color: var(--color-text-secondary); line-height: 1.4;">
-            {selectedItem.isOffered && 'This input carries the seller ordinal inscription. SIGHASH_SINGLE locks this input to output index 0.'}
-            {selectedItem.isSellerPayment && 'This output pays the seller price in full without subtraction. ScriptPubKey matches seller commitment.'}
-            {selectedItem.isBuyerAsset && 'This output receives the asset. Verified ahead of change outputs to preserve ordinal sat ranges.'}
-            {!selectedItem.isOffered && !selectedItem.isSellerPayment && !selectedItem.isBuyerAsset && 'Standard funding / change UTXO subject to total value conservation rules.'}
+            {selectedItem.isOffered && `This input is the seller's offered outpoint. The seller's SIGHASH_SINGLE|ANYONECANPAY signature commits it to the output at the same index${Number.isInteger(sharedIndex) ? ` (index ${sharedIndex})` : ''}.`}
+            {selectedItem.isSellerPayment && 'This output is the seller payment at the shared index. Its script and value must match the order terms.'}
+            {selectedItem.isBuyerAsset && 'First-in first-out sat flow places the first sat of the offered input in this output.'}
+            {!selectedItem.isOffered && !selectedItem.isSellerPayment && !selectedItem.isBuyerAsset && 'A buyer input or output. Total value must cover every output.'}
           </div>
         </div>
       )}

@@ -3,6 +3,7 @@ import { useState, useEffect } from 'preact/hooks';
 import atlasData from '../../data/atlas.json';
 import { TruthLabel } from '../shell/TruthLabel.jsx';
 import { resolveUrl } from '../../lib/base-url.js';
+import { recordToolEvidence } from '../../lib/session/evidence';
 
 export function VisualProtocolAtlas({ initialDiagramId = null }) {
   const [selectedDiagramId, setSelectedDiagramId] = useState(initialDiagramId || atlasData[0]?.id);
@@ -13,6 +14,14 @@ export function VisualProtocolAtlas({ initialDiagramId = null }) {
   const diagram = atlasData.find((d) => d.id === selectedDiagramId) || atlasData[0];
   const steps = diagram.steps || [];
   const activeStepObj = steps[currentStep] || steps[0];
+
+  // OX-S03: reaching the last step of a diagram is a reading record (read:<diagram>), the
+  // evidence the security review mission asks of the Atlas. It is not verification.
+  useEffect(() => {
+    if (steps.length && currentStep === steps.length - 1) {
+      recordToolEvidence({ tool: 'atlas', operation: `read:${diagram.id}`, state: 'read', evidenceClass: 'Deterministic example', reason: `Walked all ${steps.length} steps of ${diagram.title}.` });
+    }
+  }, [currentStep, selectedDiagramId]);
 
   // Auto playback
   useEffect(() => {
@@ -151,7 +160,7 @@ export function VisualProtocolAtlas({ initialDiagramId = null }) {
                           x={x}
                           y={32}
                           text-anchor="middle"
-                          fill={isFrom || isTo ? '#ffffff' : 'var(--color-text-primary)'}
+                          fill={isFrom || isTo ? 'var(--color-on-brand)' : 'var(--color-text-primary)'}
                           font-size="11"
                           font-weight="700"
                           font-family="system-ui"
@@ -244,7 +253,7 @@ export function VisualProtocolAtlas({ initialDiagramId = null }) {
         </div>
 
         {/* Step Details & Side Panels */}
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); gap: 1.5rem;">
           {/* Left: Step Breakdown */}
           <div style="background: var(--color-bg-subtle); padding: 1.25rem; border-radius: var(--radius-md);">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">

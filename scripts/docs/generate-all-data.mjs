@@ -1,6 +1,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import { FAMILY_REGISTRY, FAMILIES, variantOf } from '../../site/src/lib/conformance-registry.mjs';
+import { assertNoUnregisteredVectorFiles, buildVectorManifest, loadVectorFile } from './vector-loader.mjs';
+import { exampleForSchema } from '../../site/src/lib/api/schema.mjs';
+import { invokeVerifier, normalizeVerdict } from '../../site/src/lib/conformance-engine.mjs';
+import { applyPatch } from '../../site/src/lib/diagnostics/patch.mjs';
+import { FAMILY_INTRODUCED_IN, RULE_CONTEXT, resolutionSteps } from '../../site/src/lib/diagnostics/rule-context.mjs';
+import { scanRefusalSources } from './refusal-sources.mjs';
 
 const root = path.resolve('.');
 const dataOutDir = path.join(root, 'site', 'src', 'data');
@@ -19,17 +26,28 @@ for (const [routePath, pathItem] of Object.entries(openapi.paths)) {
     const tag = op.tags?.[0] || 'General';
     const isWrite = method.toLowerCase() === 'post' || method.toLowerCase() === 'delete' || method.toLowerCase() === 'put';
 
-    // Build mock request/response examples
+    // OX-S07: examples are built from the referenced schema (const, enum, oneOf/allOf,
+    // nullable, required) and published only when they validate against it. A missing
+    // example is stated as missing with its reason, never replaced by a generic body.
     let requestExample = null;
+    let requestExampleIssue = null;
     if (op.requestBody?.content?.['application/json']?.schema) {
-      const schema = op.requestBody.content['application/json'].schema;
-      requestExample = generateSchemaExample(schema, openapi);
+      const built = exampleForSchema(op.requestBody.content['application/json'].schema, openapi);
+      if (built.ok) requestExample = built.value;
+      else requestExampleIssue = built.reason;
     }
 
-    const response200 = op.responses?.['200'] || op.responses?.['201'];
-    let responseExample = { status: 200, ok: true };
-    if (response200?.content?.['application/json']?.schema) {
-      responseExample = generateSchemaExample(response200.content['application/json'].schema, openapi);
+    const successStatus = Object.keys(op.responses || {}).find((code) => /^2\d\d$/.test(code)) || null;
+    const successResponse = successStatus ? resolveResponse(op.responses[successStatus]) : null;
+    let responseExample = null;
+    let responseExampleIssue = successStatus ? null : 'The contract documents no success response';
+    const successSchema = successResponse?.content?.['application/json']?.schema;
+    if (successSchema) {
+      const built = exampleForSchema(successSchema, openapi);
+      if (built.ok) responseExample = built.value;
+      else responseExampleIssue = built.reason;
+    } else if (successStatus) {
+      responseExampleIssue = `The ${successStatus} response has no JSON body`;
     }
 
     // Evidence / authority level determination
@@ -62,7 +80,10 @@ for (const [routePath, pathItem] of Object.entries(openapi.paths)) {
       }),
       requestBodySchema: op.requestBody?.content?.['application/json']?.schema || null,
       requestExample,
+      requestExampleIssue,
+      successStatus: successStatus ? Number(successStatus) : null,
       responseExample,
+      responseExampleIssue,
       responses: op.responses || {},
       jsonPointer: `/paths${routePath.replace(/\//g, '~1')}/${method}`
     });
@@ -78,104 +99,67 @@ const channels = Object.entries(asyncapi.channels).map(([name, ch]) => ({
   messages: ch.messages || {}
 }));
 
-/* IMPLEMENTATION-HANDOFF [OX-S07]
- * Defect OX-S-D07; coverage OX-S-C900..OX-S-C918. Generator derives singular file-name families the executor
- * does not recognize and flattens away kind, plan, signed, intent, acceptance, event, membership, record and
- * other required arguments.
- * 1. Import the OX-S07 explicit family/file registry. Preserve the complete source case in each generated
- * entry, adding stable family+case IDs and display metadata without replacing its argument shape. Assert every
- * case maps to an executor and each generated/source count matches.
- * 2. Derive displayed counts from generated data; current README/UI says151 while source test expects157. Pin
- * metadata to actual build revision, spec digest and vector digest; reject stale generated data.
- * 3. Make examples obey OpenAPI 3.1 referenced schema including const, enum, oneOf/allOf, nullable and
- * required fields. Validate each generated example before publication; represent missing examples truthfully
- * rather than {status:200,ok:true}.
- * 4. Add parity tests that execute every generated case and every source case through the same shared
- * executor; compare expected/actual fields, not just aggregate pass counts. Run node
- * scripts/docs/generate-all-data.mjs only in a build/validation workspace during this preparation;
- * implementation may regenerate tracked data after changes are accepted.
- * 5. Rebuild Lab/Studio/MCP/Playground/Kits together; PROPOSED NEW tests/unit/generated-contracts.test.js must
- * assert source preservation and complete required fields for all nine families.
- * Dependencies: OX-S07 executor registry, SDK/spec fixes and OX-S11 source metadata. Generated JSON cannot
- * take comments, so this is its owning annotation. Rollback generator and all generated assets together,
- * retaining prior verified case hashes.
- */
 // 3. Conformance vectors
-const conformanceDir = path.join(root, 'conformance');
-const vectorFiles = fs.readdirSync(conformanceDir).filter(f => f.endsWith('.json'));
+// OX-S07: every generated entry keeps its complete source case under `case`, so the
+// browser executor receives exactly the arguments the CLI does. Families come from the
+// shared registry; a file with no registered family, a case no executor variant can run,
+// or a count that differs from its source stops generation.
+assertNoUnregisteredVectorFiles();
+const vectorManifest = buildVectorManifest();
 const vectorFamilies = {};
 const allVectorsList = [];
 
-for (const file of vectorFiles) {
-  const data = JSON.parse(fs.readFileSync(path.join(conformanceDir, file), 'utf8'));
-  const familyName = file.replace('-vectors.json', '');
-  const cases = data.cases || data.vectors || [];
-  
-  vectorFamilies[familyName] = {
-    family: familyName,
+const slugify = (text) => String(text).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+
+for (const family of FAMILIES) {
+  const spec = FAMILY_REGISTRY[family];
+  const { file, sha256, data, cases } = loadVectorFile(family);
+  const usedIds = new Set();
+  const variantCounts = {};
+  const entries = cases.map((c, index) => {
+    const variant = variantOf(family, c);
+    if (!variant) throw new Error(`${file} case ${index} (${c.name}) matches no ${family} executor variant`);
+    variantCounts[variant] = (variantCounts[variant] || 0) + 1;
+    let id = `${family}/${slugify(c.name || `case-${index + 1}`)}`;
+    if (usedIds.has(id)) id = `${id}-${index + 1}`;
+    usedIds.add(id);
+    const entry = {
+      id,
+      family,
+      variant,
+      index,
+      name: c.name || `case-${index + 1}`,
+      title: c.name || `Case ${index + 1}`,
+      description: c.description || c.note || '',
+      sourceFile: `conformance/${file}`,
+      sourceSha256: crypto.createHash('sha256').update(JSON.stringify(c), 'utf8').digest('hex'),
+      case: c
+    };
+    allVectorsList.push(entry);
+    return entry;
+  });
+  if (entries.length !== vectorManifest.families[family].count) {
+    throw new Error(`${family}: generated ${entries.length} cases but the source has ${vectorManifest.families[family].count}`);
+  }
+  vectorFamilies[family] = {
+    family,
+    label: spec.label,
     file,
+    fileSha256: sha256,
+    spec: spec.spec,
+    resultField: spec.result,
     version: data.version || data.protocolVersion || '1.0',
     description: data.description || data.note || '',
-    count: cases.length,
-    cases: cases.map((c, i) => {
-      const vObj = {
-        family: familyName,
-        id: c.name || `${familyName}-${i + 1}`,
-        title: c.name || `Case ${i + 1}`,
-        description: c.description || c.note || '',
-        input: c.input || c.transaction || c.manifest || c.order || c.record || c.plan || c.intent || c.envelope || c,
-        expected: c.expected || (c.verdict ? { ok: c.verdict === 'PASS', code: c.refusalCode } : { ok: true }),
-        order: c.order || null,
-        transaction: c.transaction || null
-      };
-      allVectorsList.push(vObj);
-      return vObj;
-    })
+    count: entries.length,
+    variants: variantCounts,
+    cases: entries
   };
 }
-
-// 4. Verifiers and Refusal Codes
-const verifierDir = path.join(root, 'verifier');
-const verifierFiles = fs.readdirSync(verifierDir).filter(f => f.endsWith('.js') && !f.endsWith('.test.js'));
-const refusalCodeMap = {};
-
-for (const file of verifierFiles) {
-  const content = fs.readFileSync(path.join(verifierDir, file), 'utf8');
-  const family = file.replace('.js', '');
-
-  const matches = content.matchAll(/(?:refuse|termsRefuse|acceptanceRefuse|recoveryRefuse)\s*\(\s*['"]([A-Z0-9_-]+)['"](?:\s*,\s*(?:`([^`]+)`|'([^']+)'|"([^"]+)"))?/g);
-  for (const m of matches) {
-    const code = m[1];
-    const reason = m[2] || m[3] || m[4] || '';
-    if (!refusalCodeMap[code]) {
-      refusalCodeMap[code] = {
-        code,
-        verifiers: new Set(),
-        reasons: new Set(),
-        category: categorizeRefusal(code)
-      };
-    }
-    refusalCodeMap[code].verifiers.add(family);
-    if (reason) refusalCodeMap[code].reasons.add(reason.trim());
-  }
-
-  const matches2 = content.matchAll(/code:\s*['"]([A-Z0-9_-]+)['"]/g);
-  for (const m of matches2) {
-    const code = m[1];
-    if (code !== 'utf8') {
-      if (!refusalCodeMap[code]) {
-        refusalCodeMap[code] = {
-          code,
-          verifiers: new Set(),
-          reasons: new Set(),
-          category: categorizeRefusal(code)
-        };
-      }
-      refusalCodeMap[code].verifiers.add(family);
-    }
-  }
+if (allVectorsList.length !== vectorManifest.total) {
+  throw new Error(`Generated ${allVectorsList.length} vectors but the sources hold ${vectorManifest.total}`);
 }
 
+// 4. Refusal categories (the rules themselves are built in section 6b)
 function categorizeRefusal(code) {
   if (code.startsWith('MALFORMED_') || code.includes('SCHEMA_') || code.includes('EMPTY') || code.includes('INVALID') || code.includes('UNKNOWN')) return 'structural';
   if (code.includes('SIGNATURE') || code.includes('SIGHASH') || code.includes('SIGNER')) return 'signature';
@@ -186,18 +170,6 @@ function categorizeRefusal(code) {
   if (code.includes('CAPABILITY') || code.includes('PROTOCOL_UNSUPPORTED')) return 'capability';
   return 'structural';
 }
-
-const refusalList = Object.values(refusalCodeMap).map(r => {
-  const explanation = r.reasons.size > 0 ? [...r.reasons][0] : `Refusal condition triggered for ${r.code.toLowerCase().replace(/_/g, ' ')}.`;
-  return {
-    code: r.code,
-    verifiers: [...r.verifiers],
-    reasons: [...r.reasons],
-    category: r.category,
-    explanation,
-    remediation: `Inspect the transaction parameters and ensure compliance with ${r.code}. Verify outpoints, scriptPubKeys, and value conservation.`
-  };
-}).sort((a, b) => a.code.localeCompare(b.code));
 
 // 5. Specs
 const specDir = path.join(root, 'spec');
@@ -219,10 +191,14 @@ const specs = specFiles.map(file => {
 });
 
 // 6. Versions and Protocol History
+// OX-S03: capability placement follows the verifiers (SafeOps and swaps require protocol
+// 1.2, offers 1.1). Only the current contract digest can be computed from checked-in
+// sources; earlier contract digests were never recorded, so they are null, not invented.
 const versions = {
   currentProtocol: '1.2',
   currentSdk: '1.0.0',
-  currentGatewayContract: '1.2',
+  currentGatewayContract: openapi.info?.version || '1.2',
+  currentContractDigest: vectorManifest.specDigest,
   history: [
     {
       version: '1.0',
@@ -238,32 +214,32 @@ const versions = {
         'OpenOrdex Nostr event import and interoperability'
       ],
       sdkCompatibility: '>=0.9.0',
-      contractDigest: 'sha256:d8a2f1b0918c8e19c8f619e07891230485918239048102381203810293810293'
+      contractDigest: null
     },
     {
       version: '1.1',
       title: 'Ordex Protocol 1.1 Additive Release',
       status: 'Stable',
       releaseDate: '2026-08-10',
-      description: 'Introduces buyer-funded Offers v1 on Taproot, SafeOps execution shielding, Atomic Swaps, and Rune cenotaph burn protection.',
+      description: 'Introduces buyer-funded Offers v1 on Taproot, Rune cenotaph burn protection, and batch purchase composition.',
       addedCapabilities: [
         'Buyer-funded Offers v1 with 2-of-2 policy and timeout recovery',
         'Offer acceptance planning and preflight verification',
-        'SafeOps execution shield and expected-transaction manifests',
-        'Atomic Swaps Links (OTC maker/taker single-tx settlement)',
         'Rune burn and cenotaph prevention verifier',
         'Batch purchase composition for multi-ask execution'
       ],
       sdkCompatibility: '>=0.9.5',
-      contractDigest: 'sha256:c189ef2390841298401928409182309481209384019283401928340192834019'
+      contractDigest: null
     },
     {
       version: '1.2',
       title: 'Ordex Protocol 1.2 Current Production',
       status: 'Current',
       releaseDate: '2026-09-02',
-      description: 'Adds Collection Provenance manifests, Counterparty Heritage Asset UTXO management, Cold-Signing session manifests, and SSE/WebSocket event replay checkpoints.',
+      description: 'Adds SafeOps plans, atomic swaps, collection manifests, Counterparty UTXO assets, cold-signing manifests, and event replay checkpoints.',
       addedCapabilities: [
+        'SafeOps execution shield plans and signed-result checks (verifier requires protocol 1.2)',
+        'Atomic swap intents and acceptance plans (verifier requires protocol 1.2)',
         'Collection Provenance manifests with Merkle membership proofs',
         'Counterparty Heritage Asset attachment and detachment UTXO workflows',
         'Offline Cold-Signing session manifests with air-gapped signature verification',
@@ -271,23 +247,127 @@ const versions = {
         'Signed webhook endpoint verification, delivery history, and replaying'
       ],
       sdkCompatibility: '1.0.0',
-      contractDigest: 'sha256:a7bfe9b1232047ac390a6505b0d4384616435b22b658d839352ec77fba11b816'
+      contractDigest: vectorManifest.specDigest
     }
   ]
 };
 
+// 6b. Refusal codes and diagnostic rules (OX-S09)
+// Every code the verifiers can return (scripts/docs/refusal-sources.mjs), bound to its
+// source sites, the spec statement that names it, the variant context authored in
+// site/src/lib/diagnostics/rule-context.mjs and a reproducer from
+// site/src/lib/diagnostics/reproducers.json that is executed here. Generation stops on a
+// dangling reference, an unknown version or a reproducer that does not return its code.
+const refusalSources = scanRefusalSources();
+const reproducerFile = JSON.parse(fs.readFileSync(path.join(root, 'site', 'src', 'lib', 'diagnostics', 'reproducers.json'), 'utf8'));
+const protocolVersionList = versions.history.map((h) => h.version);
+const specTexts = Object.fromEntries(
+  fs.readdirSync(specDir).filter((f) => f.endsWith('.md')).map((f) => [f, fs.readFileSync(path.join(specDir, f), 'utf8').replace(/\r\n/g, '\n')])
+);
+const headingAnchor = (title) => title.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '-').replace(/-+/g, '-');
+
+for (const [family, introduced] of Object.entries(FAMILY_INTRODUCED_IN)) {
+  if (!FAMILIES.includes(family)) throw new Error(`rule-context names unknown family ${family}`);
+  if (!protocolVersionList.includes(introduced)) throw new Error(`${family} introduced in unknown protocol version ${introduced}`);
+  const status = specTexts[path.basename(FAMILY_REGISTRY[family].spec)]?.match(/^Status: active at protocol (\d+\.\d+)/m);
+  if (status && status[1] !== introduced) throw new Error(`${FAMILY_REGISTRY[family].spec} says protocol ${status[1]}, rule-context says ${introduced}`);
+}
+for (const family of FAMILIES) if (!FAMILY_INTRODUCED_IN[family]) throw new Error(`No introduction version for ${family}`);
+
+/** Where a spec names the code: file, nearest heading above, line and the sentence. */
+function specPointer(code) {
+  for (const [file, text] of Object.entries(specTexts)) {
+    const lines = text.split('\n');
+    const i = lines.findIndex((l) => l.includes(code));
+    if (i < 0) continue;
+    let heading = null;
+    for (let j = i; j >= 0; j--) {
+      const m = lines[j].match(/^#{1,4}\s+(.+)$/);
+      if (m) {
+        heading = m[1].trim();
+        break;
+      }
+    }
+    const statement = lines[i].replace(/^\s*(?:[-*]|\d+\.)\s+/, '').replace(/`/g, '').trim();
+    return { path: `spec/${file}`, line: i + 1, heading, anchor: heading ? headingAnchor(heading) : null, statement };
+  }
+  return null;
+}
+
+const vectorById = new Map(allVectorsList.map((v) => [v.id, v]));
+const diagnostics = [];
+if (reproducerFile.unavailable?.length) throw new Error(`Refusal branches without a reproducer: ${reproducerFile.unavailable.join(', ')}`);
+for (const [code, entry] of refusalSources) {
+  const families = [...new Set(entry.sites.map((s) => s.family))].sort();
+  const list = reproducerFile.reproducers[code] || [];
+  const unreachable = families.filter((f) => reproducerFile.unreachable?.[`${code}|${f}`]).map((f) => ({ family: f, reason: reproducerFile.unreachable[`${code}|${f}`] }));
+  for (const f of families) {
+    if (!list.some((r) => r.family === f) && !unreachable.some((u) => u.family === f)) throw new Error(`No reproducer for ${code} in ${f}; run node scripts/docs/discover-reproducers.mjs`);
+  }
+  if (!list.length) throw new Error(`${code} has no reproducer in any family`);
+  const reproducers = list.map((r) => {
+    const base = vectorById.get(r.base);
+    if (!base) throw new Error(`Reproducer for ${code} names missing vector ${r.base}`);
+    if (base.family !== r.family || base.variant !== r.variant) throw new Error(`Reproducer for ${code} names ${r.family}:${r.variant} but ${base.id} is ${base.family}:${base.variant}`);
+    if (!families.includes(r.family)) throw new Error(`Reproducer for ${code} runs ${r.family}, which never returns it`);
+    const verdict = normalizeVerdict(r.family, invokeVerifier(r.family, applyPatch(base.case, r.patch), r.variant));
+    if (verdict.state !== 'refused' || verdict.code !== code) throw new Error(`Reproducer for ${code} in ${r.family} returned ${verdict.state} ${verdict.code}`);
+    const context = RULE_CONTEXT[`${r.family}:${r.variant}`];
+    if (!context) throw new Error(`No rule context for ${r.family}:${r.variant}`);
+    return { family: r.family, variant: r.variant, base: r.base, baseName: base.name, patch: r.patch, derivation: r.derivation, ...(r.note ? { note: r.note } : {}), verifiedReason: verdict.reason, lifecycle: context.lifecycle, inputs: context.inputs, recovery: context.recovery };
+  });
+  const primary = reproducers[0];
+  const introduced = families.map((f) => FAMILY_INTRODUCED_IN[f]).sort()[0];
+  const spec = specPointer(code);
+  const primaryReasons = entry.sites.filter((s) => s.family === primary.family).map((s) => s.reason).filter(Boolean);
+  diagnostics.push({
+    id: `diag-${code.toLowerCase().replace(/_/g, '-')}`,
+    exactCodes: [code],
+    family: primary.family,
+    families,
+    variant: primary.variant,
+    category: categorizeRefusal(code),
+    lifecyclePhases: [...new Set(reproducers.map((r) => r.lifecycle))],
+    supportedProtocolVersions: protocolVersionList.filter((v) => Number(v) >= Number(introduced)),
+    summary: primaryReasons[0] || entry.sites[0].reason,
+    invariant: spec ? spec.statement : null,
+    causes: entry.sites.map((s) => ({ family: s.family, predicate: s.reason, source: { path: s.file, line: s.line, symbol: s.symbol }, reachable: !unreachable.some((u) => u.family === s.family) })),
+    evidenceRequirements: primary.inputs.map((evidenceType) => ({ evidenceType, required: true })),
+    resolutionSteps: resolutionSteps(primary, FAMILY_REGISTRY[primary.family].label),
+    reproducers,
+    unreachable,
+    nextTools: reproducers.map((r) => ({ tool: 'lab', label: `Open the ${FAMILY_REGISTRY[r.family].label} reproducer in Protocol Lab`, href: `/lab/?reproduce=${code}&family=${encodeURIComponent(r.family)}` })),
+    sourceRefs: [
+      ...entry.sites.map((s) => ({ title: `${s.file}:${s.line}${s.symbol ? ` (${s.symbol})` : ''}`, path: s.file, line: s.line, type: 'verifier' })),
+      ...(spec ? [{ title: `${spec.path}${spec.heading ? `: ${spec.heading}` : ''}`, path: spec.path, line: spec.line, type: 'spec' }] : []),
+      ...reproducers.map((r) => ({ title: `${vectorById.get(r.base).sourceFile}: ${r.baseName}`, path: vectorById.get(r.base).sourceFile, line: null, type: 'vector' }))
+    ]
+  });
+}
+
+const refusalList = diagnostics.map((d) => ({
+  code: d.exactCodes[0],
+  verifiers: d.families,
+  reasons: [...new Set(d.causes.map((c) => c.predicate).filter(Boolean))],
+  category: d.category,
+  explanation: d.summary,
+  remediation: d.resolutionSteps.map((s) => s.action).join(' ')
+}));
+
 // 7. Compatibility Matrix
+// OX-S03: SafeOps and swaps start at protocol 1.2 (verifier/safeops.js SAFEOPS_PROTOCOL_MIN and
+// the swaps intent version check); offline rows describe local verification, not a mock.
 const compatibilityMatrix = [
-  { capability: 'Public Asks Composition', protocol: '1.0+', gateway: 'Supported', sdk: 'Supported', browser: 'Supported', node: 'Supported', offline: 'Supported (Mock)', transport: 'REST', authority: 'Publisher claim', signing: 'Wallet / Air-gap' },
+  { capability: 'Public Asks Composition', protocol: '1.0+', gateway: 'Supported', sdk: 'Supported', browser: 'Supported', node: 'Supported', offline: 'Not applicable (needs a gateway)', transport: 'REST', authority: 'Publisher claim', signing: 'Wallet / Air-gap' },
   { capability: 'Public Ask Purchase Verification', protocol: '1.0+', gateway: 'Supported', sdk: 'Supported', browser: 'Supported (Worker)', node: 'Supported', offline: 'Supported', transport: 'Local Engine', authority: 'Protocol verification', signing: 'None required' },
-  { capability: 'Batch Purchase Composition', protocol: '1.1+', gateway: 'Supported', sdk: 'Supported', browser: 'Supported', node: 'Supported', offline: 'Supported (Mock)', transport: 'REST', authority: 'Protocol verification', signing: 'Buyer Wallet' },
-  { capability: 'Buyer-Funded Offers v1', protocol: '1.1+', gateway: 'Supported', sdk: 'Supported', browser: 'Supported', node: 'Supported', offline: 'Supported (Mock)', transport: 'REST', authority: 'Chain proof + Policy', signing: 'Taproot Signer' },
+  { capability: 'Batch Purchase Composition', protocol: '1.1+', gateway: 'Supported', sdk: 'Supported', browser: 'Supported', node: 'Supported', offline: 'Not applicable (needs a gateway)', transport: 'REST', authority: 'Protocol verification', signing: 'Buyer Wallet' },
+  { capability: 'Buyer-Funded Offers v1', protocol: '1.1+', gateway: 'Supported', sdk: 'Supported', browser: 'Supported', node: 'Supported', offline: 'Not applicable (needs a gateway)', transport: 'REST', authority: 'Chain proof + Policy', signing: 'Taproot Signer' },
   { capability: 'Offer Recovery Path', protocol: '1.1+', gateway: 'Supported', sdk: 'Supported', browser: 'Supported (Worker)', node: 'Supported', offline: 'Supported', transport: 'Local Engine', authority: 'Protocol verification', signing: 'Buyer Key' },
-  { capability: 'SafeOps Execution Shield', protocol: '1.1+', gateway: 'Supported', sdk: 'Supported', browser: 'Supported', node: 'Supported', offline: 'Supported (Mock)', transport: 'REST', authority: 'Protocol verification', signing: 'Operator Key' },
+  { capability: 'SafeOps Execution Shield', protocol: '1.2+', gateway: 'Supported', sdk: 'Supported', browser: 'Supported', node: 'Supported', offline: 'Not applicable (needs a gateway)', transport: 'REST', authority: 'Protocol verification', signing: 'Operator Key' },
   { capability: 'Rune Burn & Cenotaph Guard', protocol: '1.1+', gateway: 'Supported', sdk: 'Supported', browser: 'Supported (Worker)', node: 'Supported', offline: 'Supported', transport: 'Local Engine', authority: 'Protocol verification', signing: 'None required' },
-  { capability: 'Atomic Swaps OTC', protocol: '1.1+', gateway: 'Supported', sdk: 'Supported', browser: 'Supported', node: 'Supported', offline: 'Supported (Mock)', transport: 'REST', authority: 'Protocol verification', signing: 'Dual Signer' },
-  { capability: 'Event Stream Replay', protocol: '1.2+', gateway: 'Supported', sdk: 'Supported', browser: 'Supported', node: 'Supported', offline: 'Supported (Mock)', transport: 'SSE / WS', authority: 'Gateway observation', signing: 'None required' },
-  { capability: 'Signed Webhooks', protocol: '1.2+', gateway: 'Supported', sdk: 'Supported', browser: 'Supported', node: 'Supported', offline: 'Supported (Mock)', transport: 'HTTP POST', authority: 'Gateway HMAC', signing: 'HMAC-SHA256' },
+  { capability: 'Atomic Swaps OTC', protocol: '1.2+', gateway: 'Supported', sdk: 'Supported', browser: 'Supported', node: 'Supported', offline: 'Not applicable (needs a gateway)', transport: 'REST', authority: 'Protocol verification', signing: 'Dual Signer' },
+  { capability: 'Event Stream Replay', protocol: '1.2+', gateway: 'Supported', sdk: 'Supported', browser: 'Supported', node: 'Supported', offline: 'Not applicable (needs a gateway)', transport: 'SSE / WS', authority: 'Gateway observation', signing: 'None required' },
+  { capability: 'Signed Webhooks', protocol: '1.2+', gateway: 'Supported', sdk: 'Supported', browser: 'Supported', node: 'Supported', offline: 'Supported (signature verification)', transport: 'HTTP POST', authority: 'Gateway HMAC', signing: 'HMAC-SHA256' },
   { capability: 'Collection Provenance Manifests', protocol: '1.2+', gateway: 'Supported', sdk: 'Supported', browser: 'Supported (Worker)', node: 'Supported', offline: 'Supported', transport: 'REST / Local', authority: 'Chain proof', signing: 'Creator BIP-322' },
   { capability: 'Counterparty Heritage Assets', protocol: '1.2+', gateway: 'Supported', sdk: 'Supported', browser: 'Supported (Worker)', node: 'Supported', offline: 'Supported', transport: 'REST / Local', authority: 'Chain proof', signing: 'Owner UTXO' },
   { capability: 'Air-Gapped Cold-Signing Manifests', protocol: '1.2+', gateway: 'Supported', sdk: 'Supported', browser: 'Supported (Worker)', node: 'Supported', offline: 'Supported', transport: 'Local / JSON', authority: 'Protocol verification', signing: 'Cold Signer' }
@@ -321,7 +401,7 @@ const wizards = [
         options: [
           { value: 'browser', label: 'Web Browser (Client-side)', lead: 'Client-side verification and UI components using @bitcoinuniverse/ordex-sdk.' },
           { value: 'node', label: 'Node.js / Backend Server', lead: 'High-throughput catalog querying, webhook ingestion, and order caching.' },
-          { value: 'worker', label: 'Cloudflare Worker / Edge', lead: 'Serverless gateway endpoints, signature checks, and event forwarders.' },
+          { value: 'worker', label: 'Fetch-handler worker', lead: 'A Workers-compatible fetch handler: signature checks and event forwarding.' },
           { value: 'offline', label: 'Air-Gapped Cold Signer', lead: 'Zero-network hardware or offline workstation running verification.' }
         ]
       },
@@ -341,10 +421,7 @@ const wizards = [
       }
     ],
     outcome: {
-      recommendation: 'Use @bitcoinuniverse/ordex-sdk with deterministic local mock mode for development, connecting to your selected gateway when ready.',
-      starterKit: 'node-typescript-starter',
-      recipeLinks: ['/build/recipes/publish-ask', '/build/recipes/purchase-ask'],
-      docLinks: ['/learn/concepts', '/learn/security-model']
+      recommendation: 'Start from a starter kit in offline mode, which checks the SDK against the conformance vectors, then point it at your gateway.'
     }
   },
   {
@@ -903,8 +980,11 @@ const corpusChunks = [];
 let chunkId = 0;
 
 // Chunk specifications
+// OX-S11: read specs with LF line endings (a Windows checkout must not leak carriage returns
+// into titles), and link each section to a page that exists: the spec's card on
+// /reference/specifications/.
 for (const spec of specs) {
-  const content = fs.readFileSync(path.join(specDir, spec.file), 'utf8');
+  const content = fs.readFileSync(path.join(specDir, spec.file), 'utf8').replace(/\r\n/g, '\n');
   const sections = content.split(/\n(?=##?\s)/);
   for (const sec of sections) {
     const lines = sec.trim().split('\n');
@@ -924,7 +1004,7 @@ for (const spec of specs) {
       title: `${spec.title} - ${title}`,
       content: body.slice(0, 1200),
       digest,
-      docUrl: `/reference/specifications/${spec.id}`
+      docUrl: `/reference/specifications/#spec-${spec.id}`
     });
   }
 }
@@ -962,39 +1042,14 @@ for (const ref of refusalList) {
     contentType: 'refusal-code',
     title: `Refusal: ${ref.code}`,
     content: `${ref.explanation} Category: ${ref.category}. Remediation: ${ref.remediation}`,
-    digest: 'sha256:refusal',
+    digest: crypto.createHash('sha256').update(text, 'utf8').digest('hex').slice(0, 16),
     docUrl: `/reference/refusal-codes/#${ref.code}`
   });
 }
 
 // Helper to generate schema examples
-function generateSchemaExample(schema, doc) {
-  if (!schema) return {};
-  if (schema.$ref) {
-    const resolved = resolveRef(schema.$ref, doc);
-    return generateSchemaExample(resolved, doc);
-  }
-  if (schema.example !== undefined) return schema.example;
-  if (schema.default !== undefined) return schema.default;
-  if (schema.enum) return schema.enum[0];
-  if (schema.type === 'string') {
-    if (schema.format === 'date-time') return '2026-09-02T16:00:00Z';
-    if (schema.pattern && schema.pattern.includes('^[0-9a-f]{64}$')) return 'a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef';
-    return 'example-string';
-  }
-  if (schema.type === 'integer' || schema.type === 'number') return 10000;
-  if (schema.type === 'boolean') return true;
-  if (schema.type === 'array') {
-    return [generateSchemaExample(schema.items || {}, doc)];
-  }
-  if (schema.type === 'object' || schema.properties) {
-    const obj = {};
-    for (const [propName, propSchema] of Object.entries(schema.properties || {})) {
-      obj[propName] = generateSchemaExample(propSchema, doc);
-    }
-    return obj;
-  }
-  return {};
+function resolveResponse(response) {
+  return response?.$ref ? resolveRef(response.$ref, openapi) : response;
 }
 
 function resolveRef(ref, doc) {
@@ -1006,70 +1061,15 @@ function resolveRef(ref, doc) {
   return curr || {};
 }
 
-/* IMPLEMENTATION-HANDOFF [OX-S09]
- * Defect OX-S-D09; coverage OX-S-C300..OX-S-C471 and OX-S-C500..OX-S-C671. Every code receives the same
- * lifecycle, PSBT evidence requirements, generic UTXO cause and a reproducerFactoryId for a factory that does
- * not exist.
- * 1. Replace generic mapping with a versioned authored rule registry tied to verifier branch/spec requirement,
- * lifecycle and concrete validated reproducer. Preserve shared codes across all relevant families instead of
- * always choosing verifiers[0].
- * 2. Use existing conformance refusals where sufficient; add minimal source fixtures for uncovered codes with
- * an actual verifier call and exact assertion. Derive valid supportedProtocolVersions from spec metadata
- * (SafeOps/swaps are1.2 in README/spec), not family name guesses.
- * 3. Generate diagnostics/refusal catalog from that source and fail generation for dangling source/factory
- * refs, unknown versions or unexecuted examples. Do not edit generated JSON directly.
- * 4. PROPOSED NEW tests/unit/diagnostic-reproducers.test.js executes all172 advertised code examples and
- * asserts actual code/remediation provenance; tests/unit/diagnostic-detector.test.js covers envelope
- * classification and cautious confidence for unrecognized codes.
- * Dependencies: OX-S09 UI, OX-S07 normalized verifier registry, governing protocol work packages. Rollback
- * generated rules, fixtures and references together; preserve intentional unknown states.
- */
-// 10. Diagnostics Registry Generation for Failure Navigator
-const diagnostics = refusalList.map(r => {
-  const family = r.verifiers[0] || 'purchase';
-  let versions = ['1.0', '1.1', '1.2'];
-  if (['offers', 'safeops', 'swaps', 'runes'].includes(family)) {
-    versions = ['1.1', '1.2'];
-  } else if (['collection-manifest', 'counterparty-asset', 'offline-signing', 'events'].includes(family)) {
-    versions = ['1.2'];
-  }
-
-  const destinationProduct = family === 'purchase' ? 'sandbox' : family === 'doctor' ? 'doctor' : 'lab';
-
-  return {
-    id: `diag-${r.code.toLowerCase().replace(/_/g, '-')}`,
-    exactCodes: [r.code],
-    family,
-    lifecyclePhases: ['composition', 'preflight', 'verification'],
-    supportedProtocolVersions: versions,
-    summary: r.explanation,
-    invariant: `Rule ${r.code}: All parameters must satisfy ${family} invariant requirements before signing.`,
-    likelyCauses: [
-      { cause: r.explanation, probability: 'High' },
-      { cause: 'Client state out of sync with current UTXO set', probability: 'Medium' }
-    ],
-    evidenceRequirements: [
-      { evidenceType: 'PSBT binary or transaction hex', required: true },
-      { evidenceType: 'Offered outpoint prevout value and script', required: true }
-    ],
-    resolutionSteps: [
-      { step: 1, action: r.remediation },
-      { step: 2, action: 'Inspect field values in Artifact Lens' },
-      { step: 3, action: 'Execute reference verifier in Protocol Lab' }
-    ],
-    reproducerFactoryId: `reproducer-${r.code.toLowerCase().replace(/_/g, '-')}`,
-    destinationProduct,
-    sourceRefs: [
-      { title: `${family} Verifier`, path: `verifier/${family}.js`, type: 'verifier' }
-    ]
-  };
-});
+// 11. Diagnostics (OX-S09): built in section 6b from the verifier sources, the authored variant
+// context and executed reproducers; every rule carries its source lines and reproducer.
 
 // Write out all files
 fs.writeFileSync(path.join(dataOutDir, 'operations.json'), JSON.stringify(operations, null, 2));
 fs.writeFileSync(path.join(dataOutDir, 'channels.json'), JSON.stringify(channels, null, 2));
 fs.writeFileSync(path.join(dataOutDir, 'vectorFamilies.json'), JSON.stringify(vectorFamilies, null, 2));
 fs.writeFileSync(path.join(dataOutDir, 'allVectors.json'), JSON.stringify(allVectorsList, null, 2));
+fs.writeFileSync(path.join(dataOutDir, 'vectorManifest.json'), JSON.stringify(vectorManifest, null, 2));
 fs.writeFileSync(path.join(dataOutDir, 'refusals.json'), JSON.stringify(refusalList, null, 2));
 fs.writeFileSync(path.join(dataOutDir, 'diagnostics.json'), JSON.stringify(diagnostics, null, 2));
 fs.writeFileSync(path.join(dataOutDir, 'specs.json'), JSON.stringify(specs, null, 2));

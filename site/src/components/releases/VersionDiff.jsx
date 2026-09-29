@@ -54,7 +54,7 @@ export function VersionDiff() {
         </div>
 
         {/* Diff Comparison Grid */}
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1rem;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); gap: 1.5rem; margin-top: 1rem;">
           {/* Base Version Details */}
           <div class="panel" style="padding: 1rem; background: var(--color-bg-subtle);">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
@@ -65,7 +65,7 @@ export function VersionDiff() {
               {baseObj.description}
             </p>
             <div style="font-size: 0.8rem; font-family: var(--font-mono); margin-bottom: 0.5rem; word-break: break-all;">
-              Contract Digest: {baseObj.contractDigest}
+              Contract Digest: {baseObj.contractDigest || 'Not recorded for this release'}
             </div>
             <div>
               <strong style="font-size: 0.8rem; text-transform: uppercase; color: var(--color-text-muted);">
@@ -89,10 +89,10 @@ export function VersionDiff() {
               {targetObj.description}
             </p>
             <div style="font-size: 0.8rem; font-family: var(--font-mono); margin-bottom: 0.5rem; word-break: break-all;">
-              Contract Digest: {targetObj.contractDigest}
+              Contract Digest: {targetObj.contractDigest || 'Not recorded for this release'}
             </div>
             <div>
-              <strong style="font-size: 0.8rem; text-transform: uppercase; color: var(--color-brand);">
+              <strong style="font-size: 0.8rem; text-transform: uppercase; color: var(--color-brand-text);">
                 Added / Upgraded in v{targetObj.version}:
               </strong>
               <ul style="margin: 0.4rem 0 0 1.2rem; padding: 0; font-size: 0.85rem;">

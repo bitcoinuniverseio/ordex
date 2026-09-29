@@ -93,12 +93,12 @@
   {
     "file": "cold-signing.md",
     "id": "cold-signing",
-    "title": "Cold signing and watch-only mode v2",
+    "title": "Cold signing and watch-only mode v1",
     "headings": [
       {
         "level": 1,
-        "title": "Cold signing and watch-only mode v2",
-        "anchor": "cold-signing-and-watch-only-mode-v2"
+        "title": "Cold signing and watch-only mode v1",
+        "anchor": "cold-signing-and-watch-only-mode-v1"
       },
       {
         "level": 2,
@@ -112,8 +112,8 @@
       },
       {
         "level": 2,
-        "title": "The refusals",
-        "anchor": "the-refusals"
+        "title": "The nine refusals",
+        "anchor": "the-nine-refusals"
       },
       {
         "level": 2,
@@ -131,7 +131,7 @@
         "anchor": "blind-signing-is-prohibited"
       }
     ],
-    "rawLength": 6549
+    "rawLength": 7800
   },
   {
     "file": "collection-manifest.md",
@@ -174,7 +174,7 @@
         "anchor": "gates"
       }
     ],
-    "rawLength": 6180
+    "rawLength": 7444
   },
   {
     "file": "counterparty-utxo-asset.md",
@@ -227,7 +227,7 @@
         "anchor": "readiness-gates"
       }
     ],
-    "rawLength": 7745
+    "rawLength": 7624
   },
   {
     "file": "events.md",
@@ -260,27 +260,12 @@
         "anchor": "signed-webhooks"
       },
       {
-        "level": 3,
-        "title": "The delivery signing key",
-        "anchor": "the-delivery-signing-key"
-      },
-      {
-        "level": 3,
-        "title": "The signature",
-        "anchor": "the-signature"
-      },
-      {
-        "level": 3,
-        "title": "Delivery",
-        "anchor": "delivery"
-      },
-      {
         "level": 2,
         "title": "Historical APIs",
         "anchor": "historical-apis"
       }
     ],
-    "rawLength": 7299
+    "rawLength": 7320
   },
   {
     "file": "interoperability.md",
@@ -414,7 +399,7 @@
         "anchor": "what-ordex-never-does"
       }
     ],
-    "rawLength": 17353
+    "rawLength": 16117
   },
   {
     "file": "purchase.md",
@@ -496,11 +481,6 @@
       },
       {
         "level": 2,
-        "title": "Where a readable runestone sends each balance",
-        "anchor": "where-a-readable-runestone-sends-each-balance"
-      },
-      {
-        "level": 2,
         "title": "The rule a client must apply",
         "anchor": "the-rule-a-client-must-apply"
       },
@@ -510,17 +490,17 @@
         "anchor": "conformance"
       }
     ],
-    "rawLength": 8900
+    "rawLength": 7802
   },
   {
     "file": "safeops.md",
     "id": "safeops",
-    "title": "SafeOps v2",
+    "title": "SafeOps v1",
     "headings": [
       {
         "level": 1,
-        "title": "SafeOps v2",
-        "anchor": "safeops-v2"
+        "title": "SafeOps v1",
+        "anchor": "safeops-v1"
       },
       {
         "level": 2,
@@ -568,17 +548,17 @@
         "anchor": "monitoring"
       }
     ],
-    "rawLength": 9580
+    "rawLength": 9871
   },
   {
     "file": "swaps.md",
     "id": "swaps",
-    "title": "Atomic swap links and the OTC desk",
+    "title": "Atomic swap links and the OTC desk v1",
     "headings": [
       {
         "level": 1,
-        "title": "Atomic swap links and the OTC desk",
-        "anchor": "atomic-swap-links-and-the-otc-desk"
+        "title": "Atomic swap links and the OTC desk v1",
+        "anchor": "atomic-swap-links-and-the-otc-desk-v1"
       },
       {
         "level": 2,
@@ -616,6 +596,6 @@
         "anchor": "adversarial-coverage"
       }
     ],
-    "rawLength": 7875
+    "rawLength": 8931
   }
 ]

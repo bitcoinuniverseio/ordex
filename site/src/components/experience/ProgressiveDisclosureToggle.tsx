@@ -14,6 +14,7 @@ export function ProgressiveDisclosureToggle({
   return (
     <div
       class={`ox-disclosure-toggle ${className}`}
+      data-tour="disclosure"
       role="group"
       aria-label="Progressive Disclosure Level"
       style={{
