@@ -82,7 +82,7 @@ const wizard: EvidenceRequirement = {
 export const MISSION_EVIDENCE: Record<string, StageMap> = {
   'integrate-public-asks': {
     understand: read('integrate-public-asks'),
-    prepare: api('Read the catalog or an order from the configured gateway in the API Playground'),
+    prepare: api('Read the catalog or an order from the configured gateway in the API Playground', ['api:getCatalog', 'api:listOrders', 'api:getOrder']),
     simulate: scenario('ask.publish-and-settle.success'),
     inspect: lens,
     verify: lab(['purchase']),
@@ -91,7 +91,7 @@ export const MISSION_EVIDENCE: Record<string, StageMap> = {
   },
   'complete-single-or-batch-purchase': {
     understand: read('complete-single-or-batch-purchase'),
-    prepare: api('Request a quote or preflight from the configured gateway in the API Playground'),
+    prepare: api('Request a quote or preflight from the configured gateway in the API Playground', ['api:quoteOrder', 'api:preflightOrder', 'api:composeBatchPurchase', 'api:preflightBatchPurchase']),
     simulate: scenario('purchase.batch.success', 'ask.publish-and-settle.success'),
     inspect: lens,
     verify: lab(['purchase']),
