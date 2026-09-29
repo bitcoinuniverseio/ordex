@@ -11,6 +11,9 @@ const siteDir = resolve(root, 'site');
 console.log('--- Step 1: Extract authoritative protocol metadata ---');
 execSync('node scripts/docs/generate-all-data.mjs', { cwd: root, stdio: 'inherit' });
 
+console.log('--- Step 1.5: Build the starter-kit assets (vendored SDK, vectors, lock entries) ---');
+execSync('node scripts/docs/build-kit-assets.mjs', { cwd: root, stdio: 'inherit' });
+
 console.log('--- Step 2: Render API reference specification page ---');
 const contract = JSON.parse(await readFile(resolve(root, 'spec', 'openapi.json'), 'utf8'));
 await writeFile(resolve(root, 'docs', 'api-reference.html'), renderApiReference(contract));
