@@ -1,0 +1,17 @@
+# Differential oracle for the transactions in conformance/offer-vectors.json:
+# Bitcoin Core 26.0 script verification through libbitcoinconsensus (the
+# bitcoinconsensus crate), consensus flags P2SH, DERSIG, NULLDUMMY,
+# CHECKLOCKTIMEVERIFY, CHECKSEQUENCEVERIFY, WITNESS and TAPROOT. Run it through
+# run.mjs; it is not part of the npm test path because it needs Rust and a C++
+# compiler.
+[package]
+name = "ordex-script-differential"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[workspace]
+
+[dependencies]
+bitcoinconsensus = "=0.106.0+26.0"
+serde_json = "1.0.81"

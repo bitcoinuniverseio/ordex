@@ -4,6 +4,8 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 import {
+  OFFER_ACCEPTANCE_SCHEMA,
+  OFFER_RECOVERY_SCHEMA,
   OFFER_TERMS_SCHEMA,
   offerTermsHash,
   parseSats,
@@ -45,11 +47,7 @@ for (const vector of acceptanceCases) {
   test(`acceptance vector: ${vector.name}`, () => {
     const verdict = verifyOfferAcceptance(vector.acceptance, vector.offer);
     assert.equal(verdict.ok, vector.expected.ok, verdict.reason || '');
-    if (verdict.ok) {
-      assert.equal(verdict.sharedIndex, vector.expected.sharedIndex);
-    } else {
-      assert.equal(verdict.code, vector.expected.code, verdict.reason || '');
-    }
+    for (const [key, value] of Object.entries(vector.expected)) assert.equal(verdict[key], value, `${key}: ${verdict.reason || ''}`);
   });
 }
 
@@ -57,9 +55,7 @@ for (const vector of recoveryCases) {
   test(`recovery vector: ${vector.name}`, () => {
     const verdict = verifyOfferRecovery(vector.recovery, vector.offer);
     assert.equal(verdict.ok, vector.expected.ok, verdict.reason || '');
-    if (!verdict.ok) {
-      assert.equal(verdict.code, vector.expected.code, verdict.reason || '');
-    }
+    for (const [key, value] of Object.entries(vector.expected)) assert.equal(verdict[key], value, `${key}: ${verdict.reason || ''}`);
   });
 }
 
@@ -93,11 +89,16 @@ test('parseSats accepts only exact non-negative decimal strings', () => {
 test('a malformed acceptance or recovery is refused, never thrown on', () => {
   const offer = recoveryCases[0].offer;
   assert.equal(verifyOfferAcceptance(null, null).ok, false);
-  assert.equal(verifyOfferAcceptance({}, { offerOutpoint: {}, felineOutpoint: {} }).code, 'MALFORMED_ACCEPTANCE');
+  assert.equal(verifyOfferAcceptance([], offer).code, 'MALFORMED_ACCEPTANCE');
+  assert.equal(verifyOfferAcceptance({}, { offerOutpoint: {}, felineOutpoint: {} }).code, 'SCHEMA_UNSUPPORTED');
+  assert.equal(verifyOfferAcceptance({ schema: OFFER_ACCEPTANCE_SCHEMA }, null).code, 'MALFORMED_OFFER');
   assert.equal(verifyOfferRecovery(null, offer).ok, false);
-  assert.equal(verifyOfferRecovery({ inputs: [], outputs: [], nLockTime: 0 }, offer).code, 'OFFER_OUTPOINT_MISSING');
+  assert.equal(verifyOfferRecovery({ inputs: [], outputs: [], nLockTime: 0 }, offer).code, 'SCHEMA_UNSUPPORTED');
+  assert.equal(verifyOfferRecovery({ schema: OFFER_RECOVERY_SCHEMA, transactionHex: 'zz' }, offer).code, 'TRANSACTION_INVALID');
 });
 
-test('the schema constant names the version this verifier carries', () => {
+test('the schema constants name the versions this verifier carries', () => {
   assert.equal(OFFER_TERMS_SCHEMA, 'ordex.offer-terms/v1');
+  assert.equal(OFFER_ACCEPTANCE_SCHEMA, 'ordex.offer-acceptance/v2');
+  assert.equal(OFFER_RECOVERY_SCHEMA, 'ordex.offer-recovery/v2');
 });

@@ -32,15 +32,14 @@ test('the SDK answers every conformance case exactly as recorded', async (t) => 
     await t.test(`acceptance: ${vector.name}`, () => {
       const verdict = verifyOfferAcceptance(vector.acceptance, vector.offer);
       assert.equal(verdict.ok, vector.expected.ok, verdict.reason || '');
-      if (verdict.ok) assert.equal(verdict.sharedIndex, vector.expected.sharedIndex);
-      else assert.equal(verdict.code, vector.expected.code, verdict.reason || '');
+      for (const [key, value] of Object.entries(vector.expected)) assert.equal(verdict[key], value, `${key}: ${verdict.reason || ''}`);
     });
   }
   for (const vector of recoveryCases) {
     await t.test(`recovery: ${vector.name}`, () => {
       const verdict = verifyOfferRecovery(vector.recovery, vector.offer);
       assert.equal(verdict.ok, vector.expected.ok, verdict.reason || '');
-      if (!verdict.ok) assert.equal(verdict.code, vector.expected.code, verdict.reason || '');
+      for (const [key, value] of Object.entries(vector.expected)) assert.equal(verdict[key], value, `${key}: ${verdict.reason || ''}`);
     });
   }
 });

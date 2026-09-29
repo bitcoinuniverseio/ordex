@@ -1,19 +1,36 @@
-// Reference verifier for Ordex offers v1.
+// Reference verifier for Ordex funded offers.
 //
 // This file restates spec/offers.md as executable checks. It is the same
 // verifier as sdk/src/offers.ts, and both are run against
 // conformance/offer-vectors.json, so they cannot drift apart without a test
 // failing.
 //
-// The structural rules are checked here. Signature validity and consensus
-// rules remain the node's authority, asset coverage remains the ord index's,
-// and the two policy signatures come from two independent signer services
-// whose independence is a deployment property, not a property of this file.
+// What a node would check about the funded output's two script paths is
+// rechecked here from the transaction bytes: the exact leaf scripts, the
+// Taproot commitment, the locktime and sequence rules, and every signature.
+// Asset movement is derived by the owning protocol's rule
+// (verifier/asset-flow.js). The node stays the final authority on relay and
+// consensus, the ord index on what each input carries, and the independence
+// of the two policy signer services is a deployment property.
 //
 // Every amount is an atomic integer carried as a decimal string and handled
 // as BigInt. Floating point never appears here.
 
 import { createHash } from 'node:crypto';
+
+import { deriveAssetFlow, readInventory } from './asset-flow.js';
+import {
+  bytesToHex,
+  dustThresholdSats,
+  hexToBytes,
+  parseTransaction,
+  tapBranchHash,
+  tapLeafHash,
+  taprootSighash,
+  verifyInputSignature,
+} from './bitcoin-tx.js';
+import { membershipProofRoot } from './collection-manifest.js';
+import { liftX, taprootTweak, verifySchnorr } from './secp256k1.js';
 
 const DECIMAL = /^(0|[1-9][0-9]*)$/;
 const HEX64 = /^[0-9a-f]{64}$/;
@@ -22,6 +39,18 @@ const INSCRIPTION = /^[0-9a-f]{64}i[0-9]+$/;
 const NETWORKS = ['mainnet', 'testnet', 'signet', 'regtest'];
 const KINDS = ['ITEM', 'COLLECTION', 'TRAIT'];
 export const OFFER_TERMS_SCHEMA = 'ordex.offer-terms/v1';
+export const OFFER_ACCEPTANCE_SCHEMA = 'ordex.offer-acceptance/v2';
+export const OFFER_RECOVERY_SCHEMA = 'ordex.offer-recovery/v2';
+/** The largest expiry a height-domain locktime carries; 500000000 and above is a timestamp. */
+export const OFFER_EXPIRY_HEIGHT_MAX = 499999999;
+/** BIP341's unspendable point H. As the funded output's internal key, no key path exists. */
+export const OFFER_INTERNAL_KEY_HEX = '50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0';
+const LOCKTIME_THRESHOLD = 500000000;
+const SEQUENCE_FINAL = 0xffffffff;
+const SEQUENCE_LOCKTIME_DISABLE_FLAG = 0x80000000;
+const CRITERIA_DOMAIN = 'ordex.offer-criteria/v1';
+const TRAIT_MEMBER_DOMAIN = 'ordex.offer-trait-member/v1';
+const TRAIT_NODE_DOMAIN = 'ordex.offer-trait-node/v1';
 
 export function parseSats(value) {
   if (typeof value !== 'string' || !DECIMAL.test(value)) return null;
@@ -45,24 +74,115 @@ export function offerTermsHash(terms) {
   return createHash('sha256').update(sortedJson(terms), 'utf8').digest('hex');
 }
 
-const termsRefuse = (code, reason) => ({ ok: false, code, reason });
+const sha256Hex = (text) => createHash('sha256').update(text, 'utf8').digest('hex');
+const refuse = (code, reason) => ({ ok: false, code, reason });
+const isXOnlyKey = (hex) => typeof hex === 'string' && HEX64.test(hex) && liftX(BigInt(`0x${hex}`)) !== null;
+const validOutpoint = (o) => !!o && typeof o.txid === 'string' && HEX64.test(o.txid) && Number.isInteger(o.vout) && o.vout >= 0 && o.vout <= 0xffffffff;
+const sameOutpoint = (a, b) => a.txid === b.txid && a.vout === b.vout;
 
-/*
- * IMPLEMENTATION-HANDOFF [OX-P05] Local integration steps; ANNOTATED is not implemented.
- * Coverage: OX-P-C003, OX-P-C004, OX-P-C005, OX-P-C006, OX-P-C007.
- * P-R16 accepts expiryHeight500000000 while recovery rejects it as timestamp. 1. Restrict
- * height-domain expiry to safe integer0..499999999, and align exact Hex-suffixed field names with
- * spec/offers.md. 2. Keep hash canonicalization unchanged for existing terms; version any incompatible
- * new fields. 3. Run PROPOSED NEW verifier/offers.delivery-recovery.test.js plus existing
- * verifier/offers.test.js, asserting499999999/500000000 boundary and no funded-output
- * reinterpretation. Source P-S08 BIP65 and P-S07 BIP370 height domain; Core OX-B01 policy services
- * depend on corrected terms. Test command node --test verifier/offers.test.js
- * verifier/offers.delivery-recovery.test.js unverified until new file exists. Rollback keeps
- * historical hashes and original recovery rights.
+// ---------------------------------------------------------------------------
+// Scope criteria.
+
+const traitMemberLeaf = (scope, memberIdentity) =>
+  sha256Hex(
+    sortedJson({
+      domain: TRAIT_MEMBER_DOMAIN,
+      collectionId: scope.collectionId,
+      collectionRoot: scope.collectionRoot,
+      traitName: scope.traitName,
+      traitValue: scope.traitValue,
+      memberIdentity,
+    }),
+  );
+
+function traitNode(left, right) {
+  const [a, b] = left <= right ? [left, right] : [right, left];
+  return sha256Hex(sortedJson({ domain: TRAIT_NODE_DOMAIN, left: a, right: b }));
+}
+
+function traitLeaves(scope, traitMembers) {
+  if (!Array.isArray(traitMembers) || traitMembers.length === 0) return null;
+  if (!traitMembers.every((m) => typeof m === 'string' && m.length > 0) || new Set(traitMembers).size !== traitMembers.length) return null;
+  return traitMembers.map((m) => traitMemberLeaf(scope, m)).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+}
+
+/**
+ * The criteriaHash an offer's terms carry. For ITEM and COLLECTION it is
+ * SHA-256 over the scope the terms already state, so a verifier recomputes
+ * it. For TRAIT it is the Merkle root over the members the buyer accepted as
+ * carrying the trait (traitMembers), and each acceptance proves its Feline
+ * against it. Returns lowercase hex, or null when no hash can be formed.
  */
+// OX-P05: the collection root does not commit to trait values, so a TRAIT offer
+// commits the eligible member set itself; a wrong trait can then never be proved.
+export function offerCriteriaHash(scope, traitMembers) {
+  if (!scope || typeof scope !== 'object') return null;
+  if (scope.offerKind === 'ITEM' || scope.offerKind === 'COLLECTION') {
+    return sha256Hex(
+      sortedJson({
+        domain: CRITERIA_DOMAIN,
+        offerKind: scope.offerKind,
+        collectionId: scope.collectionId,
+        collectionRoot: scope.collectionRoot,
+        itemInscriptionId: scope.offerKind === 'ITEM' ? scope.itemInscriptionId : undefined,
+      }),
+    );
+  }
+  if (scope.offerKind !== 'TRAIT') return null;
+  let level = traitLeaves(scope, traitMembers);
+  if (!level) return null;
+  while (level.length > 1) {
+    const next = [];
+    for (let i = 0; i < level.length; i += 2) next.push(i + 1 === level.length ? level[i] : traitNode(level[i], level[i + 1]));
+    level = next;
+  }
+  return level[0];
+}
+
+/**
+ * The proof that one member belongs to a TRAIT offer's eligible set:
+ * [{ sibling, position }] from the leaf upward, or null for a non-member.
+ */
+export function buildTraitMemberProof(scope, traitMembers, memberIdentity) {
+  let level = traitLeaves(scope, traitMembers);
+  if (!level) return null;
+  let index = level.indexOf(traitMemberLeaf(scope, memberIdentity));
+  if (index === -1) return null;
+  const proof = [];
+  while (level.length > 1) {
+    const next = [];
+    for (let i = 0; i < level.length; i += 2) {
+      if (i + 1 === level.length) {
+        next.push(level[i]);
+        if (i === index) index = next.length - 1;
+        continue;
+      }
+      next.push(traitNode(level[i], level[i + 1]));
+      if (i === index) proof.push({ sibling: level[i + 1], position: 'right' });
+      if (i + 1 === index) proof.push({ sibling: level[i], position: 'left' });
+      if (i === index || i + 1 === index) index = next.length - 1;
+    }
+    level = next;
+  }
+  return proof;
+}
+
+function traitProofRoot(scope, memberIdentity, proof) {
+  if (!Array.isArray(proof) || !proof.every((s) => s && HEX64.test(s.sibling) && (s.position === 'left' || s.position === 'right'))) return null;
+  let digest = traitMemberLeaf(scope, memberIdentity);
+  for (const step of proof) digest = step.position === 'left' ? traitNode(step.sibling, digest) : traitNode(digest, step.sibling);
+  return digest;
+}
+
+// ---------------------------------------------------------------------------
+// Terms.
+
+// OX-P05: expiry is a height-domain CHECKLOCKTIMEVERIFY argument, so it stays
+// below 500000000 (P-R16); the recovery key must be a real point and the
+// criteria hash is recomputed wherever the terms alone determine it.
 export function verifyOfferTerms(terms) {
   if (!terms || typeof terms !== 'object' || Array.isArray(terms)) {
-    return termsRefuse('MALFORMED_TERMS', 'Expected a terms object.');
+    return refuse('MALFORMED_TERMS', 'Expected a terms object.');
   }
   const t = terms;
   const known = new Set([
@@ -83,304 +203,587 @@ export function verifyOfferTerms(terms) {
     'buyerRecoveryKeyHex',
   ]);
   for (const key of Object.keys(t)) {
-    if (!known.has(key)) return termsRefuse('MALFORMED_TERMS', `Unknown field ${key}.`);
+    if (!known.has(key)) return refuse('MALFORMED_TERMS', `Unknown field ${key}.`);
   }
   if (t.schema !== OFFER_TERMS_SCHEMA) {
-    return termsRefuse('TERMS_SCHEMA_UNSUPPORTED', 'The terms schema is not ordex.offer-terms/v1.');
+    return refuse('TERMS_SCHEMA_UNSUPPORTED', 'The terms schema is not ordex.offer-terms/v1.');
   }
   if (typeof t.protocolVersion !== 'string' || !/^1\.[1-9][0-9]*$/.test(t.protocolVersion)) {
-    return termsRefuse('TERMS_PROTOCOL_UNSUPPORTED', 'The terms protocol version must be 1.1 or a later 1.x.');
+    return refuse('TERMS_PROTOCOL_UNSUPPORTED', 'The terms protocol version must be 1.1 or a later 1.x.');
   }
   if (typeof t.network !== 'string' || !NETWORKS.includes(t.network)) {
-    return termsRefuse('TERMS_NETWORK_UNKNOWN', 'The network is not one this protocol names.');
+    return refuse('TERMS_NETWORK_UNKNOWN', 'The network is not one this protocol names.');
   }
   if (typeof t.offerKind !== 'string' || !KINDS.includes(t.offerKind)) {
-    return termsRefuse('TERMS_KIND_UNKNOWN', 'The offer kind is not one this protocol names.');
+    return refuse('TERMS_KIND_UNKNOWN', 'The offer kind is not one this protocol names.');
   }
   if (t.offerKind === 'ITEM') {
     if (typeof t.itemInscriptionId !== 'string' || !INSCRIPTION.test(t.itemInscriptionId)) {
-      return termsRefuse('TERMS_SCOPE_FIELDS', 'An ITEM offer must name exactly one inscription id.');
+      return refuse('TERMS_SCOPE_FIELDS', 'An ITEM offer must name exactly one inscription id.');
     }
     if (t.traitName !== undefined || t.traitValue !== undefined) {
-      return termsRefuse('TERMS_SCOPE_FIELDS', 'An ITEM offer must not carry trait fields.');
+      return refuse('TERMS_SCOPE_FIELDS', 'An ITEM offer must not carry trait fields.');
     }
   } else if (t.offerKind === 'TRAIT') {
     if (typeof t.traitName !== 'string' || t.traitName.length === 0 || t.traitName.length > 128) {
-      return termsRefuse('TERMS_SCOPE_FIELDS', 'A TRAIT offer must name one trait of at most 128 characters.');
+      return refuse('TERMS_SCOPE_FIELDS', 'A TRAIT offer must name one trait of at most 128 characters.');
     }
     if (typeof t.traitValue !== 'string' || t.traitValue.length === 0 || t.traitValue.length > 256) {
-      return termsRefuse('TERMS_SCOPE_FIELDS', 'A TRAIT offer must name one trait value of at most 256 characters.');
+      return refuse('TERMS_SCOPE_FIELDS', 'A TRAIT offer must name one trait value of at most 256 characters.');
     }
     if (t.itemInscriptionId !== undefined) {
-      return termsRefuse('TERMS_SCOPE_FIELDS', 'A TRAIT offer must not carry an item inscription id.');
+      return refuse('TERMS_SCOPE_FIELDS', 'A TRAIT offer must not carry an item inscription id.');
     }
   } else if (t.itemInscriptionId !== undefined || t.traitName !== undefined || t.traitValue !== undefined) {
-    return termsRefuse('TERMS_SCOPE_FIELDS', 'A COLLECTION offer must not scope further.');
+    return refuse('TERMS_SCOPE_FIELDS', 'A COLLECTION offer must not scope further.');
   }
   if (typeof t.collectionId !== 'string' || t.collectionId.length === 0 || t.collectionId.length > 200) {
-    return termsRefuse('MALFORMED_TERMS', 'The terms must name a collection id.');
+    return refuse('MALFORMED_TERMS', 'The terms must name a collection id.');
   }
   if (typeof t.collectionRoot !== 'string' || !HEX64.test(t.collectionRoot)) {
-    return termsRefuse('TERMS_ROOT_INVALID', 'The collection root must be 64 lowercase hex characters.');
+    return refuse('TERMS_ROOT_INVALID', 'The collection root must be 64 lowercase hex characters.');
   }
   if (typeof t.criteriaHash !== 'string' || !HEX64.test(t.criteriaHash)) {
-    return termsRefuse('TERMS_CRITERIA_INVALID', 'The criteria hash must be 64 lowercase hex characters.');
+    return refuse('TERMS_CRITERIA_INVALID', 'The criteria hash must be 64 lowercase hex characters.');
   }
-  if (typeof t.buyerReceiveScriptHex !== 'string' || !EVEN_HEX.test(t.buyerReceiveScriptHex)) {
-    return termsRefuse('TERMS_SCRIPT_INVALID', 'The buyer receive script must be lowercase hex bytes.');
+  if (t.offerKind !== 'TRAIT' && t.criteriaHash !== offerCriteriaHash(t)) {
+    return refuse('TERMS_CRITERIA_INVALID', 'The criteria hash is not the hash of the scope these terms state.');
+  }
+  if (typeof t.buyerReceiveScriptHex !== 'string' || !EVEN_HEX.test(t.buyerReceiveScriptHex) || t.buyerReceiveScriptHex.startsWith('6a')) {
+    return refuse('TERMS_SCRIPT_INVALID', 'The buyer receive script must be lowercase hex bytes of a spendable script.');
   }
   if (parseSats(t.priceSats) === null) {
-    return termsRefuse('TERMS_AMOUNT_INVALID', 'priceSats must be an exact decimal string.');
+    return refuse('TERMS_AMOUNT_INVALID', 'priceSats must be an exact decimal string.');
   }
   if (parseSats(t.maxNetworkFeeSats) === null) {
-    return termsRefuse('TERMS_AMOUNT_INVALID', 'maxNetworkFeeSats must be an exact decimal string.');
+    return refuse('TERMS_AMOUNT_INVALID', 'maxNetworkFeeSats must be an exact decimal string.');
   }
-  if (
-    typeof t.expiryHeight !== 'number' ||
-    !Number.isSafeInteger(t.expiryHeight) ||
-    t.expiryHeight < 0 ||
-    t.expiryHeight > 2147483647
-  ) {
-    return termsRefuse('TERMS_EXPIRY_INVALID', 'expiryHeight must be a block height a node can carry.');
+  if (!Number.isSafeInteger(t.expiryHeight) || t.expiryHeight < 0 || t.expiryHeight > OFFER_EXPIRY_HEIGHT_MAX) {
+    return refuse('TERMS_EXPIRY_INVALID', 'expiryHeight must be a block height below 500000000, the locktime timestamp threshold.');
   }
-  if (typeof t.buyerRecoveryKeyHex !== 'string' || !HEX64.test(t.buyerRecoveryKeyHex)) {
-    return termsRefuse('TERMS_RECOVERY_KEY_INVALID', 'The buyer recovery key must be 64 lowercase hex characters.');
+  if (!isXOnlyKey(t.buyerRecoveryKeyHex)) {
+    return refuse('TERMS_RECOVERY_KEY_INVALID', 'The buyer recovery key must be a valid x-only public key in 64 lowercase hex characters.');
   }
   return { ok: true, offerTermsHash: offerTermsHash(t) };
 }
 
-const acceptanceRefuse = (code, reason) => ({ ok: false, code, reason });
+// ---------------------------------------------------------------------------
+// The funded output.
 
-/*
- * IMPLEMENTATION-HANDOFF [OX-P05] Preparation only; functional status FAIL, repair NOT IMPLEMENTED.
- * Coverage: OX-P-C003, OX-P-C004, OX-P-C005, OX-P-C006, OX-P-C007. Evidence: P-R14, P-R15, P-R16 in
- * handoff/evidence.
- * Verified cause: Buyer script occurrence before seller index does not prove Feline delivery; recovery
- * comparisons accept missing locktime; terms permit height>=500000000. Leaf substring checks do not
- * prove exact script structure/commitment.
- * Required behavior: Complete funded-offer acceptance/recovery contract. Governing refs: P-S01
- * (Ord0.29.0 applicability; handbook accessed2026-09-29); P-S05 (BIP174 at
- * bips3a10b5b5f0a7586df8928d580a3009744ebb2079); P-S06 (BIP341;
- * blob0764e6cb762b6c17d3b3430af5532e0c63365993); P-S08 (BIP65 deployed;
- * blob4bd292f8b45a2b2b68013b24f45c23e354b70e4f); complete URLs in reports/protocol.md.
- * Prerequisites/order: OX-P03, OX-P04. Related files: sdk/src/offers.ts, spec/offers.md; Core/backend
- * or site consumer named by the work package.
- * 1. Normalize offer terms with exact shared field names buyerReceiveScriptHex/buyerRecoveryKeyHex;
- * restrict height-domain expiry to safe integer0..499999999 and validate
- * currentHeight/locktime/sequence/outpoints explicitly.
- * 2. Require canonical acceptance/recovery tapscript bytes and verify committed Taproot tree/control
- * block with two independent policy keys and buyer recovery key; cryptographic witness/node validation
- * remains required before success.
- * 3. Derive actual inscription satpoint and complete co-traveling inventory; require exact
- * Feline-to-buyer interval/destination, preserve all other assets to seller, seller payout
- * index/value/script, exact funded-input position, described outputs only and fee bounds.
- * 4. Resolve currently unspecified buyer-padding spend authorization before construction: spec says
- * buyer signs only funding, yet acceptance spends buyer padding. Record and implement an explicit
- * consent/signing contract with backend policy services, no assumed signature.
- * 5. Mirror reference/SDK and correct spec/offers.md field/expiry/authorization ambiguities; retain
- * discovery-withdrawal vs on-chain recovery distinction.
- * Validation (PROPOSED NEW tests, commands unverified until implemented):
- * verifier/offers.delivery-recovery.test.js, sdk/test/offers.delivery-recovery.test.js. node --test
- * verifier/offers.test.js verifier/offers.delivery-recovery.test.js; npm --prefix sdk run build; node
- * --test sdk/test/offers.test.js sdk/test/offers.delivery-recovery.test.js.
- * Assertions/evidence: Buyer-script swap that sends Feline to other output refuses;
- * Absent/NaN/time-domain locktime, final sequence, fake opcode bytes inside data and mismatched tree
- * refuse; ITEM/COLLECTION/TRAIT wrong root/trait and extra assets fail; correct ones settle through
- * independent signers; Signet expiry boundary and buyer-only recovery confirmed;
- * reorg/retry/withdrawal semantics truthful. Offline probes are not end-to-end PASS; require actual
- * Signet transaction and indexed/consumer readback where applicable.
- * Rollback: Do not reinterpret funded output trees or terms hashes. Existing funds retain original
- * recovery terms; new schema/gated offers only after signet acceptance. Document recovery for any
- * prior funded incompatible offer.
- */
-export function verifyOfferAcceptance(acceptance, offer) {
-  if (
-    !acceptance ||
-    !Array.isArray(acceptance.inputs) ||
-    !Array.isArray(acceptance.outputs) ||
-    !Number.isSafeInteger(acceptance.policySignatureCount)
-  ) {
-    return acceptanceRefuse('MALFORMED_ACCEPTANCE', 'Expected inputs, outputs, and a policy signature count.');
-  }
-  if (
-    !offer ||
-    !offer.offerOutpoint ||
-    !offer.felineOutpoint ||
-    typeof offer.offerTermsHash !== 'string' ||
-    !HEX64.test(offer.offerTermsHash)
-  ) {
-    return acceptanceRefuse('MALFORMED_OFFER', 'Expected both outpoints and the terms hash.');
-  }
-  if (acceptance.policySignatureCount !== 2) {
-    return acceptanceRefuse(
-      'POLICY_SIGNATURES_MISSING',
-      'A valid acceptance carries exactly one signature from each independent policy signer.',
-    );
-  }
-  if (typeof acceptance.acceptanceLeafScriptHex !== 'string' || !EVEN_HEX.test(acceptance.acceptanceLeafScriptHex)) {
-    return acceptanceRefuse('MALFORMED_ACCEPTANCE', 'The acceptance leaf must be lowercase hex bytes.');
-  }
-  if (!acceptance.acceptanceLeafScriptHex.includes(offer.offerTermsHash)) {
-    return acceptanceRefuse(
-      'TERMS_HASH_NOT_COMMITTED',
-      'The revealed acceptance leaf does not commit to this offer terms hash.',
-    );
-  }
-  if (offer.currentHeight >= offer.expiryHeight) {
-    return acceptanceRefuse('OFFER_EXPIRED', 'The expiry height has passed; recovery is the only remaining path.');
-  }
-
-  const offerSpends = [];
-  const felineSpends = [];
-  for (let i = 0; i < acceptance.inputs.length; i += 1) {
-    const input = acceptance.inputs[i];
-    if (!input) continue;
-    if (input.txid === offer.offerOutpoint.txid && input.vout === offer.offerOutpoint.vout) offerSpends.push(i);
-    if (input.txid === offer.felineOutpoint.txid && input.vout === offer.felineOutpoint.vout) felineSpends.push(i);
-  }
-  if (offerSpends.length === 0) return acceptanceRefuse('OFFER_OUTPOINT_MISSING', 'No input spends the funded offer output.');
-  if (offerSpends.length > 1) {
-    return acceptanceRefuse('OFFER_OUTPOINT_DUPLICATED', 'The funded output appears at more than one index.');
-  }
-  if (felineSpends.length === 0) return acceptanceRefuse('FELINE_OUTPOINT_MISSING', 'No input spends the seller Feline output.');
-  if (felineSpends.length > 1) {
-    return acceptanceRefuse('FELINE_OUTPOINT_DUPLICATED', 'The Feline outpoint appears at more than one index.');
-  }
-
-  const n = felineSpends[0];
-  const price = parseSats(offer.priceSats);
-  if (price === null) return acceptanceRefuse('MALFORMED_OFFER', 'priceSats must be an exact decimal string.');
-  const maxFee = parseSats(offer.maxNetworkFeeSats);
-  if (maxFee === null) return acceptanceRefuse('MALFORMED_OFFER', 'maxNetworkFeeSats must be an exact decimal string.');
-
-  const payment = acceptance.outputs[n];
-  if (!payment) {
-    return acceptanceRefuse('SELLER_OUTPUT_MISSING', `No output exists at index ${n}, the index the seller signed.`);
-  }
-  if (payment.scriptHex !== offer.sellerPaymentScriptHex) {
-    return acceptanceRefuse('SELLER_SCRIPT_MISMATCH', 'The output at the seller index does not pay the signed script.');
-  }
-  const paymentValue = parseSats(payment.valueSats);
-  if (paymentValue === null || paymentValue !== price) {
-    return acceptanceRefuse('SELLER_VALUE_MISMATCH', 'The seller payment is not the exact offer price.');
-  }
-
-  let inputsAhead = 0n;
-  for (let i = 0; i < n; i += 1) {
-    const value = parseSats(acceptance.inputs[i] && acceptance.inputs[i].valueSats);
-    if (value === null) {
-      return acceptanceRefuse('INPUT_VALUE_UNKNOWN', `The value of input ${i} could not be read, so the invariant cannot be proved.`);
-    }
-    inputsAhead += value;
-  }
-  const felineValue = parseSats(acceptance.inputs[n] && acceptance.inputs[n].valueSats);
-  if (felineValue === null) {
-    return acceptanceRefuse('INPUT_VALUE_UNKNOWN', 'The Feline output value could not be read, so the invariant cannot be proved.');
-  }
-  let outputsAhead = 0n;
-  for (let i = 0; i < n; i += 1) {
-    const value = parseSats(acceptance.outputs[i] && acceptance.outputs[i].valueSats);
-    if (value === null) return acceptanceRefuse('MALFORMED_ACCEPTANCE', `Output ${i} does not carry an exact decimal value.`);
-    outputsAhead += value;
-  }
-  if (outputsAhead < inputsAhead + felineValue) {
-    return acceptanceRefuse(
-      'SAT_FLOW_SHORTFALL',
-      'The outputs ahead of the seller payment do not absorb the whole range the Feline occupies.',
-    );
-  }
-
-  let buyerAssetOutputs = 0;
-  for (let i = 0; i < n; i += 1) {
-    if (acceptance.outputs[i] && acceptance.outputs[i].scriptHex === offer.buyerReceiveScriptHex) buyerAssetOutputs += 1;
-  }
-  if (buyerAssetOutputs !== 1) {
-    return acceptanceRefuse(
-      'BUYER_ASSET_OUTPUT_MISSING',
-      'The buyer receive script must appear exactly once ahead of the seller payment.',
-    );
-  }
-
-  let totalIn = 0n;
-  for (const input of acceptance.inputs) {
-    const value = parseSats(input && input.valueSats);
-    if (value === null) return acceptanceRefuse('INPUT_VALUE_UNKNOWN', 'An input value could not be read, so the fee cannot be proved.');
-    totalIn += value;
-  }
-  let totalOut = 0n;
-  for (const output of acceptance.outputs) {
-    const value = parseSats(output && output.valueSats);
-    if (value === null) return acceptanceRefuse('MALFORMED_ACCEPTANCE', 'An output value is not an exact decimal string.');
-    totalOut += value;
-  }
-  const fee = totalIn - totalOut;
-  if (fee < 0n) return acceptanceRefuse('MALFORMED_ACCEPTANCE', 'The outputs carry more than the inputs.');
-  if (fee > maxFee) {
-    return acceptanceRefuse('FEE_OVER_MAXIMUM', 'The fee exceeds the maximum the terms committed to.');
-  }
-
-  return { ok: true, sharedIndex: n };
+/** The minimal push of a script number, as tapscript's MINIMALDATA rule requires. */
+function scriptNumberPush(n) {
+  if (n === 0) return '00';
+  if (n <= 16) return (0x50 + n).toString(16);
+  const bytes = [];
+  for (let v = n; v > 0; v = Math.floor(v / 256)) bytes.push(v % 256);
+  if (bytes[bytes.length - 1] & 0x80) bytes.push(0);
+  return bytes.length.toString(16).padStart(2, '0') + bytes.map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-const recoveryRefuse = (code, reason) => ({ ok: false, code, reason });
-
-/*
- * IMPLEMENTATION-HANDOFF [OX-P05] Local integration steps; ANNOTATED is not implemented.
- * Coverage: OX-P-C003, OX-P-C004, OX-P-C005, OX-P-C006, OX-P-C007.
- * P-R15 accepts absent nLockTime; substring tests can mistake key/opcode bytes inside pushed data for
- * script policy. 1. Parse/validate safe integer locktime<500000000, expiry, nonfinal uint32 sequence
- * and exact outpoints before comparisons. 2. Rebuild canonical <expiry> CLTV DROP <buyerKey> CHECKSIG
- * and verify Taproot leaf/control-block commitment plus node-valid signature; no substring acceptance.
- * 3. Require exact permitted input/output set and fee contract. Related verifyOfferTerms,
- * sdk/src/offers.ts, spec/offers.md, Core OX-B01. Sources P-S06/P-S08. PROPOSED NEW
- * verifier/offers.delivery-recovery.test.js; node --test verifier/offers.test.js
- * verifier/offers.delivery-recovery.test.js (unverified). Test missing/NaN/timestamp/final-sequence
- * and Signet expiry recovery. Rollback never alters existing funded trees/recovery rights.
+/**
+ * The exact Taproot tree of a funded offer output: the acceptance and
+ * recovery leaves, the internal key H, the output script, and the control
+ * block each leaf is revealed with.
+ *
+ * policyKeysHex: [policyKeyA, policyKeyB], the two x-only policy signer keys
+ * in leaf order. Answers { ok: true, offerTermsHash, acceptanceLeafHex,
+ * recoveryLeafHex, acceptanceLeafHashHex, recoveryLeafHashHex, merkleRootHex,
+ * internalKeyHex, outputKeyHex, scriptPubKeyHex, acceptanceControlBlockHex,
+ * recoveryControlBlockHex } or a refusal.
  */
-export function verifyOfferRecovery(recovery, offer) {
-  if (!recovery || !Array.isArray(recovery.inputs) || !Array.isArray(recovery.outputs)) {
-    return recoveryRefuse('MALFORMED_RECOVERY', 'Expected inputs and outputs arrays.');
+// OX-P05: every leaf byte is rebuilt, never matched by substring, so key or opcode
+// bytes inside pushed data cannot pass for script policy.
+export function offerOutputTree(terms, policyKeysHex) {
+  const verdict = verifyOfferTerms(terms);
+  if (!verdict.ok) return verdict;
+  if (
+    !Array.isArray(policyKeysHex) ||
+    policyKeysHex.length !== 2 ||
+    !policyKeysHex.every(isXOnlyKey) ||
+    policyKeysHex[0] === policyKeysHex[1] ||
+    policyKeysHex.includes(terms.buyerRecoveryKeyHex) ||
+    policyKeysHex.includes(OFFER_INTERNAL_KEY_HEX)
+  ) {
+    return refuse(
+      'POLICY_KEYS_INVALID',
+      'An offer names two distinct valid policy signer keys, neither of them the buyer recovery key.',
+    );
   }
-  if (!offer || !offer.offerOutpoint || typeof offer.buyerRecoveryKeyHex !== 'string') {
-    return recoveryRefuse('MALFORMED_OFFER', 'Expected the offer outpoint and the recovery key.');
+  const acceptanceLeafHex = `20${verdict.offerTermsHash}7520${policyKeysHex[0]}ac20${policyKeysHex[1]}ba5287`;
+  const recoveryLeafHex = `${scriptNumberPush(terms.expiryHeight)}b17520${terms.buyerRecoveryKeyHex}ac`;
+  const acceptanceLeafHash = tapLeafHash(acceptanceLeafHex);
+  const recoveryLeafHash = tapLeafHash(recoveryLeafHex);
+  const merkleRoot = tapBranchHash(acceptanceLeafHash, recoveryLeafHash);
+  const tweaked = taprootTweak(hexToBytes(OFFER_INTERNAL_KEY_HEX), merkleRoot);
+  if (!tweaked) return refuse('POLICY_KEYS_INVALID', 'These leaves produce no valid Taproot output key.');
+  const outputKeyHex = bytesToHex(tweaked.outputKey);
+  const controlPrefix = (0xc0 | tweaked.parity).toString(16) + OFFER_INTERNAL_KEY_HEX;
+  return {
+    ok: true,
+    offerTermsHash: verdict.offerTermsHash,
+    acceptanceLeafHex,
+    recoveryLeafHex,
+    acceptanceLeafHashHex: bytesToHex(acceptanceLeafHash),
+    recoveryLeafHashHex: bytesToHex(recoveryLeafHash),
+    merkleRootHex: bytesToHex(merkleRoot),
+    internalKeyHex: OFFER_INTERNAL_KEY_HEX,
+    outputKeyHex,
+    scriptPubKeyHex: `5120${outputKeyHex}`,
+    acceptanceControlBlockHex: controlPrefix + bytesToHex(recoveryLeafHash),
+    recoveryControlBlockHex: controlPrefix + bytesToHex(acceptanceLeafHash),
+  };
+}
+
+/** offer: { terms, policyKeysHex, fundedOutput { outpoint, valueSats, scriptPubKeyHex } } */
+function readOffer(offer) {
+  if (!offer || typeof offer !== 'object' || Array.isArray(offer)) {
+    return refuse('MALFORMED_OFFER', 'Expected the offer terms, the two policy keys and the funded output.');
   }
-  const spendIndexes = [];
-  for (let i = 0; i < recovery.inputs.length; i += 1) {
-    const input = recovery.inputs[i];
-    if (input && input.txid === offer.offerOutpoint.txid && input.vout === offer.offerOutpoint.vout) spendIndexes.push(i);
+  const tree = offerOutputTree(offer.terms, offer.policyKeysHex);
+  if (!tree.ok) return tree;
+  const funded = offer.fundedOutput;
+  const fundedValue = parseSats(funded && funded.valueSats);
+  if (!funded || !validOutpoint(funded.outpoint) || fundedValue === null || typeof funded.scriptPubKeyHex !== 'string') {
+    return refuse('MALFORMED_OFFER', 'The funded output needs its outpoint, exact value and script.');
   }
-  if (spendIndexes.length === 0) return recoveryRefuse('OFFER_OUTPOINT_MISSING', 'No input spends the funded output.');
-  if (spendIndexes.length > 1) return recoveryRefuse('OFFER_OUTPOINT_DUPLICATED', 'The funded output appears twice.');
-  if (recovery.nLockTime < offer.expiryHeight) {
-    return recoveryRefuse('RECOVERY_BEFORE_EXPIRY', 'The locktime is below the expiry height.');
+  if (funded.scriptPubKeyHex !== tree.scriptPubKeyHex) {
+    return refuse('OFFER_OUTPUT_MISMATCH', 'The funded output does not commit to the tree these terms and policy keys produce.');
   }
-  if (recovery.nLockTime >= 500000000) {
-    return recoveryRefuse('RECOVERY_BEFORE_EXPIRY', 'The locktime is a timestamp, not the block height the terms committed to.');
+  return { ok: true, terms: offer.terms, tree, funded, fundedValue };
+}
+
+/**
+ * Check one tapscript signature item. Answers VALID, MISSING, UNCLOSED (a
+ * hash type that leaves part of the transaction uncommitted), or INVALID.
+ */
+function tapscriptSignature(sigHex, keyHex, digestFor) {
+  const sig = hexToBytes(sigHex);
+  if (!sig || sig.length === 0) return 'MISSING';
+  if (sig.length !== 64 && sig.length !== 65) return 'INVALID';
+  const hashType = sig.length === 65 ? sig[64] : 0x00;
+  if (sig.length === 65 && hashType === 0x00) return 'INVALID';
+  if (hashType !== 0x00 && hashType !== 0x01) return 'UNCLOSED';
+  const digest = digestFor(hashType);
+  return digest && verifySchnorr(digest, sig.subarray(0, 64), hexToBytes(keyHex)) ? 'VALID' : 'INVALID';
+}
+
+// ---------------------------------------------------------------------------
+// Acceptance.
+
+function checkEligibility(terms, inscriptionId, eligibility) {
+  if (terms.offerKind === 'ITEM' && inscriptionId !== terms.itemInscriptionId) {
+    return refuse('SCOPE_MISMATCH', 'The delivered inscription is not the one this ITEM offer names.');
   }
-  const sequence = recovery.inputs[spendIndexes[0]] && recovery.inputs[spendIndexes[0]].sequence;
-  if (sequence !== undefined && sequence >= 0xffffffff) {
-    return recoveryRefuse('SEQUENCE_NOT_REPLACEABLE', 'A final sequence disables the locktime the recovery relies on.');
+  if (!eligibility || typeof eligibility !== 'object') {
+    return refuse('ELIGIBILITY_PROOF_MALFORMED', 'The acceptance must carry the membership proof of the delivered Feline.');
   }
-  if (typeof recovery.recoveryLeafScriptHex !== 'string' || !EVEN_HEX.test(recovery.recoveryLeafScriptHex)) {
-    return recoveryRefuse('RECOVERY_LEAF_MISMATCH', 'The recovery leaf must be lowercase hex bytes.');
+  const root = membershipProofRoot(terms.collectionId, inscriptionId, eligibility.membershipProof);
+  if (root === null) return refuse('ELIGIBILITY_PROOF_MALFORMED', 'Every membership proof step needs a sibling digest and a position.');
+  if (root !== terms.collectionRoot) {
+    return refuse('COLLECTION_MEMBERSHIP_NOT_PROVEN', 'The membership proof does not resolve to the collection root the terms commit to.');
   }
-  if (!recovery.recoveryLeafScriptHex.includes(offer.buyerRecoveryKeyHex)) {
-    return recoveryRefuse('RECOVERY_LEAF_MISMATCH', 'The revealed leaf does not carry the buyer recovery key.');
-  }
-  if (!recovery.recoveryLeafScriptHex.includes('b1')) {
-    return recoveryRefuse('RECOVERY_LEAF_MISMATCH', 'The revealed leaf carries no CHECKLOCKTIMEVERIFY.');
-  }
-  if (recovery.outputs.length !== 1) {
-    return recoveryRefuse('RECOVERY_OUTPUT_WRONG', 'A recovery pays one output, the buyer receive script.');
-  }
-  const output = recovery.outputs[0];
-  if (!output || output.scriptHex !== offer.buyerReceiveScriptHex) {
-    return recoveryRefuse('RECOVERY_OUTPUT_WRONG', 'The recovery does not pay the buyer receive script.');
-  }
-  const spent = parseSats(recovery.inputs[spendIndexes[0]] && recovery.inputs[spendIndexes[0]].valueSats);
-  const paid = parseSats(output.valueSats);
-  if (spent === null || paid === null || paid > spent) {
-    return recoveryRefuse('MALFORMED_RECOVERY', 'The recovery values could not be proved exact.');
+  if (terms.offerKind === 'TRAIT') {
+    const traitRoot = traitProofRoot(terms, inscriptionId, eligibility.traitProof);
+    if (traitRoot === null) return refuse('ELIGIBILITY_PROOF_MALFORMED', 'A TRAIT acceptance must carry a well formed trait proof.');
+    if (traitRoot !== terms.criteriaHash) {
+      return refuse('TRAIT_NOT_PROVEN', 'The trait proof does not resolve to the criteria hash, so this Feline is not one the buyer accepted.');
+    }
   }
   return { ok: true };
+}
+
+/**
+ * Everything about an acceptance except its signatures: the offer and its
+ * tree, the transaction and its described inputs, the output layout, the fee,
+ * and every derived asset movement.
+ */
+function checkAcceptance(acceptance, offer) {
+  if (!acceptance || typeof acceptance !== 'object' || Array.isArray(acceptance)) {
+    return refuse('MALFORMED_ACCEPTANCE', 'Expected an acceptance object.');
+  }
+  if (acceptance.schema !== OFFER_ACCEPTANCE_SCHEMA) {
+    return refuse('SCHEMA_UNSUPPORTED', 'The acceptance schema is not ordex.offer-acceptance/v2. Build the acceptance again.');
+  }
+  const context = readOffer(offer);
+  if (!context.ok) return context;
+  const { terms, tree, funded, fundedValue } = context;
+  if (acceptance.network !== terms.network) {
+    return refuse('NETWORK_MISMATCH', 'The acceptance was built for a different network than the terms.');
+  }
+  const height = offer.currentHeight;
+  if (!Number.isSafeInteger(height) || height < 0 || height >= LOCKTIME_THRESHOLD) {
+    return refuse('CURRENT_HEIGHT_INVALID', 'An acceptance is checked at a known block height.');
+  }
+  if (height >= terms.expiryHeight) {
+    return refuse('OFFER_EXPIRED', 'The expiry height has been reached; recovery is the only remaining path.');
+  }
+
+  const seller = acceptance.seller;
+  const script = (s) => typeof s === 'string' && EVEN_HEX.test(s) && !s.startsWith('6a');
+  if (!seller || !script(seller.paymentScriptHex) || (seller.returnScriptHex !== undefined && !script(seller.returnScriptHex))) {
+    return refuse('SELLER_INVALID', 'The acceptance must name the seller payment script, and a return script only as spendable hex.');
+  }
+  const sellerScripts = new Set([seller.paymentScriptHex, seller.returnScriptHex ?? seller.paymentScriptHex]);
+  if (sellerScripts.has(terms.buyerReceiveScriptHex)) {
+    return refuse('PARTY_SCRIPTS_OVERLAP', 'A seller script equals the buyer receive script, so no output could be attributed.');
+  }
+
+  const feline = acceptance.feline;
+  if (!feline || typeof feline.inscriptionId !== 'string' || !INSCRIPTION.test(feline.inscriptionId) || !validOutpoint(feline.outpoint)) {
+    return refuse('MALFORMED_ACCEPTANCE', 'The acceptance must name the delivered Feline and the outpoint holding it.');
+  }
+  const eligible = checkEligibility(terms, feline.inscriptionId, acceptance.eligibility);
+  if (!eligible.ok) return eligible;
+
+  const parsed = parseTransaction(acceptance.transactionHex);
+  if (!parsed.ok) return refuse('TRANSACTION_INVALID', parsed.reason);
+  const tx = parsed.tx;
+  if (tx.version !== 1 && tx.version !== 2) {
+    return refuse('TRANSACTION_INVALID', 'An acceptance is a version 1 or 2 transaction.');
+  }
+  if (tx.lockTime >= LOCKTIME_THRESHOLD || tx.lockTime > height) {
+    return refuse('LOCKTIME_INVALID', 'The acceptance locktime must be a block height no later than the current one, so it can confirm before expiry.');
+  }
+
+  // Inputs: every one described, the seller's first, the offer output last.
+  const described = acceptance.inputs;
+  if (!Array.isArray(described) || described.length !== tx.inputs.length) {
+    return refuse('INPUT_DESCRIPTION_MISMATCH', 'Every transaction input needs exactly one description, in order.');
+  }
+  const inputs = [];
+  const seen = new Set();
+  let offerIndex = -1;
+  let felineIndex = -1;
+  let sellerTotal = 0n;
+  for (let i = 0; i < tx.inputs.length; i += 1) {
+    const d = described[i];
+    const spent = tx.inputs[i];
+    if (!d || !validOutpoint(d.outpoint) || !sameOutpoint(d.outpoint, spent)) {
+      return refuse('INPUT_DESCRIPTION_MISMATCH', `Input ${i} is not described as the outpoint the transaction spends.`);
+    }
+    const key = `${spent.txid}:${spent.vout}`;
+    if (seen.has(key)) return refuse('INPUT_DUPLICATED', `Input ${key} appears more than once.`);
+    seen.add(key);
+    if (tx.version >= 2 && spent.sequence < SEQUENCE_LOCKTIME_DISABLE_FLAG) {
+      return refuse('SEQUENCE_INVALID', `Input ${i} carries a relative timelock that could hold the acceptance past expiry.`);
+    }
+    if (d.party === 'BUYER') {
+      return refuse(
+        'BUYER_INPUT_UNAUTHORIZED',
+        `Input ${i} is a buyer input. The buyer signs nothing at acceptance; only the funded output is spent for the buyer.`,
+      );
+    }
+    if (d.party !== 'SELLER' && d.party !== 'OFFER') {
+      return refuse('INPUT_PARTY_INVALID', `Input ${i} must be a seller input or the funded offer output.`);
+    }
+    const value = parseSats(d.valueSats);
+    if (value === null) return refuse('INPUT_VALUE_INVALID', `Input ${i} does not carry an exact decimal value.`);
+    if (typeof d.scriptPubKeyHex !== 'string' || !EVEN_HEX.test(d.scriptPubKeyHex)) {
+      return refuse('INPUT_SCRIPT_INVALID', `Input ${i} does not carry the script of the output it spends.`);
+    }
+    const isOffer = sameOutpoint(spent, funded.outpoint);
+    if ((d.party === 'OFFER') !== isOffer) {
+      return refuse('OFFER_INPUT_MISMATCH', `Input ${i} is described as ${d.party === 'OFFER' ? 'the offer but spends another output' : 'a seller input but spends the funded offer output'}.`);
+    }
+    if (isOffer) {
+      if (value !== fundedValue || d.scriptPubKeyHex !== funded.scriptPubKeyHex) {
+        return refuse('OFFER_INPUT_MISMATCH', 'The offer input is not described with the funded output value and script.');
+      }
+      offerIndex = i;
+    } else {
+      sellerTotal += value;
+      if (sameOutpoint(spent, feline.outpoint)) felineIndex = i;
+    }
+    const read = readInventory(d.inventory, i, value, d.outpoint);
+    if (!read.assets) return read;
+    inputs.push({ outpoint: d.outpoint, party: d.party, value, scriptPubKeyHex: d.scriptPubKeyHex, assets: read.assets });
+  }
+  if (offerIndex === -1) return refuse('OFFER_OUTPOINT_MISSING', 'No input spends the funded offer output.');
+  if (offerIndex !== inputs.length - 1) {
+    return refuse('OFFER_INPUT_POSITION', 'The funded offer output must be the last input, so its sats never reach the Feline range.');
+  }
+  if (felineIndex === -1) return refuse('FELINE_OUTPOINT_MISSING', 'No seller input spends the outpoint holding the Feline.');
+  if (!inputs[felineIndex].assets.some((a) => a.assetType === 'ORDINAL' && a.assetId === feline.inscriptionId)) {
+    return refuse('FELINE_NOT_HELD', 'The authorities do not report the Feline on the outpoint the acceptance names.');
+  }
+
+  // Outputs: asset outputs that absorb exactly the seller's inputs, then the
+  // seller payment, then at most one buyer change output.
+  const values = tx.outputs.map((o) => BigInt(o.valueSats));
+  for (let j = 0; j < tx.outputs.length; j += 1) {
+    const outScript = tx.outputs[j].scriptHex;
+    if (outScript.startsWith('6a')) return refuse('OUTPUT_UNDESCRIBED', `Output ${j} is a data output; an acceptance carries none.`);
+    const dust = dustThresholdSats(outScript);
+    if (values[j] < dust) return refuse('DUST_OUTPUT', `Output ${j} is below the ${dust} sat dust threshold for its script.`);
+  }
+  let assetCount = -1;
+  let running = 0n;
+  for (let j = 0; j < values.length && running < sellerTotal; j += 1) {
+    running += values[j];
+    if (running === sellerTotal) assetCount = j + 1;
+  }
+  if (assetCount === -1) {
+    return refuse('ASSET_OUTPUTS_UNBALANCED', 'The outputs ahead of the seller payment must absorb exactly the sats of the seller inputs.');
+  }
+  const owners = [];
+  let buyerAssetIndex = -1;
+  for (let j = 0; j < assetCount; j += 1) {
+    const outScript = tx.outputs[j].scriptHex;
+    if (outScript === terms.buyerReceiveScriptHex) {
+      if (buyerAssetIndex !== -1) return refuse('OUTPUT_UNDESCRIBED', 'Only one output ahead of the seller payment pays the buyer.');
+      buyerAssetIndex = j;
+      owners.push('buyer');
+    } else if (sellerScripts.has(outScript)) {
+      owners.push('seller');
+    } else {
+      return refuse('OUTPUT_UNDESCRIBED', `Output ${j} pays a script that is neither the buyer receive script nor a seller script.`);
+    }
+  }
+  if (buyerAssetIndex === -1) return refuse('BUYER_ASSET_OUTPUT_MISSING', 'No output ahead of the seller payment pays the buyer receive script.');
+  const sellerPaymentIndex = assetCount;
+  const payment = tx.outputs[sellerPaymentIndex];
+  if (!payment) return refuse('SELLER_OUTPUT_MISSING', 'No seller payment follows the asset outputs.');
+  if (payment.scriptHex !== seller.paymentScriptHex) {
+    return refuse('SELLER_SCRIPT_MISMATCH', 'The output after the asset outputs does not pay the seller payment script.');
+  }
+  if (values[sellerPaymentIndex] !== parseSats(terms.priceSats)) {
+    return refuse('SELLER_VALUE_MISMATCH', 'The seller payment is not the exact offer price.');
+  }
+  owners.push('seller');
+  if (tx.outputs.length > sellerPaymentIndex + 2) return refuse('OUTPUT_UNDESCRIBED', 'Only buyer change may follow the seller payment.');
+  if (tx.outputs.length === sellerPaymentIndex + 2) {
+    if (tx.outputs[sellerPaymentIndex + 1].scriptHex !== terms.buyerReceiveScriptHex) {
+      return refuse('OUTPUT_UNDESCRIBED', 'The output after the seller payment must be buyer change to the buyer receive script.');
+    }
+    owners.push('buyer');
+  }
+
+  const totalIn = inputs.reduce((n, input) => n + input.value, 0n);
+  const totalOut = values.reduce((n, v) => n + v, 0n);
+  const fee = totalIn - totalOut;
+  if (fee < 0n) return refuse('VALUE_NOT_CONSERVED', 'The outputs exceed the inputs.');
+  if (fee > parseSats(terms.maxNetworkFeeSats)) {
+    return refuse('FEE_OVER_MAXIMUM', 'The fee exceeds the maximum the terms committed to.');
+  }
+
+  // Assets: the Feline to the buyer asset output, everything else home.
+  const flow = deriveAssetFlow({ network: terms.network, height: height + 1, inputs, outputs: tx.outputs });
+  if (!flow.ok) return flow;
+  const ownerOf = (i) => (inputs[i].party === 'OFFER' ? 'buyer' : 'seller');
+  const runeNet = new Map();
+  inputs.forEach((input, i) => {
+    for (const a of input.assets) {
+      if (a.assetType !== 'RUNE') continue;
+      const k = `${ownerOf(i)}|${a.assetId}`;
+      runeNet.set(k, (runeNet.get(k) ?? 0n) - BigInt(a.amount));
+    }
+  });
+  let delivered = false;
+  for (const m of flow.movements) {
+    if (m.assetType === 'RUNE') {
+      const k = `${owners[m.toOutput]}|${m.assetId}`;
+      runeNet.set(k, (runeNet.get(k) ?? 0n) + BigInt(m.quantity));
+      continue;
+    }
+    if (m.assetType === 'ORDINAL' && m.assetId === feline.inscriptionId && m.fromInput === felineIndex) {
+      if (m.toOutput !== buyerAssetIndex) {
+        return refuse('FELINE_NOT_DELIVERED', `The Feline would land in output ${m.toOutput}, not the buyer asset output ${buyerAssetIndex}.`);
+      }
+      delivered = true;
+      continue;
+    }
+    const from = ownerOf(m.fromInput);
+    if (owners[m.toOutput] !== from) {
+      return refuse('ASSET_MISDIRECTED', `${m.assetType} ${m.assetId} belongs to the ${from} and would land with the ${owners[m.toOutput]}.`);
+    }
+  }
+  if (!delivered) return refuse('FELINE_NOT_DELIVERED', 'The Feline is not moved to the buyer by this transaction.');
+  for (const [k, net] of runeNet) {
+    if (net !== 0n) return refuse('ASSET_MISDIRECTED', `Rune ${k.split('|')[1]} would move to or from the ${k.split('|')[0]}.`);
+  }
+
+  return {
+    ok: true,
+    parsed,
+    tree,
+    terms,
+    inputs,
+    offerIndex,
+    felineIndex,
+    buyerAssetIndex,
+    sellerPaymentIndex,
+    fee,
+    prevouts: inputs.map((input) => ({ valueSats: input.value.toString(), scriptHex: input.scriptPubKeyHex })),
+  };
+}
+
+/**
+ * The message each policy signer signs: the BIP341 script path signature
+ * hash (SIGHASH_DEFAULT) of the funded offer input under the acceptance leaf,
+ * after every rule except signatures has passed. The transaction may be
+ * unsigned or partly signed; signatures never change this hash.
+ *
+ * Answers { ok: true, offerTermsHash, offerInputIndex, sighashHex,
+ * leafHashHex, controlBlockHex, feeSats } or the refusal verifyOfferAcceptance
+ * would give before signatures.
+ */
+// OX-P05: the policy signer contract. Each independently keyed signer runs the
+// full acceptance rules from its own evidence before signing this one hash.
+export function offerPolicySighash(acceptance, offer) {
+  const check = checkAcceptance(acceptance, offer);
+  if (!check.ok) return check;
+  const digest = taprootSighash(check.parsed.tx, check.offerIndex, check.prevouts, 0x00, { leafHash: hexToBytes(check.tree.acceptanceLeafHashHex) });
+  return {
+    ok: true,
+    offerTermsHash: check.tree.offerTermsHash,
+    offerInputIndex: check.offerIndex,
+    sighashHex: bytesToHex(digest),
+    leafHashHex: check.tree.acceptanceLeafHashHex,
+    controlBlockHex: check.tree.acceptanceControlBlockHex,
+    feeSats: check.fee.toString(),
+  };
+}
+
+/**
+ * Verify a complete acceptance transaction against its funded offer.
+ *
+ * acceptance: { schema: 'ordex.offer-acceptance/v2', network,
+ *   seller { paymentScriptHex, returnScriptHex? },
+ *   feline { inscriptionId, outpoint },
+ *   eligibility { membershipProof, traitProof? },
+ *   inputs [{ outpoint, party: 'SELLER' | 'OFFER', valueSats,
+ *             scriptPubKeyHex, inventory }],
+ *   transactionHex }
+ * offer: { terms, policyKeysHex [A, B], fundedOutput { outpoint, valueSats,
+ *   scriptPubKeyHex }, currentHeight }
+ *
+ * Success needs every rule of spec/offers.md and every signature: both
+ * policy signatures under the exact acceptance leaf and control block, and a
+ * closing signature on every seller input. A missing signature is refused,
+ * never assumed. Answers { ok: true, txid, offerTermsHash, offerInputIndex,
+ * felineInputIndex, buyerAssetOutputIndex, sellerPaymentIndex, feeSats }.
+ */
+// OX-P05: P-R14 passed when the buyer script merely appeared before the seller
+// index. Delivery is now derived from the Feline's satpoint, the leaf, tree and
+// signatures are proved from the bytes, and no buyer input is ever spent.
+export function verifyOfferAcceptance(acceptance, offer) {
+  const check = checkAcceptance(acceptance, offer);
+  if (!check.ok) return check;
+  const tx = check.parsed.tx;
+  for (let i = 0; i < tx.inputs.length; i += 1) {
+    if (i === check.offerIndex) {
+      const input = tx.inputs[i];
+      if (input.scriptSigHex !== '') return refuse('POLICY_WITNESS_INVALID', 'The offer input carries a scriptSig.');
+      if (input.witness.length === 0) return refuse('POLICY_SIGNATURES_MISSING', 'The offer input carries no policy signatures.');
+      if (input.witness.length !== 4) {
+        return refuse('POLICY_WITNESS_INVALID', 'The offer input witness must be two signatures, the acceptance leaf and its control block.');
+      }
+      const [sigB, sigA, leafHex, controlHex] = input.witness;
+      if (leafHex !== check.tree.acceptanceLeafHex) {
+        return refuse('ACCEPTANCE_LEAF_MISMATCH', 'The revealed leaf is not the exact acceptance leaf for these terms and policy keys.');
+      }
+      if (controlHex !== check.tree.acceptanceControlBlockHex) {
+        return refuse('CONTROL_BLOCK_MISMATCH', 'The control block does not commit the acceptance leaf to the funded output.');
+      }
+      const leafHash = hexToBytes(check.tree.acceptanceLeafHashHex);
+      const policyKeys = offer.policyKeysHex;
+      for (const [sigHex, keyHex] of [
+        [sigA, policyKeys[0]],
+        [sigB, policyKeys[1]],
+      ]) {
+        const status = tapscriptSignature(sigHex, keyHex, (hashType) => taprootSighash(tx, i, check.prevouts, hashType, { leafHash }));
+        if (status === 'MISSING') return refuse('POLICY_SIGNATURES_MISSING', 'A valid acceptance carries a signature from each independent policy signer.');
+        if (status === 'UNCLOSED') return refuse('UNCLOSED_SIGHASH', 'A policy signature does not commit to every input and output.');
+        if (status !== 'VALID') return refuse('POLICY_SIGNATURE_INVALID', `The signature for policy key ${keyHex} does not verify.`);
+      }
+      continue;
+    }
+    const verdict = verifyInputSignature(tx, i, check.prevouts);
+    if (verdict.status === 'UNSIGNED') return refuse('SIGNATURE_MISSING', `Seller input ${i} is unsigned.`);
+    if (verdict.status === 'UNSUPPORTED') return refuse('SIGNATURE_UNVERIFIABLE', `Seller input ${i} spends a script this verifier cannot check.`);
+    if (verdict.status !== 'VALID') return refuse('SIGNATURE_INVALID', `Seller input ${i} carries a signature that does not verify.`);
+    const closing = verdict.type === 'p2tr' ? [0x00, 0x01] : [0x01];
+    if (!closing.includes(verdict.sighashType)) {
+      return refuse('UNCLOSED_SIGHASH', `Seller input ${i} was signed without committing to every input and output.`);
+    }
+  }
+  return {
+    ok: true,
+    txid: check.parsed.txid,
+    offerTermsHash: check.tree.offerTermsHash,
+    offerInputIndex: check.offerIndex,
+    felineInputIndex: check.felineIndex,
+    buyerAssetOutputIndex: check.buyerAssetIndex,
+    sellerPaymentIndex: check.sellerPaymentIndex,
+    feeSats: check.fee.toString(),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Recovery.
+
+/**
+ * Verify a complete recovery transaction: the funded output alone, spent by
+ * the exact recovery leaf and control block with a closing signature by the
+ * buyer recovery key, a height-domain locktime at or after expiry, a
+ * non-final sequence, and one output paying the buyer receive script.
+ *
+ * recovery: { schema: 'ordex.offer-recovery/v2', transactionHex }
+ * offer: { terms, policyKeysHex, fundedOutput }
+ *
+ * Answers { ok: true, txid, feeSats } or a refusal.
+ */
+// OX-P05: P-R15 accepted a recovery with no locktime. The locktime, its domain,
+// the sequence and the leaf are now read from the bytes the node will judge.
+export function verifyOfferRecovery(recovery, offer) {
+  if (!recovery || typeof recovery !== 'object' || Array.isArray(recovery)) {
+    return refuse('MALFORMED_RECOVERY', 'Expected a recovery object.');
+  }
+  if (recovery.schema !== OFFER_RECOVERY_SCHEMA) {
+    return refuse('SCHEMA_UNSUPPORTED', 'The recovery schema is not ordex.offer-recovery/v2.');
+  }
+  const context = readOffer(offer);
+  if (!context.ok) return context;
+  const { terms, tree, funded, fundedValue } = context;
+  const parsed = parseTransaction(recovery.transactionHex);
+  if (!parsed.ok) return refuse('TRANSACTION_INVALID', parsed.reason);
+  const tx = parsed.tx;
+  if (tx.inputs.length !== 1) return refuse('RECOVERY_INPUTS_INVALID', 'A recovery spends the funded output and nothing else.');
+  const input = tx.inputs[0];
+  if (!sameOutpoint(input, funded.outpoint)) return refuse('OFFER_OUTPOINT_MISSING', 'The recovery does not spend the funded output.');
+  if (tx.lockTime >= LOCKTIME_THRESHOLD) {
+    return refuse('LOCKTIME_INVALID', 'The locktime is a timestamp; the recovery leaf compares a block height.');
+  }
+  if (tx.lockTime < terms.expiryHeight) {
+    return refuse('RECOVERY_BEFORE_EXPIRY', 'The locktime is below the expiry height, so CHECKLOCKTIMEVERIFY fails.');
+  }
+  if (input.sequence === SEQUENCE_FINAL) {
+    return refuse('SEQUENCE_FINAL', 'A final sequence disables the locktime, so CHECKLOCKTIMEVERIFY fails.');
+  }
+  if (tx.outputs.length !== 1 || tx.outputs[0].scriptHex !== terms.buyerReceiveScriptHex) {
+    return refuse('RECOVERY_OUTPUT_WRONG', 'A recovery pays one output, the buyer receive script.');
+  }
+  const paid = BigInt(tx.outputs[0].valueSats);
+  if (paid > fundedValue) return refuse('VALUE_NOT_CONSERVED', 'The recovery pays more than the funded output holds.');
+  const dust = dustThresholdSats(tx.outputs[0].scriptHex);
+  if (paid < dust) return refuse('DUST_OUTPUT', `The recovery output is below the ${dust} sat dust threshold for its script.`);
+  if (input.scriptSigHex !== '') return refuse('RECOVERY_WITNESS_INVALID', 'The recovery input carries a scriptSig.');
+  if (input.witness.length === 0) return refuse('SIGNATURE_MISSING', 'The recovery input is unsigned.');
+  if (input.witness.length !== 3) {
+    return refuse('RECOVERY_WITNESS_INVALID', 'The recovery witness must be one signature, the recovery leaf and its control block.');
+  }
+  const [sigHex, leafHex, controlHex] = input.witness;
+  if (leafHex !== tree.recoveryLeafHex) {
+    return refuse('RECOVERY_LEAF_MISMATCH', 'The revealed leaf is not the exact recovery leaf for these terms.');
+  }
+  if (controlHex !== tree.recoveryControlBlockHex) {
+    return refuse('CONTROL_BLOCK_MISMATCH', 'The control block does not commit the recovery leaf to the funded output.');
+  }
+  const prevouts = [{ valueSats: funded.valueSats, scriptHex: funded.scriptPubKeyHex }];
+  const leafHash = hexToBytes(tree.recoveryLeafHashHex);
+  const status = tapscriptSignature(sigHex, terms.buyerRecoveryKeyHex, (hashType) => taprootSighash(tx, 0, prevouts, hashType, { leafHash }));
+  if (status === 'MISSING') return refuse('SIGNATURE_MISSING', 'The recovery carries no buyer signature.');
+  if (status === 'UNCLOSED') return refuse('UNCLOSED_SIGHASH', 'The buyer signature does not commit to the whole recovery.');
+  if (status !== 'VALID') return refuse('SIGNATURE_INVALID', 'The buyer signature does not verify against the recovery key.');
+  return { ok: true, txid: parsed.txid, feeSats: (fundedValue - paid).toString() };
 }
