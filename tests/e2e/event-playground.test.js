@@ -54,7 +54,7 @@ test('SSE events are validated, deduplicated and resumed from the processed curs
   const { page, context } = await openPage(browser, site.url('/build/playground/'));
   await configureGateway(page, gateway.origin);
   await page.getByRole('tab', { name: 'SSE stream' }).click();
-  await page.getByRole('button', { name: 'Connect' }).click();
+  await page.getByRole('button', { name: 'Connect', exact: true }).click();
   await page.getByText(/Accepted 4, duplicates [12]/).waitFor({ timeout: 20000 });
   await page.getByText(/invalid [12]/).first().waitFor();
   assert.equal(lastEventIds[0], null);

@@ -236,7 +236,7 @@ export function ApiPlayground({ initialOperationId: fallbackId = null }) {
                 </ul>
               </div>
             )}
-            {plan.ok && !auth.allowed && !auth.needsApproval && (
+            {!auth.allowed && !auth.needsApproval && (plan.ok || auth.reason !== plan.errors[0]) && (
               <p role="status" style="font-size: 0.85rem; color: var(--color-danger); margin: 0 0 0.75rem 0;">{auth.reason}</p>
             )}
           </div>

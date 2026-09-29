@@ -140,14 +140,15 @@ export function planFingerprint(plan, settings) {
  * user confirmed; any change to the request or context makes it stale.
  */
 export function authorizePlan(plan, settings, approval) {
-  if (!plan.ok) return { allowed: false, reason: plan.errors[0] };
+  // The route and the mode decide first: they refuse whatever the form holds.
   if (plan.effect === 'operator') {
     return { allowed: false, reason: 'Operator routes need operator credentials. Use your operator tooling; the documentation site never handles them.' };
   }
-  if (plan.effect === 'read') return { allowed: true, reason: null };
-  if (settings.mode !== 'write') {
+  if (plan.effect !== 'read' && settings.mode !== 'write') {
     return { allowed: false, reason: `Read-only mode never sends a ${plan.effect === 'broadcast' ? 'broadcast' : 'request with an effect'}. Switch to write mode in settings to continue on a test network.` };
   }
+  if (!plan.ok) return { allowed: false, reason: plan.errors[0] };
+  if (plan.effect === 'read') return { allowed: true, reason: null };
   if (settings.network === 'mainnet') {
     return { allowed: false, reason: 'The playground sends effects only to Signet, Testnet4 or Regtest gateways. Use your wallet or the SDK for mainnet actions.' };
   }

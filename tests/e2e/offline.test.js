@@ -27,7 +27,9 @@ test('first visit saves the build; offline navigation uses it; nothing else is c
   assert.match(cacheNames[0], /^ordex-static:\/ordex\/:[0-9a-f]{16}$/);
   const cachedPaths = await page.evaluate(async (name) => (await (await caches.open(name)).keys()).map((r) => new URL(r.url).pathname), cacheNames[0]);
   assert.ok(cachedPaths.includes('/ordex/lab/index.html'));
-  assert.ok(cachedPaths.every((p) => p.startsWith('/ordex/') && !p.includes('/api/')));
+  // Site pages such as /ordex/reference/api/ are cached; the docs service API under /ordex/api/ is not.
+  assert.ok(cachedPaths.every((p) => p.startsWith('/ordex/') && !p.startsWith('/ordex/api/')));
+  assert.ok(cachedPaths.includes('/ordex/reference/api/index.html'));
 
   await context.setOffline(true);
   const lab = await page.goto(site.url('/lab/'));

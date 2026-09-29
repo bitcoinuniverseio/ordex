@@ -279,7 +279,17 @@ export class JourneyStore {
     }
   }
 
-  async saveSettings(patch: Partial<UserSettings>): Promise<UserSettings> {
+  // Saves run one after another: each reads the settings the previous save wrote, so two
+  // quick changes (network, then gateway origin) never overwrite each other.
+  private settingsQueue: Promise<unknown> = Promise.resolve();
+
+  saveSettings(patch: Partial<UserSettings>): Promise<UserSettings> {
+    const run = this.settingsQueue.then(() => this.writeSettings(patch));
+    this.settingsQueue = run.catch(() => undefined);
+    return run;
+  }
+
+  private async writeSettings(patch: Partial<UserSettings>): Promise<UserSettings> {
     const current = await this.getSettings();
     const next = { ...current, ...patch, schemaVersion: current.schemaVersion };
     const valid = validateSettings(next);

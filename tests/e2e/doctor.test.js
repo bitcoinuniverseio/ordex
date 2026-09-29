@@ -48,7 +48,7 @@ after(async () => {
 
 test('an unreachable gateway fails every dependent check', async () => {
   const { page, context } = await openPage(browser, site.url('/verify/'));
-  await page.getByLabel('Gateway origin', { exact: true }).last().fill('http://127.0.0.1:1');
+  await page.getByLabel('Gateway to check').fill('http://127.0.0.1:1');
   await page.getByRole('button', { name: 'Run Gateway Doctor' }).click();
   await page.getByText('The gateway is not compatible').waitFor({ timeout: 30000 });
   assert.equal(await page.getByText('Every check passed').count(), 0);
