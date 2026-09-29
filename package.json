@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "build": "node scripts/build.mjs",
-    "test": "node --test verifier/*.test.js spec/*.test.js scripts/api-reference.test.js tests/parity/*.test.js tests/accessibility/*.test.js tests/unit/style-invariants.test.js && npx tsx --test tests/unit/*.test.js",
+    "test": "node --test verifier/*.test.js spec/*.test.js scripts/api-reference.test.js tests/parity/*.test.js tests/integration/*.test.js tests/accessibility/*.test.js tests/unit/style-invariants.test.js && npx tsx --test tests/unit/*.test.js",
     "test:unit": "npx tsx --test tests/unit/*.test.js",
     "test:parity": "node --test tests/parity/*.test.js",
     "test:mcp": "npx tsx --test tests/unit/mcp-server.test.js",

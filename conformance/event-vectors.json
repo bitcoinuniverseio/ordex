@@ -396,6 +396,156 @@
         "ok": false,
         "code": "HEADER_MALFORMED"
       }
+    },
+    {
+      "name": "a delivery signed during a rotation overlap verifies with the previous secret",
+      "kind": "webhook",
+      "signing": {
+        "secrets": [
+          "whsec_cvhpY9Eps3G03dmaDBIahqfdnCwjgqew6n1kRUSWdDk",
+          "whsec_test_secret_0123456789abcdef"
+        ],
+        "timestamp": 1787400000,
+        "deliveryId": "evt_0002",
+        "body": "{\"ok\":true}"
+      },
+      "verifying": {
+        "secret": "whsec_test_secret_0123456789abcdef",
+        "body": "{\"ok\":true}",
+        "nowSeconds": 1787400100,
+        "toleranceSeconds": 300
+      },
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "name": "a delivery signed during a rotation overlap verifies with the new secret",
+      "kind": "webhook",
+      "signing": {
+        "secrets": [
+          "whsec_cvhpY9Eps3G03dmaDBIahqfdnCwjgqew6n1kRUSWdDk",
+          "whsec_test_secret_0123456789abcdef"
+        ],
+        "timestamp": 1787400000,
+        "deliveryId": "evt_0002",
+        "body": "{\"ok\":true}"
+      },
+      "verifying": {
+        "secret": "whsec_cvhpY9Eps3G03dmaDBIahqfdnCwjgqew6n1kRUSWdDk",
+        "body": "{\"ok\":true}",
+        "nowSeconds": 1787400100,
+        "toleranceSeconds": 300
+      },
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "name": "a receiver holding both secrets verifies a delivery signed after the overlap",
+      "kind": "webhook",
+      "signing": {
+        "secret": "whsec_cvhpY9Eps3G03dmaDBIahqfdnCwjgqew6n1kRUSWdDk",
+        "timestamp": 1787400000,
+        "deliveryId": "evt_0003",
+        "body": "{\"ok\":true}"
+      },
+      "verifying": {
+        "secrets": [
+          "whsec_test_secret_0123456789abcdef",
+          "whsec_cvhpY9Eps3G03dmaDBIahqfdnCwjgqew6n1kRUSWdDk"
+        ],
+        "body": "{\"ok\":true}",
+        "nowSeconds": 1787400100,
+        "toleranceSeconds": 300
+      },
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "name": "after the overlap the retired secret no longer verifies",
+      "kind": "webhook",
+      "signing": {
+        "secret": "whsec_cvhpY9Eps3G03dmaDBIahqfdnCwjgqew6n1kRUSWdDk",
+        "timestamp": 1787400000,
+        "deliveryId": "evt_0003",
+        "body": "{\"ok\":true}"
+      },
+      "verifying": {
+        "secret": "whsec_test_secret_0123456789abcdef",
+        "body": "{\"ok\":true}",
+        "nowSeconds": 1787400100,
+        "toleranceSeconds": 300
+      },
+      "expected": {
+        "ok": false,
+        "code": "SIGNATURE_INVALID"
+      }
+    },
+    {
+      "name": "a stored hash of the secret is not the signing key",
+      "kind": "webhook",
+      "signing": {
+        "secret": "whsec_cvhpY9Eps3G03dmaDBIahqfdnCwjgqew6n1kRUSWdDk",
+        "timestamp": 1787400000,
+        "deliveryId": "evt_0004",
+        "body": "{\"ok\":true}"
+      },
+      "verifying": {
+        "secret": "ee03c587e01429202de754165c5988db7a82fdca1702bd114ad2e4234ccfec7d",
+        "body": "{\"ok\":true}",
+        "nowSeconds": 1787400100,
+        "toleranceSeconds": 300
+      },
+      "expected": {
+        "ok": false,
+        "code": "SIGNATURE_INVALID"
+      }
+    },
+    {
+      "name": "a header with two timestamps is refused",
+      "kind": "webhook",
+      "signing": {
+        "secret": "whsec_test_secret_0123456789abcdef",
+        "timestamp": 1787400000,
+        "deliveryId": "evt_0001",
+        "body": "{\"ok\":true}"
+      },
+      "verifying": {
+        "secret": "whsec_test_secret_0123456789abcdef",
+        "body": "{\"ok\":true}",
+        "nowSeconds": 1787400100,
+        "toleranceSeconds": 300,
+        "headerOverride": "t=1787400000,t=1787400050,d=evt_0001,v1=0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "expected": {
+        "ok": false,
+        "code": "HEADER_MALFORMED"
+      }
+    },
+    {
+      "name": "naming both a secret and a secret list is refused",
+      "kind": "webhook",
+      "signing": {
+        "secret": "whsec_test_secret_0123456789abcdef",
+        "timestamp": 1787400000,
+        "deliveryId": "evt_0001",
+        "body": "{\"ok\":true}"
+      },
+      "verifying": {
+        "secret": "whsec_test_secret_0123456789abcdef",
+        "secrets": [
+          "whsec_cvhpY9Eps3G03dmaDBIahqfdnCwjgqew6n1kRUSWdDk"
+        ],
+        "body": "{\"ok\":true}",
+        "nowSeconds": 1787400100,
+        "toleranceSeconds": 300
+      },
+      "expected": {
+        "ok": false,
+        "code": "SECRET_INVALID"
+      }
     }
   ]
 }

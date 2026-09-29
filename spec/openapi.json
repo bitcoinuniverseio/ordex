@@ -2650,7 +2650,7 @@
       "post": {
         "operationId": "rotateWebhookSecret",
         "summary": "Rotate the signing secret",
-        "description": "The old secret keeps verifying during a bounded overlap window so rotation never drops a delivery.",
+        "description": "Returns the next signing secret exactly once. The previous secret keeps verifying during a bounded overlap: each delivery carries one v1 per unexpired secret, so rotation never drops a delivery.",
         "tags": [
           "webhooks"
         ],
@@ -7706,7 +7706,12 @@
           },
           "secretHint": {
             "type": "string",
-            "description": "The last four characters only. The full secret is shown once at creation."
+            "description": "The last four characters only. The full secret is shown once, at creation or rotation; the gateway keeps it only as ciphertext the delivery worker alone can open."
+          },
+          "secretVersion": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "The version of the current signing secret. Rotation increments it."
           },
           "createdAt": {
             "type": "string",
@@ -7769,7 +7774,12 @@
           },
           "secret": {
             "type": "string",
-            "description": "Shown exactly once."
+            "description": "Shown exactly once: whsec_ followed by 32 random bytes in base64url. Store it; the gateway cannot show it again."
+          },
+          "secretVersion": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "The version this secret signs as."
           }
         }
       },
