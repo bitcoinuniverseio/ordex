@@ -123,7 +123,7 @@ test('every runtime builds, passes its own tests and starts, offline and against
       for (const mode of ['offline', 'gateway']) {
         const r = await verifyKit({ runtime, capabilities: ALL_CAPABILITIES, mode, network: 'signet', gatewayOrigin: mode === 'gateway' ? signet.origin : '', revision: 'abcdef1' });
         assert.match(r.testOutput, /fail 0/, `${runtime} ${mode}`);
-        if (runtime === 'node') assert.match(r.startOutput, /201\/201 conformance cases give the recorded verdict/);
+        if (runtime === 'node') assert.match(r.startOutput, /204\/204 conformance cases give the recorded verdict/);
         if (runtime === 'node' && mode === 'gateway') assert.match(r.startOutput, /ok {5}network: signet/);
       }
     }
