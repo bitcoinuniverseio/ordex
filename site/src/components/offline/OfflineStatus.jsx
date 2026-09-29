@@ -1,50 +1,99 @@
 import { h } from 'preact';
-import { useState, useEffect } from 'preact/hooks';
+import { useEffect, useState } from 'preact/hooks';
+
+// OX-S12: registers the build's service worker at the site base and reports what is actually
+// saved for offline use (asked from the worker: version and cached files). A new version waits
+// until the reader chooses to reload; failures are shown, not swallowed. Offline, the banner
+// says whether this build's pages are saved, instead of promising that everything works.
+
+const BASE = import.meta.env.BASE_URL.replace(/\/$/, '');
+
+function askStatus(worker) {
+  return new Promise((resolve) => {
+    const channel = new MessageChannel();
+    const timer = setTimeout(() => resolve(null), 3000);
+    channel.port1.onmessage = (e) => {
+      clearTimeout(timer);
+      resolve(e.data);
+    };
+    worker.postMessage('ORDEX_SW_STATUS', [channel.port2]);
+  });
+}
 
 export function OfflineStatus() {
-  const [isOnline, setIsOnline] = useState(true);
+  const [online, setOnline] = useState(true);
+  const [sw, setSw] = useState({ state: 'unknown' });
 
   useEffect(() => {
-    setIsOnline(navigator.onLine);
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
+    setOnline(navigator.onLine);
+    const on = () => setOnline(true);
+    const off = () => setOnline(false);
+    window.addEventListener('online', on);
+    window.addEventListener('offline', off);
 
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
-    /* IMPLEMENTATION-HANDOFF [OX-S12]
-     * Defect OX-S-D12; coverage OX-S-C1500..OX-S-C1505. Registration targets /sw.js even though Pages serves
-     * /ordex/sw.js; all failures are swallowed and offline text claims unavailable resources are present.
-     * 1. Register the OX-S12 versioned worker using the actual BASE_URL and scope, report
-     * registration/install/update status and coordinate activation without dropping a working release.
-     * 2. Derive offline availability from completed static manifest installation and verifier bundle readiness.
-     * Pause connected operations explicitly in their consumers, retain retryable state, and never substitute
-     * simulated success for a failed request.
-     * 3. Test first visit, reload, offline revisit/direct route, partial install, failed update, reconnect and two
-     * installed versions at both supported base paths. Use PROPOSED NEW tests/e2e/offline.test.js with real
-     * service worker/cache assertions.
-     * Dependencies: OX-S12 worker cache policy, OX-S07 verifiers, OX-S11 docs endpoints. Rollback registration and
-     * worker namespace together; no deletion of unrelated caches.
-     */
-    // Register Service Worker
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    if (!('serviceWorker' in navigator)) setSw({ state: 'unsupported' });
+    else {
+      const refresh = async (reg) => {
+        if (reg.waiting && navigator.serviceWorker.controller) setSw((s) => ({ ...s, state: 'update-ready', reg }));
+        const active = reg.active;
+        if (!active) return;
+        const status = await askStatus(active);
+        if (status) setSw((s) => (s.state === 'update-ready' ? { ...s, status } : { state: status.cached === status.total ? 'saved' : 'partial', status, reg }));
+      };
+      navigator.serviceWorker
+        .register(`${BASE}/sw.js`, { scope: `${BASE}/` })
+        .then((reg) => {
+          setSw({ state: reg.active ? 'checking' : 'installing', reg });
+          reg.addEventListener('updatefound', () => {
+            const worker = reg.installing;
+            worker?.addEventListener('statechange', () => {
+              if (worker.state === 'installed') refresh(reg);
+              if (worker.state === 'redundant' && !reg.active) setSw({ state: 'failed', error: 'Saving the pages for offline use failed.' });
+            });
+          });
+          navigator.serviceWorker.ready.then(refresh);
+        })
+        .catch((err) => setSw({ state: 'failed', error: String(err?.message || err) }));
+      let reloaded = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (reloaded || !window.__ordexUpdateRequested) return;
+        reloaded = true;
+        window.location.reload();
+      });
     }
-
     return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener('online', on);
+      window.removeEventListener('offline', off);
     };
   }, []);
 
-  if (isOnline) return null;
+  const update = () => {
+    window.__ordexUpdateRequested = true;
+    sw.reg?.waiting?.postMessage('ORDEX_SW_SKIP_WAITING');
+  };
+
+  const bar = 'padding: 0.5rem 1rem; text-align: center; font-size: 0.85rem; font-weight: 600; border-bottom: 1px solid var(--color-border);';
+  const saved = sw.state === 'saved' || sw.state === 'update-ready';
 
   return (
-    <div
-      style="background: var(--color-warning-bg); border-bottom: 1px solid var(--color-warning); padding: 0.5rem 1rem; text-align: center; font-size: 0.85rem; font-weight: 600; color: var(--color-warning);"
-      role="status"
-    >
-      📶 You are currently offline. Full documentation, local search, mock playground, and Protocol Lab remain available locally. Connected gateway queries and live assistant requests are paused.
+    <div role="status" aria-live="polite" data-offline-state={sw.state}>
+      {!online && (
+        <div style={`${bar} background: var(--color-warning-bg); color: var(--color-text-primary);`}>
+          You are offline.{' '}
+          {saved
+            ? `This build's pages, search and verifiers are saved (${sw.status?.cached} files). Gateway, docs service and Ask requests wait until you are back online.`
+            : 'This site is not saved for offline use in this browser, so only pages already open will work.'}
+        </div>
+      )}
+      {sw.state === 'update-ready' && (
+        <div style={`${bar} background: var(--color-bg-subtle);`}>
+          A new version of these pages is ready.{' '}
+          <button type="button" class="btn btn-secondary" style="min-height: 28px; font-size: 0.8rem;" onClick={update}>
+            Reload to update
+          </button>
+        </div>
+      )}
+      {sw.state === 'failed' && online && <div class="ox-sr-only">Offline copy unavailable: {sw.error}</div>}
     </div>
   );
 }
