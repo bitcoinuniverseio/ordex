@@ -34,13 +34,17 @@ function findOperation(operations, id) {
   return op;
 }
 
-/** Every value under a key ending in Sats must be a decimal string. */
+/** Every value under a key ending in Sats, or each item of a list under one, must be a decimal string. */
 export function nonDecimalAmounts(value, path = '$', out = []) {
   if (Array.isArray(value)) value.forEach((v, i) => nonDecimalAmounts(v, `${path}[${i}]`, out));
   else if (value && typeof value === 'object') {
     for (const [k, v] of Object.entries(value)) {
       const p = `${path}.${k}`;
-      if (/Sats$/.test(k) && v !== null && !(typeof v === 'string' && SATS.test(v))) out.push(p);
+      const decimal = (x) => typeof x === 'string' && SATS.test(x);
+      if (/Sats$/.test(k) && v !== null) {
+        if (Array.isArray(v)) v.forEach((x, i) => !decimal(x) && out.push(`${p}[${i}]`));
+        else if (!decimal(v)) out.push(p);
+      }
       nonDecimalAmounts(v, p, out);
     }
   }
