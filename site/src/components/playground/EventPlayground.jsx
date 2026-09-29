@@ -147,7 +147,9 @@ export function EventPlayground() {
         evidenceClass: 'Gateway observation'
       });
     }
-    return counted;
+    // Only a newly processed event moves the transport resume cursor; a duplicate carries an
+    // older id and must not send the stream back to it.
+    return r.outcome === 'accepted' || r.outcome === 'out-of-order';
   };
 
   const connect = () => {

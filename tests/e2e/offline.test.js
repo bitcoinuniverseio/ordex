@@ -34,7 +34,11 @@ test('first visit saves the build; offline navigation uses it; nothing else is c
   await context.setOffline(true);
   const lab = await page.goto(site.url('/lab/'));
   assert.equal(lab.status(), 200);
-  await page.getByText('You are offline.').waitFor();
+  await page.getByText('You are offline.').waitFor().catch(async (err) => {
+    // Say what the page saw, so a failure here names its cause.
+    const seen = await page.evaluate(() => ({ onLine: navigator.onLine, controlled: !!navigator.serviceWorker.controller, status: document.querySelector('[data-offline-state]')?.outerHTML ?? null, islands: [...document.querySelectorAll('astro-island[ssr]')].map((i) => i.getAttribute('component-url')) }));
+    throw new Error(`${err.message}\n${JSON.stringify(seen)}`);
+  });
   await page.getByText(/pages, search and verifiers are saved/).waitFor();
   const missing = await page.goto(site.url('/no-such-page/'));
   assert.equal(missing.status(), 503);
