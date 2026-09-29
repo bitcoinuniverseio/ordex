@@ -97,7 +97,7 @@ test('the shipped Worker bundle refuses malformed and oversized candidates with 
 
 test('the Lab and Studio islands load the verifier through the Worker, not on the page thread', async () => {
   const files = await builtAssets();
-  for (const prefix of ['ProtocolLab', 'ConformanceStudio']) {
+  for (const prefix of ['ProtocolLab', 'ConformanceStudio', 'TransactionSandbox']) {
     const file = files.find((f) => f.startsWith(prefix));
     assert.ok(file, `${prefix} chunk missing`);
     const src = await readFile(join(assets, file), 'utf8');
