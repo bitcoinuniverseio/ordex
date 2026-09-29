@@ -720,7 +720,7 @@
         "predicate": "RUNE_MINT_UNRESOLVED",
         "source": {
           "path": "verifier/runes.js",
-          "line": 743,
+          "line": 745,
           "symbol": "refuse"
         },
         "reachable": true
@@ -807,9 +807,9 @@
         "type": "verifier"
       },
       {
-        "title": "verifier/runes.js:743 (refuse)",
+        "title": "verifier/runes.js:745 (refuse)",
         "path": "verifier/runes.js",
-        "line": 743,
+        "line": 745,
         "type": "verifier"
       },
       {
@@ -2765,7 +2765,7 @@
         "predicate": "Confirming this transaction would destroy rune balances its inputs carry.",
         "source": {
           "path": "verifier/runes.js",
-          "line": 743,
+          "line": 745,
           "symbol": "refuse"
         },
         "reachable": true
@@ -2852,9 +2852,9 @@
         "type": "verifier"
       },
       {
-        "title": "verifier/runes.js:743 (refuse)",
+        "title": "verifier/runes.js:745 (refuse)",
         "path": "verifier/runes.js",
-        "line": 743,
+        "line": 745,
         "type": "verifier"
       },
       {
@@ -13643,7 +13643,7 @@
         "predicate": "The expected allocation must be an array.",
         "source": {
           "path": "verifier/runes.js",
-          "line": 756,
+          "line": 758,
           "symbol": "refuse"
         },
         "reachable": true
@@ -13653,7 +13653,7 @@
         "predicate": "An expected allocation entry is malformed.",
         "source": {
           "path": "verifier/runes.js",
-          "line": 763,
+          "line": 765,
           "symbol": "refuse"
         },
         "reachable": true
@@ -13723,15 +13723,15 @@
     ],
     "sourceRefs": [
       {
-        "title": "verifier/runes.js:756 (refuse)",
+        "title": "verifier/runes.js:758 (refuse)",
         "path": "verifier/runes.js",
-        "line": 756,
+        "line": 758,
         "type": "verifier"
       },
       {
-        "title": "verifier/runes.js:763 (refuse)",
+        "title": "verifier/runes.js:765 (refuse)",
         "path": "verifier/runes.js",
-        "line": 763,
+        "line": 765,
         "type": "verifier"
       },
       {
@@ -21502,7 +21502,7 @@
         "predicate": "Output <output> would receive <(actual.get(mismatch) ?? 0n).toString()> of rune <runeId>, not the <(wanted.get(mismatch) ?? 0n).toString()> planned.",
         "source": {
           "path": "verifier/runes.js",
-          "line": 776,
+          "line": 778,
           "symbol": "refuse"
         },
         "reachable": true
@@ -21579,9 +21579,9 @@
         "type": "verifier"
       },
       {
-        "title": "verifier/runes.js:776 (refuse)",
+        "title": "verifier/runes.js:778 (refuse)",
         "path": "verifier/runes.js",
-        "line": 776,
+        "line": 778,
         "type": "verifier"
       },
       {
@@ -21952,7 +21952,7 @@
         "predicate": "This runestone mints a rune whose minted amount was not supplied, so the allocation is not exact.",
         "source": {
           "path": "verifier/runes.js",
-          "line": 749,
+          "line": 751,
           "symbol": "refuse"
         },
         "reachable": true
@@ -22059,9 +22059,9 @@
         "type": "verifier"
       },
       {
-        "title": "verifier/runes.js:749 (refuse)",
+        "title": "verifier/runes.js:751 (refuse)",
         "path": "verifier/runes.js",
-        "line": 749,
+        "line": 751,
         "type": "verifier"
       },
       {

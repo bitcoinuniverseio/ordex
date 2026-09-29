@@ -994,10 +994,7 @@ orderbook records which order the acceptance settled.
 | `MEMPOOL_CONFLICTED` | An unconfirmed transaction spends the funded output. It can still be replaced or dropped. |
 | `SPENT` | The funded output was spent on chain by a transaction that was neither its acceptance nor its recovery. |
 | `EXPIRED` | The current height reached `expiryHeight` with the output unspent. Acceptance is refused; recovery confirms from the next block. |
-| `WITHDRAWN` | The buyer proved ownership of the recovery key before expiry and removed the offer from discovery. Withdrawal is discovery, not cancellation; only a spend settles the funds. |
-| `REJECTED` | The posted evidence was unusable: malformed terms, wrong network, a root that does not exist, or a funded output that is not the tree the terms and policy keys produce. |
-
-A
+| `WITHDRAWN` | The buyer proved ownership of the recovery key before expiry and removed the offer from discovery, with a BIP-340 signature by `buyerRecoveryKeyHex` over the tagged hash (tag `ordex/offer-withdrawal`) of the message `Ordex offer withdrawal\nnetwork: <network>\noffer: <id>\nterms: <offerTermsHash>`. Withdrawal is discovery, not cancellation; only a spend settles 
 
 ---
 
@@ -1733,7 +1730,7 @@ POST /api/ordex/offers/{id}/revalidate (revalidateOffer): Recheck one offer agai
 - Source: spec/openapi.json
 - URL: /reference/api/#withdrawOffer
 
-POST /api/ordex/offers/{id}/withdraw (withdrawOffer): Remove an offer from discovery, proved by the recovery key. Discovery, not cancellation: the funded output stays spendable by the acceptance path until it is spent, and by the recovery path after expiry. A BIP 322 signature by the recovery key proves who may stop publishing the offer.. Evidence level: Deterministic example. Tag: offers.
+POST /api/ordex/offers/{id}/withdraw (withdrawOffer): Remove an offer from discovery, proved by the recovery key. Discovery, not cancellation: the funded output stays spendable by the acceptance path until it is spent, and by the recovery path after expiry. A BIP-340 signature by the recovery key over the offer withdrawal message proves who may stop publishing the offer.. Evidence level: Deterministic example. Tag: offers.
 
 ---
 
@@ -2158,6 +2155,54 @@ POST /api/ordex/signing/verify (verifySigningArtifacts): Verify a manifest and s
 - URL: /reference/api/#getOperation
 
 GET /api/ordex/operations/{operationId} (getOperation): The receipt a mutation committed under an idempotency key. Lets a caller that lost a reply learn what the gateway committed under the operation id it sent, instead of repeating the mutation. Unknown ids answer 404 so a lost request is distinguishable from a lost reply.. Evidence level: Deterministic example. Tag: status.
+
+---
+
+## POST /api/ordex/heritage/operations/{operationId}/relay (relayHeritageOperation) (/paths~1api~1ordex~1heritage~1operations~1{operationId}~1relay/post)
+- Source: spec/openapi.json
+- URL: /reference/api/#relayHeritageOperation
+
+POST /api/ordex/heritage/operations/{operationId}/relay (relayHeritageOperation): Relay the signed transaction of a composed attach or detach. Checks, in order: the heritage authority is ready; the signed bytes are the stored manifest with every input signed and the asset landing where the manifest says; every input is unspent with the balances it carried when composed; the node decodes the composed message; testmempoolaccept allows it; then sendrawtransaction. The operation becomes RELAYED. An operation no longer COMPOSED answers its stored state and sends nothing, which is why this route answers 200.. Evidence level: Deterministic example. Tag: heritage.
+
+---
+
+## GET /api/ordex/heritage/operations/{operationId} (getHeritageOperation) (/paths~1api~1ordex~1heritage~1operations~1{operationId}/get)
+- Source: spec/openapi.json
+- URL: /reference/api/#getHeritageOperation
+
+GET /api/ordex/heritage/operations/{operationId} (getHeritageOperation): One heritage operation and its ledger settlement. An unknown id answers 404 HERITAGE_OPERATION_NOT_FOUND.. Evidence level: Deterministic example. Tag: heritage.
+
+---
+
+## POST /api/ordex/heritage/asks (draftHeritageAsk) (/paths~1api~1ordex~1heritage~1asks/post)
+- Source: spec/openapi.json
+- URL: /reference/api/#draftHeritageAsk
+
+POST /api/ordex/heritage/asks (draftHeritageAsk): Draft an unsigned ask over one carrying UTXO. . Evidence level: Deterministic example. Tag: heritage.
+
+---
+
+## POST /api/ordex/heritage/swaps (draftHeritageSwap) (/paths~1api~1ordex~1heritage~1swaps/post)
+- Source: spec/openapi.json
+- URL: /reference/api/#draftHeritageSwap
+
+POST /api/ordex/heritage/swaps (draftHeritageSwap): Draft an unsigned swap over one carrying UTXO. . Evidence level: Deterministic example. Tag: heritage.
+
+---
+
+## POST /api/ordex/heritage/intents (publishHeritageIntent) (/paths~1api~1ordex~1heritage~1intents/post)
+- Source: spec/openapi.json
+- URL: /reference/api/#publishHeritageIntent
+
+POST /api/ordex/heritage/intents (publishHeritageIntent): Publish a maker-signed heritage ask or swap. A PRIVATE intent travels as an encrypted envelope and is accepted through the private acceptance route instead.. Evidence level: Deterministic example. Tag: heritage.
+
+---
+
+## POST /api/ordex/heritage/intents/{intentId}/accept (acceptHeritageIntent) (/paths~1api~1ordex~1heritage~1intents~1{intentId}~1accept/post)
+- Source: spec/openapi.json
+- URL: /reference/api/#acceptHeritageIntent
+
+POST /api/ordex/heritage/intents/{intentId}/accept (acceptHeritageIntent): Accept a published heritage ask or swap. Proves the gives whole again, builds the plan through the swaps desk and adds the UTXO_MOVE ledger events the settlement must produce. Signing, preflight and broadcast use the swap session routes.. Evidence level: Deterministic example. Tag: heritage.
 
 ---
 

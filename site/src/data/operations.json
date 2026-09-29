@@ -2057,6 +2057,7 @@
     "requestExampleIssue": null,
     "successStatus": 201,
     "responseExample": {
+      "quoteId": "example",
       "orderId": "example",
       "network": "mainnet",
       "psbt": "example",
@@ -2166,6 +2167,7 @@
       "$ref": "#/components/schemas/PreflightRequest"
     },
     "requestExample": {
+      "quoteId": "example",
       "finalTxHex": "example",
       "signedPsbt": "example"
     },
@@ -2179,7 +2181,8 @@
       "txid": "example",
       "vsize": 1,
       "feesSats": "10000",
-      "checkedAt": "2026-09-29T00:00:00Z"
+      "checkedAt": "2026-09-29T00:00:00Z",
+      "quoteId": "example"
     },
     "responseExampleIssue": null,
     "responses": {
@@ -2783,7 +2786,10 @@
         "tapInternalKeyHex": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
         "acceptanceLeafScriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
         "recoveryLeafScriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d"
-      }
+      },
+      "traitMembers": [
+        "example"
+      ]
     },
     "requestExampleIssue": null,
     "successStatus": 201,
@@ -2981,8 +2987,12 @@
         }
       }
     ],
-    "requestBodySchema": null,
-    "requestExample": null,
+    "requestBodySchema": {
+      "$ref": "#/components/schemas/OfferRevalidateRequest"
+    },
+    "requestExample": {
+      "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
+    },
     "requestExampleIssue": null,
     "successStatus": 201,
     "responseExample": {
@@ -3065,7 +3075,7 @@
     "method": "POST",
     "path": "/api/ordex/offers/{id}/withdraw",
     "summary": "Remove an offer from discovery, proved by the recovery key",
-    "description": "Discovery, not cancellation: the funded output stays spendable by the acceptance path until it is spent, and by the recovery path after expiry. A BIP 322 signature by the recovery key proves who may stop publishing the offer.",
+    "description": "Discovery, not cancellation: the funded output stays spendable by the acceptance path until it is spent, and by the recovery path after expiry. A BIP-340 signature by the recovery key over the offer withdrawal message proves who may stop publishing the offer.",
     "tag": "offers",
     "isWrite": true,
     "authorityLevel": "Deterministic example",
@@ -3081,14 +3091,10 @@
       }
     ],
     "requestBodySchema": {
-      "$ref": "#/components/schemas/OwnershipProof"
+      "$ref": "#/components/schemas/OfferWithdrawalProof"
     },
-    "requestExample": {
-      "address": "example",
-      "signature": "example",
-      "reason": "example"
-    },
-    "requestExampleIssue": null,
+    "requestExample": null,
+    "requestExampleIssue": "No sample for pattern ^[0-9a-f]{128}$ at $.signature",
     "successStatus": 201,
     "responseExample": {
       "id": "example",
@@ -3206,31 +3212,49 @@
       "buyerAssetOutputIndex": 0,
       "inputs": [
         {
-          "txid": "example",
-          "vout": 0,
+          "outpoint": {
+            "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+            "vout": 0
+          },
+          "party": "SELLER",
           "valueSats": "10000",
-          "role": "SELLER_FELINE"
+          "scriptPubKeyHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d"
         }
       ],
       "outputs": [
         {
-          "scriptHex": "example",
-          "valueSats": "10000",
-          "role": "BUYER_ASSET"
+          "scriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
+          "valueSats": "10000"
         }
       ],
       "estimatedFeeSats": "10000",
       "withinMaxNetworkFee": true,
       "expiresAtHeight": 1,
       "checkpoint": {
-        "ready": true,
-        "reason": "not_configured",
-        "coreHeight": 1,
-        "ordHeight": 1,
-        "lagBlocks": 1,
-        "maxLagBlocks": 1,
-        "storageWritable": true,
-        "checkedAt": "2026-09-29T00:00:00Z"
+        "heightAtomic": "10000",
+        "blockHash": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
+      },
+      "psbt": "example",
+      "acceptance": {
+        "seller": {
+          "paymentScriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
+          "returnScriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d"
+        },
+        "feline": {
+          "inscriptionId": "example",
+          "outpoint": {
+            "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+            "vout": 0
+          }
+        },
+        "eligibility": {
+          "membershipProof": [
+            {}
+          ],
+          "traitProof": [
+            {}
+          ]
+        }
       }
     },
     "responseExampleIssue": null,
@@ -4228,7 +4252,59 @@
         }
       ],
       "takerReceiveScriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
-      "maxTakerFeeSats": "10000"
+      "maxTakerFeeSats": "10000",
+      "takerChangeScriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
+      "takerIdentityProof": {
+        "kind": "bip322",
+        "address": "example",
+        "signature": "example"
+      },
+      "intent": {
+        "schema": "ordex.swap-intent/v1",
+        "protocolVersion": "example",
+        "network": "mainnet",
+        "visibility": "PUBLIC",
+        "makerReceiveScriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
+        "gives": [
+          {
+            "assetType": "example",
+            "outpoint": {
+              "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+              "vout": 0
+            },
+            "quantitySats": "10000",
+            "assetId": "example"
+          }
+        ],
+        "requires": [
+          {
+            "assetType": "example",
+            "assetId": "example",
+            "inscriptionId": "example",
+            "minQuantitySats": "10000"
+          }
+        ],
+        "maxMakerFeeSats": "10000",
+        "expiryHeight": 1,
+        "nonce": "example",
+        "createdAtHeight": 1,
+        "checkpoint": {
+          "height": 0,
+          "blockHash": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
+        },
+        "takerBinding": {
+          "address": "example"
+        },
+        "adapterVersions": [
+          {}
+        ],
+        "makerIdentityProof": {
+          "kind": "bip322",
+          "address": "example",
+          "signature": "example"
+        },
+        "digest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
+      }
     },
     "requestExampleIssue": null,
     "successStatus": 201,
@@ -4270,6 +4346,16 @@
           "type": "string",
           "minLength": 1,
           "maxLength": 200
+        }
+      },
+      {
+        "name": "x-ordex-swap-capability",
+        "in": "header",
+        "required": false,
+        "description": "The session capability of a PRIVATE intent, returned once in its acceptance answer. Every route of that session requires it (401 SESSION_CAPABILITY_REQUIRED without it or with another token); sessions of PUBLIC intents ignore it.",
+        "schema": {
+          "type": "string",
+          "pattern": "^swc_[A-Za-z0-9_-]{43}$"
         }
       }
     ],
@@ -4315,6 +4401,16 @@
           "type": "string",
           "minLength": 1,
           "maxLength": 200
+        }
+      },
+      {
+        "name": "x-ordex-swap-capability",
+        "in": "header",
+        "required": false,
+        "description": "The session capability of a PRIVATE intent, returned once in its acceptance answer. Every route of that session requires it (401 SESSION_CAPABILITY_REQUIRED without it or with another token); sessions of PUBLIC intents ignore it.",
+        "schema": {
+          "type": "string",
+          "pattern": "^swc_[A-Za-z0-9_-]{43}$"
         }
       }
     ],
@@ -4366,6 +4462,16 @@
           "minLength": 1,
           "maxLength": 200
         }
+      },
+      {
+        "name": "x-ordex-swap-capability",
+        "in": "header",
+        "required": false,
+        "description": "The session capability of a PRIVATE intent, returned once in its acceptance answer. Every route of that session requires it (401 SESSION_CAPABILITY_REQUIRED without it or with another token); sessions of PUBLIC intents ignore it.",
+        "schema": {
+          "type": "string",
+          "pattern": "^swc_[A-Za-z0-9_-]{43}$"
+        }
       }
     ],
     "requestBodySchema": null,
@@ -4415,6 +4521,16 @@
           "type": "string",
           "minLength": 1,
           "maxLength": 200
+        }
+      },
+      {
+        "name": "x-ordex-swap-capability",
+        "in": "header",
+        "required": false,
+        "description": "The session capability of a PRIVATE intent, returned once in its acceptance answer. Every route of that session requires it (401 SESSION_CAPABILITY_REQUIRED without it or with another token); sessions of PUBLIC intents ignore it.",
+        "schema": {
+          "type": "string",
+          "pattern": "^swc_[A-Za-z0-9_-]{43}$"
         }
       }
     ],
@@ -7019,5 +7135,503 @@
       }
     },
     "jsonPointer": "/paths~1api~1ordex~1operations~1{operationId}/get"
+  },
+  {
+    "operationId": "relayHeritageOperation",
+    "method": "POST",
+    "path": "/api/ordex/heritage/operations/{operationId}/relay",
+    "summary": "Relay the signed transaction of a composed attach or detach",
+    "description": "Checks, in order: the heritage authority is ready; the signed bytes are the stored manifest with every input signed and the asset landing where the manifest says; every input is unspent with the balances it carried when composed; the node decodes the composed message; testmempoolaccept allows it; then sendrawtransaction. The operation becomes RELAYED. An operation no longer COMPOSED answers its stored state and sends nothing, which is why this route answers 200.",
+    "tag": "heritage",
+    "isWrite": true,
+    "authorityLevel": "Deterministic example",
+    "parameters": [
+      {
+        "name": "operationId",
+        "in": "path",
+        "required": true,
+        "description": "The heritage operation id, hop_<uuid>.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    ],
+    "requestBodySchema": {
+      "$ref": "#/components/schemas/HeritageRelayRequest"
+    },
+    "requestExample": null,
+    "requestExampleIssue": "No oneOf alternative yields a valid example at $",
+    "successStatus": 200,
+    "responseExample": {
+      "operationId": "example",
+      "kind": "ATTACH",
+      "state": "COMPOSED",
+      "network": "mainnet",
+      "txid": "example",
+      "manifestDigest": "example",
+      "swapSessionId": "example",
+      "expectedLedgerEvents": [
+        {
+          "event": "ATTACH_TO_UTXO",
+          "source": "example",
+          "destination": "example",
+          "outputIndex": 0,
+          "asset": "example",
+          "quantity": "10000"
+        }
+      ],
+      "settlement": {
+        "blockHash": "example",
+        "height": 0,
+        "ledgerHash": "example",
+        "eventId": "example"
+      },
+      "refusalCode": "example",
+      "createdAt": "2026-09-29T00:00:00Z",
+      "updatedAt": "2026-09-29T00:00:00Z"
+    },
+    "responseExampleIssue": null,
+    "responses": {
+      "200": {
+        "description": "The operation after relay, or its stored state.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/HeritageOperation"
+            }
+          }
+        }
+      },
+      "default": {
+        "$ref": "#/components/responses/Error"
+      }
+    },
+    "jsonPointer": "/paths~1api~1ordex~1heritage~1operations~1{operationId}~1relay/post"
+  },
+  {
+    "operationId": "getHeritageOperation",
+    "method": "GET",
+    "path": "/api/ordex/heritage/operations/{operationId}",
+    "summary": "One heritage operation and its ledger settlement",
+    "description": "An unknown id answers 404 HERITAGE_OPERATION_NOT_FOUND.",
+    "tag": "heritage",
+    "isWrite": false,
+    "authorityLevel": "Deterministic example",
+    "parameters": [
+      {
+        "name": "operationId",
+        "in": "path",
+        "required": true,
+        "description": "The heritage operation id, hop_<uuid>.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    ],
+    "requestBodySchema": null,
+    "requestExample": null,
+    "requestExampleIssue": null,
+    "successStatus": 200,
+    "responseExample": {
+      "operationId": "example",
+      "kind": "ATTACH",
+      "state": "COMPOSED",
+      "network": "mainnet",
+      "txid": "example",
+      "manifestDigest": "example",
+      "swapSessionId": "example",
+      "expectedLedgerEvents": [
+        {
+          "event": "ATTACH_TO_UTXO",
+          "source": "example",
+          "destination": "example",
+          "outputIndex": 0,
+          "asset": "example",
+          "quantity": "10000"
+        }
+      ],
+      "settlement": {
+        "blockHash": "example",
+        "height": 0,
+        "ledgerHash": "example",
+        "eventId": "example"
+      },
+      "refusalCode": "example",
+      "createdAt": "2026-09-29T00:00:00Z",
+      "updatedAt": "2026-09-29T00:00:00Z"
+    },
+    "responseExampleIssue": null,
+    "responses": {
+      "200": {
+        "description": "The operation.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/HeritageOperation"
+            }
+          }
+        }
+      },
+      "default": {
+        "$ref": "#/components/responses/Error"
+      }
+    },
+    "jsonPointer": "/paths~1api~1ordex~1heritage~1operations~1{operationId}/get"
+  },
+  {
+    "operationId": "draftHeritageAsk",
+    "method": "POST",
+    "path": "/api/ordex/heritage/asks",
+    "summary": "Draft an unsigned ask over one carrying UTXO",
+    "description": "",
+    "tag": "heritage",
+    "isWrite": true,
+    "authorityLevel": "Deterministic example",
+    "parameters": [],
+    "requestBodySchema": {
+      "$ref": "#/components/schemas/HeritageAskDraftRequest"
+    },
+    "requestExample": {
+      "utxo": "example",
+      "makerReceiveAddress": "example",
+      "maxMakerFeeSats": "10000",
+      "expiryBlocks": 1,
+      "visibility": "PUBLIC",
+      "takerAddress": "example",
+      "priceSats": "10000"
+    },
+    "requestExampleIssue": null,
+    "successStatus": 201,
+    "responseExample": {
+      "intent": {},
+      "digest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+      "record": {},
+      "signing": {
+        "message": "example",
+        "kind": "bip322",
+        "address": "example"
+      }
+    },
+    "responseExampleIssue": null,
+    "responses": {
+      "201": {
+        "description": "The unsigned intent and what to sign.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/HeritageIntentDraft"
+            }
+          }
+        }
+      },
+      "default": {
+        "$ref": "#/components/responses/Error"
+      }
+    },
+    "jsonPointer": "/paths~1api~1ordex~1heritage~1asks/post"
+  },
+  {
+    "operationId": "draftHeritageSwap",
+    "method": "POST",
+    "path": "/api/ordex/heritage/swaps",
+    "summary": "Draft an unsigned swap over one carrying UTXO",
+    "description": "",
+    "tag": "heritage",
+    "isWrite": true,
+    "authorityLevel": "Deterministic example",
+    "parameters": [],
+    "requestBodySchema": {
+      "$ref": "#/components/schemas/HeritageSwapDraftRequest"
+    },
+    "requestExample": {
+      "utxo": "example",
+      "makerReceiveAddress": "example",
+      "maxMakerFeeSats": "10000",
+      "expiryBlocks": 1,
+      "visibility": "PUBLIC",
+      "takerAddress": "example",
+      "requires": [
+        {
+          "assetType": "ORDINAL",
+          "assetId": "example",
+          "inscriptionId": "example",
+          "minQuantitySats": "10000"
+        }
+      ]
+    },
+    "requestExampleIssue": null,
+    "successStatus": 201,
+    "responseExample": {
+      "intent": {},
+      "digest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+      "record": {},
+      "signing": {
+        "message": "example",
+        "kind": "bip322",
+        "address": "example"
+      }
+    },
+    "responseExampleIssue": null,
+    "responses": {
+      "201": {
+        "description": "The unsigned intent and what to sign.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/HeritageIntentDraft"
+            }
+          }
+        }
+      },
+      "default": {
+        "$ref": "#/components/responses/Error"
+      }
+    },
+    "jsonPointer": "/paths~1api~1ordex~1heritage~1swaps/post"
+  },
+  {
+    "operationId": "publishHeritageIntent",
+    "method": "POST",
+    "path": "/api/ordex/heritage/intents",
+    "summary": "Publish a maker-signed heritage ask or swap",
+    "description": "A PRIVATE intent travels as an encrypted envelope and is accepted through the private acceptance route instead.",
+    "tag": "heritage",
+    "isWrite": true,
+    "authorityLevel": "Deterministic example",
+    "parameters": [],
+    "requestBodySchema": {
+      "$ref": "#/components/schemas/HeritageIntentPublishRequest"
+    },
+    "requestExample": {
+      "intent": {
+        "schema": "ordex.swap-intent/v1",
+        "protocolVersion": "example",
+        "network": "mainnet",
+        "visibility": "PUBLIC",
+        "makerReceiveScriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
+        "gives": [
+          {
+            "assetType": "example",
+            "outpoint": {
+              "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+              "vout": 0
+            },
+            "quantitySats": "10000",
+            "assetId": "example"
+          }
+        ],
+        "requires": [
+          {
+            "assetType": "example",
+            "assetId": "example",
+            "inscriptionId": "example",
+            "minQuantitySats": "10000"
+          }
+        ],
+        "maxMakerFeeSats": "10000",
+        "expiryHeight": 1,
+        "nonce": "example",
+        "createdAtHeight": 1,
+        "checkpoint": {
+          "height": 0,
+          "blockHash": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
+        },
+        "takerBinding": {
+          "address": "example"
+        },
+        "adapterVersions": [
+          {}
+        ],
+        "makerIdentityProof": {
+          "kind": "bip322",
+          "address": "example",
+          "signature": "example"
+        },
+        "digest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
+      }
+    },
+    "requestExampleIssue": null,
+    "successStatus": 201,
+    "responseExample": {
+      "intent": {
+        "schema": "ordex.swap-intent/v1",
+        "protocolVersion": "example",
+        "network": "mainnet",
+        "visibility": "PUBLIC",
+        "makerReceiveScriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
+        "gives": [
+          {
+            "assetType": "example",
+            "outpoint": {
+              "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+              "vout": 0
+            },
+            "quantitySats": "10000",
+            "assetId": "example"
+          }
+        ],
+        "requires": [
+          {
+            "assetType": "example",
+            "assetId": "example",
+            "inscriptionId": "example",
+            "minQuantitySats": "10000"
+          }
+        ],
+        "maxMakerFeeSats": "10000",
+        "expiryHeight": 1,
+        "nonce": "example",
+        "createdAtHeight": 1,
+        "checkpoint": {
+          "height": 0,
+          "blockHash": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
+        },
+        "takerBinding": {
+          "address": "example"
+        },
+        "adapterVersions": [
+          {}
+        ],
+        "makerIdentityProof": {
+          "kind": "bip322",
+          "address": "example",
+          "signature": "example"
+        },
+        "digest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
+      },
+      "state": "DRAFT",
+      "actionability": "REVIEW_ONLY",
+      "freshness": {},
+      "outpointStates": [
+        {}
+      ],
+      "checkpoint": {
+        "height": 0,
+        "blockHash": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
+      }
+    },
+    "responseExampleIssue": null,
+    "responses": {
+      "201": {
+        "description": "The published intent.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/SwapIntentView"
+            }
+          }
+        }
+      },
+      "default": {
+        "$ref": "#/components/responses/Error"
+      }
+    },
+    "jsonPointer": "/paths~1api~1ordex~1heritage~1intents/post"
+  },
+  {
+    "operationId": "acceptHeritageIntent",
+    "method": "POST",
+    "path": "/api/ordex/heritage/intents/{intentId}/accept",
+    "summary": "Accept a published heritage ask or swap",
+    "description": "Proves the gives whole again, builds the plan through the swaps desk and adds the UTXO_MOVE ledger events the settlement must produce. Signing, preflight and broadcast use the swap session routes.",
+    "tag": "heritage",
+    "isWrite": true,
+    "authorityLevel": "Deterministic example",
+    "parameters": [
+      {
+        "name": "intentId",
+        "in": "path",
+        "required": true,
+        "description": "The published intent id.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    ],
+    "requestBodySchema": {
+      "$ref": "#/components/schemas/SwapAcceptancePlanRequest"
+    },
+    "requestExample": {
+      "takerInputs": [
+        {
+          "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+          "vout": 0
+        }
+      ],
+      "takerReceiveScriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
+      "maxTakerFeeSats": "10000",
+      "takerChangeScriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
+      "takerIdentityProof": {
+        "kind": "bip322",
+        "address": "example",
+        "signature": "example"
+      },
+      "intent": {
+        "schema": "ordex.swap-intent/v1",
+        "protocolVersion": "example",
+        "network": "mainnet",
+        "visibility": "PUBLIC",
+        "makerReceiveScriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
+        "gives": [
+          {
+            "assetType": "example",
+            "outpoint": {
+              "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+              "vout": 0
+            },
+            "quantitySats": "10000",
+            "assetId": "example"
+          }
+        ],
+        "requires": [
+          {
+            "assetType": "example",
+            "assetId": "example",
+            "inscriptionId": "example",
+            "minQuantitySats": "10000"
+          }
+        ],
+        "maxMakerFeeSats": "10000",
+        "expiryHeight": 1,
+        "nonce": "example",
+        "createdAtHeight": 1,
+        "checkpoint": {
+          "height": 0,
+          "blockHash": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
+        },
+        "takerBinding": {
+          "address": "example"
+        },
+        "adapterVersions": [
+          {}
+        ],
+        "makerIdentityProof": {
+          "kind": "bip322",
+          "address": "example",
+          "signature": "example"
+        },
+        "digest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
+      }
+    },
+    "requestExampleIssue": null,
+    "successStatus": 201,
+    "responseExample": null,
+    "responseExampleIssue": "No sample for pattern ^[0-9a-f]{64}i(0|[1-9][0-9]*)$ at $.acceptancePlan.tx.inputs[0].inventory.inscriptions[0].inscriptionId",
+    "responses": {
+      "201": {
+        "description": "The acceptance plan with its expected ledger events.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/HeritageAcceptanceResult"
+            }
+          }
+        }
+      },
+      "default": {
+        "$ref": "#/components/responses/Error"
+      }
+    },
+    "jsonPointer": "/paths~1api~1ordex~1heritage~1intents~1{intentId}~1accept/post"
   }
 ]
