@@ -29,10 +29,24 @@ const TYPES = {
   '.pf_fragment': 'application/octet-stream'
 };
 
-export async function startStaticServer({ base = BASE, dist = DIST } = {}) {
+/**
+ * Serves the built site under `base`. With `proxy` ({ prefix, target }), requests under the
+ * prefix go to that origin, as a reverse proxy in front of the docs service would (same origin).
+ */
+export async function startStaticServer({ base = BASE, dist = DIST, proxy = null } = {}) {
   const server = createServer(async (req, res) => {
     try {
       const url = new URL(req.url, 'http://localhost');
+      if (proxy && url.pathname.startsWith(proxy.prefix)) {
+        const chunks = [];
+        for await (const c of req) chunks.push(c);
+        const headers = { ...req.headers };
+        delete headers.host;
+        const upstream = await fetch(`${proxy.target}${url.pathname}${url.search}`, { method: req.method, headers, body: ['GET', 'HEAD'].includes(req.method) ? undefined : Buffer.concat(chunks) });
+        res.writeHead(upstream.status, Object.fromEntries(upstream.headers));
+        res.end(Buffer.from(await upstream.arrayBuffer()));
+        return;
+      }
       if (!url.pathname.startsWith(base)) {
         res.writeHead(404).end('not found');
         return;

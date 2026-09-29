@@ -56,8 +56,8 @@
           },
           {
             "value": "worker",
-            "label": "Cloudflare Worker / Edge",
-            "lead": "Serverless gateway endpoints, signature checks, and event forwarders."
+            "label": "Fetch-handler worker",
+            "lead": "A Workers-compatible fetch handler: signature checks and event forwarding."
           },
           {
             "value": "offline",
@@ -106,16 +106,7 @@
       }
     ],
     "outcome": {
-      "recommendation": "Use @bitcoinuniverse/ordex-sdk with deterministic local mock mode for development, connecting to your selected gateway when ready.",
-      "starterKit": "node-typescript-starter",
-      "recipeLinks": [
-        "/build/recipes/publish-ask",
-        "/build/recipes/purchase-ask"
-      ],
-      "docLinks": [
-        "/learn/concepts",
-        "/learn/security-model"
-      ]
+      "recommendation": "Start from a starter kit in offline mode, which checks the SDK against the conformance vectors, then point it at your gateway."
     }
   },
   {

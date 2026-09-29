@@ -401,7 +401,7 @@ const wizards = [
         options: [
           { value: 'browser', label: 'Web Browser (Client-side)', lead: 'Client-side verification and UI components using @bitcoinuniverse/ordex-sdk.' },
           { value: 'node', label: 'Node.js / Backend Server', lead: 'High-throughput catalog querying, webhook ingestion, and order caching.' },
-          { value: 'worker', label: 'Cloudflare Worker / Edge', lead: 'Serverless gateway endpoints, signature checks, and event forwarders.' },
+          { value: 'worker', label: 'Fetch-handler worker', lead: 'A Workers-compatible fetch handler: signature checks and event forwarding.' },
           { value: 'offline', label: 'Air-Gapped Cold Signer', lead: 'Zero-network hardware or offline workstation running verification.' }
         ]
       },
@@ -421,10 +421,7 @@ const wizards = [
       }
     ],
     outcome: {
-      recommendation: 'Use @bitcoinuniverse/ordex-sdk with deterministic local mock mode for development, connecting to your selected gateway when ready.',
-      starterKit: 'node-typescript-starter',
-      recipeLinks: ['/build/recipes/publish-ask', '/build/recipes/purchase-ask'],
-      docLinks: ['/learn/concepts', '/learn/security-model']
+      recommendation: 'Start from a starter kit in offline mode, which checks the SDK against the conformance vectors, then point it at your gateway.'
     }
   },
   {
