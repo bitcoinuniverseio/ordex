@@ -21,7 +21,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.25rem;">
       {specsData.map((s) => (
-        <div key={s.id} class="panel">
+        <div key={s.id} id={`spec-${s.id}`} class="panel">
           <div style="font-size: 0.75rem; font-family: var(--font-mono); color: var(--color-brand); margin-bottom: 0.25rem;">
             spec/{s.file}
           </div>

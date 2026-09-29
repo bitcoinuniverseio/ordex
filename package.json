@@ -4,10 +4,11 @@
   "type": "module",
   "scripts": {
     "build": "node scripts/build.mjs",
-    "test": "node --test verifier/*.test.js spec/*.test.js scripts/api-reference.test.js tests/parity/*.test.js tests/accessibility/*.test.js tests/unit/style-invariants.test.js && npx tsx --test tests/unit/*.test.js",
+    "test": "node --test verifier/*.test.js spec/*.test.js scripts/api-reference.test.js tests/parity/*.test.js tests/accessibility/*.test.js tests/unit/style-invariants.test.js tests/integration/*.test.js && npx tsx --test tests/unit/*.test.js",
     "test:unit": "npx tsx --test tests/unit/*.test.js",
     "test:parity": "node --test tests/parity/*.test.js",
-    "test:mcp": "npx tsx --test tests/unit/mcp-server.test.js",
+    "test:integration": "node --test tests/integration/*.test.js",
+    "test:mcp": "npx tsx --test tests/unit/mcp-server.test.js tests/unit/worker-mcp.test.js && node --test tests/parity/mcp-stdio.test.js tests/integration/mcp-worker.test.js",
     "test:security": "npx tsx --test tests/unit/security-sanitizer.test.js",
     "test:accessibility": "node --test tests/accessibility/*.test.js",
     "test:browser": "npx tsx --test --test-concurrency=1 tests/e2e/*.test.js",
