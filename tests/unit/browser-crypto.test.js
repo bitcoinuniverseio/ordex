@@ -34,6 +34,17 @@ test('SHA-256 matches node:crypto on boundary lengths, multibyte text and random
   assert.equal(chunked, nodeCrypto.createHash('sha256').update('abc').digest('hex'));
 });
 
+test('RIPEMD-160 (HASH160 in bitcoin-tx.js) matches node:crypto across block boundaries', () => {
+  for (const t of texts) {
+    assert.equal(browserCrypto.createHash('ripemd160').update(t, 'utf8').digest('hex'), nodeCrypto.createHash('ripemd160').update(t, 'utf8').digest('hex'));
+  }
+  for (let n = 0; n < 300; n += 1) {
+    const bytes = nodeCrypto.randomBytes(n);
+    assert.equal(browserCrypto.createHash('ripemd160').update(new Uint8Array(bytes)).digest('hex'), nodeCrypto.createHash('ripemd160').update(bytes).digest('hex'));
+  }
+  assert.equal(browserCrypto.createHash('ripemd160').update('abc').digest('hex'), '8eb208f7e05d987a9b044a8e98c6b087f15a0bfc');
+});
+
 test('HMAC-SHA256 matches node:crypto, including keys longer than one block', () => {
   for (const key of ['whsec_test_secret_0123456789abcdef', 'k', 'x'.repeat(64), 'y'.repeat(200)]) {
     for (const t of texts) {

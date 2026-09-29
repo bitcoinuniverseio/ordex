@@ -7,6 +7,7 @@ import {
   COUNTERPARTY_UTXO_ASSET_SCHEMA,
   counterpartyRecordDigest,
   verifyAttachmentFollows,
+  verifyCounterpartyLedgerEvents,
   verifyCounterpartyUtxoAsset,
 } from '../dist/index.js';
 
@@ -20,6 +21,12 @@ test('the vector file names at least one accepting and one refusing case', () =>
 
 for (const vector of vectors.cases) {
   test(`vector: ${vector.name}`, () => {
+    if (vector.expectedEvents) {
+      const verdict = verifyCounterpartyLedgerEvents(vector.expectedEvents, vector.observedEvents);
+      assert.equal(verdict.ok, vector.expected.ok, verdict.ok ? '' : verdict.reason);
+      if (!vector.expected.ok) assert.equal(verdict.code, vector.expected.code);
+      return;
+    }
     if (vector.spendTx) {
       const verdict = verifyAttachmentFollows(vector.record, vector.spendTx, vector.expectedOutputIndex);
       assert.equal(verdict.ok, vector.expected.ok, verdict.reason || '');

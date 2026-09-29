@@ -212,7 +212,7 @@ function sha256(...parts) {
 
 /** BIP340 tagged hash: SHA256(SHA256(tag) || SHA256(tag) || data...). */
 export function taggedHash(tag, ...parts) {
-  const tagHash = sha256(Buffer.from(tag, 'utf8'));
+  const tagHash = sha256(new TextEncoder().encode(tag));
   return sha256(tagHash, tagHash, ...parts);
 }
 

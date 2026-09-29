@@ -844,11 +844,21 @@ function readTxOut(hex: string): Prevout {
   return { valueSats: value.toString(), scriptHex: bytesToHex(script) };
 }
 
+// Base64 through atob, which browsers and Node both provide, so no Buffer is needed. Invalid
+// base64 gives null and the caller refuses it as malformed.
+function base64Bytes(text: string): Uint8Array | null {
+  try {
+    return Uint8Array.from(atob(text), (c) => c.charCodeAt(0));
+  } catch {
+    return null;
+  }
+}
+
 /** Parse a PSBT given as base64 or lowercase hex. */
 export function parsePsbt(encoded: unknown): ParsedPsbt {
   let bytes: Uint8Array | null = null;
   if (typeof encoded === 'string' && encoded.startsWith('70736274ff')) bytes = hexToBytes(encoded);
-  else if (typeof encoded === 'string' && /^[A-Za-z0-9+/]+={0,2}$/.test(encoded)) bytes = new Uint8Array(Buffer.from(encoded, 'base64'));
+  else if (typeof encoded === 'string' && /^[A-Za-z0-9+/]+={0,2}$/.test(encoded)) bytes = base64Bytes(encoded);
   const magic = bytes;
   if (!magic || magic.length < 5 || PSBT_MAGIC.some((b, i) => magic[i] !== b)) {
     return { ok: false, code: 'PSBT_MALFORMED', reason: 'The data does not start with the PSBT magic bytes.' };

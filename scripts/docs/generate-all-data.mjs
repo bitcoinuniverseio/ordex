@@ -297,29 +297,44 @@ function specPointer(code) {
 const vectorById = new Map(allVectorsList.map((v) => [v.id, v]));
 const diagnostics = [];
 if (reproducerFile.unavailable?.length) throw new Error(`Refusal branches without a reproducer: ${reproducerFile.unavailable.join(', ')}`);
+// Codes every site of which is recorded unreachable are never returned by any verifier, so
+// they get no rule; they stay listed in the reproducer file with the reason.
+const neverReturned = [];
 for (const [code, entry] of refusalSources) {
+  // Site families: a verifier family, or a helper module (asset-flow, bitcoin-tx) reached
+  // through the families in the site's via list.
   const families = [...new Set(entry.sites.map((s) => s.family))].sort();
+  const reaches = (siteFamily, family) => entry.sites.some((s) => s.family === siteFamily && (s.family === family || (s.via || []).includes(family)));
   const list = reproducerFile.reproducers[code] || [];
   const unreachable = families.filter((f) => reproducerFile.unreachable?.[`${code}|${f}`]).map((f) => ({ family: f, reason: reproducerFile.unreachable[`${code}|${f}`] }));
   for (const f of families) {
-    if (!list.some((r) => r.family === f) && !unreachable.some((u) => u.family === f)) throw new Error(`No reproducer for ${code} in ${f}; run node scripts/docs/discover-reproducers.mjs`);
+    if (!list.some((r) => (r.covers || r.family) === f) && !unreachable.some((u) => u.family === f)) throw new Error(`No reproducer for ${code} in ${f}; run node scripts/docs/discover-reproducers.mjs`);
   }
-  if (!list.length) throw new Error(`${code} has no reproducer in any family`);
+  if (!list.length) {
+    if (unreachable.length === families.length) {
+      neverReturned.push({ code, reasons: unreachable });
+      continue;
+    }
+    throw new Error(`${code} has no reproducer in any family`);
+  }
   const reproducers = list.map((r) => {
     const base = vectorById.get(r.base);
     if (!base) throw new Error(`Reproducer for ${code} names missing vector ${r.base}`);
-    if (base.family !== r.family || base.variant !== r.variant) throw new Error(`Reproducer for ${code} names ${r.family}:${r.variant} but ${base.id} is ${base.family}:${base.variant}`);
-    if (!families.includes(r.family)) throw new Error(`Reproducer for ${code} runs ${r.family}, which never returns it`);
-    const verdict = normalizeVerdict(r.family, invokeVerifier(r.family, applyPatch(base.case, r.patch), r.variant));
+    // A reproducer may turn a case into another variant of the same family by adding that
+    // variant's arguments (for example a signed settlement for an acceptance plan).
+    if (base.family !== r.family) throw new Error(`Reproducer for ${code} runs ${r.family} but ${base.id} is ${base.family}`);
+    if (!reaches(r.covers || r.family, r.family)) throw new Error(`Reproducer for ${code} runs ${r.family}, which never reaches that branch`);
+    const verdict = normalizeVerdict(r.family, invokeVerifier(r.family, applyPatch(base.case, r.patch), r.variant), r.variant);
     if (verdict.state !== 'refused' || verdict.code !== code) throw new Error(`Reproducer for ${code} in ${r.family} returned ${verdict.state} ${verdict.code}`);
     const context = RULE_CONTEXT[`${r.family}:${r.variant}`];
     if (!context) throw new Error(`No rule context for ${r.family}:${r.variant}`);
-    return { family: r.family, variant: r.variant, base: r.base, baseName: base.name, patch: r.patch, derivation: r.derivation, ...(r.note ? { note: r.note } : {}), verifiedReason: verdict.reason, lifecycle: context.lifecycle, inputs: context.inputs, recovery: context.recovery };
+    return { family: r.family, ...(r.covers ? { covers: r.covers } : {}), variant: r.variant, base: r.base, baseName: base.name, patch: r.patch, derivation: r.derivation, ...(r.note ? { note: r.note } : {}), verifiedReason: verdict.reason, lifecycle: context.lifecycle, inputs: context.inputs, recovery: context.recovery };
   });
   const primary = reproducers[0];
-  const introduced = families.map((f) => FAMILY_INTRODUCED_IN[f]).sort()[0];
+  const reachingFamilies = [...new Set(entry.sites.flatMap((s) => (FAMILY_REGISTRY[s.family] ? [s.family] : s.via || [])))];
+  const introduced = reachingFamilies.map((f) => FAMILY_INTRODUCED_IN[f]).sort()[0];
   const spec = specPointer(code);
-  const primaryReasons = entry.sites.filter((s) => s.family === primary.family).map((s) => s.reason).filter(Boolean);
+  const primaryReasons = entry.sites.filter((s) => s.family === (primary.covers || primary.family)).map((s) => s.reason).filter(Boolean);
   diagnostics.push({
     id: `diag-${code.toLowerCase().replace(/_/g, '-')}`,
     exactCodes: [code],

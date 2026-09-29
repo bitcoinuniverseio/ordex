@@ -17,12 +17,14 @@ import { loadAllFamilies, buildVectorManifest } from '../../scripts/docs/vector-
 // v2 plans judged by derived asset movements, OX-P05 to 337 with funded
 // offer acceptances and recoveries proved from signed transaction bytes,
 // OX-P09 to 342 with revocations bound to their network and collection, and
-// OX-P11 to 349 with webhook rotation overlap and hash-as-key refusals.
-test('349/349 official protocol vectors pass deterministically against reference verifiers', () => {
+// OX-P11 to 349 with webhook rotation overlap and hash-as-key refusals, and
+// OX-S09 to 353 with vectors for the rune allocation, signed swap settlement and
+// Counterparty ledger entry points.
+test('353/353 official protocol vectors pass deterministically against reference verifiers', () => {
   const result = runConformanceSuite(loadAllFamilies());
-  assert.equal(result.total, 349, `Expected 349 vectors, ran ${result.total}`);
+  assert.equal(result.total, 353, `Expected 353 vectors, ran ${result.total}`);
   assert.equal(result.failed, 0, `Expected 0 failures, had ${result.failed}`);
-  assert.equal(result.passed, 349, `Expected 349 passed, had ${result.passed}`);
+  assert.equal(result.passed, 353, `Expected 353 passed, had ${result.passed}`);
 });
 
 // OX-S07: the browser runs generated data, the CLI runs source files. Both go through the

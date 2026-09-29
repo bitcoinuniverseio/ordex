@@ -48,7 +48,7 @@ export function handleVerifierJob(job, progress = () => {}) {
       // A conformance comparison is reported separately and only when the caller supplies
       // the vector's expectation; the candidate verdict never depends on it.
       if (job.expected !== undefined) {
-        result.conformance = result.raw ? compareExpected(job.family, job.expected, result.raw) : { passed: false, mismatches: [{ field: 'execution', expected: 'verdict', actual: result.verdict.reason }] };
+        result.conformance = result.raw ? compareExpected(job.family, job.expected, result.raw, job.variant) : { passed: false, mismatches: [{ field: 'execution', expected: 'verdict', actual: result.verdict.reason }] };
       }
       return result;
     }

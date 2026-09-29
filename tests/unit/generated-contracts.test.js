@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { readFile } from 'node:fs/promises';
-import { FAMILIES, FAMILY_REGISTRY, variantOf } from '../../site/src/lib/conformance-registry.mjs';
+import { FAMILIES, FAMILY_REGISTRY, variantOf, resultKey } from '../../site/src/lib/conformance-registry.mjs';
 import { loadVectorFile, buildVectorManifest } from '../../scripts/docs/vector-loader.mjs';
 
 const read = async (name) => JSON.parse(await readFile(new URL(`../../site/src/data/${name}`, import.meta.url), 'utf8'));
@@ -41,7 +41,7 @@ test('every generated case preserves its complete source case and its variant ar
       for (const arg of spec.args) {
         assert.ok(entry.case[arg] !== undefined, `${family}/${entry.variant} ${entry.id} is missing ${arg}`);
       }
-      assert.ok(Object.prototype.hasOwnProperty.call(entry.case.expected, FAMILY_REGISTRY[family].result), `${entry.id} has no ${FAMILY_REGISTRY[family].result}`);
+      assert.ok(Object.prototype.hasOwnProperty.call(entry.case.expected, resultKey(family, entry.variant)), `${entry.id} has no ${resultKey(family, entry.variant)}`);
     });
   }
 });

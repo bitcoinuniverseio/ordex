@@ -11,8 +11,9 @@ import {
   labReportMarkdown,
   assetOutputIndex
 } from '../../site/src/lib/lab-report.mjs';
-import { evaluateCandidate, FAMILIES, FAMILY_REGISTRY, variantOf } from '../../site/src/lib/conformance-engine.mjs';
+import { evaluateCandidate, FAMILIES, variantOf } from '../../site/src/lib/conformance-engine.mjs';
 import { loadAllFamilies } from '../../scripts/docs/vector-loader.mjs';
+import { resultKey } from '../../site/src/lib/conformance-registry.mjs';
 
 // OX-S07: every accepted and refused example the Lab offers, for every family and variant,
 // reaches the same verdict as a candidate that it reaches as a conformance vector.
@@ -25,13 +26,13 @@ test('Lab candidates built from vector arguments reproduce every vector verdict'
       const args = argsFromCase(family, variant, c);
       assert.equal(validateCandidate(family, variant, args).ok, true, `${family}/${c.name}`);
       const res = evaluateCandidate(family, variant, args);
-      const expectAccept = c.expected[FAMILY_REGISTRY[family].result] === true;
+      const expectAccept = c.expected[resultKey(family, variant)] === true;
       assert.equal(res.verdict.state, expectAccept ? 'accepted' : 'refused', `${family}/${c.name}`);
       if (!expectAccept && c.expected.code) assert.equal(res.verdict.code, c.expected.code, `${family}/${c.name}`);
       n++;
     }
   }
-  assert.equal(n, 157);
+  assert.equal(n, 353);
 });
 
 test('candidate validation rejects missing, unknown and non-object input', () => {

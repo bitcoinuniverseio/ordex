@@ -33,7 +33,7 @@ import {
   signTaprootScriptPath,
   testKey,
 } from './vector-signer.mjs';
-import { SWAP_INTENT_SCHEMA, SWAP_ACCEPTANCE_SCHEMA, swapAcceptanceDigest, swapIntentDigest } from '../verifier/swaps.js';
+import { SWAP_INTENT_SCHEMA, SWAP_ACCEPTANCE_SCHEMA, SWAP_SIGNED_TRANSACTION_SCHEMA, swapAcceptanceDigest, swapIntentDigest, swapUnsignedTransaction } from '../verifier/swaps.js';
 import { signWebhookDelivery } from '../verifier/events.js';
 import {
   COLLECTION_MANIFEST_SCHEMA,
@@ -2518,7 +2518,43 @@ const offerTermsCases = [
 
 const offerCases = [...offerTermsCases, ...offerAcceptanceCases, ...offerRecoveryCases];
 
-const runeCases = [...LEGACY_RUNE_CASES, ...runeParityCases, ...runeAllocationCases];
+// OX-S09: verifyRuneAllocation, verifySwapSignedTransaction and
+// verifyCounterpartyLedgerEvents had no vector of their own. One vector each, with the
+// allocation, signatures and ledger rows stated by hand, so every published entry point runs.
+const runePlanCases = [
+  runeCase('allocation-matching-the-plan-is-accepted', 'An edict sends 300 of 840000:1 to output 1 and the pointer the other 700 to output 2, exactly as planned.', [runestoneScript([22, 2, 0, 840000, 1, 300, 1]), RUNE_SPEND_1, RUNE_SPEND_2], held(['840000:1', '1000']), { ok: true }, { expectedAllocation: [{ output: 1, runeId: '840000:1', amount: '300' }, { output: 2, runeId: '840000:1', amount: '700' }] }),
+  runeCase('allocation-differing-from-the-plan-is-refused', 'The same transaction against a plan that expects all 1000 at output 1.', [runestoneScript([22, 2, 0, 840000, 1, 300, 1]), RUNE_SPEND_1, RUNE_SPEND_2], held(['840000:1', '1000']), { ok: false, code: 'RUNE_ALLOCATION_MISMATCH' }, { expectedAllocation: [{ output: 1, runeId: '840000:1', amount: '1000' }] }),
+];
+
+// A settlement both parties signed with their test keys over the exact acceptance plan.
+function settledSwapCase() {
+  const keys = { [p2trKeyPath(testKey('swap-maker')).scriptHex]: testKey('swap-maker'), [p2wpkhScript(testKey('swap-taker'))]: testKey('swap-taker') };
+  const base = swapCases.find((c) => c.acceptance && c.expected.ok === true && c.acceptance.tx.inputs.every((i) => keys[i.scriptPubKeyHex]));
+  const tx = swapUnsignedTransaction(base.acceptance);
+  const prevouts = base.acceptance.tx.inputs.map((i) => ({ valueSats: i.valueSats, scriptHex: i.scriptPubKeyHex }));
+  tx.inputs.forEach((input, i) => {
+    const key = keys[prevouts[i].scriptHex];
+    input.witness = prevouts[i].scriptHex.startsWith('5120') ? [signTaprootKeyPath(tx, i, prevouts, key, 0x00)] : signP2wpkh(tx, i, prevouts, key, 0x01);
+  });
+  return {
+    name: 'a settlement signed by both parties over the accepted plan is accepted',
+    signed: { schema: SWAP_SIGNED_TRANSACTION_SCHEMA, acceptanceDigest: base.acceptance.digest, signedTxHex: bytesToHex(serializeTransaction(tx)) },
+    acceptance: base.acceptance,
+    intent: base.intent,
+    expected: { ok: true },
+  };
+}
+swapCases.push(settledSwapCase());
+
+const LEDGER_TX = 'c'.repeat(64);
+counterpartyCases.push({
+  name: 'ledger events matching the planned move are accepted',
+  expectedEvents: { txHash: LEDGER_TX, events: [{ event: 'UTXO_MOVE', source: `${'a'.repeat(64)}:0`, destination: `${LEDGER_TX}:0`, asset: 'XCP', quantity: '100000000' }] },
+  observedEvents: { checkpoint: { height: 900000, blockHash: `${'0'.repeat(63)}1`, ledgerHash: 'd'.repeat(64) }, events: [{ event: 'UTXO_MOVE', txHash: LEDGER_TX, source: `${'a'.repeat(64)}:0`, destination: `${LEDGER_TX}:0`, asset: 'XCP', quantity: '100000000', status: 'valid' }] },
+  expected: { ok: true },
+});
+
+const runeCases = [...LEGACY_RUNE_CASES, ...runeParityCases, ...runeAllocationCases, ...runePlanCases];
 
 function writeVectors(path, document) {
   writeFileSync(new URL(path, import.meta.url), `${JSON.stringify(document, null, 2)}\n`);

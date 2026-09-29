@@ -1545,6 +1545,7 @@ export interface components {
             createdAt: string;
             /** Format: date-time */
             updatedAt: string;
+            verification: components["schemas"]["VerificationView"];
         };
         OrderPage: {
             orders: components["schemas"]["OrderSummary"][];

@@ -4222,6 +4222,9 @@
           "updatedAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "verification": {
+            "$ref": "#/components/schemas/VerificationView"
           }
         }
       },

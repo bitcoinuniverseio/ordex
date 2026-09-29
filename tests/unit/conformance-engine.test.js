@@ -164,9 +164,9 @@ test('worker jobs run suites, single cases and bounded candidates', () => {
   const data = loadAllFamilies();
   const progress = [];
   const suite = handleVerifierJob({ type: 'suite', familiesData: data, families: FAMILIES }, (p) => progress.push(p));
-  assert.equal(suite.total, 157);
+  assert.equal(suite.total, 353);
   assert.equal(suite.success, true);
-  assert.deepEqual(progress.at(-1), { completed: 157, total: 157 });
+  assert.deepEqual(progress.at(-1), { completed: 353, total: 353 });
   const one = handleVerifierJob({ type: 'case', family: 'events', vectorCase: data.events.cases[0] });
   assert.equal(one.passed, true);
   const cand = handleVerifierJob({ type: 'candidate', family: 'events', variant: 'event', args: { event: data.events.cases[0].event }, expected: data.events.cases[0].expected });

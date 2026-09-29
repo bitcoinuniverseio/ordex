@@ -1588,6 +1588,42 @@
         "ok": false,
         "code": "OUTPOINT_DUPLICATED"
       }
+    },
+    {
+      "name": "ledger events matching the planned move are accepted",
+      "expectedEvents": {
+        "txHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "events": [
+          {
+            "event": "UTXO_MOVE",
+            "source": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:0",
+            "destination": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc:0",
+            "asset": "XCP",
+            "quantity": "100000000"
+          }
+        ]
+      },
+      "observedEvents": {
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000000000000000000000000000000000000000000000001",
+          "ledgerHash": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+        },
+        "events": [
+          {
+            "event": "UTXO_MOVE",
+            "txHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "source": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:0",
+            "destination": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc:0",
+            "asset": "XCP",
+            "quantity": "100000000",
+            "status": "valid"
+          }
+        ]
+      },
+      "expected": {
+        "ok": true
+      }
     }
   ]
 }

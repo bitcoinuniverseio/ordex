@@ -403,8 +403,118 @@
     "requestExample": null,
     "requestExampleIssue": null,
     "successStatus": 200,
-    "responseExample": null,
-    "responseExampleIssue": "Required property $.orders[0].verification has no schema in the contract",
+    "responseExample": {
+      "orders": [
+        {
+          "id": "example",
+          "network": "mainnet",
+          "inspection": {
+            "psbtVersion": 1,
+            "unsignedTxid": "example",
+            "digest": "example",
+            "inputCount": 1,
+            "outputCount": 1,
+            "inputOutpoints": [
+              {
+                "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+                "vout": 0
+              }
+            ],
+            "inputWitnessUtxos": [
+              {
+                "scriptHex": "example",
+                "valueSats": "10000"
+              }
+            ],
+            "outputValuesSats": [
+              "10000"
+            ],
+            "outputScriptsHex": [
+              "example"
+            ],
+            "hasProprietaryFields": true,
+            "hasUnknownFields": true,
+            "signatureStatus": "NONE",
+            "orderClass": "ASK_ANYONECANPAY",
+            "safety": "PUBLIC_RACEABLE",
+            "reasons": [
+              "example"
+            ]
+          },
+          "assets": [
+            {
+              "inscriptionId": "example",
+              "outpoint": {
+                "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+                "vout": 0
+              },
+              "inscriptionNumber": 1
+            }
+          ],
+          "sources": [
+            {
+              "source": "openordex-nostr802",
+              "sourceId": "example",
+              "observedAt": "2026-09-29T00:00:00Z",
+              "eventId": "example",
+              "eventPubkey": "example",
+              "signatureVerified": true,
+              "claimedPriceSats": "10000",
+              "claimedAsset": {
+                "inscriptionId": "example",
+                "outpoint": {
+                  "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+                  "vout": 0
+                },
+                "inscriptionNumber": 1
+              }
+            }
+          ],
+          "state": "PENDING_NODE",
+          "actionability": "REVIEW_ONLY",
+          "validation": {
+            "checkedAt": "2026-09-29T00:00:00Z",
+            "nodeStatus": "UNCONFIGURED",
+            "ordStatus": "NOT_REQUESTED",
+            "nodeTip": {
+              "height": 1,
+              "bestBlockHash": "example"
+            },
+            "reasons": [
+              "example"
+            ]
+          },
+          "sellerScriptHex": "example",
+          "settlement": {
+            "txid": "example",
+            "observedAt": "2026-09-29T00:00:00Z",
+            "confirmations": 1,
+            "confirmedAt": "2026-09-29T00:00:00Z"
+          },
+          "protocolId": "example",
+          "token": "example",
+          "side": "ASK",
+          "quotedPriceSats": "10000",
+          "withdrawal": {
+            "withdrawnAt": "2026-09-29T00:00:00Z",
+            "reason": "example"
+          },
+          "createdAt": "2026-09-29T00:00:00Z",
+          "updatedAt": "2026-09-29T00:00:00Z",
+          "verification": {
+            "checkedAt": "2026-09-29T00:00:00Z",
+            "ageSeconds": 1,
+            "maxAgeSeconds": 1,
+            "stale": true
+          }
+        }
+      ],
+      "total": 1,
+      "limit": 1,
+      "nextCursor": "example",
+      "hasMore": true
+    },
+    "responseExampleIssue": null,
     "responses": {
       "200": {
         "description": "One page of orders.",
@@ -525,8 +635,110 @@
     "requestExample": null,
     "requestExampleIssue": null,
     "successStatus": 200,
-    "responseExample": null,
-    "responseExampleIssue": "Required property $.verification has no schema in the contract",
+    "responseExample": {
+      "id": "example",
+      "network": "mainnet",
+      "inspection": {
+        "psbtVersion": 1,
+        "unsignedTxid": "example",
+        "digest": "example",
+        "inputCount": 1,
+        "outputCount": 1,
+        "inputOutpoints": [
+          {
+            "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+            "vout": 0
+          }
+        ],
+        "inputWitnessUtxos": [
+          {
+            "scriptHex": "example",
+            "valueSats": "10000"
+          }
+        ],
+        "outputValuesSats": [
+          "10000"
+        ],
+        "outputScriptsHex": [
+          "example"
+        ],
+        "hasProprietaryFields": true,
+        "hasUnknownFields": true,
+        "signatureStatus": "NONE",
+        "orderClass": "ASK_ANYONECANPAY",
+        "safety": "PUBLIC_RACEABLE",
+        "reasons": [
+          "example"
+        ]
+      },
+      "assets": [
+        {
+          "inscriptionId": "example",
+          "outpoint": {
+            "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+            "vout": 0
+          },
+          "inscriptionNumber": 1
+        }
+      ],
+      "sources": [
+        {
+          "source": "openordex-nostr802",
+          "sourceId": "example",
+          "observedAt": "2026-09-29T00:00:00Z",
+          "eventId": "example",
+          "eventPubkey": "example",
+          "signatureVerified": true,
+          "claimedPriceSats": "10000",
+          "claimedAsset": {
+            "inscriptionId": "example",
+            "outpoint": {
+              "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+              "vout": 0
+            },
+            "inscriptionNumber": 1
+          }
+        }
+      ],
+      "state": "PENDING_NODE",
+      "actionability": "REVIEW_ONLY",
+      "validation": {
+        "checkedAt": "2026-09-29T00:00:00Z",
+        "nodeStatus": "UNCONFIGURED",
+        "ordStatus": "NOT_REQUESTED",
+        "nodeTip": {
+          "height": 1,
+          "bestBlockHash": "example"
+        },
+        "reasons": [
+          "example"
+        ]
+      },
+      "sellerScriptHex": "example",
+      "settlement": {
+        "txid": "example",
+        "observedAt": "2026-09-29T00:00:00Z",
+        "confirmations": 1,
+        "confirmedAt": "2026-09-29T00:00:00Z"
+      },
+      "protocolId": "example",
+      "token": "example",
+      "side": "ASK",
+      "quotedPriceSats": "10000",
+      "withdrawal": {
+        "withdrawnAt": "2026-09-29T00:00:00Z",
+        "reason": "example"
+      },
+      "createdAt": "2026-09-29T00:00:00Z",
+      "updatedAt": "2026-09-29T00:00:00Z",
+      "verification": {
+        "checkedAt": "2026-09-29T00:00:00Z",
+        "ageSeconds": 1,
+        "maxAgeSeconds": 1,
+        "stale": true
+      }
+    },
+    "responseExampleIssue": null,
     "responses": {
       "200": {
         "description": "The order, without its signed artifact.",
@@ -643,8 +855,110 @@
     },
     "requestExampleIssue": null,
     "successStatus": 201,
-    "responseExample": null,
-    "responseExampleIssue": "Required property $.verification has no schema in the contract",
+    "responseExample": {
+      "id": "example",
+      "network": "mainnet",
+      "inspection": {
+        "psbtVersion": 1,
+        "unsignedTxid": "example",
+        "digest": "example",
+        "inputCount": 1,
+        "outputCount": 1,
+        "inputOutpoints": [
+          {
+            "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+            "vout": 0
+          }
+        ],
+        "inputWitnessUtxos": [
+          {
+            "scriptHex": "example",
+            "valueSats": "10000"
+          }
+        ],
+        "outputValuesSats": [
+          "10000"
+        ],
+        "outputScriptsHex": [
+          "example"
+        ],
+        "hasProprietaryFields": true,
+        "hasUnknownFields": true,
+        "signatureStatus": "NONE",
+        "orderClass": "ASK_ANYONECANPAY",
+        "safety": "PUBLIC_RACEABLE",
+        "reasons": [
+          "example"
+        ]
+      },
+      "assets": [
+        {
+          "inscriptionId": "example",
+          "outpoint": {
+            "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+            "vout": 0
+          },
+          "inscriptionNumber": 1
+        }
+      ],
+      "sources": [
+        {
+          "source": "openordex-nostr802",
+          "sourceId": "example",
+          "observedAt": "2026-09-29T00:00:00Z",
+          "eventId": "example",
+          "eventPubkey": "example",
+          "signatureVerified": true,
+          "claimedPriceSats": "10000",
+          "claimedAsset": {
+            "inscriptionId": "example",
+            "outpoint": {
+              "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+              "vout": 0
+            },
+            "inscriptionNumber": 1
+          }
+        }
+      ],
+      "state": "PENDING_NODE",
+      "actionability": "REVIEW_ONLY",
+      "validation": {
+        "checkedAt": "2026-09-29T00:00:00Z",
+        "nodeStatus": "UNCONFIGURED",
+        "ordStatus": "NOT_REQUESTED",
+        "nodeTip": {
+          "height": 1,
+          "bestBlockHash": "example"
+        },
+        "reasons": [
+          "example"
+        ]
+      },
+      "sellerScriptHex": "example",
+      "settlement": {
+        "txid": "example",
+        "observedAt": "2026-09-29T00:00:00Z",
+        "confirmations": 1,
+        "confirmedAt": "2026-09-29T00:00:00Z"
+      },
+      "protocolId": "example",
+      "token": "example",
+      "side": "ASK",
+      "quotedPriceSats": "10000",
+      "withdrawal": {
+        "withdrawnAt": "2026-09-29T00:00:00Z",
+        "reason": "example"
+      },
+      "createdAt": "2026-09-29T00:00:00Z",
+      "updatedAt": "2026-09-29T00:00:00Z",
+      "verification": {
+        "checkedAt": "2026-09-29T00:00:00Z",
+        "ageSeconds": 1,
+        "maxAgeSeconds": 1,
+        "stale": true
+      }
+    },
+    "responseExampleIssue": null,
     "responses": {
       "201": {
         "description": "The imported order after verification.",
@@ -696,8 +1010,110 @@
     },
     "requestExampleIssue": null,
     "successStatus": 201,
-    "responseExample": null,
-    "responseExampleIssue": "Required property $.verification has no schema in the contract",
+    "responseExample": {
+      "id": "example",
+      "network": "mainnet",
+      "inspection": {
+        "psbtVersion": 1,
+        "unsignedTxid": "example",
+        "digest": "example",
+        "inputCount": 1,
+        "outputCount": 1,
+        "inputOutpoints": [
+          {
+            "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+            "vout": 0
+          }
+        ],
+        "inputWitnessUtxos": [
+          {
+            "scriptHex": "example",
+            "valueSats": "10000"
+          }
+        ],
+        "outputValuesSats": [
+          "10000"
+        ],
+        "outputScriptsHex": [
+          "example"
+        ],
+        "hasProprietaryFields": true,
+        "hasUnknownFields": true,
+        "signatureStatus": "NONE",
+        "orderClass": "ASK_ANYONECANPAY",
+        "safety": "PUBLIC_RACEABLE",
+        "reasons": [
+          "example"
+        ]
+      },
+      "assets": [
+        {
+          "inscriptionId": "example",
+          "outpoint": {
+            "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+            "vout": 0
+          },
+          "inscriptionNumber": 1
+        }
+      ],
+      "sources": [
+        {
+          "source": "openordex-nostr802",
+          "sourceId": "example",
+          "observedAt": "2026-09-29T00:00:00Z",
+          "eventId": "example",
+          "eventPubkey": "example",
+          "signatureVerified": true,
+          "claimedPriceSats": "10000",
+          "claimedAsset": {
+            "inscriptionId": "example",
+            "outpoint": {
+              "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+              "vout": 0
+            },
+            "inscriptionNumber": 1
+          }
+        }
+      ],
+      "state": "PENDING_NODE",
+      "actionability": "REVIEW_ONLY",
+      "validation": {
+        "checkedAt": "2026-09-29T00:00:00Z",
+        "nodeStatus": "UNCONFIGURED",
+        "ordStatus": "NOT_REQUESTED",
+        "nodeTip": {
+          "height": 1,
+          "bestBlockHash": "example"
+        },
+        "reasons": [
+          "example"
+        ]
+      },
+      "sellerScriptHex": "example",
+      "settlement": {
+        "txid": "example",
+        "observedAt": "2026-09-29T00:00:00Z",
+        "confirmations": 1,
+        "confirmedAt": "2026-09-29T00:00:00Z"
+      },
+      "protocolId": "example",
+      "token": "example",
+      "side": "ASK",
+      "quotedPriceSats": "10000",
+      "withdrawal": {
+        "withdrawnAt": "2026-09-29T00:00:00Z",
+        "reason": "example"
+      },
+      "createdAt": "2026-09-29T00:00:00Z",
+      "updatedAt": "2026-09-29T00:00:00Z",
+      "verification": {
+        "checkedAt": "2026-09-29T00:00:00Z",
+        "ageSeconds": 1,
+        "maxAgeSeconds": 1,
+        "stale": true
+      }
+    },
+    "responseExampleIssue": null,
     "responses": {
       "201": {
         "description": "The imported order after verification.",
@@ -869,8 +1285,110 @@
     },
     "requestExampleIssue": null,
     "successStatus": 201,
-    "responseExample": null,
-    "responseExampleIssue": "Required property $.verification has no schema in the contract",
+    "responseExample": {
+      "id": "example",
+      "network": "mainnet",
+      "inspection": {
+        "psbtVersion": 1,
+        "unsignedTxid": "example",
+        "digest": "example",
+        "inputCount": 1,
+        "outputCount": 1,
+        "inputOutpoints": [
+          {
+            "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+            "vout": 0
+          }
+        ],
+        "inputWitnessUtxos": [
+          {
+            "scriptHex": "example",
+            "valueSats": "10000"
+          }
+        ],
+        "outputValuesSats": [
+          "10000"
+        ],
+        "outputScriptsHex": [
+          "example"
+        ],
+        "hasProprietaryFields": true,
+        "hasUnknownFields": true,
+        "signatureStatus": "NONE",
+        "orderClass": "ASK_ANYONECANPAY",
+        "safety": "PUBLIC_RACEABLE",
+        "reasons": [
+          "example"
+        ]
+      },
+      "assets": [
+        {
+          "inscriptionId": "example",
+          "outpoint": {
+            "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+            "vout": 0
+          },
+          "inscriptionNumber": 1
+        }
+      ],
+      "sources": [
+        {
+          "source": "openordex-nostr802",
+          "sourceId": "example",
+          "observedAt": "2026-09-29T00:00:00Z",
+          "eventId": "example",
+          "eventPubkey": "example",
+          "signatureVerified": true,
+          "claimedPriceSats": "10000",
+          "claimedAsset": {
+            "inscriptionId": "example",
+            "outpoint": {
+              "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+              "vout": 0
+            },
+            "inscriptionNumber": 1
+          }
+        }
+      ],
+      "state": "PENDING_NODE",
+      "actionability": "REVIEW_ONLY",
+      "validation": {
+        "checkedAt": "2026-09-29T00:00:00Z",
+        "nodeStatus": "UNCONFIGURED",
+        "ordStatus": "NOT_REQUESTED",
+        "nodeTip": {
+          "height": 1,
+          "bestBlockHash": "example"
+        },
+        "reasons": [
+          "example"
+        ]
+      },
+      "sellerScriptHex": "example",
+      "settlement": {
+        "txid": "example",
+        "observedAt": "2026-09-29T00:00:00Z",
+        "confirmations": 1,
+        "confirmedAt": "2026-09-29T00:00:00Z"
+      },
+      "protocolId": "example",
+      "token": "example",
+      "side": "ASK",
+      "quotedPriceSats": "10000",
+      "withdrawal": {
+        "withdrawnAt": "2026-09-29T00:00:00Z",
+        "reason": "example"
+      },
+      "createdAt": "2026-09-29T00:00:00Z",
+      "updatedAt": "2026-09-29T00:00:00Z",
+      "verification": {
+        "checkedAt": "2026-09-29T00:00:00Z",
+        "ageSeconds": 1,
+        "maxAgeSeconds": 1,
+        "stale": true
+      }
+    },
+    "responseExampleIssue": null,
     "responses": {
       "201": {
         "description": "The published order after verification.",
@@ -989,8 +1507,110 @@
     },
     "requestExampleIssue": null,
     "successStatus": 201,
-    "responseExample": null,
-    "responseExampleIssue": "Required property $.verification has no schema in the contract",
+    "responseExample": {
+      "id": "example",
+      "network": "mainnet",
+      "inspection": {
+        "psbtVersion": 1,
+        "unsignedTxid": "example",
+        "digest": "example",
+        "inputCount": 1,
+        "outputCount": 1,
+        "inputOutpoints": [
+          {
+            "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+            "vout": 0
+          }
+        ],
+        "inputWitnessUtxos": [
+          {
+            "scriptHex": "example",
+            "valueSats": "10000"
+          }
+        ],
+        "outputValuesSats": [
+          "10000"
+        ],
+        "outputScriptsHex": [
+          "example"
+        ],
+        "hasProprietaryFields": true,
+        "hasUnknownFields": true,
+        "signatureStatus": "NONE",
+        "orderClass": "ASK_ANYONECANPAY",
+        "safety": "PUBLIC_RACEABLE",
+        "reasons": [
+          "example"
+        ]
+      },
+      "assets": [
+        {
+          "inscriptionId": "example",
+          "outpoint": {
+            "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+            "vout": 0
+          },
+          "inscriptionNumber": 1
+        }
+      ],
+      "sources": [
+        {
+          "source": "openordex-nostr802",
+          "sourceId": "example",
+          "observedAt": "2026-09-29T00:00:00Z",
+          "eventId": "example",
+          "eventPubkey": "example",
+          "signatureVerified": true,
+          "claimedPriceSats": "10000",
+          "claimedAsset": {
+            "inscriptionId": "example",
+            "outpoint": {
+              "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+              "vout": 0
+            },
+            "inscriptionNumber": 1
+          }
+        }
+      ],
+      "state": "PENDING_NODE",
+      "actionability": "REVIEW_ONLY",
+      "validation": {
+        "checkedAt": "2026-09-29T00:00:00Z",
+        "nodeStatus": "UNCONFIGURED",
+        "ordStatus": "NOT_REQUESTED",
+        "nodeTip": {
+          "height": 1,
+          "bestBlockHash": "example"
+        },
+        "reasons": [
+          "example"
+        ]
+      },
+      "sellerScriptHex": "example",
+      "settlement": {
+        "txid": "example",
+        "observedAt": "2026-09-29T00:00:00Z",
+        "confirmations": 1,
+        "confirmedAt": "2026-09-29T00:00:00Z"
+      },
+      "protocolId": "example",
+      "token": "example",
+      "side": "ASK",
+      "quotedPriceSats": "10000",
+      "withdrawal": {
+        "withdrawnAt": "2026-09-29T00:00:00Z",
+        "reason": "example"
+      },
+      "createdAt": "2026-09-29T00:00:00Z",
+      "updatedAt": "2026-09-29T00:00:00Z",
+      "verification": {
+        "checkedAt": "2026-09-29T00:00:00Z",
+        "ageSeconds": 1,
+        "maxAgeSeconds": 1,
+        "stale": true
+      }
+    },
+    "responseExampleIssue": null,
     "responses": {
       "201": {
         "description": "The withdrawn order.",
@@ -1053,8 +1673,110 @@
     },
     "requestExampleIssue": null,
     "successStatus": 201,
-    "responseExample": null,
-    "responseExampleIssue": "Required property $.verification has no schema in the contract",
+    "responseExample": {
+      "id": "example",
+      "network": "mainnet",
+      "inspection": {
+        "psbtVersion": 1,
+        "unsignedTxid": "example",
+        "digest": "example",
+        "inputCount": 1,
+        "outputCount": 1,
+        "inputOutpoints": [
+          {
+            "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+            "vout": 0
+          }
+        ],
+        "inputWitnessUtxos": [
+          {
+            "scriptHex": "example",
+            "valueSats": "10000"
+          }
+        ],
+        "outputValuesSats": [
+          "10000"
+        ],
+        "outputScriptsHex": [
+          "example"
+        ],
+        "hasProprietaryFields": true,
+        "hasUnknownFields": true,
+        "signatureStatus": "NONE",
+        "orderClass": "ASK_ANYONECANPAY",
+        "safety": "PUBLIC_RACEABLE",
+        "reasons": [
+          "example"
+        ]
+      },
+      "assets": [
+        {
+          "inscriptionId": "example",
+          "outpoint": {
+            "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+            "vout": 0
+          },
+          "inscriptionNumber": 1
+        }
+      ],
+      "sources": [
+        {
+          "source": "openordex-nostr802",
+          "sourceId": "example",
+          "observedAt": "2026-09-29T00:00:00Z",
+          "eventId": "example",
+          "eventPubkey": "example",
+          "signatureVerified": true,
+          "claimedPriceSats": "10000",
+          "claimedAsset": {
+            "inscriptionId": "example",
+            "outpoint": {
+              "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+              "vout": 0
+            },
+            "inscriptionNumber": 1
+          }
+        }
+      ],
+      "state": "PENDING_NODE",
+      "actionability": "REVIEW_ONLY",
+      "validation": {
+        "checkedAt": "2026-09-29T00:00:00Z",
+        "nodeStatus": "UNCONFIGURED",
+        "ordStatus": "NOT_REQUESTED",
+        "nodeTip": {
+          "height": 1,
+          "bestBlockHash": "example"
+        },
+        "reasons": [
+          "example"
+        ]
+      },
+      "sellerScriptHex": "example",
+      "settlement": {
+        "txid": "example",
+        "observedAt": "2026-09-29T00:00:00Z",
+        "confirmations": 1,
+        "confirmedAt": "2026-09-29T00:00:00Z"
+      },
+      "protocolId": "example",
+      "token": "example",
+      "side": "ASK",
+      "quotedPriceSats": "10000",
+      "withdrawal": {
+        "withdrawnAt": "2026-09-29T00:00:00Z",
+        "reason": "example"
+      },
+      "createdAt": "2026-09-29T00:00:00Z",
+      "updatedAt": "2026-09-29T00:00:00Z",
+      "verification": {
+        "checkedAt": "2026-09-29T00:00:00Z",
+        "ageSeconds": 1,
+        "maxAgeSeconds": 1,
+        "stale": true
+      }
+    },
+    "responseExampleIssue": null,
     "responses": {
       "201": {
         "description": "The withdrawn order.",
@@ -1165,8 +1887,110 @@
     "requestExample": null,
     "requestExampleIssue": null,
     "successStatus": 201,
-    "responseExample": null,
-    "responseExampleIssue": "Required property $.verification has no schema in the contract",
+    "responseExample": {
+      "id": "example",
+      "network": "mainnet",
+      "inspection": {
+        "psbtVersion": 1,
+        "unsignedTxid": "example",
+        "digest": "example",
+        "inputCount": 1,
+        "outputCount": 1,
+        "inputOutpoints": [
+          {
+            "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+            "vout": 0
+          }
+        ],
+        "inputWitnessUtxos": [
+          {
+            "scriptHex": "example",
+            "valueSats": "10000"
+          }
+        ],
+        "outputValuesSats": [
+          "10000"
+        ],
+        "outputScriptsHex": [
+          "example"
+        ],
+        "hasProprietaryFields": true,
+        "hasUnknownFields": true,
+        "signatureStatus": "NONE",
+        "orderClass": "ASK_ANYONECANPAY",
+        "safety": "PUBLIC_RACEABLE",
+        "reasons": [
+          "example"
+        ]
+      },
+      "assets": [
+        {
+          "inscriptionId": "example",
+          "outpoint": {
+            "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+            "vout": 0
+          },
+          "inscriptionNumber": 1
+        }
+      ],
+      "sources": [
+        {
+          "source": "openordex-nostr802",
+          "sourceId": "example",
+          "observedAt": "2026-09-29T00:00:00Z",
+          "eventId": "example",
+          "eventPubkey": "example",
+          "signatureVerified": true,
+          "claimedPriceSats": "10000",
+          "claimedAsset": {
+            "inscriptionId": "example",
+            "outpoint": {
+              "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+              "vout": 0
+            },
+            "inscriptionNumber": 1
+          }
+        }
+      ],
+      "state": "PENDING_NODE",
+      "actionability": "REVIEW_ONLY",
+      "validation": {
+        "checkedAt": "2026-09-29T00:00:00Z",
+        "nodeStatus": "UNCONFIGURED",
+        "ordStatus": "NOT_REQUESTED",
+        "nodeTip": {
+          "height": 1,
+          "bestBlockHash": "example"
+        },
+        "reasons": [
+          "example"
+        ]
+      },
+      "sellerScriptHex": "example",
+      "settlement": {
+        "txid": "example",
+        "observedAt": "2026-09-29T00:00:00Z",
+        "confirmations": 1,
+        "confirmedAt": "2026-09-29T00:00:00Z"
+      },
+      "protocolId": "example",
+      "token": "example",
+      "side": "ASK",
+      "quotedPriceSats": "10000",
+      "withdrawal": {
+        "withdrawnAt": "2026-09-29T00:00:00Z",
+        "reason": "example"
+      },
+      "createdAt": "2026-09-29T00:00:00Z",
+      "updatedAt": "2026-09-29T00:00:00Z",
+      "verification": {
+        "checkedAt": "2026-09-29T00:00:00Z",
+        "ageSeconds": 1,
+        "maxAgeSeconds": 1,
+        "stale": true
+      }
+    },
+    "responseExampleIssue": null,
     "responses": {
       "201": {
         "description": "The order after a fresh verification.",
@@ -1445,8 +2269,113 @@
     },
     "requestExampleIssue": null,
     "successStatus": 201,
-    "responseExample": null,
-    "responseExampleIssue": "Required property $.order.verification has no schema in the contract",
+    "responseExample": {
+      "replacedOrderId": "example",
+      "order": {
+        "id": "example",
+        "network": "mainnet",
+        "inspection": {
+          "psbtVersion": 1,
+          "unsignedTxid": "example",
+          "digest": "example",
+          "inputCount": 1,
+          "outputCount": 1,
+          "inputOutpoints": [
+            {
+              "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+              "vout": 0
+            }
+          ],
+          "inputWitnessUtxos": [
+            {
+              "scriptHex": "example",
+              "valueSats": "10000"
+            }
+          ],
+          "outputValuesSats": [
+            "10000"
+          ],
+          "outputScriptsHex": [
+            "example"
+          ],
+          "hasProprietaryFields": true,
+          "hasUnknownFields": true,
+          "signatureStatus": "NONE",
+          "orderClass": "ASK_ANYONECANPAY",
+          "safety": "PUBLIC_RACEABLE",
+          "reasons": [
+            "example"
+          ]
+        },
+        "assets": [
+          {
+            "inscriptionId": "example",
+            "outpoint": {
+              "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+              "vout": 0
+            },
+            "inscriptionNumber": 1
+          }
+        ],
+        "sources": [
+          {
+            "source": "openordex-nostr802",
+            "sourceId": "example",
+            "observedAt": "2026-09-29T00:00:00Z",
+            "eventId": "example",
+            "eventPubkey": "example",
+            "signatureVerified": true,
+            "claimedPriceSats": "10000",
+            "claimedAsset": {
+              "inscriptionId": "example",
+              "outpoint": {
+                "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+                "vout": 0
+              },
+              "inscriptionNumber": 1
+            }
+          }
+        ],
+        "state": "PENDING_NODE",
+        "actionability": "REVIEW_ONLY",
+        "validation": {
+          "checkedAt": "2026-09-29T00:00:00Z",
+          "nodeStatus": "UNCONFIGURED",
+          "ordStatus": "NOT_REQUESTED",
+          "nodeTip": {
+            "height": 1,
+            "bestBlockHash": "example"
+          },
+          "reasons": [
+            "example"
+          ]
+        },
+        "sellerScriptHex": "example",
+        "settlement": {
+          "txid": "example",
+          "observedAt": "2026-09-29T00:00:00Z",
+          "confirmations": 1,
+          "confirmedAt": "2026-09-29T00:00:00Z"
+        },
+        "protocolId": "example",
+        "token": "example",
+        "side": "ASK",
+        "quotedPriceSats": "10000",
+        "withdrawal": {
+          "withdrawnAt": "2026-09-29T00:00:00Z",
+          "reason": "example"
+        },
+        "createdAt": "2026-09-29T00:00:00Z",
+        "updatedAt": "2026-09-29T00:00:00Z",
+        "verification": {
+          "checkedAt": "2026-09-29T00:00:00Z",
+          "ageSeconds": 1,
+          "maxAgeSeconds": 1,
+          "stale": true
+        }
+      }
+    },
+    "responseExampleIssue": null,
     "responses": {
       "201": {
         "description": "The retired order id and the live replacement.",
@@ -2241,7 +3170,7 @@
     "method": "POST",
     "path": "/api/ordex/offers/{id}/acceptance-plan",
     "summary": "State the exact acceptance arrangement for one live offer",
-    "description": "Given the seller outpoint, reads every value from the node and the ord index, lays out padding, buyer asset, every preserve in sat order, the seller payment at the seller input index, and change, and refuses when the Feline is elsewhere, the root no longer holds, or expiry has passed.",
+    "description": "Given the seller outpoint, reads every value from the node and the ord index and lays out the seller inputs, the funded output last, the asset outputs that absorb exactly the seller sats (the Feline to the buyer, every other seller asset preserved in sat order), the seller payment, and buyer change. Refuses when the Feline is elsewhere, the root or trait set does not prove it, or expiry has been reached. No buyer input is ever planned.",
     "tag": "offers",
     "isWrite": true,
     "authorityLevel": "Deterministic example",
@@ -2264,7 +3193,8 @@
         "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
         "vout": 0
       },
-      "sellerPaymentScriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d"
+      "sellerPaymentScriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
+      "sellerReturnScriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d"
     },
     "requestExampleIssue": null,
     "successStatus": 201,
@@ -2279,14 +3209,14 @@
           "txid": "example",
           "vout": 0,
           "valueSats": "10000",
-          "role": "PADDING"
+          "role": "SELLER_FELINE"
         }
       ],
       "outputs": [
         {
           "scriptHex": "example",
           "valueSats": "10000",
-          "role": "PADDING_MERGE"
+          "role": "BUYER_ASSET"
         }
       ],
       "estimatedFeeSats": "10000",
@@ -2335,7 +3265,7 @@
     "method": "POST",
     "path": "/api/ordex/offers/{id}/preflight",
     "summary": "Verify a built acceptance and ask the node",
-    "description": "Parses the complete acceptance, checks every rule in spec/offers.md including both policy signatures against the committed terms tree, then asks the node whether it would accept the bytes. The answer carries the exact bytes checked.",
+    "description": "Parses the complete acceptance, checks every rule in spec/offers.md including both policy signatures under the exact acceptance leaf and control block and a closing seller signature on every seller input, then asks the node whether it would accept the bytes. The answer carries the exact bytes checked.",
     "tag": "offers",
     "isWrite": true,
     "authorityLevel": "Protocol verification",
@@ -2407,95 +3337,33 @@
     "isWrite": true,
     "authorityLevel": "Deterministic example",
     "parameters": [],
-    "requestBodySchema": null,
-    "requestExample": null,
+    "requestBodySchema": {
+      "$ref": "#/components/schemas/SafeOpsPlanRequest"
+    },
+    "requestExample": {
+      "operationKind": "BTC_BATCH_SEND",
+      "network": "mainnet",
+      "recipients": [
+        {
+          "address": "example",
+          "valueSats": "10000",
+          "assetType": "example",
+          "assetId": "example"
+        }
+      ],
+      "inputs": [
+        {
+          "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+          "vout": 0
+        }
+      ],
+      "feeRateSatsPerVb": "10000",
+      "expiryBlocks": 1
+    },
     "requestExampleIssue": null,
     "successStatus": 201,
-    "responseExample": {
-      "plan": {
-        "schema": "ordex.safeops-plan/v1",
-        "protocolVersion": "example",
-        "network": "mainnet",
-        "operationKind": "BTC_BATCH_SEND",
-        "createdAtHeight": 1,
-        "expiryHeight": 1,
-        "checkpoint": {
-          "height": 0,
-          "blockHash": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
-        },
-        "inputs": [
-          {
-            "outpoint": {
-              "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
-              "vout": 0
-            },
-            "valueSats": "10000",
-            "inventory": {
-              "examined": true,
-              "confirmed": true,
-              "inscriptions": [
-                {}
-              ],
-              "runeAllocations": [
-                {}
-              ],
-              "counterpartyAssets": [
-                {}
-              ],
-              "rareSatRanges": [
-                {}
-              ],
-              "unknownClaims": [
-                "example"
-              ]
-            }
-          }
-        ],
-        "outputs": [
-          {
-            "scriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
-            "valueSats": "10000",
-            "role": "recipient",
-            "explanation": "example"
-          }
-        ],
-        "assetTransitions": [
-          {
-            "assetType": "ORDINAL",
-            "assetId": "example",
-            "fromInput": 0,
-            "toOutput": 0
-          }
-        ],
-        "fee": {
-          "feeSats": "10000",
-          "maxFeeSats": "10000",
-          "feeRateSatsPerVb": "10000"
-        },
-        "signing": {
-          "requiredIndexes": [
-            0
-          ],
-          "sighashType": "example"
-        },
-        "findings": [
-          {}
-        ],
-        "digest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
-      },
-      "verification": {
-        "checkedAt": "2026-09-29T00:00:00Z",
-        "ageSeconds": 1,
-        "maxAgeSeconds": 1,
-        "stale": true
-      },
-      "partition": {
-        "transactions": [
-          {}
-        ]
-      }
-    },
-    "responseExampleIssue": null,
+    "responseExample": null,
+    "responseExampleIssue": "No sample for pattern ^[0-9a-f]{64}i(0|[1-9][0-9]*)$ at $.plan.inputs[0].inventory.inscriptions[0].inscriptionId",
     "responses": {
       "201": {
         "content": {
@@ -2539,91 +3407,8 @@
     "requestExample": null,
     "requestExampleIssue": null,
     "successStatus": 200,
-    "responseExample": {
-      "plan": {
-        "schema": "ordex.safeops-plan/v1",
-        "protocolVersion": "example",
-        "network": "mainnet",
-        "operationKind": "BTC_BATCH_SEND",
-        "createdAtHeight": 1,
-        "expiryHeight": 1,
-        "checkpoint": {
-          "height": 0,
-          "blockHash": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
-        },
-        "inputs": [
-          {
-            "outpoint": {
-              "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
-              "vout": 0
-            },
-            "valueSats": "10000",
-            "inventory": {
-              "examined": true,
-              "confirmed": true,
-              "inscriptions": [
-                {}
-              ],
-              "runeAllocations": [
-                {}
-              ],
-              "counterpartyAssets": [
-                {}
-              ],
-              "rareSatRanges": [
-                {}
-              ],
-              "unknownClaims": [
-                "example"
-              ]
-            }
-          }
-        ],
-        "outputs": [
-          {
-            "scriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
-            "valueSats": "10000",
-            "role": "recipient",
-            "explanation": "example"
-          }
-        ],
-        "assetTransitions": [
-          {
-            "assetType": "ORDINAL",
-            "assetId": "example",
-            "fromInput": 0,
-            "toOutput": 0
-          }
-        ],
-        "fee": {
-          "feeSats": "10000",
-          "maxFeeSats": "10000",
-          "feeRateSatsPerVb": "10000"
-        },
-        "signing": {
-          "requiredIndexes": [
-            0
-          ],
-          "sighashType": "example"
-        },
-        "findings": [
-          {}
-        ],
-        "digest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
-      },
-      "verification": {
-        "checkedAt": "2026-09-29T00:00:00Z",
-        "ageSeconds": 1,
-        "maxAgeSeconds": 1,
-        "stale": true
-      },
-      "partition": {
-        "transactions": [
-          {}
-        ]
-      }
-    },
-    "responseExampleIssue": null,
+    "responseExample": null,
+    "responseExampleIssue": "No sample for pattern ^[0-9a-f]{64}i(0|[1-9][0-9]*)$ at $.plan.inputs[0].inventory.inscriptions[0].inscriptionId",
     "responses": {
       "200": {
         "content": {
@@ -2663,8 +3448,17 @@
         }
       }
     ],
-    "requestBodySchema": null,
-    "requestExample": null,
+    "requestBodySchema": {
+      "$ref": "#/components/schemas/ShieldRequest"
+    },
+    "requestExample": {
+      "planDigest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+      "signedResult": {
+        "schema": "ordex.safeops-signed-result/v2",
+        "planDigest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+        "signedTxHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d"
+      }
+    },
     "requestExampleIssue": null,
     "successStatus": 201,
     "responseExample": {
@@ -2714,8 +3508,14 @@
     "isWrite": true,
     "authorityLevel": "Deterministic example",
     "parameters": [],
-    "requestBodySchema": null,
-    "requestExample": null,
+    "requestBodySchema": {
+      "$ref": "#/components/schemas/BroadcastRequest"
+    },
+    "requestExample": {
+      "signedTx": "example",
+      "artifactDigest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+      "context": "safeops"
+    },
     "requestExampleIssue": null,
     "successStatus": 201,
     "responseExample": {
@@ -2839,89 +3639,17 @@
     "isWrite": true,
     "authorityLevel": "Deterministic example",
     "parameters": [],
-    "requestBodySchema": null,
-    "requestExample": null,
+    "requestBodySchema": {
+      "$ref": "#/components/schemas/SafeOpsRbfRequest"
+    },
+    "requestExample": {
+      "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+      "newFeeRateSatsPerVb": "10000"
+    },
     "requestExampleIssue": null,
     "successStatus": 201,
-    "responseExample": {
-      "plan": {
-        "schema": "ordex.safeops-plan/v1",
-        "protocolVersion": "example",
-        "network": "mainnet",
-        "operationKind": "BTC_BATCH_SEND",
-        "createdAtHeight": 1,
-        "expiryHeight": 1,
-        "checkpoint": {
-          "height": 0,
-          "blockHash": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
-        },
-        "inputs": [
-          {
-            "outpoint": {
-              "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
-              "vout": 0
-            },
-            "valueSats": "10000",
-            "inventory": {
-              "examined": true,
-              "confirmed": true,
-              "inscriptions": [
-                {}
-              ],
-              "runeAllocations": [
-                {}
-              ],
-              "counterpartyAssets": [
-                {}
-              ],
-              "rareSatRanges": [
-                {}
-              ],
-              "unknownClaims": [
-                "example"
-              ]
-            }
-          }
-        ],
-        "outputs": [
-          {
-            "scriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
-            "valueSats": "10000",
-            "role": "recipient",
-            "explanation": "example"
-          }
-        ],
-        "assetTransitions": [
-          {
-            "assetType": "ORDINAL",
-            "assetId": "example",
-            "fromInput": 0,
-            "toOutput": 0
-          }
-        ],
-        "fee": {
-          "feeSats": "10000",
-          "maxFeeSats": "10000",
-          "feeRateSatsPerVb": "10000"
-        },
-        "signing": {
-          "requiredIndexes": [
-            0
-          ],
-          "sighashType": "example"
-        },
-        "findings": [
-          {}
-        ],
-        "digest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
-      },
-      "oldFeeSats": "10000",
-      "newFeeSats": "10000",
-      "incrementalFeeSats": "10000",
-      "allowed": true,
-      "refusalCode": "example"
-    },
-    "responseExampleIssue": null,
+    "responseExample": null,
+    "responseExampleIssue": "No sample for pattern ^[0-9a-f]{64}i(0|[1-9][0-9]*)$ at $.plan.inputs[0].inventory.inscriptions[0].inscriptionId",
     "responses": {
       "201": {
         "content": {
@@ -2949,87 +3677,17 @@
     "isWrite": true,
     "authorityLevel": "Deterministic example",
     "parameters": [],
-    "requestBodySchema": null,
-    "requestExample": null,
+    "requestBodySchema": {
+      "$ref": "#/components/schemas/SafeOpsCpfpRequest"
+    },
+    "requestExample": {
+      "parentTxid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+      "targetFeeRateSatsPerVb": "10000"
+    },
     "requestExampleIssue": null,
     "successStatus": 201,
-    "responseExample": {
-      "plan": {
-        "schema": "ordex.safeops-plan/v1",
-        "protocolVersion": "example",
-        "network": "mainnet",
-        "operationKind": "BTC_BATCH_SEND",
-        "createdAtHeight": 1,
-        "expiryHeight": 1,
-        "checkpoint": {
-          "height": 0,
-          "blockHash": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
-        },
-        "inputs": [
-          {
-            "outpoint": {
-              "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
-              "vout": 0
-            },
-            "valueSats": "10000",
-            "inventory": {
-              "examined": true,
-              "confirmed": true,
-              "inscriptions": [
-                {}
-              ],
-              "runeAllocations": [
-                {}
-              ],
-              "counterpartyAssets": [
-                {}
-              ],
-              "rareSatRanges": [
-                {}
-              ],
-              "unknownClaims": [
-                "example"
-              ]
-            }
-          }
-        ],
-        "outputs": [
-          {
-            "scriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
-            "valueSats": "10000",
-            "role": "recipient",
-            "explanation": "example"
-          }
-        ],
-        "assetTransitions": [
-          {
-            "assetType": "ORDINAL",
-            "assetId": "example",
-            "fromInput": 0,
-            "toOutput": 0
-          }
-        ],
-        "fee": {
-          "feeSats": "10000",
-          "maxFeeSats": "10000",
-          "feeRateSatsPerVb": "10000"
-        },
-        "signing": {
-          "requiredIndexes": [
-            0
-          ],
-          "sighashType": "example"
-        },
-        "findings": [
-          {}
-        ],
-        "digest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
-      },
-      "packageFeeRateSatsPerVb": "10000",
-      "allowed": true,
-      "refusalCode": "example"
-    },
-    "responseExampleIssue": null,
+    "responseExample": null,
+    "responseExampleIssue": "No sample for pattern ^[0-9a-f]{64}i(0|[1-9][0-9]*)$ at $.plan.inputs[0].inventory.inscriptions[0].inscriptionId",
     "responses": {
       "201": {
         "content": {
@@ -3057,8 +3715,57 @@
     "isWrite": true,
     "authorityLevel": "Deterministic example",
     "parameters": [],
-    "requestBodySchema": null,
-    "requestExample": null,
+    "requestBodySchema": {
+      "$ref": "#/components/schemas/SwapIntentPublishRequest"
+    },
+    "requestExample": {
+      "intent": {
+        "schema": "ordex.swap-intent/v1",
+        "protocolVersion": "example",
+        "network": "mainnet",
+        "visibility": "PUBLIC",
+        "makerReceiveScriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
+        "gives": [
+          {
+            "assetType": "example",
+            "outpoint": {
+              "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+              "vout": 0
+            },
+            "quantitySats": "10000",
+            "assetId": "example"
+          }
+        ],
+        "requires": [
+          {
+            "assetType": "example",
+            "assetId": "example",
+            "inscriptionId": "example",
+            "minQuantitySats": "10000"
+          }
+        ],
+        "maxMakerFeeSats": "10000",
+        "expiryHeight": 1,
+        "nonce": "example",
+        "createdAtHeight": 1,
+        "checkpoint": {
+          "height": 0,
+          "blockHash": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
+        },
+        "takerBinding": {
+          "address": "example"
+        },
+        "adapterVersions": [
+          {}
+        ],
+        "makerIdentityProof": {
+          "kind": "bip322",
+          "address": "example",
+          "signature": "example"
+        },
+        "digest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
+      }
+    },
     "requestExampleIssue": null,
     "successStatus": 201,
     "responseExample": {
@@ -3146,7 +3853,54 @@
     "tag": "swaps",
     "isWrite": false,
     "authorityLevel": "Deterministic example",
-    "parameters": [],
+    "parameters": [
+      {
+        "name": "network",
+        "in": "query",
+        "required": false,
+        "description": "Only this network.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "mainnet",
+            "testnet",
+            "signet",
+            "regtest"
+          ]
+        }
+      },
+      {
+        "name": "cursor",
+        "in": "query",
+        "required": false,
+        "description": "The opaque cursor a previous page returned. A malformed cursor is a 400, never a silent first page.",
+        "schema": {
+          "type": "string",
+          "maxLength": 256
+        }
+      },
+      {
+        "name": "limit",
+        "in": "query",
+        "required": false,
+        "description": "Page size.",
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 50
+        }
+      },
+      {
+        "name": "assetType",
+        "in": "query",
+        "required": false,
+        "description": "Only intents that give or require this asset type.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    ],
     "requestBodySchema": null,
     "requestExample": null,
     "requestExampleIssue": null,
@@ -3356,8 +4110,13 @@
         }
       }
     ],
-    "requestBodySchema": null,
-    "requestExample": null,
+    "requestBodySchema": {
+      "$ref": "#/components/schemas/SwapIntentWithdrawRequest"
+    },
+    "requestExample": {
+      "makerAddress": "example",
+      "signature": "example"
+    },
     "requestExampleIssue": null,
     "successStatus": 201,
     "responseExample": {
@@ -3458,114 +4217,23 @@
         }
       }
     ],
-    "requestBodySchema": null,
-    "requestExample": null,
+    "requestBodySchema": {
+      "$ref": "#/components/schemas/SwapAcceptancePlanRequest"
+    },
+    "requestExample": {
+      "takerInputs": [
+        {
+          "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+          "vout": 0
+        }
+      ],
+      "takerReceiveScriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
+      "maxTakerFeeSats": "10000"
+    },
     "requestExampleIssue": null,
     "successStatus": 201,
-    "responseExample": {
-      "sessionId": "example",
-      "intent": {
-        "schema": "ordex.swap-intent/v1",
-        "protocolVersion": "example",
-        "network": "mainnet",
-        "visibility": "PUBLIC",
-        "makerReceiveScriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
-        "gives": [
-          {
-            "assetType": "example",
-            "outpoint": {
-              "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
-              "vout": 0
-            },
-            "quantitySats": "10000",
-            "assetId": "example"
-          }
-        ],
-        "requires": [
-          {
-            "assetType": "example",
-            "assetId": "example",
-            "inscriptionId": "example",
-            "minQuantitySats": "10000"
-          }
-        ],
-        "maxMakerFeeSats": "10000",
-        "expiryHeight": 1,
-        "nonce": "example",
-        "createdAtHeight": 1,
-        "checkpoint": {
-          "height": 0,
-          "blockHash": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
-        },
-        "takerBinding": {
-          "address": "example"
-        },
-        "adapterVersions": [
-          {}
-        ],
-        "makerIdentityProof": {
-          "kind": "bip322",
-          "address": "example",
-          "signature": "example"
-        },
-        "digest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
-      },
-      "acceptancePlan": {
-        "schema": "ordex.swap-acceptance-plan/v1",
-        "intentDigest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
-        "network": "mainnet",
-        "tx": {
-          "inputs": [
-            {
-              "outpoint": {
-                "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
-                "vout": 0
-              },
-              "party": "maker",
-              "valueSats": "10000",
-              "assets": [
-                {
-                  "assetType": "BTC",
-                  "assetId": "example",
-                  "inscriptionId": "example",
-                  "quantitySats": "10000"
-                }
-              ]
-            }
-          ],
-          "outputs": [
-            {
-              "scriptHex": "example",
-              "valueSats": "10000",
-              "role": "makerConsideration"
-            }
-          ]
-        },
-        "assetTransitions": [
-          {}
-        ],
-        "fee": {
-          "feeSats": "10000",
-          "makerFeeSats": "10000",
-          "takerFeeSats": "10000"
-        },
-        "signing": {
-          "sighashPolicy": "ALL"
-        }
-      },
-      "state": "DRAFT",
-      "makerSigned": true,
-      "takerSigned": true,
-      "preflight": {
-        "checkedAt": "2026-09-29T00:00:00Z",
-        "ageSeconds": 1,
-        "maxAgeSeconds": 1,
-        "stale": true
-      },
-      "updatedAt": "2026-09-29T00:00:00Z",
-      "psbt": "example"
-    },
-    "responseExampleIssue": null,
+    "responseExample": null,
+    "responseExampleIssue": "No sample for pattern ^[0-9a-f]{64}i(0|[1-9][0-9]*)$ at $.acceptancePlan.tx.inputs[0].inventory.inscriptions[0].inscriptionId",
     "responses": {
       "201": {
         "content": {
@@ -3609,110 +4277,8 @@
     "requestExample": null,
     "requestExampleIssue": null,
     "successStatus": 200,
-    "responseExample": {
-      "sessionId": "example",
-      "intent": {
-        "schema": "ordex.swap-intent/v1",
-        "protocolVersion": "example",
-        "network": "mainnet",
-        "visibility": "PUBLIC",
-        "makerReceiveScriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
-        "gives": [
-          {
-            "assetType": "example",
-            "outpoint": {
-              "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
-              "vout": 0
-            },
-            "quantitySats": "10000",
-            "assetId": "example"
-          }
-        ],
-        "requires": [
-          {
-            "assetType": "example",
-            "assetId": "example",
-            "inscriptionId": "example",
-            "minQuantitySats": "10000"
-          }
-        ],
-        "maxMakerFeeSats": "10000",
-        "expiryHeight": 1,
-        "nonce": "example",
-        "createdAtHeight": 1,
-        "checkpoint": {
-          "height": 0,
-          "blockHash": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
-        },
-        "takerBinding": {
-          "address": "example"
-        },
-        "adapterVersions": [
-          {}
-        ],
-        "makerIdentityProof": {
-          "kind": "bip322",
-          "address": "example",
-          "signature": "example"
-        },
-        "digest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
-      },
-      "acceptancePlan": {
-        "schema": "ordex.swap-acceptance-plan/v1",
-        "intentDigest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
-        "network": "mainnet",
-        "tx": {
-          "inputs": [
-            {
-              "outpoint": {
-                "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
-                "vout": 0
-              },
-              "party": "maker",
-              "valueSats": "10000",
-              "assets": [
-                {
-                  "assetType": "BTC",
-                  "assetId": "example",
-                  "inscriptionId": "example",
-                  "quantitySats": "10000"
-                }
-              ]
-            }
-          ],
-          "outputs": [
-            {
-              "scriptHex": "example",
-              "valueSats": "10000",
-              "role": "makerConsideration"
-            }
-          ]
-        },
-        "assetTransitions": [
-          {}
-        ],
-        "fee": {
-          "feeSats": "10000",
-          "makerFeeSats": "10000",
-          "takerFeeSats": "10000"
-        },
-        "signing": {
-          "sighashPolicy": "ALL"
-        }
-      },
-      "state": "DRAFT",
-      "makerSigned": true,
-      "takerSigned": true,
-      "preflight": {
-        "checkedAt": "2026-09-29T00:00:00Z",
-        "ageSeconds": 1,
-        "maxAgeSeconds": 1,
-        "stale": true
-      },
-      "updatedAt": "2026-09-29T00:00:00Z",
-      "psbt": "example"
-    },
-    "responseExampleIssue": null,
+    "responseExample": null,
+    "responseExampleIssue": "No sample for pattern ^[0-9a-f]{64}i(0|[1-9][0-9]*)$ at $.acceptancePlan.tx.inputs[0].inventory.inscriptions[0].inscriptionId",
     "responses": {
       "200": {
         "content": {
@@ -3752,114 +4318,17 @@
         }
       }
     ],
-    "requestBodySchema": null,
-    "requestExample": null,
+    "requestBodySchema": {
+      "$ref": "#/components/schemas/SwapSignatureSubmission"
+    },
+    "requestExample": {
+      "psbt": "example",
+      "party": "maker"
+    },
     "requestExampleIssue": null,
     "successStatus": 201,
-    "responseExample": {
-      "sessionId": "example",
-      "intent": {
-        "schema": "ordex.swap-intent/v1",
-        "protocolVersion": "example",
-        "network": "mainnet",
-        "visibility": "PUBLIC",
-        "makerReceiveScriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
-        "gives": [
-          {
-            "assetType": "example",
-            "outpoint": {
-              "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
-              "vout": 0
-            },
-            "quantitySats": "10000",
-            "assetId": "example"
-          }
-        ],
-        "requires": [
-          {
-            "assetType": "example",
-            "assetId": "example",
-            "inscriptionId": "example",
-            "minQuantitySats": "10000"
-          }
-        ],
-        "maxMakerFeeSats": "10000",
-        "expiryHeight": 1,
-        "nonce": "example",
-        "createdAtHeight": 1,
-        "checkpoint": {
-          "height": 0,
-          "blockHash": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
-        },
-        "takerBinding": {
-          "address": "example"
-        },
-        "adapterVersions": [
-          {}
-        ],
-        "makerIdentityProof": {
-          "kind": "bip322",
-          "address": "example",
-          "signature": "example"
-        },
-        "digest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
-      },
-      "acceptancePlan": {
-        "schema": "ordex.swap-acceptance-plan/v1",
-        "intentDigest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
-        "network": "mainnet",
-        "tx": {
-          "inputs": [
-            {
-              "outpoint": {
-                "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
-                "vout": 0
-              },
-              "party": "maker",
-              "valueSats": "10000",
-              "assets": [
-                {
-                  "assetType": "BTC",
-                  "assetId": "example",
-                  "inscriptionId": "example",
-                  "quantitySats": "10000"
-                }
-              ]
-            }
-          ],
-          "outputs": [
-            {
-              "scriptHex": "example",
-              "valueSats": "10000",
-              "role": "makerConsideration"
-            }
-          ]
-        },
-        "assetTransitions": [
-          {}
-        ],
-        "fee": {
-          "feeSats": "10000",
-          "makerFeeSats": "10000",
-          "takerFeeSats": "10000"
-        },
-        "signing": {
-          "sighashPolicy": "ALL"
-        }
-      },
-      "state": "DRAFT",
-      "makerSigned": true,
-      "takerSigned": true,
-      "preflight": {
-        "checkedAt": "2026-09-29T00:00:00Z",
-        "ageSeconds": 1,
-        "maxAgeSeconds": 1,
-        "stale": true
-      },
-      "updatedAt": "2026-09-29T00:00:00Z",
-      "psbt": "example"
-    },
-    "responseExampleIssue": null,
+    "responseExample": null,
+    "responseExampleIssue": "No sample for pattern ^[0-9a-f]{64}i(0|[1-9][0-9]*)$ at $.acceptancePlan.tx.inputs[0].inventory.inscriptions[0].inscriptionId",
     "responses": {
       "201": {
         "content": {
@@ -3991,8 +4460,14 @@
     "isWrite": true,
     "authorityLevel": "Deterministic example",
     "parameters": [],
-    "requestBodySchema": null,
-    "requestExample": null,
+    "requestBodySchema": {
+      "$ref": "#/components/schemas/PrivateSwapStoreRequest"
+    },
+    "requestExample": {
+      "ciphertext": "example",
+      "contentVersion": "ordex.private-swap/v1",
+      "expiresAt": "2026-09-29T00:00:00Z"
+    },
     "requestExampleIssue": null,
     "successStatus": 201,
     "responseExample": {
@@ -4024,7 +4499,7 @@
     "method": "GET",
     "path": "/api/ordex/swaps/private",
     "summary": "List the caller stored private swap envelopes",
-    "description": "Returns ciphertext envelopes only. Decryption happens client side with the key from the URL fragment.",
+    "description": "Private swap envelopes are not enumerable: the gateway currently answers 404 PRIVATE_SWAP_LIST_UNAVAILABLE. A 200 would carry this shape. Read one envelope by its id.",
     "tag": "swaps",
     "isWrite": false,
     "authorityLevel": "Deterministic example",
@@ -4033,24 +4508,23 @@
     "requestExample": null,
     "requestExampleIssue": null,
     "successStatus": 200,
-    "responseExample": [
-      {
-        "privateId": "example",
-        "ciphertext": "example",
-        "expiresAt": "2026-09-29T00:00:00Z",
-        "destroyed": true
-      }
-    ],
+    "responseExample": {
+      "privateSwaps": [
+        {
+          "privateId": "example",
+          "ciphertext": "example",
+          "expiresAt": "2026-09-29T00:00:00Z",
+          "destroyed": true
+        }
+      ]
+    },
     "responseExampleIssue": null,
     "responses": {
       "200": {
         "content": {
           "application/json": {
             "schema": {
-              "type": "array",
-              "items": {
-                "$ref": "#/components/schemas/PrivateSwapEnvelope"
-              }
+              "$ref": "#/components/schemas/PrivateSwapList"
             }
           }
         },
@@ -4134,8 +4608,12 @@
         }
       }
     ],
-    "requestBodySchema": null,
-    "requestExample": null,
+    "requestBodySchema": {
+      "$ref": "#/components/schemas/PrivateSwapDestroyRequest"
+    },
+    "requestExample": {
+      "deleteCapability": "example"
+    },
     "requestExampleIssue": null,
     "successStatus": 200,
     "responseExample": {
@@ -4176,7 +4654,90 @@
     "tag": "events",
     "isWrite": false,
     "authorityLevel": "Deterministic example",
-    "parameters": [],
+    "parameters": [
+      {
+        "name": "network",
+        "in": "query",
+        "required": false,
+        "description": "Only this network.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "mainnet",
+            "testnet",
+            "signet",
+            "regtest"
+          ]
+        }
+      },
+      {
+        "name": "type",
+        "in": "query",
+        "required": false,
+        "description": "Only this event type.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      {
+        "name": "aggregateType",
+        "in": "query",
+        "required": false,
+        "description": "Only events of this aggregate type.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      {
+        "name": "aggregateId",
+        "in": "query",
+        "required": false,
+        "description": "Only events of this aggregate.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      {
+        "name": "protocol",
+        "in": "query",
+        "required": false,
+        "description": "Only events of this protocol.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      {
+        "name": "collectionId",
+        "in": "query",
+        "required": false,
+        "description": "Only events of this collection.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      {
+        "name": "limit",
+        "in": "query",
+        "required": false,
+        "description": "Page size.",
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 50
+        }
+      },
+      {
+        "name": "cursor",
+        "in": "query",
+        "required": false,
+        "description": "The opaque cursor a previous page returned. A malformed cursor is a 400, never a silent first page.",
+        "schema": {
+          "type": "string",
+          "maxLength": 256
+        }
+      }
+    ],
     "requestBodySchema": null,
     "requestExample": null,
     "requestExampleIssue": null,
@@ -4237,7 +4798,87 @@
     "tag": "events",
     "isWrite": false,
     "authorityLevel": "Deterministic example",
-    "parameters": [],
+    "parameters": [
+      {
+        "name": "network",
+        "in": "query",
+        "required": false,
+        "description": "Only this network.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "mainnet",
+            "testnet",
+            "signet",
+            "regtest"
+          ]
+        }
+      },
+      {
+        "name": "type",
+        "in": "query",
+        "required": false,
+        "description": "Only this event type.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      {
+        "name": "aggregateType",
+        "in": "query",
+        "required": false,
+        "description": "Only events of this aggregate type.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      {
+        "name": "aggregateId",
+        "in": "query",
+        "required": false,
+        "description": "Only events of this aggregate.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      {
+        "name": "protocol",
+        "in": "query",
+        "required": false,
+        "description": "Only events of this protocol.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      {
+        "name": "collectionId",
+        "in": "query",
+        "required": false,
+        "description": "Only events of this collection.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      {
+        "name": "cursor",
+        "in": "query",
+        "required": false,
+        "description": "The opaque cursor a previous page returned. A malformed cursor is a 400, never a silent first page.",
+        "schema": {
+          "type": "string",
+          "maxLength": 256
+        }
+      },
+      {
+        "name": "last-event-id",
+        "in": "header",
+        "required": false,
+        "description": "Resume after this event id, as an EventSource reconnect sends it.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    ],
     "requestBodySchema": null,
     "requestExample": null,
     "requestExampleIssue": null,
@@ -4270,7 +4911,23 @@
     "tag": "events",
     "isWrite": false,
     "authorityLevel": "Chain proof",
-    "parameters": [],
+    "parameters": [
+      {
+        "name": "network",
+        "in": "query",
+        "required": false,
+        "description": "Only this network.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "mainnet",
+            "testnet",
+            "signet",
+            "regtest"
+          ]
+        }
+      }
+    ],
     "requestBodySchema": null,
     "requestExample": null,
     "requestExampleIssue": null,
@@ -4309,12 +4966,21 @@
     "isWrite": true,
     "authorityLevel": "Deterministic example",
     "parameters": [],
-    "requestBodySchema": null,
-    "requestExample": null,
+    "requestBodySchema": {
+      "$ref": "#/components/schemas/WebhookSubscriptionCreateRequest"
+    },
+    "requestExample": {
+      "url": "https://example.invalid/ordex",
+      "eventTypes": [
+        "example"
+      ],
+      "network": "mainnet"
+    },
     "requestExampleIssue": null,
     "successStatus": 201,
     "responseExample": {
-      "subscriptionId": "example",
+      "id": "example",
+      "accountId": "example",
       "url": "https://example.invalid/ordex",
       "eventTypes": [
         "example"
@@ -4322,7 +4988,15 @@
       "network": "mainnet",
       "status": "PENDING_VERIFICATION",
       "secretHint": "example",
+      "secretVersion": 1,
       "createdAt": "2026-09-29T00:00:00Z",
+      "updatedAt": "2026-09-29T00:00:00Z",
+      "verification": {
+        "state": "VERIFIED",
+        "expiresAt": "2026-09-29T00:00:00Z",
+        "attempts": 0,
+        "lastError": "example"
+      },
       "secret": "example"
     },
     "responseExampleIssue": null,
@@ -4372,29 +5046,37 @@
     "requestExample": null,
     "requestExampleIssue": null,
     "successStatus": 200,
-    "responseExample": [
-      {
-        "subscriptionId": "example",
-        "url": "https://example.invalid/ordex",
-        "eventTypes": [
-          "example"
-        ],
-        "network": "mainnet",
-        "status": "PENDING_VERIFICATION",
-        "secretHint": "example",
-        "createdAt": "2026-09-29T00:00:00Z"
-      }
-    ],
+    "responseExample": {
+      "items": [
+        {
+          "id": "example",
+          "accountId": "example",
+          "url": "https://example.invalid/ordex",
+          "eventTypes": [
+            "example"
+          ],
+          "network": "mainnet",
+          "status": "PENDING_VERIFICATION",
+          "secretHint": "example",
+          "secretVersion": 1,
+          "createdAt": "2026-09-29T00:00:00Z",
+          "updatedAt": "2026-09-29T00:00:00Z",
+          "verification": {
+            "state": "VERIFIED",
+            "expiresAt": "2026-09-29T00:00:00Z",
+            "attempts": 0,
+            "lastError": "example"
+          }
+        }
+      ]
+    },
     "responseExampleIssue": null,
     "responses": {
       "200": {
         "content": {
           "application/json": {
             "schema": {
-              "type": "array",
-              "items": {
-                "$ref": "#/components/schemas/WebhookSubscription"
-              }
+              "$ref": "#/components/schemas/WebhookSubscriptionList"
             }
           }
         },
@@ -4433,7 +5115,8 @@
     "requestExampleIssue": null,
     "successStatus": 200,
     "responseExample": {
-      "subscriptionId": "example",
+      "id": "example",
+      "accountId": "example",
       "url": "https://example.invalid/ordex",
       "eventTypes": [
         "example"
@@ -4441,7 +5124,15 @@
       "network": "mainnet",
       "status": "PENDING_VERIFICATION",
       "secretHint": "example",
-      "createdAt": "2026-09-29T00:00:00Z"
+      "secretVersion": 1,
+      "createdAt": "2026-09-29T00:00:00Z",
+      "updatedAt": "2026-09-29T00:00:00Z",
+      "verification": {
+        "state": "VERIFIED",
+        "expiresAt": "2026-09-29T00:00:00Z",
+        "attempts": 0,
+        "lastError": "example"
+      }
     },
     "responseExampleIssue": null,
     "responses": {
@@ -4483,12 +5174,21 @@
         }
       }
     ],
-    "requestBodySchema": null,
-    "requestExample": null,
+    "requestBodySchema": {
+      "$ref": "#/components/schemas/WebhookSubscriptionUpdateRequest"
+    },
+    "requestExample": {
+      "url": "https://example.invalid/ordex",
+      "eventTypes": [
+        "example"
+      ],
+      "paused": true
+    },
     "requestExampleIssue": null,
     "successStatus": 200,
     "responseExample": {
-      "subscriptionId": "example",
+      "id": "example",
+      "accountId": "example",
       "url": "https://example.invalid/ordex",
       "eventTypes": [
         "example"
@@ -4496,7 +5196,15 @@
       "network": "mainnet",
       "status": "PENDING_VERIFICATION",
       "secretHint": "example",
-      "createdAt": "2026-09-29T00:00:00Z"
+      "secretVersion": 1,
+      "createdAt": "2026-09-29T00:00:00Z",
+      "updatedAt": "2026-09-29T00:00:00Z",
+      "verification": {
+        "state": "VERIFIED",
+        "expiresAt": "2026-09-29T00:00:00Z",
+        "attempts": 0,
+        "lastError": "example"
+      }
     },
     "responseExampleIssue": null,
     "responses": {
@@ -4576,7 +5284,7 @@
     "method": "POST",
     "path": "/api/ordex/webhooks/subscriptions/{subscriptionId}/rotate-secret",
     "summary": "Rotate the signing secret",
-    "description": "The old secret keeps verifying during a bounded overlap window so rotation never drops a delivery.",
+    "description": "Returns the next signing secret exactly once. The previous secret keeps verifying during a bounded overlap: each delivery carries one v1 per unexpired secret, so rotation never drops a delivery.",
     "tag": "webhooks",
     "isWrite": true,
     "authorityLevel": "Deterministic example",
@@ -4599,7 +5307,8 @@
     "successStatus": 201,
     "responseExample": {
       "subscriptionId": "example",
-      "secret": "example"
+      "secret": "example",
+      "secretVersion": 1
     },
     "responseExampleIssue": null,
     "responses": {
@@ -4641,12 +5350,17 @@
         }
       }
     ],
-    "requestBodySchema": null,
-    "requestExample": null,
+    "requestBodySchema": {
+      "$ref": "#/components/schemas/WebhookVerifyRequest"
+    },
+    "requestExample": {
+      "challenge": "example"
+    },
     "requestExampleIssue": null,
     "successStatus": 201,
     "responseExample": {
-      "subscriptionId": "example",
+      "id": "example",
+      "accountId": "example",
       "url": "https://example.invalid/ordex",
       "eventTypes": [
         "example"
@@ -4654,7 +5368,15 @@
       "network": "mainnet",
       "status": "PENDING_VERIFICATION",
       "secretHint": "example",
-      "createdAt": "2026-09-29T00:00:00Z"
+      "secretVersion": 1,
+      "createdAt": "2026-09-29T00:00:00Z",
+      "updatedAt": "2026-09-29T00:00:00Z",
+      "verification": {
+        "state": "VERIFIED",
+        "expiresAt": "2026-09-29T00:00:00Z",
+        "attempts": 0,
+        "lastError": "example"
+      }
     },
     "responseExampleIssue": null,
     "responses": {
@@ -4738,7 +5460,48 @@
     "tag": "webhooks",
     "isWrite": false,
     "authorityLevel": "Deterministic example",
-    "parameters": [],
+    "parameters": [
+      {
+        "name": "subscriptionId",
+        "in": "query",
+        "required": false,
+        "description": "Only deliveries of this subscription.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      {
+        "name": "state",
+        "in": "query",
+        "required": false,
+        "description": "Only deliveries in this state.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      {
+        "name": "limit",
+        "in": "query",
+        "required": false,
+        "description": "Page size.",
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 50
+        }
+      },
+      {
+        "name": "cursor",
+        "in": "query",
+        "required": false,
+        "description": "The opaque cursor a previous page returned. A malformed cursor is a 400, never a silent first page.",
+        "schema": {
+          "type": "string",
+          "maxLength": 256
+        }
+      }
+    ],
     "requestBodySchema": null,
     "requestExample": null,
     "requestExampleIssue": null,
@@ -4842,8 +5605,51 @@
     "isWrite": true,
     "authorityLevel": "Deterministic example",
     "parameters": [],
-    "requestBodySchema": null,
-    "requestExample": null,
+    "requestBodySchema": {
+      "$ref": "#/components/schemas/CollectionManifestDocument"
+    },
+    "requestExample": {
+      "schema": "ordex.collection-manifest/v1",
+      "protocolVersion": "example",
+      "network": "mainnet",
+      "protocol": "ordinals",
+      "collectionId": "example",
+      "displayName": "example",
+      "description": "example",
+      "creatorAddress": "example",
+      "memberIdentityType": "inscriptionId",
+      "members": [
+        "example"
+      ],
+      "membershipRoot": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+      "metadataSchemaHash": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+      "traitSchemaHash": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+      "mediaDigests": [
+        "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
+      ],
+      "supplyStatement": {
+        "kind": "FIXED",
+        "declared": "10000"
+      },
+      "parentCollectionId": "example",
+      "rightsDeclaration": "example",
+      "royaltyDeclaration": {},
+      "createdAtHeight": 1,
+      "version": 1,
+      "previousManifestDigest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+      "supersededManifestDigest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+      "anchor": {
+        "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+        "inscriptionId": "example"
+      },
+      "status": "DRAFT",
+      "creatorSignature": {
+        "kind": "bip322",
+        "address": "example",
+        "signature": "example"
+      },
+      "digest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
+    },
     "requestExampleIssue": null,
     "successStatus": 201,
     "responseExample": {
@@ -4915,7 +5721,69 @@
     "tag": "provenance",
     "isWrite": false,
     "authorityLevel": "Deterministic example",
-    "parameters": [],
+    "parameters": [
+      {
+        "name": "collectionId",
+        "in": "query",
+        "required": false,
+        "description": "Only manifests of this collection.",
+        "schema": {
+          "type": "string",
+          "maxLength": 200
+        }
+      },
+      {
+        "name": "network",
+        "in": "query",
+        "required": false,
+        "description": "Only this network.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "mainnet",
+            "testnet",
+            "signet",
+            "regtest"
+          ]
+        }
+      },
+      {
+        "name": "status",
+        "in": "query",
+        "required": false,
+        "description": "Only manifests in this status.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "CREATOR_SIGNED",
+            "SUPERSEDED",
+            "REVOKED"
+          ]
+        }
+      },
+      {
+        "name": "cursor",
+        "in": "query",
+        "required": false,
+        "description": "The opaque cursor a previous page returned. A malformed cursor is a 400, never a silent first page.",
+        "schema": {
+          "type": "string",
+          "maxLength": 256
+        }
+      },
+      {
+        "name": "limit",
+        "in": "query",
+        "required": false,
+        "description": "Page size.",
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 50
+        }
+      }
+    ],
     "requestBodySchema": null,
     "requestExample": null,
     "requestExampleIssue": null,
@@ -5200,8 +6068,13 @@
         }
       }
     ],
-    "requestBodySchema": null,
-    "requestExample": null,
+    "requestBodySchema": {
+      "$ref": "#/components/schemas/CollectionRevisionRequest"
+    },
+    "requestExample": {
+      "kind": "SUPERSEDE",
+      "document": {}
+    },
     "requestExampleIssue": null,
     "successStatus": 201,
     "responseExample": {
@@ -5299,6 +6172,21 @@
           "type": "string",
           "minLength": 1,
           "maxLength": 200
+        }
+      },
+      {
+        "name": "network",
+        "in": "query",
+        "required": false,
+        "description": "Only this network.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "mainnet",
+            "testnet",
+            "signet",
+            "regtest"
+          ]
         }
       }
     ],
@@ -5442,6 +6330,16 @@
           "minLength": 1,
           "maxLength": 200
         }
+      },
+      {
+        "name": "cursor",
+        "in": "query",
+        "required": false,
+        "description": "The opaque cursor a previous page returned. A malformed cursor is a 400, never a silent first page.",
+        "schema": {
+          "type": "string",
+          "maxLength": 256
+        }
       }
     ],
     "requestBodySchema": null,
@@ -5537,6 +6435,16 @@
           "type": "string",
           "minLength": 1,
           "maxLength": 200
+        }
+      },
+      {
+        "name": "cursor",
+        "in": "query",
+        "required": false,
+        "description": "The opaque cursor a previous page returned. A malformed cursor is a 400, never a silent first page.",
+        "schema": {
+          "type": "string",
+          "maxLength": 256
         }
       }
     ],
@@ -5658,8 +6566,16 @@
     "isWrite": true,
     "authorityLevel": "Deterministic example",
     "parameters": [],
-    "requestBodySchema": null,
-    "requestExample": null,
+    "requestBodySchema": {
+      "$ref": "#/components/schemas/HeritageComposeRequest"
+    },
+    "requestExample": {
+      "address": "example",
+      "assetName": "example",
+      "quantitySats": "10000",
+      "destination": "example",
+      "feeRateSatsPerVb": "10000"
+    },
     "requestExampleIssue": null,
     "successStatus": 201,
     "responseExample": {
@@ -5696,8 +6612,14 @@
     "isWrite": true,
     "authorityLevel": "Deterministic example",
     "parameters": [],
-    "requestBodySchema": null,
-    "requestExample": null,
+    "requestBodySchema": {
+      "$ref": "#/components/schemas/HeritageDetachRequest"
+    },
+    "requestExample": {
+      "utxo": "example",
+      "destination": "example",
+      "feeRateSatsPerVb": "10000"
+    },
     "requestExampleIssue": null,
     "successStatus": 201,
     "responseExample": {
@@ -5734,55 +6656,14 @@
     "isWrite": true,
     "authorityLevel": "Deterministic example",
     "parameters": [],
-    "requestBodySchema": null,
-    "requestExample": null,
-    "requestExampleIssue": null,
-    "successStatus": 201,
-    "responseExample": {
-      "sessionId": "example",
-      "manifest": {
-        "schema": "ordex.expected-transaction-manifest/v1",
-        "network": "mainnet",
-        "purpose": "example",
-        "watchOnly": true,
-        "account": {
-          "descriptor": "example"
-        },
-        "unsignedTx": {
-          "inputs": [
-            {
-              "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
-              "vout": 1,
-              "valueSats": "10000",
-              "scriptPubKeyHex": "example",
-              "controlledByUser": true,
-              "sighashType": "example",
-              "explanation": "example"
-            }
-          ],
-          "outputs": [
-            {
-              "scriptHex": "example",
-              "valueSats": "10000",
-              "role": "example",
-              "explanation": "example",
-              "expectedAssets": [
-                {}
-              ]
-            }
-          ]
-        },
-        "fee": {
-          "feeSats": "10000",
-          "maxFeeSats": "10000"
-        },
-        "digest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
-      },
-      "state": "AWAITING_EXPORT",
-      "signedResult": {},
-      "rejection": {}
+    "requestBodySchema": {
+      "$ref": "#/components/schemas/SigningSessionOpenRequest"
     },
-    "responseExampleIssue": null,
+    "requestExample": null,
+    "requestExampleIssue": "No sample for pattern ^(?:[0-9a-f]{2})*$ at $.manifest.unsignedTx.inputs[0].preservedSignature.scriptSigHex",
+    "successStatus": 201,
+    "responseExample": null,
+    "responseExampleIssue": "No sample for pattern ^(?:[0-9a-f]{2})*$ at $.manifest.unsignedTx.inputs[0].preservedSignature.scriptSigHex",
     "responses": {
       "201": {
         "content": {
@@ -5809,67 +6690,88 @@
     "tag": "signing",
     "isWrite": false,
     "authorityLevel": "Deterministic example",
-    "parameters": [],
+    "parameters": [
+      {
+        "name": "network",
+        "in": "query",
+        "required": false,
+        "description": "Only this network.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "mainnet",
+            "testnet",
+            "signet",
+            "regtest"
+          ]
+        }
+      },
+      {
+        "name": "state",
+        "in": "query",
+        "required": false,
+        "description": "Only sessions in this state.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      {
+        "name": "cursor",
+        "in": "query",
+        "required": false,
+        "description": "The opaque cursor a previous page returned. A malformed cursor is a 400, never a silent first page.",
+        "schema": {
+          "type": "string",
+          "maxLength": 256
+        }
+      },
+      {
+        "name": "limit",
+        "in": "query",
+        "required": false,
+        "description": "Page size.",
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 50
+        }
+      },
+      {
+        "name": "x-ordex-signing-capability",
+        "in": "header",
+        "required": false,
+        "description": "A signing session capability returned once when the session was opened: the read capability shows a session, the import capability also submits its signed result. Listing accepts up to 25, comma separated.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    ],
     "requestBodySchema": null,
     "requestExample": null,
     "requestExampleIssue": null,
     "successStatus": 200,
-    "responseExample": [
-      {
-        "sessionId": "example",
-        "manifest": {
-          "schema": "ordex.expected-transaction-manifest/v1",
+    "responseExample": {
+      "rows": [
+        {
+          "id": "example",
           "network": "mainnet",
-          "purpose": "example",
-          "watchOnly": true,
-          "account": {
-            "descriptor": "example"
-          },
-          "unsignedTx": {
-            "inputs": [
-              {
-                "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
-                "vout": 1,
-                "valueSats": "10000",
-                "scriptPubKeyHex": "example",
-                "controlledByUser": true,
-                "sighashType": "example",
-                "explanation": "example"
-              }
-            ],
-            "outputs": [
-              {
-                "scriptHex": "example",
-                "valueSats": "10000",
-                "role": "example",
-                "explanation": "example",
-                "expectedAssets": [
-                  {}
-                ]
-              }
-            ]
-          },
-          "fee": {
-            "feeSats": "10000",
-            "maxFeeSats": "10000"
-          },
-          "digest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
-        },
-        "state": "AWAITING_EXPORT",
-        "signedResult": {},
-        "rejection": {}
-      }
-    ],
+          "state": "AWAITING_EXPORT",
+          "manifestDigest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+          "createdAt": "2026-09-29T00:00:00Z",
+          "updatedAt": "2026-09-29T00:00:00Z",
+          "expiresAt": "2026-09-29T00:00:00Z"
+        }
+      ],
+      "nextCursor": "example"
+    },
     "responseExampleIssue": null,
     "responses": {
       "200": {
         "content": {
           "application/json": {
             "schema": {
-              "type": "array",
-              "items": {
-                "$ref": "#/components/schemas/SigningSession"
-              }
+              "$ref": "#/components/schemas/SigningSessionPage"
             }
           }
         },
@@ -5901,57 +6803,23 @@
           "minLength": 1,
           "maxLength": 200
         }
+      },
+      {
+        "name": "x-ordex-signing-capability",
+        "in": "header",
+        "required": false,
+        "description": "A signing session capability returned once when the session was opened: the read capability shows a session, the import capability also submits its signed result. Listing accepts up to 25, comma separated.",
+        "schema": {
+          "type": "string"
+        }
       }
     ],
     "requestBodySchema": null,
     "requestExample": null,
     "requestExampleIssue": null,
     "successStatus": 200,
-    "responseExample": {
-      "sessionId": "example",
-      "manifest": {
-        "schema": "ordex.expected-transaction-manifest/v1",
-        "network": "mainnet",
-        "purpose": "example",
-        "watchOnly": true,
-        "account": {
-          "descriptor": "example"
-        },
-        "unsignedTx": {
-          "inputs": [
-            {
-              "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
-              "vout": 1,
-              "valueSats": "10000",
-              "scriptPubKeyHex": "example",
-              "controlledByUser": true,
-              "sighashType": "example",
-              "explanation": "example"
-            }
-          ],
-          "outputs": [
-            {
-              "scriptHex": "example",
-              "valueSats": "10000",
-              "role": "example",
-              "explanation": "example",
-              "expectedAssets": [
-                {}
-              ]
-            }
-          ]
-        },
-        "fee": {
-          "feeSats": "10000",
-          "maxFeeSats": "10000"
-        },
-        "digest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
-      },
-      "state": "AWAITING_EXPORT",
-      "signedResult": {},
-      "rejection": {}
-    },
-    "responseExampleIssue": null,
+    "responseExample": null,
+    "responseExampleIssue": "No sample for pattern ^(?:[0-9a-f]{2})*$ at $.manifest.unsignedTx.inputs[0].preservedSignature.scriptSigHex",
     "responses": {
       "200": {
         "content": {
@@ -5989,10 +6857,39 @@
           "minLength": 1,
           "maxLength": 200
         }
+      },
+      {
+        "name": "x-ordex-signing-capability",
+        "in": "header",
+        "required": false,
+        "description": "A signing session capability returned once when the session was opened: the read capability shows a session, the import capability also submits its signed result. Listing accepts up to 25, comma separated.",
+        "schema": {
+          "type": "string"
+        }
       }
     ],
-    "requestBodySchema": null,
-    "requestExample": null,
+    "requestBodySchema": {
+      "$ref": "#/components/schemas/SigningSignedResultRequest"
+    },
+    "requestExample": {
+      "signedResult": {
+        "schema": "ordex.offline-signing-session/v2",
+        "manifestDigest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+        "psbt": "example",
+        "signedTxHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
+        "observedAssets": [
+          {
+            "assetType": "example",
+            "assetId": "example",
+            "quantity": "10000",
+            "outputIndex": 0
+          }
+        ],
+        "unknownCriticalFields": [
+          "example"
+        ]
+      }
+    },
     "requestExampleIssue": null,
     "successStatus": 201,
     "responseExample": {
@@ -6029,9 +6926,11 @@
     "isWrite": true,
     "authorityLevel": "Protocol verification",
     "parameters": [],
-    "requestBodySchema": null,
+    "requestBodySchema": {
+      "$ref": "#/components/schemas/SigningVerifyRequest"
+    },
     "requestExample": null,
-    "requestExampleIssue": null,
+    "requestExampleIssue": "No sample for pattern ^(?:[0-9a-f]{2})*$ at $.manifest.unsignedTx.inputs[0].preservedSignature.scriptSigHex",
     "successStatus": 201,
     "responseExample": {
       "ok": true,

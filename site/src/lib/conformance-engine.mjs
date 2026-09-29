@@ -17,7 +17,7 @@ import * as eventsVerifier from '../../../verifier/events.js';
 import * as collectionManifestVerifier from '../../../verifier/collection-manifest.js';
 import * as counterpartyAssetVerifier from '../../../verifier/counterparty-asset.js';
 import * as offlineSigningVerifier from '../../../verifier/offline-signing.js';
-import { FAMILY_REGISTRY, FAMILIES, isKnownFamily, variantOf, variantArguments } from './conformance-registry.mjs';
+import { FAMILY_REGISTRY, FAMILIES, isKnownFamily, variantOf, variantArguments, resultKey, expectedFieldsOf } from './conformance-registry.mjs';
 
 export { FAMILY_REGISTRY, FAMILIES, isKnownFamily, variantOf, variantArguments };
 
@@ -69,6 +69,8 @@ export function invokeVerifier(family, source, variant = variantOf(family, sourc
       return offersVerifier.verifyOfferAcceptance(c.acceptance, c.offer);
     case 'offers:recovery':
       return offersVerifier.verifyOfferRecovery(c.recovery, c.offer);
+    case 'runes:allocation':
+      return runesVerifier.verifyRuneAllocation(c.outputScriptsHex, c.inputs, c.expectedAllocation, c.mint ? { mint: c.mint } : {});
     case 'runes:burn-safety':
       return runesVerifier.verifyRuneBurnSafety(c.outputScriptsHex, c.inputs, c.outputCount);
     case 'safeops:signed':
@@ -77,6 +79,8 @@ export function invokeVerifier(family, source, variant = variantOf(family, sourc
       return safeopsVerifier.verifySafeOpsPlan(c.plan);
     case 'swaps:acceptance':
       return swapsVerifier.verifySwapAcceptance(c.acceptance, c.intent);
+    case 'swaps:signed':
+      return swapsVerifier.verifySwapSignedTransaction(c.signed, c.acceptance, c.intent);
     case 'swaps:intent':
       return swapsVerifier.verifySwapIntent(c.intent);
     case 'events:webhook': {
@@ -97,6 +101,8 @@ export function invokeVerifier(family, source, variant = variantOf(family, sourc
       return collectionManifestVerifier.verifyCollectionManifest(c.manifest);
     case 'counterparty-asset:attachment':
       return counterpartyAssetVerifier.verifyAttachmentFollows(c.record, c.spendTx, c.expectedOutputIndex);
+    case 'counterparty-asset:ledger':
+      return counterpartyAssetVerifier.verifyCounterpartyLedgerEvents(c.expectedEvents, c.observedEvents);
     case 'counterparty-asset:record':
       return counterpartyAssetVerifier.verifyCounterpartyUtxoAsset(c.record);
     case 'offline-signing:signed':
@@ -112,8 +118,9 @@ export function invokeVerifier(family, source, variant = variantOf(family, sourc
  * Normalize a verifier result into an explicit candidate verdict. Rune results report
  * `safe`, every other family reports `ok`; anything else is unknown, never accepted.
  */
-export function normalizeVerdict(family, raw) {
-  const kind = FAMILY_REGISTRY[family]?.result;
+export function normalizeVerdict(family, raw, variant) {
+  // A variant may report a different flag than its family (runes allocation reports ok).
+  const kind = FAMILY_REGISTRY[family]?.variants?.[variant]?.result || FAMILY_REGISTRY[family]?.result;
   const flag = raw && typeof raw === 'object' ? raw[kind] : undefined;
   if (flag === true) return { state: 'accepted', code: null, reason: null };
   if (flag === false) {
@@ -126,8 +133,8 @@ export function normalizeVerdict(family, raw) {
  * Compare every expected field of a vector with the verifier result. An expected field the
  * engine does not know how to compare is a mismatch, so no expectation is silently skipped.
  */
-export function compareExpected(family, expected, raw) {
-  const spec = FAMILY_REGISTRY[family];
+export function compareExpected(family, expected, raw, variant) {
+  const spec = { result: resultKey(family, variant), expectedFields: expectedFieldsOf(family, variant) };
   const mismatches = [];
   if (!expected || typeof expected !== 'object') {
     return { passed: false, mismatches: [{ field: 'expected', expected: 'object', actual: typeof expected }] };
@@ -176,11 +183,11 @@ export function executeVector(family, vectorCase) {
     error = { code: err?.code || 'VERIFIER_THREW', message: String(err?.message || err) };
   }
   const expected = source?.expected;
-  const verdict = error ? { state: 'unknown', code: error.code, reason: error.message } : normalizeVerdict(family, raw);
+  const verdict = error ? { state: 'unknown', code: error.code, reason: error.message } : normalizeVerdict(family, raw, variant);
   const comparison = error
     ? { passed: false, mismatches: [{ field: 'execution', expected: 'verdict', actual: error.message }] }
-    : compareExpected(family, expected, raw);
-  const resultKind = FAMILY_REGISTRY[family]?.result || 'ok';
+    : compareExpected(family, expected, raw, variant);
+  const resultKind = resultKey(family, variant) || 'ok';
   const actual = error
     ? { [resultKind]: false, code: error.code, error: error.message }
     : { ...raw };
@@ -232,7 +239,7 @@ export function evaluateCandidate(family, variant, args) {
       durationMs: now() - start
     };
   }
-  return { family, variant, verdict: normalizeVerdict(family, raw), raw, durationMs: now() - start };
+  return { family, variant, verdict: normalizeVerdict(family, raw, variant), raw, durationMs: now() - start };
 }
 
 /**

@@ -1774,6 +1774,72 @@
         "runestone": "NONE",
         "code": "MALFORMED_RUNE_BALANCE"
       }
+    },
+    {
+      "name": "allocation-matching-the-plan-is-accepted",
+      "description": "An edict sends 300 of 840000:1 to output 1 and the pointer the other 700 to output 2, exactly as planned.",
+      "outputScriptsHex": [
+        "6a5d0a160200c0a23301ac0201",
+        "00141111111111111111111111111111111111111111",
+        "00142222222222222222222222222222222222222222"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "balances": [
+            {
+              "runeId": "840000:1",
+              "amount": "1000"
+            }
+          ]
+        }
+      ],
+      "expectedAllocation": [
+        {
+          "output": 1,
+          "runeId": "840000:1",
+          "amount": "300"
+        },
+        {
+          "output": 2,
+          "runeId": "840000:1",
+          "amount": "700"
+        }
+      ],
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "name": "allocation-differing-from-the-plan-is-refused",
+      "description": "The same transaction against a plan that expects all 1000 at output 1.",
+      "outputScriptsHex": [
+        "6a5d0a160200c0a23301ac0201",
+        "00141111111111111111111111111111111111111111",
+        "00142222222222222222222222222222222222222222"
+      ],
+      "inputs": [
+        {
+          "indexed": true,
+          "balances": [
+            {
+              "runeId": "840000:1",
+              "amount": "1000"
+            }
+          ]
+        }
+      ],
+      "expectedAllocation": [
+        {
+          "output": 1,
+          "runeId": "840000:1",
+          "amount": "1000"
+        }
+      ],
+      "expected": {
+        "ok": false,
+        "code": "RUNE_ALLOCATION_MISMATCH"
+      }
     }
   ]
 }
