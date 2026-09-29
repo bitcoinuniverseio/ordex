@@ -24,8 +24,11 @@ const loadProgress = (id) => {
 };
 
 export function WizardEngine({ initialWizardId = null }) {
-  const [activeId, setActiveId] = useState(initialWizardId || wizardsData[0].id);
-  const [step, setStep] = useState(0);
+  const [activeId, setActiveId] = useState(() => {
+    const wid = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('wizard') : null;
+    return wid && wizardsData.some((w) => w.id === wid) ? wid : initialWizardId || wizardsData[0].id;
+  });
+  const [stepState, setStep] = useState(0);
   const [answers, setAnswers] = useState({});
   const [finished, setFinished] = useState(false);
   const [announce, setAnnounce] = useState('');
@@ -43,6 +46,9 @@ export function WizardEngine({ initialWizardId = null }) {
   }, [activeId]);
 
   const wizard = wizardsData.find((w) => w.id === activeId) || wizardsData[0];
+  // Switching wizards renders once before the saved step of the new one is loaded; a step
+  // from the previous wizard must never index past this one's steps.
+  const step = Math.min(stepState, wizard.steps.length - 1);
   const current = wizard.steps[step];
   const isLast = step === wizard.steps.length - 1;
   const answered = current.isMulti ? (answers[current.id] || []).length > 0 : !!answers[current.id];
