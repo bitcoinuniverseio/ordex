@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test, before, after } from 'node:test';
-import { startStaticServer, launch, openPage } from './harness.mjs';
+import { startStaticServer, launch, openPage, waitForHydration } from './harness.mjs';
 
 // OX-S11 browser gates: a wizard needs answers to continue, keeps them across a reload, finishes
 // into real links, and its kit link reaches the Kits page with the chosen runtime; recipes open
@@ -33,6 +33,8 @@ test('integration wizard: required answers, reload keeps progress, kit link carr
   const kitLink = page.getByRole('link', { name: /Generate a worker starter kit/ });
   await kitLink.click();
   await page.waitForURL(/\/kits\/\?runtime=worker/);
+  // The server-rendered page shows the default runtime until the island hydrates and reads ?runtime=.
+  await waitForHydration(page);
   await page.getByLabel(/Fetch-handler worker/).waitFor();
   assert.equal(await page.getByLabel(/Fetch-handler worker/).isChecked(), true);
   assert.deepEqual(errors, []);
