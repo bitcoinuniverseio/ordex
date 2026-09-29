@@ -1,8 +1,10 @@
 import type { JSX } from 'preact';
 import { useState, useEffect } from 'preact/hooks';
 import { SCENARIOS, ACTOR_LANES, getScenarioById } from '../../lib/scenarios/registry.js';
-import { createInitialScenarioState, scenarioReducer } from '../../lib/scenarios/engine.js';
+import { createInitialScenarioState, scenarioReducer, pendingCheck, verdictFromResult } from '../../lib/scenarios/engine.js';
+import type { ScenarioAction } from '../../lib/scenarios/engine.js';
 import type { ScenarioDefinition, ScenarioExecutionState } from '../../lib/scenarios/types.js';
+import { runVerifierJob } from '../../lib/verifier-client.mjs';
 import { contextEngine } from '../../lib/experience/context-engine.js';
 import { journeyStore } from '../../lib/session/journey-store.js';
 import {
@@ -51,23 +53,40 @@ export function TransactionSandbox({
     }
   };
 
-  // Automated playback
+  const dispatch = (action: ScenarioAction) => setEngineState((prev) => scenarioReducer(prev, action, selectedScenario));
+
+  // OX-S08: a pending step runs its exact verifier call in the OX-S07 Worker; the verdict is
+  // whatever the verifier returns, including an honest unknown when the Worker fails.
+  const pending = pendingCheck(engineState, selectedScenario);
+  const pendingKey = pending?.key;
   useEffect(() => {
-    let timer: number;
-    if (isPlaying) {
-      timer = window.setInterval(() => {
-        setEngineState((prev) => {
-          if (prev.currentStepIndex < selectedScenario.steps.length - 1) {
-            return scenarioReducer(prev, { type: 'STEP_FORWARD' }, selectedScenario);
-          } else {
-            setIsPlaying(false);
-            return prev;
-          }
+    if (!pending) return undefined;
+    const controller = new AbortController();
+    runVerifierJob({ type: 'candidate', family: pending.family, variant: pending.variant, args: pending.args }, { signal: controller.signal })
+      .then((result) => dispatch({ type: 'VERIFICATION_RESULT', key: pending.key, verdict: verdictFromResult(pending, result) }))
+      .catch((err) => {
+        if (err?.code === 'VERIFIER_CANCELLED') return;
+        dispatch({
+          type: 'VERIFICATION_RESULT',
+          key: pending.key,
+          verdict: { state: 'unknown', code: err?.code || 'VERIFIER_ERROR', reason: String(err?.message || err), source: 'verifier', inputDigest: pending.inputDigest }
         });
-      }, 2500);
+      });
+    return () => controller.abort();
+  }, [pendingKey, selectedScenario]);
+
+  // Automated playback waits for each verifier result and stops at a refusal or the end.
+  useEffect(() => {
+    if (!isPlaying) return undefined;
+    const v = engineState.verificationVerdict.state;
+    if (v === 'pending') return undefined;
+    if (v === 'refused' || v === 'unknown' || v === 'blocked' || engineState.currentStepIndex >= selectedScenario.steps.length - 1) {
+      setIsPlaying(false);
+      return undefined;
     }
-    return () => clearInterval(timer);
-  }, [isPlaying, selectedScenario]);
+    const timer = window.setTimeout(() => dispatch({ type: 'STEP_FORWARD' }), 1500);
+    return () => clearTimeout(timer);
+  }, [isPlaying, engineState.currentStepIndex, engineState.verificationVerdict.state, selectedScenario]);
 
   // Sync with Context Engine
   useEffect(() => {
@@ -82,24 +101,35 @@ export function TransactionSandbox({
 
   const currentStep = selectedScenario.steps[engineState.currentStepIndex];
 
-  const handleStepForward = () => {
-    setEngineState((prev) => scenarioReducer(prev, { type: 'STEP_FORWARD' }, selectedScenario));
-  };
-
-  const handleStepBackward = () => {
-    setEngineState((prev) => scenarioReducer(prev, { type: 'STEP_BACKWARD' }, selectedScenario));
-  };
+  const handleStepForward = () => dispatch({ type: 'STEP_FORWARD' });
+  const handleStepBackward = () => dispatch({ type: 'STEP_BACKWARD' });
 
   const handleReset = () => {
     setIsPlaying(false);
-    setEngineState(createInitialScenarioState(selectedScenario));
+    dispatch({ type: 'RESET' });
   };
 
   const handleApplyFailureInjection = (injectionId: string) => {
-    setEngineState((prev) =>
-      scenarioReducer(prev, { type: 'APPLY_FAILURE_INJECTION', injectionId }, selectedScenario)
-    );
+    setIsPlaying(false);
+    dispatch({ type: 'APPLY_FAILURE_INJECTION', injectionId });
   };
+
+  const verdict = engineState.verificationVerdict;
+  const verdictTone =
+    verdict.state === 'accepted' ? 'success' : verdict.state === 'refused' || verdict.state === 'unknown' ? 'refusal' : 'neutral';
+  const verdictLabel =
+    verdict.state === 'accepted'
+      ? 'Verifier accepted'
+      : verdict.state === 'refused'
+        ? `${verdict.source === 'fixture' ? 'Fixture refusal' : 'Verifier refused'}: ${verdict.code}`
+        : verdict.state === 'pending'
+          ? 'Running verifier...'
+          : verdict.state === 'unknown'
+            ? `No verdict: ${verdict.code || 'unknown'}`
+            : verdict.state === 'blocked'
+              ? 'Blocked by an earlier refusal'
+              : 'No verification at this step';
+  const activeInjection = selectedScenario.failureInjections?.find((f) => f.id === engineState.activeFailureInjectionId);
 
   return (
     <div style={{ maxWidth: '1140px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -178,6 +208,7 @@ export function TransactionSandbox({
             <button
               type="button"
               onClick={() => setIsPlaying(!isPlaying)}
+              aria-pressed={isPlaying ? 'true' : 'false'}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -199,6 +230,7 @@ export function TransactionSandbox({
             <button
               type="button"
               onClick={handleStepBackward}
+              aria-label="Previous step"
               disabled={engineState.currentStepIndex <= 0}
               style={{
                 display: 'inline-flex',
@@ -218,6 +250,7 @@ export function TransactionSandbox({
             <button
               type="button"
               onClick={handleStepForward}
+              aria-label="Next step"
               disabled={engineState.currentStepIndex >= selectedScenario.steps.length - 1}
               style={{
                 display: 'inline-flex',
@@ -337,26 +370,26 @@ export function TransactionSandbox({
 
             {/* Verifier Verdict Pill */}
             <div
+              role="status"
+              aria-live="polite"
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.375rem',
                 padding: '0.35rem 0.625rem',
                 borderRadius: 'var(--ox-radius-sm)',
-                backgroundColor: engineState.verificationVerdict.ok ? 'var(--ox-status-success-bg)' : 'var(--ox-status-refusal-bg)',
-                color: engineState.verificationVerdict.ok ? 'var(--ox-status-success-text)' : 'var(--ox-status-refusal-text)',
+                backgroundColor: verdictTone === 'success' ? 'var(--ox-status-success-bg)' : verdictTone === 'refusal' ? 'var(--ox-status-refusal-bg)' : 'var(--ox-surface-subtle)',
+                color: verdictTone === 'success' ? 'var(--ox-status-success-text)' : verdictTone === 'refusal' ? 'var(--ox-status-refusal-text)' : 'var(--ox-text-secondary)',
                 fontWeight: 600,
                 fontSize: '0.75rem'
               }}
             >
-              {engineState.verificationVerdict.ok ? (
+              {verdictTone === 'success' ? (
                 <IconShieldCheck size={16} color="var(--ox-status-success-text)" />
-              ) : (
+              ) : verdictTone === 'refusal' ? (
                 <IconAlertTriangle size={16} color="var(--ox-status-refusal-text)" />
-              )}
-              <span>
-                {engineState.verificationVerdict.ok ? 'VERIFIER: PASS' : `REFUSAL: ${engineState.verificationVerdict.code}`}
-              </span>
+              ) : null}
+              <span>{verdictLabel}</span>
             </div>
           </div>
 
@@ -397,6 +430,34 @@ export function TransactionSandbox({
             </div>
           </div>
 
+          {/* Verdict evidence: exact input digests and the verifier's reason */}
+          {(verdict.reason || verdict.inputDigest || currentStep.observation) && (
+            <div style={{ padding: '0.75rem', borderRadius: 'var(--ox-radius-sm)', backgroundColor: 'var(--ox-surface-subtle)', fontSize: '0.75rem', color: 'var(--ox-text-secondary)', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+              {verdict.reason && <div><strong>Reason:</strong> {verdict.reason}</div>}
+              {verdict.inputDigest && (
+                <div style={{ wordBreak: 'break-all' }}>
+                  <strong>Verifier input SHA-256:</strong> <code>{verdict.inputDigest}</code>
+                </div>
+              )}
+              {verdict.originalInputDigest && (
+                <div style={{ wordBreak: 'break-all' }}>
+                  <strong>Before the injected change:</strong> <code>{verdict.originalInputDigest}</code>
+                  {verdict.changedPaths?.length ? <span> (changed: {verdict.changedPaths.join(', ')})</span> : null}
+                </div>
+              )}
+              {currentStep.observation && (
+                <div>
+                  <strong>Deterministic fixture:</strong> {currentStep.observation.field} = <code>{currentStep.observation.value}</code>. The sandbox cannot observe gateway or chain state; confirm it against a real node.
+                </div>
+              )}
+              {currentStep.verifierCheck?.vectorId && (
+                <div>
+                  <strong>Arguments from vector:</strong> <code>{currentStep.verifierCheck.vectorId}</code>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Artifact Tray */}
           {currentStep.outputArtifact && (
             <div
@@ -412,10 +473,13 @@ export function TransactionSandbox({
             >
               <div>
                 <div style={{ fontSize: '0.6875rem', fontWeight: 700, color: 'var(--ox-text-muted)' }}>
-                  Generated Artifact: {currentStep.outputArtifact.name} ({currentStep.outputArtifact.type})
+                  {engineState.artifactsGenerated.some((a) => a.stepNumber === engineState.currentStepIndex + 1)
+                    ? 'Artifact'
+                    : 'Artifact not produced (the step did not complete)'}
+                  : {currentStep.outputArtifact.name} ({currentStep.outputArtifact.type})
                 </div>
                 <div style={{ fontFamily: 'var(--ox-font-mono)', fontSize: '0.75rem', color: 'var(--ox-text-primary)', marginTop: '0.2rem' }}>
-                  {JSON.stringify(currentStep.outputArtifact.payload)}
+                  {JSON.stringify(currentStep.outputArtifact.payload).slice(0, 400)}
                 </div>
               </div>
 
@@ -479,14 +543,23 @@ export function TransactionSandbox({
                 ))}
               </div>
 
-              {engineState.activeFailureInjectionId && (
-                <div style={{ marginTop: '0.25rem', fontSize: '0.75rem', display: 'flex', gap: '0.75rem' }}>
-                  <a href={`${basePath}/diagnose/?code=${engineState.verificationVerdict.code}`} style={{ color: 'var(--ox-status-refusal-text)', fontWeight: 600 }}>
-                    Triage in Failure Navigator →
-                  </a>
-                  <a href={`${basePath}/inspect/`} style={{ color: 'var(--ox-bitcoin-orange)', fontWeight: 600 }}>
-                    Compare in Artifact Lens →
-                  </a>
+              {activeInjection && (
+                <div style={{ marginTop: '0.25rem', fontSize: '0.75rem', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.75rem' }}>
+                  <span>
+                    Active: <strong>{activeInjection.label}</strong>. {activeInjection.affectedInvariant}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => dispatch({ type: 'CLEAR_FAILURE_INJECTION' })}
+                    style={{ padding: '0.25rem 0.5rem', borderRadius: 'var(--ox-radius-sm)', border: '1px solid var(--ox-border-default)', backgroundColor: 'var(--ox-surface-panel)', color: 'var(--ox-text-primary)', fontSize: '0.75rem', cursor: 'pointer' }}
+                  >
+                    Remove injection
+                  </button>
+                  {verdict.state === 'refused' && verdict.code && (
+                    <a href={`${basePath}/diagnose/?code=${encodeURIComponent(verdict.code)}`} style={{ color: 'var(--ox-status-refusal-text)', fontWeight: 600 }}>
+                      Triage in Failure Navigator
+                    </a>
+                  )}
                 </div>
               )}
             </div>
