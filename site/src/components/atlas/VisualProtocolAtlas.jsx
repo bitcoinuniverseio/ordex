@@ -3,6 +3,7 @@ import { useState, useEffect } from 'preact/hooks';
 import atlasData from '../../data/atlas.json';
 import { TruthLabel } from '../shell/TruthLabel.jsx';
 import { resolveUrl } from '../../lib/base-url.js';
+import { recordToolEvidence } from '../../lib/session/evidence';
 
 export function VisualProtocolAtlas({ initialDiagramId = null }) {
   const [selectedDiagramId, setSelectedDiagramId] = useState(initialDiagramId || atlasData[0]?.id);
@@ -13,6 +14,14 @@ export function VisualProtocolAtlas({ initialDiagramId = null }) {
   const diagram = atlasData.find((d) => d.id === selectedDiagramId) || atlasData[0];
   const steps = diagram.steps || [];
   const activeStepObj = steps[currentStep] || steps[0];
+
+  // OX-S03: reaching the last step of a diagram is a reading record (read:<diagram>), the
+  // evidence the security review mission asks of the Atlas. It is not verification.
+  useEffect(() => {
+    if (steps.length && currentStep === steps.length - 1) {
+      recordToolEvidence({ tool: 'atlas', operation: `read:${diagram.id}`, state: 'read', evidenceClass: 'Deterministic example', reason: `Walked all ${steps.length} steps of ${diagram.title}.` });
+    }
+  }, [currentStep, selectedDiagramId]);
 
   // Auto playback
   useEffect(() => {

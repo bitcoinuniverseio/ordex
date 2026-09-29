@@ -33,12 +33,9 @@ function missionFromUrl(fallback: string): MissionDefinition {
   return getMissionById(fallback) || MISSIONS[0];
 }
 
-/* IMPLEMENTATION-HANDOFF [OX-S03] (final phase, remaining)
- * Evidence-based completion, stage adapters, durable store and context are implemented. Remaining: the
- * playground, events, doctor, kits, wizards, failure-navigator and atlas tools must record evidence with the
- * operations named in mission-evidence.ts; then prove all nine missions through eight stages in
- * tests/e2e/missions.test.js on real IndexedDB (reload, cross-tab, wrong network).
- */
+// OX-S03 final phase: every tool named in mission-evidence.ts now records its run
+// (tests/unit/mission-coverage.test.js checks each template and that all 9 missions x 7
+// evidence stages are satisfiable; tests/e2e/missions.test.js drives them on real IndexedDB).
 /**
  * OX-S03: a stage completes only when matching evidence exists for this mission in the
  * current network, gateway, protocol and build. Completed stages whose evidence came from
