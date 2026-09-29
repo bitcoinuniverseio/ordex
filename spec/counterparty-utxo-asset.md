@@ -16,57 +16,52 @@ One self-hosted Counterparty Core deployment is the only production authority. A
 
 A record states that an exact quantity of one asset is attached to one outpoint right now, controlled by one address, with the co-traveling assets on the same outpoint declared. An undeclared co-traveling asset is how unrelated assets get burned, so the declaration is part of the record and part of every verification that moves the outpoint.
 
-<!--
-IMPLEMENTATION-HANDOFF [OX-P10] Preparation only; functional status FAIL, repair NOT IMPLEMENTED.
-Coverage: OX-P-C034, OX-P-C046, OX-P-C047, OX-P-C048, OX-P-C049. Evidence: P-R18 in
-handoff/evidence.
-Verified cause: Ordex spec/verifier treats attachment as ordinal first-sat transfer. Pinned
-Counterparty Corev11.4.0 get_utxos_info selects one first non-OP_RETURN output for all attached
-inputs; move_assets credits complete balances there, independent of input sat positions.
-Required behavior: Correct Counterparty move semantics across heritage, SafeOps and swaps. Governing
-refs: P-S17 (v11.4.0 e4d1315654b79bb7207cd9f45a8d7b6d5255a290;
-blob3867149258f2fc417d676a0e54bf15dc0b6bfd9b); P-S18 (v11.4.0;
-blob77fc9b6354a59feba810bce7c4a8ba8957fd0f28); P-S19 (guide accessed2026-09-29; v11.4.0
-release2026-09-18); complete URLs in reports/protocol.md.
-Prerequisites/order: none; establish strict contracts first. Related files:
-verifier/counterparty-asset.js, sdk/src/counterparty.ts; Core
-backend/src/ordex-v12/ordex-v12.module.ts and corresponding registry/heritage/webhook service.
-1. Replace sat-flow destination arithmetic in verifyAttachmentFollows with pinned Counterparty
-ordinary-move destination selection from raw script bytes; first non-OP_RETURN output receives every
-attached input balance, independent of BTC values.
-2. Model attach,detach,and automatic move as distinct protocol operations with activation/network
-context. No-destination behavior and detach/attach suppression must follow installed Counterparty
-parser and active gates, not generic ordinal loss assumptions.
-3. Verify complete co-traveling inventories across every spent input and independently confirm
-Counterparty UTXO_MOVE/ATTACH_TO_UTXO/DETACH_FROM_UTXO ledger events, quantities, destination and
-accepted hashes after confirmation/reorg.
-4. Correct spec/counterparty-utxo-asset.md and SDK; wire Core heritage/SafeOps/swap/listing builders
-to force intended first spendable destination and reject mixed-owner attachments that would all
-co-move unexpectedly. Gate availability on pinned authority readiness/version.
-Validation (PROPOSED NEW tests, commands unverified until implemented):
-verifier/counterparty-move-parity.test.js, sdk/test/counterparty-move-parity.test.js. node --test
-verifier/counterparty-asset.test.js verifier/counterparty-move-parity.test.js; npm --prefix sdk run
-build; node --test sdk/test/counterparty.test.js sdk/test/counterparty-move-parity.test.js.
-Assertions/evidence: Input1 sat-range maps output1 but Counterparty sends output0; correct expected0
-accepts,1 refuses; Leading OP_RETURN skipped; all attached assets from all sources same destination;
-no-destination gates exact; Real supported Signet attach/move/detach and heritage buy/swap confirm
-balances/events; justified testnet only if authority lacks Signet; Reorg and stale authority stop
-unsafe actionability. Offline probes are not end-to-end PASS; require actual Signet transaction and
-indexed/consumer readback where applicable.
-Rollback: Never mutate Counterparty consensus or old signed artifacts. Invalidate unsafe unbroadcast
-plans; roll back public actionability until authority/adapter parity passes. Treat already broadcast
-settlements by actual ledger outcome.
--->
+<!-- OX-P10: the move rules below restate Counterparty Core v11.4.0 (commit
+e4d1315654b79bb7207cd9f45a8d7b6d5255a290): gettxinfo.py select_utxo_destination,
+move.py move_assets, blocks.py parse_tx and protocol_changes.json. An attachment
+is a ledger balance on an outpoint, not a sat, so ordinal sat flow never applies. -->
 
 ## Attachment follows the spend
 
-When a UTXO carrying an attachment is spent, the asset follows the input range. The destination is the first output whose accumulated value passes the sat range start of the attached outpoint: the same first-sat rule that decides inscription delivery. `verifyAttachmentFollows` re-derives the destination from the spending transaction alone and refuses when:
+An attached balance lives in the Counterparty ledger on an outpoint. It does not ride a sat range. When a transaction spends one or more attached outpoints, Counterparty picks **one destination for all of them**: the first output whose script it does not pass over as `OP_RETURN`. Every positive balance of every attached input is credited to that output, whatever the BTC values and input positions are.
 
-1. No input spends the recorded outpoint (`OUTPOINT_NOT_SPENT`) or it appears twice (`OUTPOINT_DUPLICATED`).
-2. The spent value differs from the record, so the range cannot be traced (`SOURCE_VALUE_MISMATCH`).
-3. A readable value is missing anywhere the trace needs one (`INPUT_VALUE_UNKNOWN`, `OUTPUT_VALUE_UNKNOWN`).
-4. No output absorbs the range start, meaning the attachment fell into the fee region (`SAT_FLOW_SHORTFALL`).
-5. The trace lands on a different output than the plan promised (`DESTINATION_MISMATCH`).
+The destination is read from raw script bytes exactly as `select_utxo_destination` reads them:
+
+| Output script | Passed over? |
+| --- | --- |
+| begins with `OP_RETURN` and decodes cleanly | yes |
+| a single push of the byte `0x6a`, which renders like `OP_RETURN` | yes |
+| any script that fails to decode, including `OP_RETURN` followed by a truncated push | no, it is a destination |
+| an empty script | no, it is a destination |
+| any script ending in `OP_CHECKMULTISIG` | no, it is a destination |
+| anything else | no, it is a destination |
+
+When there is no destination at all, what happens depends on the network's activation heights:
+
+| Network | UTXO support from | Detach on spend from |
+| --- | --- | --- |
+| mainnet | 866000 | 871900 |
+| testnet (testnet3) | 2925800 | 3195137 |
+| testnet4, signet, regtest | 0 | 0 |
+
+With detach on spend active, a spend with no destination returns each balance to its owner address. Before it, the balances stay on the spent outpoint and nothing can move them again.
+
+A Counterparty message in the same transaction changes the order, not the rule. With an attach message the existing attachments still move to the destination after the attach is parsed. With a detach message the automatic move does not run at all: the detach decides where the assets go, and that is an address, not an output.
+
+`counterpartyMoveDestination` returns the destination index, `counterpartyUtxoGates` the active gates, and `counterpartyMoveOutcome` the whole outcome of a spend: `NONE`, `MOVE`, `DETACH_BY_SPEND`, `STRANDED` or `DETACH_MESSAGE`, with every asset listed from its source input. The outcome needs the ledger's attachment list for **every** input, `[]` for none (`INPUT_ATTACHMENTS_UNKNOWN`), because any attached input moves to the same output as the one being traded.
+
+`verifyAttachmentFollows` checks one recorded attachment against a planned spend and refuses when:
+
+1. The plan names no real output (`DESTINATION_MISSING`), no input spends the recorded outpoint (`OUTPOINT_NOT_SPENT`) or it appears twice (`OUTPOINT_DUPLICATED`).
+2. The spent value differs from the record (`SOURCE_VALUE_MISMATCH`).
+3. An input lacks its ledger attachment list, an output script is not hex, or the message kind is unknown (`INPUT_ATTACHMENTS_UNKNOWN`, `OUTPUT_SCRIPT_INVALID`, `COUNTERPARTY_MESSAGE_UNKNOWN`).
+4. UTXO support is not active at the height the spend is evaluated at, by default the record's checkpoint height plus one (`UTXO_SUPPORT_INACTIVE`).
+5. The ledger lists different assets on the outpoint than the record declares (`ATTACHMENT_INVENTORY_MISMATCH`).
+6. Another input carries attachments that would co-move to the same output (`OTHER_ATTACHMENTS_COMOVE`).
+7. The spend detaches instead of moving (`DETACH_NOT_A_MOVE`, `NO_DESTINATION_DETACHES`) or strands the balance (`NO_DESTINATION_STRANDS`).
+8. Counterparty credits another output than the plan names (`DESTINATION_MISMATCH`), or the credited output begins `OP_RETURN` and can never be spent (`DESTINATION_UNSPENDABLE`).
+
+After confirmation, and again after any reorg, `verifyCounterpartyLedgerEvents` reconciles the `UTXO_MOVE`, `ATTACH_TO_UTXO` and `DETACH_FROM_UTXO` events the ledger recorded for the transaction against the exact events the plan expected, at a stated block height, block hash and ledger hash. An event that is missing, unexpected or not valid is refused (`LEDGER_EVENT_MISSING`, `LEDGER_EVENT_UNEXPECTED`, `LEDGER_EVENT_INVALID`).
 
 ## Attach and detach
 
@@ -78,7 +73,7 @@ Counterparty-attached outputs are never cardinal. SafeOps inventories, wallet se
 
 ## Trading path
 
-Listings are Ordex asks over the attached outpoint: the seller's signed input commits the outpoint, the buyer's payment output sits at the same index, and the sat-flow invariant guarantees the attachment lands in the buyer's output. Legacy dispensers and order history may be displayed read-only with clear labeling. Nothing in the product sends BTC to a legacy dispenser address or encourages it.
+Listings are Ordex asks over the attached outpoint, but the sat-flow invariant that places an inscription does not place an attachment. A heritage settlement is built so that the buyer's receive output is the first output Counterparty does not pass over, with no other attached input in the transaction, and `verifyAttachmentFollows` must accept that exact output before anyone signs. Legacy dispensers and order history may be displayed read-only with clear labeling. Nothing in the product sends BTC to a legacy dispenser address or encourages it.
 
 ## Readiness gates
 

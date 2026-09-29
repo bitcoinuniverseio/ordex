@@ -791,87 +791,186 @@ const counterpartyCases = [
     record: counterpartyRecord({ checkpoint: { height: 900000, blockHash: BLOCK_HASH } }),
     expected: { ok: false, code: 'CHECKPOINT_INVALID' },
   },
-  {
-    name: 'a spend that carries the attachment to the planned output is accepted',
-    record: counterpartyRecord(),
-    spendTx: {
-      inputs: [
-        { txid: OUTPOINT_A.txid, vout: OUTPOINT_A.vout, valueSats: '15000' },
-        { txid: OUTPOINT_C.txid, vout: OUTPOINT_C.vout, valueSats: '20000' },
-      ],
-      outputs: [
-        { scriptHex: SCRIPT_P2WPKH, valueSats: '10000' },
-        { scriptHex: SCRIPT_P2TR, valueSats: '25000' },
-      ],
-    },
-    expectedOutputIndex: 1,
-    expected: { ok: true, carriedToIndex: 1 },
-  },
-  {
-    name: 'a spend that never touches the outpoint is refused',
-    record: counterpartyRecord(),
-    spendTx: {
-      inputs: [{ txid: OUTPOINT_A.txid, vout: OUTPOINT_A.vout, valueSats: '15000' }],
-      outputs: [{ scriptHex: SCRIPT_P2WPKH, valueSats: '15000' }],
-    },
-    expectedOutputIndex: 0,
-    expected: { ok: false, code: 'OUTPOINT_NOT_SPENT' },
-  },
-  {
-    name: 'a spend whose sat flow lands the asset elsewhere is refused',
-    record: counterpartyRecord(),
-    spendTx: {
-      inputs: [
-        { txid: OUTPOINT_A.txid, vout: OUTPOINT_A.vout, valueSats: '15000' },
-        { txid: OUTPOINT_C.txid, vout: OUTPOINT_C.vout, valueSats: '20000' },
-      ],
-      outputs: [
-        { scriptHex: SCRIPT_P2WPKH, valueSats: '10000' },
-        { scriptHex: SCRIPT_P2TR, valueSats: '25000' },
-      ],
-    },
-    expectedOutputIndex: 0,
-    expected: { ok: false, code: 'DESTINATION_MISMATCH' },
-  },
-  {
-    name: 'a spend that never reabsorbs the range start is refused',
-    record: counterpartyRecord(),
-    spendTx: {
-      inputs: [
-        { txid: OUTPOINT_A.txid, vout: OUTPOINT_A.vout, valueSats: '15000' },
-        { txid: OUTPOINT_C.txid, vout: OUTPOINT_C.vout, valueSats: '20000' },
-      ],
-      outputs: [{ scriptHex: SCRIPT_P2WPKH, valueSats: '5000' }],
-    },
-    expectedOutputIndex: 0,
-    expected: { ok: false, code: 'SAT_FLOW_SHORTFALL' },
-  },
-  {
-    name: 'a spend whose value disagrees with the record is refused',
-    record: counterpartyRecord({ sourceValueSats: '99999' }),
-    spendTx: {
-      inputs: [{ txid: OUTPOINT_C.txid, vout: OUTPOINT_C.vout, valueSats: '20000' }],
-      outputs: [
-        { scriptHex: SCRIPT_P2WPKH, valueSats: '10000' },
-        { scriptHex: SCRIPT_P2TR, valueSats: '10000' },
-      ],
-    },
-    expectedOutputIndex: 0,
-    expected: { ok: false, code: 'SOURCE_VALUE_MISMATCH' },
-  },
-  {
-    name: 'a duplicated attached outpoint is refused',
-    record: counterpartyRecord(),
-    spendTx: {
-      inputs: [
-        { txid: OUTPOINT_C.txid, vout: OUTPOINT_C.vout, valueSats: '20000' },
-        { txid: OUTPOINT_C.txid, vout: OUTPOINT_C.vout, valueSats: '20000' },
-      ],
-      outputs: [{ scriptHex: SCRIPT_P2WPKH, valueSats: '39500' }],
-    },
-    expectedOutputIndex: 0,
-    expected: { ok: false, code: 'OUTPOINT_DUPLICATED' },
-  },
+  // OX-P10: spends follow the Counterparty Core v11.4.0 destination rule. Every
+  // input carries the attachments the ledger holds on it; [] for none.
+  ...(() => {
+    const RAREPEPE = { name: 'RAREPEPE', assetId: '137', quantitySats: '1' };
+    const PEPECASH = { name: 'PEPECASH', assetId: '18279', quantitySats: '100' };
+    const spend = (inputs, outputs, extra = {}) => ({
+      inputs: inputs.map(([outpoint, valueSats, attachments]) => ({
+        txid: outpoint.txid,
+        vout: outpoint.vout,
+        valueSats,
+        ...(attachments ? { attachments } : {}),
+      })),
+      outputs: outputs.map(([scriptHex, valueSats]) => ({ scriptHex, valueSats })),
+      ...extra,
+    });
+    const plain = [OUTPOINT_A, '20000', []];
+    const attached = [OUTPOINT_C, '20000', [RAREPEPE]];
+    const twoOutputs = [[SCRIPT_P2WPKH, '20000'], [SCRIPT_P2TR, '19000']];
+    const opReturnOnly = [['6a0401020304', '0']];
+    return [
+      {
+        name: 'P-R18: the attachment moves to the first non-OP_RETURN output, not along its sat range',
+        record: counterpartyRecord(),
+        spendTx: spend([plain, attached], twoOutputs),
+        expectedOutputIndex: 0,
+        expected: { ok: true, carriedToIndex: 0 },
+      },
+      {
+        name: 'P-R18: planning the sat-range output instead is refused',
+        record: counterpartyRecord(),
+        spendTx: spend([plain, attached], twoOutputs),
+        expectedOutputIndex: 1,
+        expected: { ok: false, code: 'DESTINATION_MISMATCH' },
+      },
+      {
+        name: 'output values play no part in the destination',
+        record: counterpartyRecord(),
+        spendTx: spend([attached], [[SCRIPT_P2WPKH, '546']]),
+        expectedOutputIndex: 0,
+        expected: { ok: true, carriedToIndex: 0 },
+      },
+      {
+        name: 'a leading OP_RETURN is passed over',
+        record: counterpartyRecord(),
+        spendTx: spend([attached], [['6a0401020304', '0'], ...twoOutputs]),
+        expectedOutputIndex: 1,
+        expected: { ok: true, carriedToIndex: 1 },
+      },
+      {
+        name: 'a one-byte push of 0x6a is passed over like OP_RETURN',
+        record: counterpartyRecord(),
+        spendTx: spend([attached], [['016a', '1000'], [SCRIPT_P2WPKH, '18000']]),
+        expectedOutputIndex: 1,
+        expected: { ok: true, carriedToIndex: 1 },
+      },
+      {
+        name: 'an OP_RETURN that fails to decode is a destination, and it cannot be spent',
+        record: counterpartyRecord(),
+        spendTx: spend([attached], [['6a4c', '0'], [SCRIPT_P2WPKH, '19000']]),
+        expectedOutputIndex: 0,
+        expected: { ok: false, code: 'DESTINATION_UNSPENDABLE' },
+      },
+      {
+        name: 'an OP_RETURN ending in OP_CHECKMULTISIG is never passed over',
+        record: counterpartyRecord(),
+        spendTx: spend([attached], [['6a51ae', '0'], [SCRIPT_P2WPKH, '19000']]),
+        expectedOutputIndex: 1,
+        expected: { ok: false, code: 'DESTINATION_MISMATCH' },
+      },
+      {
+        name: 'another attached input would co-move to the same output',
+        record: counterpartyRecord(),
+        spendTx: spend([attached, [OUTPOINT_A, '20000', [PEPECASH]]], twoOutputs),
+        expectedOutputIndex: 0,
+        expected: { ok: false, code: 'OTHER_ATTACHMENTS_COMOVE' },
+      },
+      {
+        name: 'an undeclared co-traveling asset on the outpoint is refused',
+        record: counterpartyRecord(),
+        spendTx: spend([[OUTPOINT_C, '20000', [RAREPEPE, PEPECASH]]], twoOutputs),
+        expectedOutputIndex: 0,
+        expected: { ok: false, code: 'ATTACHMENT_INVENTORY_MISMATCH' },
+      },
+      {
+        name: 'declared co-traveling assets move together',
+        record: counterpartyRecord({ coTravelingAssets: [PEPECASH] }),
+        spendTx: spend([[OUTPOINT_C, '20000', [PEPECASH, RAREPEPE]]], twoOutputs),
+        expectedOutputIndex: 0,
+        expected: { ok: true, carriedToIndex: 0 },
+      },
+      {
+        name: 'an input without its ledger attachment reading is refused',
+        record: counterpartyRecord(),
+        spendTx: spend([[OUTPOINT_A, '20000'], attached], twoOutputs),
+        expectedOutputIndex: 0,
+        expected: { ok: false, code: 'INPUT_ATTACHMENTS_UNKNOWN' },
+      },
+      {
+        name: 'with no spendable output the spend detaches to the owner',
+        record: counterpartyRecord(),
+        spendTx: spend([attached], opReturnOnly),
+        expectedOutputIndex: 0,
+        expected: { ok: false, code: 'NO_DESTINATION_DETACHES' },
+      },
+      {
+        name: 'before spend_utxo_to_detach an OP_RETURN-only spend strands the attachment',
+        record: counterpartyRecord({ checkpoint: { height: 870000, blockHash: BLOCK_HASH, ledgerHash: LEDGER_HASH } }),
+        spendTx: spend([attached], opReturnOnly),
+        expectedOutputIndex: 0,
+        expected: { ok: false, code: 'NO_DESTINATION_STRANDS' },
+      },
+      {
+        name: 'before utxo_support there is no attachment to move',
+        record: counterpartyRecord({ checkpoint: { height: 800000, blockHash: BLOCK_HASH, ledgerHash: LEDGER_HASH } }),
+        spendTx: spend([attached], twoOutputs),
+        expectedOutputIndex: 0,
+        expected: { ok: false, code: 'UTXO_SUPPORT_INACTIVE' },
+      },
+      {
+        name: 'a detach message sends the asset to an address, not an output',
+        record: counterpartyRecord(),
+        spendTx: spend([attached], twoOutputs, { counterpartyMessage: 'detach' }),
+        expectedOutputIndex: 0,
+        expected: { ok: false, code: 'DETACH_NOT_A_MOVE' },
+      },
+      {
+        name: 'an attach message still moves existing attachments to the first spendable output',
+        record: counterpartyRecord(),
+        spendTx: spend([attached], twoOutputs, { counterpartyMessage: 'attach' }),
+        expectedOutputIndex: 0,
+        expected: { ok: true, carriedToIndex: 0 },
+      },
+      {
+        name: 'an unknown message kind is refused',
+        record: counterpartyRecord(),
+        spendTx: spend([attached], twoOutputs, { counterpartyMessage: 'send' }),
+        expectedOutputIndex: 0,
+        expected: { ok: false, code: 'COUNTERPARTY_MESSAGE_UNKNOWN' },
+      },
+      {
+        name: 'a Signet attachment follows the same rule from its first block',
+        record: counterpartyRecord({
+          network: 'signet',
+          address: 'tb1qcounterpartysignetexample000000000000',
+          checkpoint: { height: 1000, blockHash: BLOCK_HASH, ledgerHash: LEDGER_HASH },
+        }),
+        spendTx: spend([plain, attached], twoOutputs),
+        expectedOutputIndex: 0,
+        expected: { ok: true, carriedToIndex: 0 },
+      },
+      {
+        name: 'a spend that never touches the outpoint is refused',
+        record: counterpartyRecord(),
+        spendTx: spend([plain], [[SCRIPT_P2WPKH, '15000']]),
+        expectedOutputIndex: 0,
+        expected: { ok: false, code: 'OUTPOINT_NOT_SPENT' },
+      },
+      {
+        name: 'a plan naming a missing output is refused',
+        record: counterpartyRecord(),
+        spendTx: spend([attached], twoOutputs),
+        expectedOutputIndex: 2,
+        expected: { ok: false, code: 'DESTINATION_MISSING' },
+      },
+      {
+        name: 'a spend whose value disagrees with the record is refused',
+        record: counterpartyRecord({ sourceValueSats: '99999' }),
+        spendTx: spend([attached], twoOutputs),
+        expectedOutputIndex: 0,
+        expected: { ok: false, code: 'SOURCE_VALUE_MISMATCH' },
+      },
+      {
+        name: 'a duplicated attached outpoint is refused',
+        record: counterpartyRecord(),
+        spendTx: spend([attached, attached], [[SCRIPT_P2WPKH, '39500']]),
+        expectedOutputIndex: 0,
+        expected: { ok: false, code: 'OUTPOINT_DUPLICATED' },
+      },
+    ];
+  })(),
 ];
 
 const offlineCases = (() => {

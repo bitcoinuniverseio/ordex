@@ -2,9 +2,11 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { detectFailureInput, getAllDiagnosticRules } from '../../site/src/lib/diagnostics/detector.js';
 
-test('diagnostic detector: maps all 172 refusal codes to conclusive diagnostic rules', () => {
+// The count follows the refusal codes the verifiers can return. OX-P04 and OX-P10
+// added the rune allocation and Counterparty move codes (172 to 195).
+test('diagnostic detector: maps all 195 refusal codes to conclusive diagnostic rules', () => {
   const rules = getAllDiagnosticRules();
-  assert.equal(rules.length, 172);
+  assert.equal(rules.length, 195);
 
   for (const rule of rules) {
     const code = rule.exactCodes[0];
