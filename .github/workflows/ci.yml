@@ -21,7 +21,7 @@ jobs:
       github.event_name != 'pull_request' ||
       github.event.pull_request.head.repo.full_name == github.repository
     runs-on: [self-hosted, linux, x64, universe-super]
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
       - name: Check out exact source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -80,6 +80,14 @@ jobs:
 
       - name: Run the conformance CLI runner
         run: npm run conformance
+
+      # Browser gates (OX-S07, OX-S10): serve the built site under /ordex and drive it with
+      # Playwright Chromium. They fail on hydration errors, console errors and false results.
+      - name: Install the pinned Chromium for the browser gates
+        run: npx playwright install chromium
+
+      - name: Run the built-site browser gates
+        run: npm run test:browser
 
       # dist/ is a build output and stays untracked. The build itself fails
       # loudly on an error, so the check here is that everything the deploy

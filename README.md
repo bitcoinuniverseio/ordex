@@ -24,7 +24,7 @@ Every component of Ordex runs client-side with zero custody, zero tracking, and 
 | 🤖 **Agent Bridge** | Claude Desktop, Codex, MCP endpoint & integration guides | [Agent Bridge](https://bitcoinuniverseio.github.io/ordex/agents/) |
 | 🎬 **Guided Product Tours** | Step-by-step interactive visual tours | [Product Tours](https://bitcoinuniverseio.github.io/ordex/tour/) |
 | 🔬 **Protocol Lab** | Sat-flow diagrams and live client-side verifiers | [Protocol Lab](https://bitcoinuniverseio.github.io/ordex/lab/) |
-| ⚖️ **Conformance Studio** | 151 deterministic vector test runner & gateway doctor | [Conformance Studio](https://bitcoinuniverseio.github.io/ordex/verify/) |
+| ⚖️ **Conformance Studio** | 157 deterministic vector test runner & gateway doctor | [Conformance Studio](https://bitcoinuniverseio.github.io/ordex/verify/) |
 | 🗺️ **Visual Protocol Atlas** | Animated sat-flow and cryptographic invariant atlas | [Visual Protocol Atlas](https://bitcoinuniverseio.github.io/ordex/atlas/) |
 | 📡 **API Reference & Playground** | OpenAPI 3.1 interactive runner for all 78 operations | [API Reference](https://bitcoinuniverseio.github.io/ordex/reference/api/) |
 | 🛑 **Refusal Codes Catalog** | 172 error codes, trigger conditions, and remediations | [Refusal Codes](https://bitcoinuniverseio.github.io/ordex/reference/refusal-codes/) |

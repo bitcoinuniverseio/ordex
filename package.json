@@ -10,6 +10,7 @@
     "test:mcp": "npx tsx --test tests/unit/mcp-server.test.js",
     "test:security": "npx tsx --test tests/unit/security-sanitizer.test.js",
     "test:accessibility": "node --test tests/accessibility/*.test.js",
+    "test:browser": "node --test --test-concurrency=1 tests/e2e/*.test.js",
     "capture:walkthroughs": "node scripts/capture-walkthroughs.mjs",
     "test:all": "npm test && npm --prefix sdk test && node scripts/docs/conformance-cli.mjs",
     "conformance": "node scripts/docs/conformance-cli.mjs",

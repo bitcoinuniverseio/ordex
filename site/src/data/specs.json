@@ -31,6 +31,21 @@
       },
       {
         "level": 2,
+        "title": "The protocol contract is checkable",
+        "anchor": "the-protocol-contract-is-checkable"
+      },
+      {
+        "level": 2,
+        "title": "Fees are proved, not trusted",
+        "anchor": "fees-are-proved-not-trusted"
+      },
+      {
+        "level": 2,
+        "title": "Lost replies are recovered, never repeated",
+        "anchor": "lost-replies-are-recovered-never-repeated"
+      },
+      {
+        "level": 2,
         "title": "`POST /orders/:id/quote`",
         "anchor": "-post-orders-id-quote-"
       },
@@ -40,7 +55,7 @@
         "anchor": "-post-orders-id-preflight-"
       }
     ],
-    "rawLength": 7083
+    "rawLength": 9567
   },
   {
     "file": "batch-purchase.md",
@@ -116,7 +131,7 @@
         "anchor": "blind-signing-is-prohibited"
       }
     ],
-    "rawLength": 4568
+    "rawLength": 7800
   },
   {
     "file": "collection-manifest.md",
@@ -159,7 +174,7 @@
         "anchor": "gates"
       }
     ],
-    "rawLength": 4635
+    "rawLength": 7444
   },
   {
     "file": "counterparty-utxo-asset.md",
@@ -212,7 +227,7 @@
         "anchor": "readiness-gates"
       }
     ],
-    "rawLength": 4327
+    "rawLength": 7624
   },
   {
     "file": "events.md",
@@ -250,7 +265,7 @@
         "anchor": "historical-apis"
       }
     ],
-    "rawLength": 4617
+    "rawLength": 7320
   },
   {
     "file": "interoperability.md",
@@ -384,7 +399,7 @@
         "anchor": "what-ordex-never-does"
       }
     ],
-    "rawLength": 12840
+    "rawLength": 16117
   },
   {
     "file": "purchase.md",
@@ -475,7 +490,7 @@
         "anchor": "conformance"
       }
     ],
-    "rawLength": 4899
+    "rawLength": 7802
   },
   {
     "file": "safeops.md",
@@ -533,7 +548,7 @@
         "anchor": "monitoring"
       }
     ],
-    "rawLength": 6462
+    "rawLength": 9871
   },
   {
     "file": "swaps.md",
@@ -581,6 +596,6 @@
         "anchor": "adversarial-coverage"
       }
     ],
-    "rawLength": 5683
+    "rawLength": 8931
   }
 ]

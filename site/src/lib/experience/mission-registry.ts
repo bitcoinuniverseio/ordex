@@ -6,6 +6,8 @@
  * 1. understand -> 2. prepare -> 3. simulate -> 4. inspect -> 5. verify -> 6. integrate -> 7. validate -> 8. finish
  */
 
+import vectorManifest from '../../data/vectorManifest.json';
+
 export type StageId =
   | 'understand'
   | 'prepare'
@@ -474,7 +476,7 @@ export const MISSIONS: MissionDefinition[] = [
       verifyLabel: 'Run Verifiers',
       integrateDesc: 'Review signing policies and key isolation documentation.',
       integrateLabel: 'Review Policies',
-      validateDesc: 'Run 151 checked-in conformance vectors across all protocol features.',
+      validateDesc: `Run ${vectorManifest.total} checked-in conformance vectors across all protocol features.`,
       validateLabel: 'Run Conformance Vectors',
       finishDesc: 'Security review report generated and exported.'
     }),
