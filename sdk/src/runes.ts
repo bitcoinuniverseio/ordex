@@ -191,11 +191,13 @@ export type RuneAllocationRefusalCode =
   | 'MALFORMED_RUNE_EXPECTATION';
 
 export type RuneAllocationVerdict =
-  | { ok: true; runestone: Runestone['kind']; allocations: RuneAllocation[]; burned: RuneBurn[] }
+  | { ok: true; safe: true; runestone: Runestone['kind']; allocations: RuneAllocation[]; burned: RuneBurn[] }
   | {
       ok: false;
       code: RuneAllocationRefusalCode;
       reason: string;
+      /** The burn safety of the same transaction, whatever the plan says. */
+      safe?: boolean;
       runestone?: Runestone['kind'];
       allocations?: RuneAllocation[];
       burned?: RuneBurn[];
@@ -955,6 +957,7 @@ export function verifyRuneAllocation(
     ok: false,
     code,
     reason,
+    safe: allocation.burned.length === 0 && !allocation.mintUnresolved,
     runestone: allocation.runestone,
     allocations: allocation.allocations,
     burned: allocation.burned,
@@ -1002,5 +1005,5 @@ export function verifyRuneAllocation(
     );
   }
 
-  return { ok: true, runestone: allocation.runestone, allocations: allocation.allocations, burned: [] };
+  return { ok: true, safe: true, runestone: allocation.runestone, allocations: allocation.allocations, burned: [] };
 }

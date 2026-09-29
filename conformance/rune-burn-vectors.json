@@ -576,6 +576,7 @@
       "inputs": [
         {
           "indexed": true,
+          "runes": 1,
           "balances": [
             {
               "runeId": "840000:1",
@@ -1366,6 +1367,7 @@
       "inputs": [
         {
           "indexed": true,
+          "runes": 1,
           "balances": [
             {
               "runeId": "840000:1",
@@ -1390,6 +1392,7 @@
       "inputs": [
         {
           "indexed": true,
+          "runes": 1,
           "balances": [
             {
               "runeId": "840000:1",
@@ -1414,6 +1417,7 @@
       "inputs": [
         {
           "indexed": true,
+          "runes": 1,
           "balances": [
             {
               "runeId": "840000:1",
@@ -1439,6 +1443,7 @@
       "inputs": [
         {
           "indexed": true,
+          "runes": 1,
           "balances": [
             {
               "runeId": "840000:1",
@@ -1464,6 +1469,7 @@
       "inputs": [
         {
           "indexed": true,
+          "runes": 1,
           "balances": [
             {
               "runeId": "840000:1",
@@ -1487,6 +1493,7 @@
       "inputs": [
         {
           "indexed": true,
+          "runes": 1,
           "balances": [
             {
               "runeId": "840000:1",
@@ -1531,6 +1538,7 @@
       "inputs": [
         {
           "indexed": true,
+          "runes": 1,
           "balances": [
             {
               "runeId": "840000:1",
@@ -1554,6 +1562,7 @@
       "inputs": [
         {
           "indexed": true,
+          "runes": 1,
           "balances": [
             {
               "runeId": "840000:1",
@@ -1579,6 +1588,7 @@
       "inputs": [
         {
           "indexed": true,
+          "runes": 1,
           "balances": [
             {
               "runeId": "840000:1",
@@ -1607,6 +1617,7 @@
       "inputs": [
         {
           "indexed": true,
+          "runes": 1,
           "balances": [
             {
               "runeId": "840000:1",
@@ -1616,6 +1627,7 @@
         },
         {
           "indexed": true,
+          "runes": 2,
           "balances": [
             {
               "runeId": "840000:1",
@@ -1644,6 +1656,7 @@
       "inputs": [
         {
           "indexed": true,
+          "runes": 1,
           "balances": [
             {
               "runeId": "840000:1",
@@ -1786,6 +1799,7 @@
       "inputs": [
         {
           "indexed": true,
+          "runes": 1,
           "balances": [
             {
               "runeId": "840000:1",
@@ -1807,7 +1821,9 @@
         }
       ],
       "expected": {
-        "ok": true
+        "ok": true,
+        "safe": true,
+        "runestone": "RUNESTONE"
       }
     },
     {
@@ -1821,6 +1837,7 @@
       "inputs": [
         {
           "indexed": true,
+          "runes": 1,
           "balances": [
             {
               "runeId": "840000:1",
@@ -1838,7 +1855,9 @@
       ],
       "expected": {
         "ok": false,
-        "code": "RUNE_ALLOCATION_MISMATCH"
+        "code": "RUNE_ALLOCATION_MISMATCH",
+        "safe": true,
+        "runestone": "RUNESTONE"
       }
     }
   ]

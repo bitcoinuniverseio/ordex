@@ -68,11 +68,13 @@ numbers; parse them with `BigInt` when you need arithmetic.
   session routes take the session capability as an argument.
 - The client holds no keys, signs nothing, and broadcasts nothing. Signing
   belongs to the customer's own wallet, and broadcasting is the owner's own
-  deliberate step after preflight. The two relay routes
-  (`broadcastSafeOpsTransaction`, `broadcastSwapSession`) and the funded offer
-  routes the gateway does not serve yet are listed with their reasons in
+  deliberate step after preflight. The three relay routes
+  (`broadcastSafeOpsTransaction`, `broadcastSwapSession`,
+  `relayHeritageOperation`) are listed with their reasons in
   `SDK_EXCLUDED_OPERATIONS`; every other contract operation is a method named
-  after its `operationId`.
+  after its `operationId`. Private swap sessions take their `swc_` capability
+  as `sessionCapability`, and single preflights need the `quoteId` of the
+  reviewed quote.
 
 ## Verifying a purchase yourself
 

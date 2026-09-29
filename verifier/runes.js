@@ -733,6 +733,8 @@ export function verifyRuneAllocation(outputScriptsHex, inputs, expected, options
     ok: false,
     code,
     reason,
+    // The burn safety verdict of the same transaction, whatever the plan says.
+    safe: allocation.burned.length === 0 && !allocation.mintUnresolved,
     runestone: allocation.runestone,
     allocations: allocation.allocations,
     burned: allocation.burned,
@@ -779,5 +781,5 @@ export function verifyRuneAllocation(outputScriptsHex, inputs, expected, options
     );
   }
 
-  return { ok: true, runestone: allocation.runestone, allocations: allocation.allocations, burned: [] };
+  return { ok: true, safe: true, runestone: allocation.runestone, allocations: allocation.allocations, burned: [] };
 }

@@ -271,7 +271,7 @@ orderbook records which order the acceptance settled.
 | `MEMPOOL_CONFLICTED` | An unconfirmed transaction spends the funded output. It can still be replaced or dropped. |
 | `SPENT` | The funded output was spent on chain by a transaction that was neither its acceptance nor its recovery. |
 | `EXPIRED` | The current height reached `expiryHeight` with the output unspent. Acceptance is refused; recovery confirms from the next block. |
-| `WITHDRAWN` | The buyer proved ownership of the recovery key before expiry and removed the offer from discovery. Withdrawal is discovery, not cancellation; only a spend settles the funds. |
+| `WITHDRAWN` | The buyer proved ownership of the recovery key before expiry and removed the offer from discovery, with a BIP-340 signature by `buyerRecoveryKeyHex` over the tagged hash (tag `ordex/offer-withdrawal`) of the message `Ordex offer withdrawal\nnetwork: <network>\noffer: <id>\nterms: <offerTermsHash>`. Withdrawal is discovery, not cancellation; only a spend settles the funds. |
 | `REJECTED` | The posted evidence was unusable: malformed terms, wrong network, a root that does not exist, or a funded output that is not the tree the terms and policy keys produce. |
 
 An offer that ages past its freshness bound is presented as stale and cannot

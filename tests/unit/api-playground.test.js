@@ -38,7 +38,7 @@ function valuesFor(op) {
 }
 
 test('every operation builds a complete plan with no unresolved path segments', () => {
-  assert.equal(operations.length, 79);
+  assert.equal(operations.length, 85);
   let withBody = 0;
   for (const op of operations) {
     const bodyText = op.requestExample ? JSON.stringify(op.requestExample) : '';

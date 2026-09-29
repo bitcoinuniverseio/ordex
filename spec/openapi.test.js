@@ -44,7 +44,9 @@ test('every read declares 200 and every write declares 201', () => {
   for (const { path, method, operation } of operations) {
     const where = `${method.toUpperCase()} ${path}`;
     if (method === 'get') assert.ok(operation.responses['200'], where);
-    if (method === 'post') assert.ok(operation.responses['201'], where);
+    // A write answers 201, unless it declares x-ordex-success-status 200 because
+    // repeating it answers the stored state instead of creating anything.
+    if (method === 'post') assert.ok(operation.responses[operation['x-ordex-success-status'] === 200 ? '200' : '201'], where);
   }
 });
 
