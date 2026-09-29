@@ -5726,71 +5726,6 @@
           }
         }
       },
-      "TxDescription": {
-        "type": "object",
-        "description": "A normalized transaction: exact inputs and outputs in order. Parsers convert raw bytes into this shape before verification.",
-        "required": [
-          "inputs",
-          "outputs"
-        ],
-        "properties": {
-          "inputs": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/TxInputDescription"
-            }
-          },
-          "outputs": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/TxOutputDescription"
-            }
-          }
-        }
-      },
-      "TxInputDescription": {
-        "type": "object",
-        "required": [
-          "txid",
-          "vout",
-          "valueSats"
-        ],
-        "properties": {
-          "txid": {
-            "type": "string",
-            "pattern": "^[0-9a-f]{64}$"
-          },
-          "vout": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "valueSats": {
-            "$ref": "#/components/schemas/AtomicSats"
-          },
-          "signaturePresent": {
-            "type": "boolean"
-          },
-          "sighashType": {
-            "type": "string"
-          }
-        }
-      },
-      "TxOutputDescription": {
-        "type": "object",
-        "required": [
-          "scriptHex",
-          "valueSats"
-        ],
-        "properties": {
-          "scriptHex": {
-            "type": "string",
-            "pattern": "^(?:[0-9a-f]{2})+$"
-          },
-          "valueSats": {
-            "$ref": "#/components/schemas/AtomicSats"
-          }
-        }
-      },
       "SafeOpsOperationKind": {
         "type": "string",
         "enum": [
@@ -7858,7 +7793,7 @@
       },
       "ExpectedTransactionManifest": {
         "type": "object",
-        "description": "What the signer will see, in human readable and machine verifiable form, before any signature is requested.",
+        "description": "What the signer will see, in human readable and machine verifiable form, before any signature is requested. The digest commits to the exact unsigned transaction bytes, every prevout and the protection policy; purpose, explanations, roles and account are display text outside it.",
         "required": [
           "schema",
           "network",
@@ -7871,7 +7806,7 @@
         "properties": {
           "schema": {
             "type": "string",
-            "const": "ordex.expected-transaction-manifest/v1"
+            "const": "ordex.expected-transaction-manifest/v2"
           },
           "network": {
             "$ref": "#/components/schemas/Network"
@@ -7894,6 +7829,8 @@
           "unsignedTx": {
             "type": "object",
             "required": [
+              "version",
+              "lockTime",
               "inputs",
               "outputs"
             ],
@@ -7905,6 +7842,7 @@
                   "required": [
                     "txid",
                     "vout",
+                    "sequence",
                     "valueSats",
                     "scriptPubKeyHex",
                     "controlledByUser",
@@ -7922,16 +7860,53 @@
                       "$ref": "#/components/schemas/AtomicSats"
                     },
                     "scriptPubKeyHex": {
-                      "type": "string"
+                      "type": "string",
+                      "pattern": "^(?:[0-9a-f]{2})+$"
                     },
                     "controlledByUser": {
                       "type": "boolean"
                     },
                     "sighashType": {
-                      "type": "string"
+                      "type": "string",
+                      "enum": [
+                        "DEFAULT",
+                        "ALL",
+                        "NONE",
+                        "SINGLE",
+                        "ALL|ANYONECANPAY",
+                        "NONE|ANYONECANPAY",
+                        "SINGLE|ANYONECANPAY"
+                      ],
+                      "description": "The one sighash the user may sign this input with; required when controlledByUser."
                     },
                     "explanation": {
                       "type": "string"
+                    },
+                    "sequence": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 4294967295
+                    },
+                    "preservedSignature": {
+                      "type": "object",
+                      "required": [
+                        "scriptSigHex",
+                        "witness"
+                      ],
+                      "description": "A foreign input already signed, such as a seller input; the result must carry it unchanged.",
+                      "properties": {
+                        "scriptSigHex": {
+                          "type": "string",
+                          "pattern": "^(?:[0-9a-f]{2})*$"
+                        },
+                        "witness": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "pattern": "^(?:[0-9a-f]{2})*$"
+                          }
+                        }
+                      }
                     }
                   }
                 }
@@ -7963,11 +7938,36 @@
                       "type": "array",
                       "items": {
                         "type": "object",
-                        "additionalProperties": true
+                        "required": [
+                          "assetType",
+                          "assetId",
+                          "quantity"
+                        ],
+                        "properties": {
+                          "assetType": {
+                            "type": "string"
+                          },
+                          "assetId": {
+                            "type": "string"
+                          },
+                          "quantity": {
+                            "$ref": "#/components/schemas/AtomicSats"
+                          }
+                        }
                       }
                     }
                   }
                 }
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 4294967295
+              },
+              "lockTime": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 4294967295
               }
             }
           },
@@ -8030,26 +8030,53 @@
         "type": "object",
         "required": [
           "schema",
-          "manifestDigest",
-          "tx"
+          "manifestDigest"
         ],
+        "description": "Exactly one of psbt and signedTxHex. Signatures are verified from these bytes.",
         "properties": {
           "schema": {
             "type": "string",
-            "const": "ordex.offline-signing-session/v1"
+            "const": "ordex.offline-signing-session/v2"
           },
           "manifestDigest": {
             "type": "string",
             "pattern": "^[0-9a-f]{64}$"
           },
-          "tx": {
-            "$ref": "#/components/schemas/TxDescription"
+          "psbt": {
+            "type": "string",
+            "description": "A PSBT v0 or v2, base64 or hex, with the user signatures."
           },
-          "carriedAssets": {
+          "signedTxHex": {
+            "type": "string",
+            "pattern": "^(?:[0-9a-f]{2})+$",
+            "description": "A fully signed raw transaction."
+          },
+          "observedAssets": {
             "type": "array",
+            "description": "Protected asset movements derived independently from the signed transaction; required when the manifest expects assets.",
             "items": {
               "type": "object",
-              "additionalProperties": true
+              "required": [
+                "assetType",
+                "assetId",
+                "quantity",
+                "outputIndex"
+              ],
+              "properties": {
+                "assetType": {
+                  "type": "string"
+                },
+                "assetId": {
+                  "type": "string"
+                },
+                "quantity": {
+                  "$ref": "#/components/schemas/AtomicSats"
+                },
+                "outputIndex": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
             }
           },
           "unknownCriticalFields": {
