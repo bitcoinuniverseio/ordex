@@ -408,7 +408,7 @@
       }
     },
     {
-      "name": "an acceptance plan matching its intent is accepted",
+      "name": "BTC for an inscription settles with the inscription at the maker",
       "intent": {
         "schema": "ordex.swap-intent/v1",
         "protocolVersion": "1.2",
@@ -429,7 +429,7 @@
           {
             "assetType": "ORDINAL",
             "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
-            "minQuantitySats": "80000"
+            "minQuantitySats": "1"
           }
         ],
         "maxMakerFeeSats": "1000",
@@ -444,9 +444,13 @@
           {
             "protocol": "ordinals",
             "version": "1.2"
+          },
+          {
+            "protocol": "runes",
+            "version": "1.2"
           }
         ],
-        "digest": "a738b378f28cffff205dcf071e2c5e47515007977d440cd47fac787187c3c469",
+        "digest": "5b098dd8e6cd34291c07d949190ffabc63037dbfd964e2f090e11e6ecb2cc100",
         "makerIdentityProof": {
           "kind": "bip322",
           "address": "bc1qexampleaddress0000000000000000000000000000",
@@ -454,9 +458,21 @@
         }
       },
       "acceptance": {
-        "schema": "ordex.swap-acceptance-plan/v1",
-        "intentDigest": "a738b378f28cffff205dcf071e2c5e47515007977d440cd47fac787187c3c469",
+        "schema": "ordex.swap-acceptance-plan/v2",
+        "intentDigest": "5b098dd8e6cd34291c07d949190ffabc63037dbfd964e2f090e11e6ecb2cc100",
         "network": "mainnet",
+        "checkpoint": {
+          "height": 900005,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "taker": {
+          "receiveScriptHex": "51207777777777777777777777777777777777777777777777777777777777777777",
+          "changeScriptHex": "00148888888888888888888888888888888888888888"
+        },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
         "tx": {
           "inputs": [
             {
@@ -466,12 +482,17 @@
               },
               "party": "taker",
               "valueSats": "10000",
-              "assets": [
-                {
-                  "assetType": "ORDINAL",
-                  "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0"
-                }
-              ]
+              "scriptPubKeyHex": "0014dd6a092633cb98b6487d771cec811f013ecc75a0",
+              "sequence": 4294967293,
+              "inventory": {
+                "examined": true,
+                "inscriptions": [
+                  {
+                    "inscriptionId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+                    "offset": "0"
+                  }
+                ]
+              }
             },
             {
               "outpoint": {
@@ -479,29 +500,26 @@
                 "vout": 0
               },
               "party": "maker",
-              "valueSats": "100000",
-              "assets": [
-                {
-                  "assetType": "BTC"
-                }
-              ]
+              "valueSats": "101000",
+              "scriptPubKeyHex": "51204ae4b6480945daba679a946c672cb625184b83079c6a435c6bbad25ecfe5d588",
+              "sequence": 4294967293,
+              "inventory": {
+                "examined": true
+              }
             }
           ],
           "outputs": [
             {
-              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-              "valueSats": "10000",
-              "role": "takerAsset"
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "10000"
+            },
+            {
+              "scriptHex": "51207777777777777777777777777777777777777777777777777777777777777777",
+              "valueSats": "100000"
             },
             {
               "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-              "valueSats": "80000",
-              "role": "makerConsideration"
-            },
-            {
-              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-              "valueSats": "15400",
-              "role": "takerChange"
+              "valueSats": "400"
             }
           ]
         },
@@ -510,23 +528,306 @@
             "assetType": "ORDINAL",
             "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
             "fromInput": 0,
-            "toOutput": 0
-          },
-          {
-            "assetType": "BTC",
-            "assetId": "BTC",
-            "fromInput": 1,
-            "toOutput": 1
+            "toOutput": 0,
+            "quantity": "1"
           }
         ],
         "fee": {
-          "feeSats": "4600",
-          "makerFeeSats": "0",
-          "takerFeeSats": "4600"
+          "feeSats": "600",
+          "makerFeeSats": "600",
+          "takerFeeSats": "0"
         },
         "signing": {
           "sighashPolicy": "ALL"
+        },
+        "digest": "ed2f572f76f8ff5f18ccac02c88c698de8ec86d3d211e5ee7313b8ebb343afe5"
+      },
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "name": "an inscription for BTC settles with the inscription at the taker",
+      "intent": {
+        "schema": "ordex.swap-intent/v1",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "visibility": "PUBLIC",
+        "makerReceiveScriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "gives": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+            "outpoint": {
+              "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+              "vout": 2
+            },
+            "quantitySats": "1"
+          }
+        ],
+        "requires": [
+          {
+            "assetType": "BTC",
+            "minQuantitySats": "50000"
+          }
+        ],
+        "maxMakerFeeSats": "1000",
+        "expiryHeight": 900100,
+        "nonce": "nonce-12345678",
+        "createdAtHeight": 900000,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "adapterVersions": [
+          {
+            "protocol": "ordinals",
+            "version": "1.2"
+          },
+          {
+            "protocol": "runes",
+            "version": "1.2"
+          }
+        ],
+        "digest": "4e4be4e4efd7c848e79706aaf3ab2c301ff1ba18c456f90dc121925c70da9520",
+        "makerIdentityProof": {
+          "kind": "bip322",
+          "address": "bc1qexampleaddress0000000000000000000000000000",
+          "signature": "MEUCIQ=="
         }
+      },
+      "acceptance": {
+        "schema": "ordex.swap-acceptance-plan/v2",
+        "intentDigest": "4e4be4e4efd7c848e79706aaf3ab2c301ff1ba18c456f90dc121925c70da9520",
+        "network": "mainnet",
+        "checkpoint": {
+          "height": 900005,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "taker": {
+          "receiveScriptHex": "51207777777777777777777777777777777777777777777777777777777777777777",
+          "changeScriptHex": "00148888888888888888888888888888888888888888"
+        },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
+        "tx": {
+          "inputs": [
+            {
+              "outpoint": {
+                "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "vout": 2
+              },
+              "party": "maker",
+              "valueSats": "10000",
+              "scriptPubKeyHex": "51204ae4b6480945daba679a946c672cb625184b83079c6a435c6bbad25ecfe5d588",
+              "sequence": 4294967293,
+              "inventory": {
+                "examined": true,
+                "inscriptions": [
+                  {
+                    "inscriptionId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+                    "offset": "0"
+                  }
+                ]
+              }
+            },
+            {
+              "outpoint": {
+                "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                "vout": 1
+              },
+              "party": "taker",
+              "valueSats": "60000",
+              "scriptPubKeyHex": "0014dd6a092633cb98b6487d771cec811f013ecc75a0",
+              "sequence": 4294967293,
+              "inventory": {
+                "examined": true
+              }
+            }
+          ],
+          "outputs": [
+            {
+              "scriptHex": "51207777777777777777777777777777777777777777777777777777777777777777",
+              "valueSats": "10000"
+            },
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "50000"
+            },
+            {
+              "scriptHex": "00148888888888888888888888888888888888888888",
+              "valueSats": "9400"
+            }
+          ]
+        },
+        "assetTransitions": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+            "fromInput": 0,
+            "toOutput": 0,
+            "quantity": "1"
+          }
+        ],
+        "fee": {
+          "feeSats": "600",
+          "makerFeeSats": "0",
+          "takerFeeSats": "600"
+        },
+        "signing": {
+          "sighashPolicy": "ALL"
+        },
+        "digest": "d427fa446bfa6d9572032534c7cecc72ca486e62f5d5091584ba4a1b74c3643d"
+      },
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "name": "BTC for a rune settles with the exact rune amount at the maker",
+      "intent": {
+        "schema": "ordex.swap-intent/v1",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "visibility": "PUBLIC",
+        "makerReceiveScriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "gives": [
+          {
+            "assetType": "BTC",
+            "outpoint": {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0
+            },
+            "quantitySats": "20000"
+          }
+        ],
+        "requires": [
+          {
+            "assetType": "RUNE",
+            "assetId": "840000:1",
+            "minQuantitySats": "500"
+          }
+        ],
+        "maxMakerFeeSats": "1000",
+        "expiryHeight": 900100,
+        "nonce": "nonce-12345678",
+        "createdAtHeight": 900000,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "adapterVersions": [
+          {
+            "protocol": "ordinals",
+            "version": "1.2"
+          },
+          {
+            "protocol": "runes",
+            "version": "1.2"
+          }
+        ],
+        "digest": "2e0082897319f1621ad764c2c8de7e9fb037e7385b30f77004ffd95b64f168ab",
+        "makerIdentityProof": {
+          "kind": "bip322",
+          "address": "bc1qexampleaddress0000000000000000000000000000",
+          "signature": "MEUCIQ=="
+        }
+      },
+      "acceptance": {
+        "schema": "ordex.swap-acceptance-plan/v2",
+        "intentDigest": "2e0082897319f1621ad764c2c8de7e9fb037e7385b30f77004ffd95b64f168ab",
+        "network": "mainnet",
+        "checkpoint": {
+          "height": 900005,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "taker": {
+          "receiveScriptHex": "51207777777777777777777777777777777777777777777777777777777777777777",
+          "changeScriptHex": "00148888888888888888888888888888888888888888"
+        },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
+        "tx": {
+          "inputs": [
+            {
+              "outpoint": {
+                "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "vout": 0
+              },
+              "party": "maker",
+              "valueSats": "21000",
+              "scriptPubKeyHex": "51204ae4b6480945daba679a946c672cb625184b83079c6a435c6bbad25ecfe5d588",
+              "sequence": 4294967293,
+              "inventory": {
+                "examined": true
+              }
+            },
+            {
+              "outpoint": {
+                "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                "vout": 1
+              },
+              "party": "taker",
+              "valueSats": "546",
+              "scriptPubKeyHex": "0014dd6a092633cb98b6487d771cec811f013ecc75a0",
+              "sequence": 4294967293,
+              "inventory": {
+                "examined": true,
+                "runeAllocations": [
+                  {
+                    "runeId": "840000:1",
+                    "amount": "800"
+                  }
+                ]
+              }
+            }
+          ],
+          "outputs": [
+            {
+              "scriptHex": "6a5d0a160200c0a23301f40301",
+              "valueSats": "0"
+            },
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "546"
+            },
+            {
+              "scriptHex": "51207777777777777777777777777777777777777777777777777777777777777777",
+              "valueSats": "20000"
+            },
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "400"
+            }
+          ]
+        },
+        "assetTransitions": [
+          {
+            "assetType": "RUNE",
+            "assetId": "840000:1",
+            "toOutput": 1,
+            "quantity": "500"
+          },
+          {
+            "assetType": "RUNE",
+            "assetId": "840000:1",
+            "toOutput": 2,
+            "quantity": "300"
+          }
+        ],
+        "fee": {
+          "feeSats": "600",
+          "makerFeeSats": "54",
+          "takerFeeSats": "546"
+        },
+        "signing": {
+          "sighashPolicy": "ALL"
+        },
+        "digest": "101b1512d1908b00163c819bb59a6dbdde95883bc0d39e73d457587a21bf0b76"
       },
       "expected": {
         "ok": true
@@ -554,7 +855,7 @@
           {
             "assetType": "ORDINAL",
             "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
-            "minQuantitySats": "80000"
+            "minQuantitySats": "1"
           }
         ],
         "maxMakerFeeSats": "1000",
@@ -569,9 +870,13 @@
           {
             "protocol": "ordinals",
             "version": "1.2"
+          },
+          {
+            "protocol": "runes",
+            "version": "1.2"
           }
         ],
-        "digest": "a738b378f28cffff205dcf071e2c5e47515007977d440cd47fac787187c3c469",
+        "digest": "5b098dd8e6cd34291c07d949190ffabc63037dbfd964e2f090e11e6ecb2cc100",
         "makerIdentityProof": {
           "kind": "bip322",
           "address": "bc1qexampleaddress0000000000000000000000000000",
@@ -579,9 +884,21 @@
         }
       },
       "acceptance": {
-        "schema": "ordex.swap-acceptance-plan/v1",
-        "intentDigest": "e5dcd02ac229c2391b30e2a5c9b1bc7b4a74c36baf2321c24e393df36ac05308",
+        "schema": "ordex.swap-acceptance-plan/v2",
+        "intentDigest": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
         "network": "mainnet",
+        "checkpoint": {
+          "height": 900005,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "taker": {
+          "receiveScriptHex": "51207777777777777777777777777777777777777777777777777777777777777777",
+          "changeScriptHex": "00148888888888888888888888888888888888888888"
+        },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
         "tx": {
           "inputs": [
             {
@@ -591,12 +908,17 @@
               },
               "party": "taker",
               "valueSats": "10000",
-              "assets": [
-                {
-                  "assetType": "ORDINAL",
-                  "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0"
-                }
-              ]
+              "scriptPubKeyHex": "0014dd6a092633cb98b6487d771cec811f013ecc75a0",
+              "sequence": 4294967293,
+              "inventory": {
+                "examined": true,
+                "inscriptions": [
+                  {
+                    "inscriptionId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+                    "offset": "0"
+                  }
+                ]
+              }
             },
             {
               "outpoint": {
@@ -604,29 +926,26 @@
                 "vout": 0
               },
               "party": "maker",
-              "valueSats": "100000",
-              "assets": [
-                {
-                  "assetType": "BTC"
-                }
-              ]
+              "valueSats": "101000",
+              "scriptPubKeyHex": "51204ae4b6480945daba679a946c672cb625184b83079c6a435c6bbad25ecfe5d588",
+              "sequence": 4294967293,
+              "inventory": {
+                "examined": true
+              }
             }
           ],
           "outputs": [
             {
-              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-              "valueSats": "10000",
-              "role": "takerAsset"
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "10000"
+            },
+            {
+              "scriptHex": "51207777777777777777777777777777777777777777777777777777777777777777",
+              "valueSats": "100000"
             },
             {
               "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-              "valueSats": "80000",
-              "role": "makerConsideration"
-            },
-            {
-              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-              "valueSats": "15400",
-              "role": "takerChange"
+              "valueSats": "400"
             }
           ]
         },
@@ -635,27 +954,163 @@
             "assetType": "ORDINAL",
             "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
             "fromInput": 0,
-            "toOutput": 0
-          },
-          {
-            "assetType": "BTC",
-            "assetId": "BTC",
-            "fromInput": 1,
-            "toOutput": 1
+            "toOutput": 0,
+            "quantity": "1"
           }
         ],
         "fee": {
-          "feeSats": "4600",
-          "makerFeeSats": "0",
-          "takerFeeSats": "4600"
+          "feeSats": "600",
+          "makerFeeSats": "600",
+          "takerFeeSats": "0"
         },
         "signing": {
           "sighashPolicy": "ALL"
-        }
+        },
+        "digest": "083b02fd701c36c378611b2c2eb37dd776df56705fcaa5ee417fb7f540be5957"
       },
       "expected": {
         "ok": false,
         "code": "INTENT_DIGEST_MISMATCH"
+      }
+    },
+    {
+      "name": "a v1 acceptance plan is refused rather than reinterpreted",
+      "intent": {
+        "schema": "ordex.swap-intent/v1",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "visibility": "PUBLIC",
+        "makerReceiveScriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "gives": [
+          {
+            "assetType": "BTC",
+            "outpoint": {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0
+            },
+            "quantitySats": "100000"
+          }
+        ],
+        "requires": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+            "minQuantitySats": "1"
+          }
+        ],
+        "maxMakerFeeSats": "1000",
+        "expiryHeight": 900100,
+        "nonce": "nonce-12345678",
+        "createdAtHeight": 900000,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "adapterVersions": [
+          {
+            "protocol": "ordinals",
+            "version": "1.2"
+          },
+          {
+            "protocol": "runes",
+            "version": "1.2"
+          }
+        ],
+        "digest": "5b098dd8e6cd34291c07d949190ffabc63037dbfd964e2f090e11e6ecb2cc100",
+        "makerIdentityProof": {
+          "kind": "bip322",
+          "address": "bc1qexampleaddress0000000000000000000000000000",
+          "signature": "MEUCIQ=="
+        }
+      },
+      "acceptance": {
+        "schema": "ordex.swap-acceptance-plan/v1",
+        "intentDigest": "5b098dd8e6cd34291c07d949190ffabc63037dbfd964e2f090e11e6ecb2cc100",
+        "network": "mainnet",
+        "checkpoint": {
+          "height": 900005,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "taker": {
+          "receiveScriptHex": "51207777777777777777777777777777777777777777777777777777777777777777",
+          "changeScriptHex": "00148888888888888888888888888888888888888888"
+        },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
+        "tx": {
+          "inputs": [
+            {
+              "outpoint": {
+                "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                "vout": 1
+              },
+              "party": "taker",
+              "valueSats": "10000",
+              "scriptPubKeyHex": "0014dd6a092633cb98b6487d771cec811f013ecc75a0",
+              "sequence": 4294967293,
+              "inventory": {
+                "examined": true,
+                "inscriptions": [
+                  {
+                    "inscriptionId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+                    "offset": "0"
+                  }
+                ]
+              }
+            },
+            {
+              "outpoint": {
+                "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "vout": 0
+              },
+              "party": "maker",
+              "valueSats": "101000",
+              "scriptPubKeyHex": "51204ae4b6480945daba679a946c672cb625184b83079c6a435c6bbad25ecfe5d588",
+              "sequence": 4294967293,
+              "inventory": {
+                "examined": true
+              }
+            }
+          ],
+          "outputs": [
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "10000"
+            },
+            {
+              "scriptHex": "51207777777777777777777777777777777777777777777777777777777777777777",
+              "valueSats": "100000"
+            },
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "400"
+            }
+          ]
+        },
+        "assetTransitions": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+            "fromInput": 0,
+            "toOutput": 0,
+            "quantity": "1"
+          }
+        ],
+        "fee": {
+          "feeSats": "600",
+          "makerFeeSats": "600",
+          "takerFeeSats": "0"
+        },
+        "signing": {
+          "sighashPolicy": "ALL"
+        },
+        "digest": "746b2e43dfeca6959c35589df5c46f61d4f8d0b56019630c5902e230040d00d4"
+      },
+      "expected": {
+        "ok": false,
+        "code": "SCHEMA_UNSUPPORTED"
       }
     },
     {
@@ -680,7 +1135,7 @@
           {
             "assetType": "ORDINAL",
             "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
-            "minQuantitySats": "80000"
+            "minQuantitySats": "1"
           }
         ],
         "maxMakerFeeSats": "1000",
@@ -695,9 +1150,13 @@
           {
             "protocol": "ordinals",
             "version": "1.2"
+          },
+          {
+            "protocol": "runes",
+            "version": "1.2"
           }
         ],
-        "digest": "a738b378f28cffff205dcf071e2c5e47515007977d440cd47fac787187c3c469",
+        "digest": "5b098dd8e6cd34291c07d949190ffabc63037dbfd964e2f090e11e6ecb2cc100",
         "makerIdentityProof": {
           "kind": "bip322",
           "address": "bc1qexampleaddress0000000000000000000000000000",
@@ -705,9 +1164,21 @@
         }
       },
       "acceptance": {
-        "schema": "ordex.swap-acceptance-plan/v1",
-        "intentDigest": "a738b378f28cffff205dcf071e2c5e47515007977d440cd47fac787187c3c469",
+        "schema": "ordex.swap-acceptance-plan/v2",
+        "intentDigest": "5b098dd8e6cd34291c07d949190ffabc63037dbfd964e2f090e11e6ecb2cc100",
         "network": "mainnet",
+        "checkpoint": {
+          "height": 900005,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "taker": {
+          "receiveScriptHex": "51207777777777777777777777777777777777777777777777777777777777777777",
+          "changeScriptHex": "00148888888888888888888888888888888888888888"
+        },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
         "tx": {
           "inputs": [
             {
@@ -716,29 +1187,26 @@
                 "vout": 0
               },
               "party": "maker",
-              "valueSats": "100000",
-              "assets": [
-                {
-                  "assetType": "BTC"
-                }
-              ]
+              "valueSats": "101000",
+              "scriptPubKeyHex": "51204ae4b6480945daba679a946c672cb625184b83079c6a435c6bbad25ecfe5d588",
+              "sequence": 4294967293,
+              "inventory": {
+                "examined": true
+              }
             }
           ],
           "outputs": [
             {
-              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-              "valueSats": "10000",
-              "role": "takerAsset"
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "10000"
+            },
+            {
+              "scriptHex": "51207777777777777777777777777777777777777777777777777777777777777777",
+              "valueSats": "100000"
             },
             {
               "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-              "valueSats": "80000",
-              "role": "makerConsideration"
-            },
-            {
-              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-              "valueSats": "15400",
-              "role": "takerChange"
+              "valueSats": "400"
             }
           ]
         },
@@ -747,23 +1215,19 @@
             "assetType": "ORDINAL",
             "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
             "fromInput": 0,
-            "toOutput": 0
-          },
-          {
-            "assetType": "BTC",
-            "assetId": "BTC",
-            "fromInput": 1,
-            "toOutput": 1
+            "toOutput": 0,
+            "quantity": "1"
           }
         ],
         "fee": {
-          "feeSats": "4600",
-          "makerFeeSats": "0",
-          "takerFeeSats": "4600"
+          "feeSats": "600",
+          "makerFeeSats": "600",
+          "takerFeeSats": "0"
         },
         "signing": {
           "sighashPolicy": "ALL"
-        }
+        },
+        "digest": "6e24c99efb9440851b527781f2c08a46d9323f0a7f3dd180d02f375a2a94997f"
       },
       "expected": {
         "ok": false,
@@ -792,7 +1256,7 @@
           {
             "assetType": "ORDINAL",
             "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
-            "minQuantitySats": "80000"
+            "minQuantitySats": "1"
           }
         ],
         "maxMakerFeeSats": "1000",
@@ -807,9 +1271,13 @@
           {
             "protocol": "ordinals",
             "version": "1.2"
+          },
+          {
+            "protocol": "runes",
+            "version": "1.2"
           }
         ],
-        "digest": "a738b378f28cffff205dcf071e2c5e47515007977d440cd47fac787187c3c469",
+        "digest": "5b098dd8e6cd34291c07d949190ffabc63037dbfd964e2f090e11e6ecb2cc100",
         "makerIdentityProof": {
           "kind": "bip322",
           "address": "bc1qexampleaddress0000000000000000000000000000",
@@ -817,9 +1285,21 @@
         }
       },
       "acceptance": {
-        "schema": "ordex.swap-acceptance-plan/v1",
-        "intentDigest": "a738b378f28cffff205dcf071e2c5e47515007977d440cd47fac787187c3c469",
+        "schema": "ordex.swap-acceptance-plan/v2",
+        "intentDigest": "5b098dd8e6cd34291c07d949190ffabc63037dbfd964e2f090e11e6ecb2cc100",
         "network": "mainnet",
+        "checkpoint": {
+          "height": 900005,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "taker": {
+          "receiveScriptHex": "51207777777777777777777777777777777777777777777777777777777777777777",
+          "changeScriptHex": "00148888888888888888888888888888888888888888"
+        },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
         "tx": {
           "inputs": [
             {
@@ -829,12 +1309,17 @@
               },
               "party": "taker",
               "valueSats": "10000",
-              "assets": [
-                {
-                  "assetType": "ORDINAL",
-                  "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0"
-                }
-              ]
+              "scriptPubKeyHex": "0014dd6a092633cb98b6487d771cec811f013ecc75a0",
+              "sequence": 4294967293,
+              "inventory": {
+                "examined": true,
+                "inscriptions": [
+                  {
+                    "inscriptionId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+                    "offset": "0"
+                  }
+                ]
+              }
             },
             {
               "outpoint": {
@@ -842,29 +1327,26 @@
                 "vout": 0
               },
               "party": "maker",
-              "valueSats": "100000",
-              "assets": [
-                {
-                  "assetType": "BTC"
-                }
-              ]
+              "valueSats": "101000",
+              "scriptPubKeyHex": "51204ae4b6480945daba679a946c672cb625184b83079c6a435c6bbad25ecfe5d588",
+              "sequence": 4294967293,
+              "inventory": {
+                "examined": true
+              }
             }
           ],
           "outputs": [
             {
-              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-              "valueSats": "10000",
-              "role": "takerAsset"
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "10000"
+            },
+            {
+              "scriptHex": "51207777777777777777777777777777777777777777777777777777777777777777",
+              "valueSats": "100000"
             },
             {
               "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-              "valueSats": "80000",
-              "role": "makerConsideration"
-            },
-            {
-              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-              "valueSats": "15400",
-              "role": "takerChange"
+              "valueSats": "400"
             }
           ]
         },
@@ -873,23 +1355,19 @@
             "assetType": "ORDINAL",
             "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
             "fromInput": 0,
-            "toOutput": 0
-          },
-          {
-            "assetType": "BTC",
-            "assetId": "BTC",
-            "fromInput": 1,
-            "toOutput": 1
+            "toOutput": 0,
+            "quantity": "1"
           }
         ],
         "fee": {
-          "feeSats": "4600",
-          "makerFeeSats": "0",
-          "takerFeeSats": "4600"
+          "feeSats": "600",
+          "makerFeeSats": "600",
+          "takerFeeSats": "0"
         },
         "signing": {
           "sighashPolicy": "SINGLE|ANYONECANPAY"
-        }
+        },
+        "digest": "68839ef69c4caf0801847b56306dffaad99fb959bfc6f53389acea9f3cb0b5b1"
       },
       "expected": {
         "ok": false,
@@ -918,7 +1396,7 @@
           {
             "assetType": "ORDINAL",
             "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
-            "minQuantitySats": "80000"
+            "minQuantitySats": "1"
           }
         ],
         "maxMakerFeeSats": "1000",
@@ -933,9 +1411,13 @@
           {
             "protocol": "ordinals",
             "version": "1.2"
+          },
+          {
+            "protocol": "runes",
+            "version": "1.2"
           }
         ],
-        "digest": "a738b378f28cffff205dcf071e2c5e47515007977d440cd47fac787187c3c469",
+        "digest": "5b098dd8e6cd34291c07d949190ffabc63037dbfd964e2f090e11e6ecb2cc100",
         "makerIdentityProof": {
           "kind": "bip322",
           "address": "bc1qexampleaddress0000000000000000000000000000",
@@ -943,9 +1425,21 @@
         }
       },
       "acceptance": {
-        "schema": "ordex.swap-acceptance-plan/v1",
-        "intentDigest": "a738b378f28cffff205dcf071e2c5e47515007977d440cd47fac787187c3c469",
+        "schema": "ordex.swap-acceptance-plan/v2",
+        "intentDigest": "5b098dd8e6cd34291c07d949190ffabc63037dbfd964e2f090e11e6ecb2cc100",
         "network": "mainnet",
+        "checkpoint": {
+          "height": 900005,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "taker": {
+          "receiveScriptHex": "51207777777777777777777777777777777777777777777777777777777777777777",
+          "changeScriptHex": "00148888888888888888888888888888888888888888"
+        },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
         "tx": {
           "inputs": [
             {
@@ -955,38 +1449,44 @@
               },
               "party": "taker",
               "valueSats": "10000",
-              "assets": [
-                {
-                  "assetType": "ORDINAL",
-                  "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0"
-                }
-              ]
+              "scriptPubKeyHex": "0014dd6a092633cb98b6487d771cec811f013ecc75a0",
+              "sequence": 4294967293,
+              "inventory": {
+                "examined": true,
+                "inscriptions": [
+                  {
+                    "inscriptionId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+                    "offset": "0"
+                  }
+                ]
+              }
             },
             {
               "outpoint": {
-                "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
-                "vout": 2
+                "txid": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+                "vout": 0
               },
-              "party": "taker",
-              "valueSats": "90000",
-              "assets": []
+              "party": "maker",
+              "valueSats": "101000",
+              "scriptPubKeyHex": "51204ae4b6480945daba679a946c672cb625184b83079c6a435c6bbad25ecfe5d588",
+              "sequence": 4294967293,
+              "inventory": {
+                "examined": true
+              }
             }
           ],
           "outputs": [
             {
-              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-              "valueSats": "10000",
-              "role": "takerAsset"
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "10000"
+            },
+            {
+              "scriptHex": "51207777777777777777777777777777777777777777777777777777777777777777",
+              "valueSats": "100000"
             },
             {
               "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-              "valueSats": "80000",
-              "role": "makerConsideration"
-            },
-            {
-              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-              "valueSats": "15400",
-              "role": "takerChange"
+              "valueSats": "400"
             }
           ]
         },
@@ -995,23 +1495,19 @@
             "assetType": "ORDINAL",
             "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
             "fromInput": 0,
-            "toOutput": 0
-          },
-          {
-            "assetType": "BTC",
-            "assetId": "BTC",
-            "fromInput": 1,
-            "toOutput": 1
+            "toOutput": 0,
+            "quantity": "1"
           }
         ],
         "fee": {
-          "feeSats": "4600",
-          "makerFeeSats": "0",
-          "takerFeeSats": "4600"
+          "feeSats": "600",
+          "makerFeeSats": "600",
+          "takerFeeSats": "0"
         },
         "signing": {
           "sighashPolicy": "ALL"
-        }
+        },
+        "digest": "e68f94453f184fd94dc32b33d37ebfca85b5e6c277ef12452ae7fce1a2874f20"
       },
       "expected": {
         "ok": false,
@@ -1040,7 +1536,7 @@
           {
             "assetType": "ORDINAL",
             "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
-            "minQuantitySats": "80000"
+            "minQuantitySats": "1"
           }
         ],
         "maxMakerFeeSats": "1000",
@@ -1055,9 +1551,13 @@
           {
             "protocol": "ordinals",
             "version": "1.2"
+          },
+          {
+            "protocol": "runes",
+            "version": "1.2"
           }
         ],
-        "digest": "a738b378f28cffff205dcf071e2c5e47515007977d440cd47fac787187c3c469",
+        "digest": "5b098dd8e6cd34291c07d949190ffabc63037dbfd964e2f090e11e6ecb2cc100",
         "makerIdentityProof": {
           "kind": "bip322",
           "address": "bc1qexampleaddress0000000000000000000000000000",
@@ -1065,9 +1565,21 @@
         }
       },
       "acceptance": {
-        "schema": "ordex.swap-acceptance-plan/v1",
-        "intentDigest": "a738b378f28cffff205dcf071e2c5e47515007977d440cd47fac787187c3c469",
+        "schema": "ordex.swap-acceptance-plan/v2",
+        "intentDigest": "5b098dd8e6cd34291c07d949190ffabc63037dbfd964e2f090e11e6ecb2cc100",
         "network": "mainnet",
+        "checkpoint": {
+          "height": 900005,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "taker": {
+          "receiveScriptHex": "51207777777777777777777777777777777777777777777777777777777777777777",
+          "changeScriptHex": "00148888888888888888888888888888888888888888"
+        },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
         "tx": {
           "inputs": [
             {
@@ -1077,12 +1589,17 @@
               },
               "party": "taker",
               "valueSats": "10000",
-              "assets": [
-                {
-                  "assetType": "ORDINAL",
-                  "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0"
-                }
-              ]
+              "scriptPubKeyHex": "0014dd6a092633cb98b6487d771cec811f013ecc75a0",
+              "sequence": 4294967293,
+              "inventory": {
+                "examined": true,
+                "inscriptions": [
+                  {
+                    "inscriptionId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+                    "offset": "0"
+                  }
+                ]
+              }
             },
             {
               "outpoint": {
@@ -1090,12 +1607,12 @@
                 "vout": 0
               },
               "party": "maker",
-              "valueSats": "100000",
-              "assets": [
-                {
-                  "assetType": "BTC"
-                }
-              ]
+              "valueSats": "101000",
+              "scriptPubKeyHex": "51204ae4b6480945daba679a946c672cb625184b83079c6a435c6bbad25ecfe5d588",
+              "sequence": 4294967293,
+              "inventory": {
+                "examined": true
+              }
             },
             {
               "outpoint": {
@@ -1103,25 +1620,26 @@
                 "vout": 0
               },
               "party": "maker",
-              "valueSats": "5000",
-              "assets": []
+              "valueSats": "1000",
+              "scriptPubKeyHex": "51204ae4b6480945daba679a946c672cb625184b83079c6a435c6bbad25ecfe5d588",
+              "sequence": 4294967293,
+              "inventory": {
+                "examined": true
+              }
             }
           ],
           "outputs": [
             {
-              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-              "valueSats": "10000",
-              "role": "takerAsset"
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "10000"
+            },
+            {
+              "scriptHex": "51207777777777777777777777777777777777777777777777777777777777777777",
+              "valueSats": "100000"
             },
             {
               "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-              "valueSats": "80000",
-              "role": "makerConsideration"
-            },
-            {
-              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-              "valueSats": "20400",
-              "role": "takerChange"
+              "valueSats": "400"
             }
           ]
         },
@@ -1130,23 +1648,19 @@
             "assetType": "ORDINAL",
             "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
             "fromInput": 0,
-            "toOutput": 0
-          },
-          {
-            "assetType": "BTC",
-            "assetId": "BTC",
-            "fromInput": 1,
-            "toOutput": 1
+            "toOutput": 0,
+            "quantity": "1"
           }
         ],
         "fee": {
-          "feeSats": "4600",
-          "makerFeeSats": "0",
-          "takerFeeSats": "4600"
+          "feeSats": "600",
+          "makerFeeSats": "600",
+          "takerFeeSats": "0"
         },
         "signing": {
           "sighashPolicy": "ALL"
-        }
+        },
+        "digest": "d240973f102a45be3dd0e0d6d5015d3d544c26c112eeea4d110fe90095ce53d0"
       },
       "expected": {
         "ok": false,
@@ -1154,7 +1668,7 @@
       }
     },
     {
-      "name": "a consideration shortfall is refused",
+      "name": "P-R09: a required rune the taker never supplies is refused",
       "intent": {
         "schema": "ordex.swap-intent/v1",
         "protocolVersion": "1.2",
@@ -1168,14 +1682,14 @@
               "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
               "vout": 0
             },
-            "quantitySats": "100000"
+            "quantitySats": "20000"
           }
         ],
         "requires": [
           {
-            "assetType": "ORDINAL",
-            "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
-            "minQuantitySats": "80000"
+            "assetType": "RUNE",
+            "assetId": "1:999",
+            "minQuantitySats": "500"
           }
         ],
         "maxMakerFeeSats": "1000",
@@ -1190,9 +1704,13 @@
           {
             "protocol": "ordinals",
             "version": "1.2"
+          },
+          {
+            "protocol": "runes",
+            "version": "1.2"
           }
         ],
-        "digest": "a738b378f28cffff205dcf071e2c5e47515007977d440cd47fac787187c3c469",
+        "digest": "a3e9caf77beb5b18dff4c9f96da2875b4810548fcdd1cc36daae8484fea85b28",
         "makerIdentityProof": {
           "kind": "bip322",
           "address": "bc1qexampleaddress0000000000000000000000000000",
@@ -1200,54 +1718,366 @@
         }
       },
       "acceptance": {
-        "schema": "ordex.swap-acceptance-plan/v1",
-        "intentDigest": "a738b378f28cffff205dcf071e2c5e47515007977d440cd47fac787187c3c469",
+        "schema": "ordex.swap-acceptance-plan/v2",
+        "intentDigest": "a3e9caf77beb5b18dff4c9f96da2875b4810548fcdd1cc36daae8484fea85b28",
         "network": "mainnet",
+        "checkpoint": {
+          "height": 900005,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "taker": {
+          "receiveScriptHex": "51207777777777777777777777777777777777777777777777777777777777777777",
+          "changeScriptHex": "00148888888888888888888888888888888888888888"
+        },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
         "tx": {
           "inputs": [
-            {
-              "outpoint": {
-                "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-                "vout": 1
-              },
-              "party": "taker",
-              "valueSats": "10000",
-              "assets": [
-                {
-                  "assetType": "ORDINAL",
-                  "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0"
-                }
-              ]
-            },
             {
               "outpoint": {
                 "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
                 "vout": 0
               },
               "party": "maker",
-              "valueSats": "100000",
-              "assets": [
-                {
-                  "assetType": "BTC"
-                }
-              ]
+              "valueSats": "21000",
+              "scriptPubKeyHex": "51204ae4b6480945daba679a946c672cb625184b83079c6a435c6bbad25ecfe5d588",
+              "sequence": 4294967293,
+              "inventory": {
+                "examined": true
+              }
+            },
+            {
+              "outpoint": {
+                "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                "vout": 1
+              },
+              "party": "taker",
+              "valueSats": "546",
+              "scriptPubKeyHex": "0014dd6a092633cb98b6487d771cec811f013ecc75a0",
+              "sequence": 4294967293,
+              "inventory": {
+                "examined": true,
+                "runeAllocations": [
+                  {
+                    "runeId": "840000:1",
+                    "amount": "800"
+                  }
+                ]
+              }
             }
           ],
           "outputs": [
             {
-              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-              "valueSats": "10000",
-              "role": "takerAsset"
+              "scriptHex": "6a5d0a160200c0a23301f40301",
+              "valueSats": "0"
             },
             {
               "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-              "valueSats": "79999",
-              "role": "makerConsideration"
+              "valueSats": "546"
             },
             {
-              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-              "valueSats": "15401",
-              "role": "takerChange"
+              "scriptHex": "51207777777777777777777777777777777777777777777777777777777777777777",
+              "valueSats": "20000"
+            },
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "400"
+            }
+          ]
+        },
+        "assetTransitions": [
+          {
+            "assetType": "RUNE",
+            "assetId": "840000:1",
+            "toOutput": 1,
+            "quantity": "500"
+          },
+          {
+            "assetType": "RUNE",
+            "assetId": "840000:1",
+            "toOutput": 2,
+            "quantity": "300"
+          }
+        ],
+        "fee": {
+          "feeSats": "600",
+          "makerFeeSats": "54",
+          "takerFeeSats": "546"
+        },
+        "signing": {
+          "sighashPolicy": "ALL"
+        },
+        "digest": "f23bf7d77282d1331aae2bdfde56e97a61dbe8219de5d429001d15dddf50e0c2"
+      },
+      "expected": {
+        "ok": false,
+        "code": "CONSIDERATION_SHORTFALL"
+      }
+    },
+    {
+      "name": "a required rune delivered short is refused",
+      "intent": {
+        "schema": "ordex.swap-intent/v1",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "visibility": "PUBLIC",
+        "makerReceiveScriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "gives": [
+          {
+            "assetType": "BTC",
+            "outpoint": {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0
+            },
+            "quantitySats": "20000"
+          }
+        ],
+        "requires": [
+          {
+            "assetType": "RUNE",
+            "assetId": "840000:1",
+            "minQuantitySats": "500"
+          }
+        ],
+        "maxMakerFeeSats": "1000",
+        "expiryHeight": 900100,
+        "nonce": "nonce-12345678",
+        "createdAtHeight": 900000,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "adapterVersions": [
+          {
+            "protocol": "ordinals",
+            "version": "1.2"
+          },
+          {
+            "protocol": "runes",
+            "version": "1.2"
+          }
+        ],
+        "digest": "2e0082897319f1621ad764c2c8de7e9fb037e7385b30f77004ffd95b64f168ab",
+        "makerIdentityProof": {
+          "kind": "bip322",
+          "address": "bc1qexampleaddress0000000000000000000000000000",
+          "signature": "MEUCIQ=="
+        }
+      },
+      "acceptance": {
+        "schema": "ordex.swap-acceptance-plan/v2",
+        "intentDigest": "2e0082897319f1621ad764c2c8de7e9fb037e7385b30f77004ffd95b64f168ab",
+        "network": "mainnet",
+        "checkpoint": {
+          "height": 900005,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "taker": {
+          "receiveScriptHex": "51207777777777777777777777777777777777777777777777777777777777777777",
+          "changeScriptHex": "00148888888888888888888888888888888888888888"
+        },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
+        "tx": {
+          "inputs": [
+            {
+              "outpoint": {
+                "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "vout": 0
+              },
+              "party": "maker",
+              "valueSats": "21000",
+              "scriptPubKeyHex": "51204ae4b6480945daba679a946c672cb625184b83079c6a435c6bbad25ecfe5d588",
+              "sequence": 4294967293,
+              "inventory": {
+                "examined": true
+              }
+            },
+            {
+              "outpoint": {
+                "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                "vout": 1
+              },
+              "party": "taker",
+              "valueSats": "546",
+              "scriptPubKeyHex": "0014dd6a092633cb98b6487d771cec811f013ecc75a0",
+              "sequence": 4294967293,
+              "inventory": {
+                "examined": true,
+                "runeAllocations": [
+                  {
+                    "runeId": "840000:1",
+                    "amount": "800"
+                  }
+                ]
+              }
+            }
+          ],
+          "outputs": [
+            {
+              "scriptHex": "6a5d0a160200c0a23301900301",
+              "valueSats": "0"
+            },
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "546"
+            },
+            {
+              "scriptHex": "51207777777777777777777777777777777777777777777777777777777777777777",
+              "valueSats": "20000"
+            },
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "400"
+            }
+          ]
+        },
+        "assetTransitions": [
+          {
+            "assetType": "RUNE",
+            "assetId": "840000:1",
+            "toOutput": 1,
+            "quantity": "400"
+          },
+          {
+            "assetType": "RUNE",
+            "assetId": "840000:1",
+            "toOutput": 2,
+            "quantity": "400"
+          }
+        ],
+        "fee": {
+          "feeSats": "600",
+          "makerFeeSats": "54",
+          "takerFeeSats": "546"
+        },
+        "signing": {
+          "sighashPolicy": "ALL"
+        },
+        "digest": "e5d3f01f72c8f50e0a4f7a6919777ac0393179d38e1f5c02809e49df47c397bb"
+      },
+      "expected": {
+        "ok": false,
+        "code": "CONSIDERATION_SHORTFALL"
+      }
+    },
+    {
+      "name": "P-R10: an inscription the maker gives, paid back to the maker, is refused",
+      "intent": {
+        "schema": "ordex.swap-intent/v1",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "visibility": "PUBLIC",
+        "makerReceiveScriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "gives": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+            "outpoint": {
+              "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+              "vout": 2
+            },
+            "quantitySats": "1"
+          }
+        ],
+        "requires": [
+          {
+            "assetType": "BTC",
+            "minQuantitySats": "50000"
+          }
+        ],
+        "maxMakerFeeSats": "1000",
+        "expiryHeight": 900100,
+        "nonce": "nonce-12345678",
+        "createdAtHeight": 900000,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "adapterVersions": [
+          {
+            "protocol": "ordinals",
+            "version": "1.2"
+          },
+          {
+            "protocol": "runes",
+            "version": "1.2"
+          }
+        ],
+        "digest": "4e4be4e4efd7c848e79706aaf3ab2c301ff1ba18c456f90dc121925c70da9520",
+        "makerIdentityProof": {
+          "kind": "bip322",
+          "address": "bc1qexampleaddress0000000000000000000000000000",
+          "signature": "MEUCIQ=="
+        }
+      },
+      "acceptance": {
+        "schema": "ordex.swap-acceptance-plan/v2",
+        "intentDigest": "4e4be4e4efd7c848e79706aaf3ab2c301ff1ba18c456f90dc121925c70da9520",
+        "network": "mainnet",
+        "checkpoint": {
+          "height": 900005,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "taker": {
+          "receiveScriptHex": "51207777777777777777777777777777777777777777777777777777777777777777",
+          "changeScriptHex": "00148888888888888888888888888888888888888888"
+        },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
+        "tx": {
+          "inputs": [
+            {
+              "outpoint": {
+                "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "vout": 2
+              },
+              "party": "maker",
+              "valueSats": "10000",
+              "scriptPubKeyHex": "51204ae4b6480945daba679a946c672cb625184b83079c6a435c6bbad25ecfe5d588",
+              "sequence": 4294967293,
+              "inventory": {
+                "examined": true,
+                "inscriptions": [
+                  {
+                    "inscriptionId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+                    "offset": "0"
+                  }
+                ]
+              }
+            },
+            {
+              "outpoint": {
+                "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                "vout": 1
+              },
+              "party": "taker",
+              "valueSats": "60000",
+              "scriptPubKeyHex": "0014dd6a092633cb98b6487d771cec811f013ecc75a0",
+              "sequence": 4294967293,
+              "inventory": {
+                "examined": true
+              }
+            }
+          ],
+          "outputs": [
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "10000"
+            },
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "50000"
+            },
+            {
+              "scriptHex": "00148888888888888888888888888888888888888888",
+              "valueSats": "9400"
             }
           ]
         },
@@ -1256,23 +2086,298 @@
             "assetType": "ORDINAL",
             "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
             "fromInput": 0,
-            "toOutput": 0
-          },
-          {
-            "assetType": "BTC",
-            "assetId": "BTC",
-            "fromInput": 1,
-            "toOutput": 1
+            "toOutput": 0,
+            "quantity": "1"
           }
         ],
         "fee": {
-          "feeSats": "4600",
+          "feeSats": "600",
           "makerFeeSats": "0",
-          "takerFeeSats": "4600"
+          "takerFeeSats": "600"
         },
         "signing": {
           "sighashPolicy": "ALL"
+        },
+        "digest": "d6b9cd723b8b82b51a045915861b84a8c9944fc1dec8abefd4efd49330f83790"
+      },
+      "expected": {
+        "ok": false,
+        "code": "MAKER_ASSET_NOT_DELIVERED"
+      }
+    },
+    {
+      "name": "a taker receiving at a maker script is refused",
+      "intent": {
+        "schema": "ordex.swap-intent/v1",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "visibility": "PUBLIC",
+        "makerReceiveScriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "gives": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+            "outpoint": {
+              "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+              "vout": 2
+            },
+            "quantitySats": "1"
+          }
+        ],
+        "requires": [
+          {
+            "assetType": "BTC",
+            "minQuantitySats": "50000"
+          }
+        ],
+        "maxMakerFeeSats": "1000",
+        "expiryHeight": 900100,
+        "nonce": "nonce-12345678",
+        "createdAtHeight": 900000,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "adapterVersions": [
+          {
+            "protocol": "ordinals",
+            "version": "1.2"
+          },
+          {
+            "protocol": "runes",
+            "version": "1.2"
+          }
+        ],
+        "digest": "4e4be4e4efd7c848e79706aaf3ab2c301ff1ba18c456f90dc121925c70da9520",
+        "makerIdentityProof": {
+          "kind": "bip322",
+          "address": "bc1qexampleaddress0000000000000000000000000000",
+          "signature": "MEUCIQ=="
         }
+      },
+      "acceptance": {
+        "schema": "ordex.swap-acceptance-plan/v2",
+        "intentDigest": "4e4be4e4efd7c848e79706aaf3ab2c301ff1ba18c456f90dc121925c70da9520",
+        "network": "mainnet",
+        "checkpoint": {
+          "height": 900005,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "taker": {
+          "receiveScriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
+        "tx": {
+          "inputs": [
+            {
+              "outpoint": {
+                "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "vout": 2
+              },
+              "party": "maker",
+              "valueSats": "10000",
+              "scriptPubKeyHex": "51204ae4b6480945daba679a946c672cb625184b83079c6a435c6bbad25ecfe5d588",
+              "sequence": 4294967293,
+              "inventory": {
+                "examined": true,
+                "inscriptions": [
+                  {
+                    "inscriptionId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+                    "offset": "0"
+                  }
+                ]
+              }
+            },
+            {
+              "outpoint": {
+                "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                "vout": 1
+              },
+              "party": "taker",
+              "valueSats": "60000",
+              "scriptPubKeyHex": "0014dd6a092633cb98b6487d771cec811f013ecc75a0",
+              "sequence": 4294967293,
+              "inventory": {
+                "examined": true
+              }
+            }
+          ],
+          "outputs": [
+            {
+              "scriptHex": "51207777777777777777777777777777777777777777777777777777777777777777",
+              "valueSats": "10000"
+            },
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "50000"
+            },
+            {
+              "scriptHex": "00148888888888888888888888888888888888888888",
+              "valueSats": "9400"
+            }
+          ]
+        },
+        "assetTransitions": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+            "fromInput": 0,
+            "toOutput": 0,
+            "quantity": "1"
+          }
+        ],
+        "fee": {
+          "feeSats": "600",
+          "makerFeeSats": "0",
+          "takerFeeSats": "600"
+        },
+        "signing": {
+          "sighashPolicy": "ALL"
+        },
+        "digest": "d2c4b48b17fc959cc57d8c8dd19d49cb29220644bc61bc15b5b4bf9e23d5cc50"
+      },
+      "expected": {
+        "ok": false,
+        "code": "PARTY_SCRIPTS_OVERLAP"
+      }
+    },
+    {
+      "name": "BTC below the requirement is refused",
+      "intent": {
+        "schema": "ordex.swap-intent/v1",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "visibility": "PUBLIC",
+        "makerReceiveScriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "gives": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+            "outpoint": {
+              "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+              "vout": 2
+            },
+            "quantitySats": "1"
+          }
+        ],
+        "requires": [
+          {
+            "assetType": "BTC",
+            "minQuantitySats": "50000"
+          }
+        ],
+        "maxMakerFeeSats": "1000",
+        "expiryHeight": 900100,
+        "nonce": "nonce-12345678",
+        "createdAtHeight": 900000,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "adapterVersions": [
+          {
+            "protocol": "ordinals",
+            "version": "1.2"
+          },
+          {
+            "protocol": "runes",
+            "version": "1.2"
+          }
+        ],
+        "digest": "4e4be4e4efd7c848e79706aaf3ab2c301ff1ba18c456f90dc121925c70da9520",
+        "makerIdentityProof": {
+          "kind": "bip322",
+          "address": "bc1qexampleaddress0000000000000000000000000000",
+          "signature": "MEUCIQ=="
+        }
+      },
+      "acceptance": {
+        "schema": "ordex.swap-acceptance-plan/v2",
+        "intentDigest": "4e4be4e4efd7c848e79706aaf3ab2c301ff1ba18c456f90dc121925c70da9520",
+        "network": "mainnet",
+        "checkpoint": {
+          "height": 900005,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "taker": {
+          "receiveScriptHex": "51207777777777777777777777777777777777777777777777777777777777777777",
+          "changeScriptHex": "00148888888888888888888888888888888888888888"
+        },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
+        "tx": {
+          "inputs": [
+            {
+              "outpoint": {
+                "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "vout": 2
+              },
+              "party": "maker",
+              "valueSats": "10000",
+              "scriptPubKeyHex": "51204ae4b6480945daba679a946c672cb625184b83079c6a435c6bbad25ecfe5d588",
+              "sequence": 4294967293,
+              "inventory": {
+                "examined": true,
+                "inscriptions": [
+                  {
+                    "inscriptionId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+                    "offset": "0"
+                  }
+                ]
+              }
+            },
+            {
+              "outpoint": {
+                "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                "vout": 1
+              },
+              "party": "taker",
+              "valueSats": "60000",
+              "scriptPubKeyHex": "0014dd6a092633cb98b6487d771cec811f013ecc75a0",
+              "sequence": 4294967293,
+              "inventory": {
+                "examined": true
+              }
+            }
+          ],
+          "outputs": [
+            {
+              "scriptHex": "51207777777777777777777777777777777777777777777777777777777777777777",
+              "valueSats": "10000"
+            },
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "48000"
+            },
+            {
+              "scriptHex": "00148888888888888888888888888888888888888888",
+              "valueSats": "11400"
+            }
+          ]
+        },
+        "assetTransitions": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+            "fromInput": 0,
+            "toOutput": 0,
+            "quantity": "1"
+          }
+        ],
+        "fee": {
+          "feeSats": "600",
+          "makerFeeSats": "2000",
+          "takerFeeSats": "0"
+        },
+        "signing": {
+          "sighashPolicy": "ALL"
+        },
+        "digest": "2a5940499f19d71432219fc16c355c1207a745660e80886bb7b25936414ae080"
       },
       "expected": {
         "ok": false,
@@ -1301,7 +2406,147 @@
           {
             "assetType": "ORDINAL",
             "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
-            "minQuantitySats": "80000"
+            "minQuantitySats": "1"
+          }
+        ],
+        "maxMakerFeeSats": "500",
+        "expiryHeight": 900100,
+        "nonce": "nonce-12345678",
+        "createdAtHeight": 900000,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "adapterVersions": [
+          {
+            "protocol": "ordinals",
+            "version": "1.2"
+          },
+          {
+            "protocol": "runes",
+            "version": "1.2"
+          }
+        ],
+        "digest": "c4e885af8ff9214ded3dbeb5dba183ee90c60e84056c14408f4f1b74251bcfaf",
+        "makerIdentityProof": {
+          "kind": "bip322",
+          "address": "bc1qexampleaddress0000000000000000000000000000",
+          "signature": "MEUCIQ=="
+        }
+      },
+      "acceptance": {
+        "schema": "ordex.swap-acceptance-plan/v2",
+        "intentDigest": "c4e885af8ff9214ded3dbeb5dba183ee90c60e84056c14408f4f1b74251bcfaf",
+        "network": "mainnet",
+        "checkpoint": {
+          "height": 900005,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "taker": {
+          "receiveScriptHex": "51207777777777777777777777777777777777777777777777777777777777777777",
+          "changeScriptHex": "00148888888888888888888888888888888888888888"
+        },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
+        "tx": {
+          "inputs": [
+            {
+              "outpoint": {
+                "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                "vout": 1
+              },
+              "party": "taker",
+              "valueSats": "10000",
+              "scriptPubKeyHex": "0014dd6a092633cb98b6487d771cec811f013ecc75a0",
+              "sequence": 4294967293,
+              "inventory": {
+                "examined": true,
+                "inscriptions": [
+                  {
+                    "inscriptionId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+                    "offset": "0"
+                  }
+                ]
+              }
+            },
+            {
+              "outpoint": {
+                "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "vout": 0
+              },
+              "party": "maker",
+              "valueSats": "101000",
+              "scriptPubKeyHex": "51204ae4b6480945daba679a946c672cb625184b83079c6a435c6bbad25ecfe5d588",
+              "sequence": 4294967293,
+              "inventory": {
+                "examined": true
+              }
+            }
+          ],
+          "outputs": [
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "10000"
+            },
+            {
+              "scriptHex": "51207777777777777777777777777777777777777777777777777777777777777777",
+              "valueSats": "100000"
+            },
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "400"
+            }
+          ]
+        },
+        "assetTransitions": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+            "fromInput": 0,
+            "toOutput": 0,
+            "quantity": "1"
+          }
+        ],
+        "fee": {
+          "feeSats": "600",
+          "makerFeeSats": "600",
+          "takerFeeSats": "0"
+        },
+        "signing": {
+          "sighashPolicy": "ALL"
+        },
+        "digest": "da24acc91e1a5d02a0bd4f0f5347007da5e58f4cee35da8809b2f2c1984969fa"
+      },
+      "expected": {
+        "ok": false,
+        "code": "FEE_BUDGET_EXCEEDED"
+      }
+    },
+    {
+      "name": "a declared fee split that is not the value flow is refused",
+      "intent": {
+        "schema": "ordex.swap-intent/v1",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "visibility": "PUBLIC",
+        "makerReceiveScriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "gives": [
+          {
+            "assetType": "BTC",
+            "outpoint": {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0
+            },
+            "quantitySats": "100000"
+          }
+        ],
+        "requires": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+            "minQuantitySats": "1"
           }
         ],
         "maxMakerFeeSats": "1000",
@@ -1316,9 +2561,13 @@
           {
             "protocol": "ordinals",
             "version": "1.2"
+          },
+          {
+            "protocol": "runes",
+            "version": "1.2"
           }
         ],
-        "digest": "a738b378f28cffff205dcf071e2c5e47515007977d440cd47fac787187c3c469",
+        "digest": "5b098dd8e6cd34291c07d949190ffabc63037dbfd964e2f090e11e6ecb2cc100",
         "makerIdentityProof": {
           "kind": "bip322",
           "address": "bc1qexampleaddress0000000000000000000000000000",
@@ -1326,9 +2575,21 @@
         }
       },
       "acceptance": {
-        "schema": "ordex.swap-acceptance-plan/v1",
-        "intentDigest": "a738b378f28cffff205dcf071e2c5e47515007977d440cd47fac787187c3c469",
+        "schema": "ordex.swap-acceptance-plan/v2",
+        "intentDigest": "5b098dd8e6cd34291c07d949190ffabc63037dbfd964e2f090e11e6ecb2cc100",
         "network": "mainnet",
+        "checkpoint": {
+          "height": 900005,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "taker": {
+          "receiveScriptHex": "51207777777777777777777777777777777777777777777777777777777777777777",
+          "changeScriptHex": "00148888888888888888888888888888888888888888"
+        },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
         "tx": {
           "inputs": [
             {
@@ -1338,12 +2599,17 @@
               },
               "party": "taker",
               "valueSats": "10000",
-              "assets": [
-                {
-                  "assetType": "ORDINAL",
-                  "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0"
-                }
-              ]
+              "scriptPubKeyHex": "0014dd6a092633cb98b6487d771cec811f013ecc75a0",
+              "sequence": 4294967293,
+              "inventory": {
+                "examined": true,
+                "inscriptions": [
+                  {
+                    "inscriptionId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+                    "offset": "0"
+                  }
+                ]
+              }
             },
             {
               "outpoint": {
@@ -1351,29 +2617,26 @@
                 "vout": 0
               },
               "party": "maker",
-              "valueSats": "100000",
-              "assets": [
-                {
-                  "assetType": "BTC"
-                }
-              ]
+              "valueSats": "101000",
+              "scriptPubKeyHex": "51204ae4b6480945daba679a946c672cb625184b83079c6a435c6bbad25ecfe5d588",
+              "sequence": 4294967293,
+              "inventory": {
+                "examined": true
+              }
             }
           ],
           "outputs": [
             {
-              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-              "valueSats": "10000",
-              "role": "takerAsset"
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "10000"
+            },
+            {
+              "scriptHex": "51207777777777777777777777777777777777777777777777777777777777777777",
+              "valueSats": "100000"
             },
             {
               "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-              "valueSats": "80000",
-              "role": "makerConsideration"
-            },
-            {
-              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-              "valueSats": "15400",
-              "role": "takerChange"
+              "valueSats": "400"
             }
           ]
         },
@@ -1382,31 +2645,587 @@
             "assetType": "ORDINAL",
             "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
             "fromInput": 0,
-            "toOutput": 0
-          },
-          {
-            "assetType": "BTC",
-            "assetId": "BTC",
-            "fromInput": 1,
-            "toOutput": 1
+            "toOutput": 0,
+            "quantity": "1"
           }
         ],
         "fee": {
-          "feeSats": "4600",
-          "makerFeeSats": "4600",
+          "feeSats": "600",
+          "makerFeeSats": "0",
+          "takerFeeSats": "600"
+        },
+        "signing": {
+          "sighashPolicy": "ALL"
+        },
+        "digest": "c12993ab3d6049cee427a149cc807b5d687ce8b865dc0f27a40c9304da9b6583"
+      },
+      "expected": {
+        "ok": false,
+        "code": "FEE_SPLIT_INVALID"
+      }
+    },
+    {
+      "name": "an output to neither party is refused",
+      "intent": {
+        "schema": "ordex.swap-intent/v1",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "visibility": "PUBLIC",
+        "makerReceiveScriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "gives": [
+          {
+            "assetType": "BTC",
+            "outpoint": {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0
+            },
+            "quantitySats": "100000"
+          }
+        ],
+        "requires": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+            "minQuantitySats": "1"
+          }
+        ],
+        "maxMakerFeeSats": "1000",
+        "expiryHeight": 900100,
+        "nonce": "nonce-12345678",
+        "createdAtHeight": 900000,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "adapterVersions": [
+          {
+            "protocol": "ordinals",
+            "version": "1.2"
+          },
+          {
+            "protocol": "runes",
+            "version": "1.2"
+          }
+        ],
+        "digest": "5b098dd8e6cd34291c07d949190ffabc63037dbfd964e2f090e11e6ecb2cc100",
+        "makerIdentityProof": {
+          "kind": "bip322",
+          "address": "bc1qexampleaddress0000000000000000000000000000",
+          "signature": "MEUCIQ=="
+        }
+      },
+      "acceptance": {
+        "schema": "ordex.swap-acceptance-plan/v2",
+        "intentDigest": "5b098dd8e6cd34291c07d949190ffabc63037dbfd964e2f090e11e6ecb2cc100",
+        "network": "mainnet",
+        "checkpoint": {
+          "height": 900005,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "taker": {
+          "receiveScriptHex": "51207777777777777777777777777777777777777777777777777777777777777777",
+          "changeScriptHex": "00148888888888888888888888888888888888888888"
+        },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
+        "tx": {
+          "inputs": [
+            {
+              "outpoint": {
+                "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                "vout": 1
+              },
+              "party": "taker",
+              "valueSats": "10000",
+              "scriptPubKeyHex": "0014dd6a092633cb98b6487d771cec811f013ecc75a0",
+              "sequence": 4294967293,
+              "inventory": {
+                "examined": true,
+                "inscriptions": [
+                  {
+                    "inscriptionId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+                    "offset": "0"
+                  }
+                ]
+              }
+            },
+            {
+              "outpoint": {
+                "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "vout": 0
+              },
+              "party": "maker",
+              "valueSats": "101000",
+              "scriptPubKeyHex": "51204ae4b6480945daba679a946c672cb625184b83079c6a435c6bbad25ecfe5d588",
+              "sequence": 4294967293,
+              "inventory": {
+                "examined": true
+              }
+            }
+          ],
+          "outputs": [
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "10000"
+            },
+            {
+              "scriptHex": "51207777777777777777777777777777777777777777777777777777777777777777",
+              "valueSats": "100000"
+            },
+            {
+              "scriptHex": "00149999999999999999999999999999999999999999",
+              "valueSats": "400"
+            }
+          ]
+        },
+        "assetTransitions": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+            "fromInput": 0,
+            "toOutput": 0,
+            "quantity": "1"
+          }
+        ],
+        "fee": {
+          "feeSats": "600",
+          "makerFeeSats": "600",
           "takerFeeSats": "0"
         },
         "signing": {
           "sighashPolicy": "ALL"
-        }
+        },
+        "digest": "ebdc4c7e246fc52172b855f178aa4358f4b235e47e0e699ba808ef7f35e7ccc8"
       },
       "expected": {
         "ok": false,
-        "code": "FEE_BUDGET_EXCEEDED"
+        "code": "OUTPUT_UNOWNED"
       }
     },
     {
-      "name": "a maker asset without a delivery transition is refused",
+      "name": "a maker outpoint that does not carry what it gives is refused",
+      "intent": {
+        "schema": "ordex.swap-intent/v1",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "visibility": "PUBLIC",
+        "makerReceiveScriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "gives": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+            "outpoint": {
+              "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+              "vout": 2
+            },
+            "quantitySats": "1"
+          }
+        ],
+        "requires": [
+          {
+            "assetType": "BTC",
+            "minQuantitySats": "50000"
+          }
+        ],
+        "maxMakerFeeSats": "1000",
+        "expiryHeight": 900100,
+        "nonce": "nonce-12345678",
+        "createdAtHeight": 900000,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "adapterVersions": [
+          {
+            "protocol": "ordinals",
+            "version": "1.2"
+          },
+          {
+            "protocol": "runes",
+            "version": "1.2"
+          }
+        ],
+        "digest": "4e4be4e4efd7c848e79706aaf3ab2c301ff1ba18c456f90dc121925c70da9520",
+        "makerIdentityProof": {
+          "kind": "bip322",
+          "address": "bc1qexampleaddress0000000000000000000000000000",
+          "signature": "MEUCIQ=="
+        }
+      },
+      "acceptance": {
+        "schema": "ordex.swap-acceptance-plan/v2",
+        "intentDigest": "4e4be4e4efd7c848e79706aaf3ab2c301ff1ba18c456f90dc121925c70da9520",
+        "network": "mainnet",
+        "checkpoint": {
+          "height": 900005,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "taker": {
+          "receiveScriptHex": "51207777777777777777777777777777777777777777777777777777777777777777",
+          "changeScriptHex": "00148888888888888888888888888888888888888888"
+        },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
+        "tx": {
+          "inputs": [
+            {
+              "outpoint": {
+                "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "vout": 2
+              },
+              "party": "maker",
+              "valueSats": "10000",
+              "scriptPubKeyHex": "51204ae4b6480945daba679a946c672cb625184b83079c6a435c6bbad25ecfe5d588",
+              "sequence": 4294967293,
+              "inventory": {
+                "examined": true
+              }
+            },
+            {
+              "outpoint": {
+                "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                "vout": 1
+              },
+              "party": "taker",
+              "valueSats": "60000",
+              "scriptPubKeyHex": "0014dd6a092633cb98b6487d771cec811f013ecc75a0",
+              "sequence": 4294967293,
+              "inventory": {
+                "examined": true
+              }
+            }
+          ],
+          "outputs": [
+            {
+              "scriptHex": "51207777777777777777777777777777777777777777777777777777777777777777",
+              "valueSats": "10000"
+            },
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "50000"
+            },
+            {
+              "scriptHex": "00148888888888888888888888888888888888888888",
+              "valueSats": "9400"
+            }
+          ]
+        },
+        "assetTransitions": [],
+        "fee": {
+          "feeSats": "600",
+          "makerFeeSats": "0",
+          "takerFeeSats": "600"
+        },
+        "signing": {
+          "sighashPolicy": "ALL"
+        },
+        "digest": "f79fd25ed4f8247c3c4ec8c3e0238a0306a5693a418cdc6724b25dcc7920ea1a"
+      },
+      "expected": {
+        "ok": false,
+        "code": "GIVE_NOT_HELD"
+      }
+    },
+    {
+      "name": "a taker asset nobody traded, landing with the maker, is refused",
+      "intent": {
+        "schema": "ordex.swap-intent/v1",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "visibility": "PUBLIC",
+        "makerReceiveScriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "gives": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+            "outpoint": {
+              "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+              "vout": 2
+            },
+            "quantitySats": "1"
+          }
+        ],
+        "requires": [
+          {
+            "assetType": "BTC",
+            "minQuantitySats": "50000"
+          }
+        ],
+        "maxMakerFeeSats": "1000",
+        "expiryHeight": 900100,
+        "nonce": "nonce-12345678",
+        "createdAtHeight": 900000,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "adapterVersions": [
+          {
+            "protocol": "ordinals",
+            "version": "1.2"
+          },
+          {
+            "protocol": "runes",
+            "version": "1.2"
+          }
+        ],
+        "digest": "4e4be4e4efd7c848e79706aaf3ab2c301ff1ba18c456f90dc121925c70da9520",
+        "makerIdentityProof": {
+          "kind": "bip322",
+          "address": "bc1qexampleaddress0000000000000000000000000000",
+          "signature": "MEUCIQ=="
+        }
+      },
+      "acceptance": {
+        "schema": "ordex.swap-acceptance-plan/v2",
+        "intentDigest": "4e4be4e4efd7c848e79706aaf3ab2c301ff1ba18c456f90dc121925c70da9520",
+        "network": "mainnet",
+        "checkpoint": {
+          "height": 900005,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "taker": {
+          "receiveScriptHex": "51207777777777777777777777777777777777777777777777777777777777777777",
+          "changeScriptHex": "00148888888888888888888888888888888888888888"
+        },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
+        "tx": {
+          "inputs": [
+            {
+              "outpoint": {
+                "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "vout": 2
+              },
+              "party": "maker",
+              "valueSats": "10000",
+              "scriptPubKeyHex": "51204ae4b6480945daba679a946c672cb625184b83079c6a435c6bbad25ecfe5d588",
+              "sequence": 4294967293,
+              "inventory": {
+                "examined": true,
+                "inscriptions": [
+                  {
+                    "inscriptionId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+                    "offset": "0"
+                  }
+                ]
+              }
+            },
+            {
+              "outpoint": {
+                "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                "vout": 1
+              },
+              "party": "taker",
+              "valueSats": "60000",
+              "scriptPubKeyHex": "0014dd6a092633cb98b6487d771cec811f013ecc75a0",
+              "sequence": 4294967293,
+              "inventory": {
+                "examined": true,
+                "rareSatRanges": [
+                  {
+                    "rangeId": "uncommon-938263",
+                    "offset": "0",
+                    "count": "1"
+                  }
+                ]
+              }
+            }
+          ],
+          "outputs": [
+            {
+              "scriptHex": "51207777777777777777777777777777777777777777777777777777777777777777",
+              "valueSats": "10000"
+            },
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "50000"
+            },
+            {
+              "scriptHex": "00148888888888888888888888888888888888888888",
+              "valueSats": "9400"
+            }
+          ]
+        },
+        "assetTransitions": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+            "fromInput": 0,
+            "toOutput": 0,
+            "quantity": "1"
+          },
+          {
+            "assetType": "RARE_SAT",
+            "assetId": "uncommon-938263",
+            "fromInput": 1,
+            "toOutput": 1,
+            "quantity": "1"
+          }
+        ],
+        "fee": {
+          "feeSats": "600",
+          "makerFeeSats": "0",
+          "takerFeeSats": "600"
+        },
+        "signing": {
+          "sighashPolicy": "ALL"
+        },
+        "digest": "d45285e5e8ef2c251fb21874794199951e9238d634f282332143b42904b4ffae"
+      },
+      "expected": {
+        "ok": false,
+        "code": "ASSET_MISDIRECTED"
+      }
+    },
+    {
+      "name": "a transition that states the wrong output is refused",
+      "intent": {
+        "schema": "ordex.swap-intent/v1",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "visibility": "PUBLIC",
+        "makerReceiveScriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "gives": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+            "outpoint": {
+              "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+              "vout": 2
+            },
+            "quantitySats": "1"
+          }
+        ],
+        "requires": [
+          {
+            "assetType": "BTC",
+            "minQuantitySats": "50000"
+          }
+        ],
+        "maxMakerFeeSats": "1000",
+        "expiryHeight": 900100,
+        "nonce": "nonce-12345678",
+        "createdAtHeight": 900000,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "adapterVersions": [
+          {
+            "protocol": "ordinals",
+            "version": "1.2"
+          },
+          {
+            "protocol": "runes",
+            "version": "1.2"
+          }
+        ],
+        "digest": "4e4be4e4efd7c848e79706aaf3ab2c301ff1ba18c456f90dc121925c70da9520",
+        "makerIdentityProof": {
+          "kind": "bip322",
+          "address": "bc1qexampleaddress0000000000000000000000000000",
+          "signature": "MEUCIQ=="
+        }
+      },
+      "acceptance": {
+        "schema": "ordex.swap-acceptance-plan/v2",
+        "intentDigest": "4e4be4e4efd7c848e79706aaf3ab2c301ff1ba18c456f90dc121925c70da9520",
+        "network": "mainnet",
+        "checkpoint": {
+          "height": 900005,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "taker": {
+          "receiveScriptHex": "51207777777777777777777777777777777777777777777777777777777777777777",
+          "changeScriptHex": "00148888888888888888888888888888888888888888"
+        },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
+        "tx": {
+          "inputs": [
+            {
+              "outpoint": {
+                "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "vout": 2
+              },
+              "party": "maker",
+              "valueSats": "10000",
+              "scriptPubKeyHex": "51204ae4b6480945daba679a946c672cb625184b83079c6a435c6bbad25ecfe5d588",
+              "sequence": 4294967293,
+              "inventory": {
+                "examined": true,
+                "inscriptions": [
+                  {
+                    "inscriptionId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+                    "offset": "0"
+                  }
+                ]
+              }
+            },
+            {
+              "outpoint": {
+                "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                "vout": 1
+              },
+              "party": "taker",
+              "valueSats": "60000",
+              "scriptPubKeyHex": "0014dd6a092633cb98b6487d771cec811f013ecc75a0",
+              "sequence": 4294967293,
+              "inventory": {
+                "examined": true
+              }
+            }
+          ],
+          "outputs": [
+            {
+              "scriptHex": "51207777777777777777777777777777777777777777777777777777777777777777",
+              "valueSats": "10000"
+            },
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "50000"
+            },
+            {
+              "scriptHex": "00148888888888888888888888888888888888888888",
+              "valueSats": "9400"
+            }
+          ]
+        },
+        "assetTransitions": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+            "fromInput": 0,
+            "toOutput": 2,
+            "quantity": "1"
+          }
+        ],
+        "fee": {
+          "feeSats": "600",
+          "makerFeeSats": "0",
+          "takerFeeSats": "600"
+        },
+        "signing": {
+          "sighashPolicy": "ALL"
+        },
+        "digest": "c33458e8a17faa6603ccfa621523a4986b9c042805428f0c4a2d3f27b8e38f22"
+      },
+      "expected": {
+        "ok": false,
+        "code": "TRANSITION_MISMATCH"
+      }
+    },
+    {
+      "name": "an inscription requirement with a quantity other than 1 is refused",
       "intent": {
         "schema": "ordex.swap-intent/v1",
         "protocolVersion": "1.2",
@@ -1442,9 +3261,13 @@
           {
             "protocol": "ordinals",
             "version": "1.2"
+          },
+          {
+            "protocol": "runes",
+            "version": "1.2"
           }
         ],
-        "digest": "a738b378f28cffff205dcf071e2c5e47515007977d440cd47fac787187c3c469",
+        "digest": "3b28ec73b9ef6d3f9d5c93f8d447961bed04b0c51635cb070dc98bafecc933ec",
         "makerIdentityProof": {
           "kind": "bip322",
           "address": "bc1qexampleaddress0000000000000000000000000000",
@@ -1452,9 +3275,21 @@
         }
       },
       "acceptance": {
-        "schema": "ordex.swap-acceptance-plan/v1",
-        "intentDigest": "a738b378f28cffff205dcf071e2c5e47515007977d440cd47fac787187c3c469",
+        "schema": "ordex.swap-acceptance-plan/v2",
+        "intentDigest": "3b28ec73b9ef6d3f9d5c93f8d447961bed04b0c51635cb070dc98bafecc933ec",
         "network": "mainnet",
+        "checkpoint": {
+          "height": 900005,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "taker": {
+          "receiveScriptHex": "51207777777777777777777777777777777777777777777777777777777777777777",
+          "changeScriptHex": "00148888888888888888888888888888888888888888"
+        },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
         "tx": {
           "inputs": [
             {
@@ -1464,12 +3299,17 @@
               },
               "party": "taker",
               "valueSats": "10000",
-              "assets": [
-                {
-                  "assetType": "ORDINAL",
-                  "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0"
-                }
-              ]
+              "scriptPubKeyHex": "0014dd6a092633cb98b6487d771cec811f013ecc75a0",
+              "sequence": 4294967293,
+              "inventory": {
+                "examined": true,
+                "inscriptions": [
+                  {
+                    "inscriptionId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+                    "offset": "0"
+                  }
+                ]
+              }
             },
             {
               "outpoint": {
@@ -1477,45 +3317,619 @@
                 "vout": 0
               },
               "party": "maker",
-              "valueSats": "100000",
-              "assets": [
-                {
-                  "assetType": "BTC"
-                }
-              ]
+              "valueSats": "101000",
+              "scriptPubKeyHex": "51204ae4b6480945daba679a946c672cb625184b83079c6a435c6bbad25ecfe5d588",
+              "sequence": 4294967293,
+              "inventory": {
+                "examined": true
+              }
             }
           ],
           "outputs": [
             {
-              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-              "valueSats": "10000",
-              "role": "takerAsset"
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "10000"
+            },
+            {
+              "scriptHex": "51207777777777777777777777777777777777777777777777777777777777777777",
+              "valueSats": "100000"
             },
             {
               "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-              "valueSats": "80000",
-              "role": "makerConsideration"
-            },
-            {
-              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-              "valueSats": "15400",
-              "role": "takerChange"
+              "valueSats": "400"
             }
           ]
         },
-        "assetTransitions": [],
+        "assetTransitions": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+            "fromInput": 0,
+            "toOutput": 0,
+            "quantity": "1"
+          }
+        ],
         "fee": {
-          "feeSats": "4600",
-          "makerFeeSats": "0",
-          "takerFeeSats": "4600"
+          "feeSats": "600",
+          "makerFeeSats": "600",
+          "takerFeeSats": "0"
         },
         "signing": {
           "sighashPolicy": "ALL"
-        }
+        },
+        "digest": "62ec7eb64d02aa57a2c5f2c32c2caf72e2a6c45692ebce06e830e81c1686f565"
       },
       "expected": {
         "ok": false,
-        "code": "MAKER_ASSET_UNASSIGNED"
+        "code": "QUANTITY_UNSUPPORTED"
+      }
+    },
+    {
+      "name": "an intent relying on an adapter this verifier does not run is refused",
+      "intent": {
+        "schema": "ordex.swap-intent/v1",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "visibility": "PUBLIC",
+        "makerReceiveScriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "gives": [
+          {
+            "assetType": "BTC",
+            "outpoint": {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0
+            },
+            "quantitySats": "20000"
+          }
+        ],
+        "requires": [
+          {
+            "assetType": "RUNE",
+            "assetId": "840000:1",
+            "minQuantitySats": "500"
+          }
+        ],
+        "maxMakerFeeSats": "1000",
+        "expiryHeight": 900100,
+        "nonce": "nonce-12345678",
+        "createdAtHeight": 900000,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "adapterVersions": [
+          {
+            "protocol": "ordinals",
+            "version": "1.2"
+          }
+        ],
+        "digest": "8a79ef3e77009615beb171b441c9c5214978de861428e1d4803495bfa5410332",
+        "makerIdentityProof": {
+          "kind": "bip322",
+          "address": "bc1qexampleaddress0000000000000000000000000000",
+          "signature": "MEUCIQ=="
+        }
+      },
+      "acceptance": {
+        "schema": "ordex.swap-acceptance-plan/v2",
+        "intentDigest": "8a79ef3e77009615beb171b441c9c5214978de861428e1d4803495bfa5410332",
+        "network": "mainnet",
+        "checkpoint": {
+          "height": 900005,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "taker": {
+          "receiveScriptHex": "51207777777777777777777777777777777777777777777777777777777777777777",
+          "changeScriptHex": "00148888888888888888888888888888888888888888"
+        },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
+        "tx": {
+          "inputs": [
+            {
+              "outpoint": {
+                "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "vout": 0
+              },
+              "party": "maker",
+              "valueSats": "21000",
+              "scriptPubKeyHex": "51204ae4b6480945daba679a946c672cb625184b83079c6a435c6bbad25ecfe5d588",
+              "sequence": 4294967293,
+              "inventory": {
+                "examined": true
+              }
+            },
+            {
+              "outpoint": {
+                "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                "vout": 1
+              },
+              "party": "taker",
+              "valueSats": "546",
+              "scriptPubKeyHex": "0014dd6a092633cb98b6487d771cec811f013ecc75a0",
+              "sequence": 4294967293,
+              "inventory": {
+                "examined": true,
+                "runeAllocations": [
+                  {
+                    "runeId": "840000:1",
+                    "amount": "800"
+                  }
+                ]
+              }
+            }
+          ],
+          "outputs": [
+            {
+              "scriptHex": "6a5d0a160200c0a23301f40301",
+              "valueSats": "0"
+            },
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "546"
+            },
+            {
+              "scriptHex": "51207777777777777777777777777777777777777777777777777777777777777777",
+              "valueSats": "20000"
+            },
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "400"
+            }
+          ]
+        },
+        "assetTransitions": [
+          {
+            "assetType": "RUNE",
+            "assetId": "840000:1",
+            "toOutput": 1,
+            "quantity": "500"
+          },
+          {
+            "assetType": "RUNE",
+            "assetId": "840000:1",
+            "toOutput": 2,
+            "quantity": "300"
+          }
+        ],
+        "fee": {
+          "feeSats": "600",
+          "makerFeeSats": "54",
+          "takerFeeSats": "546"
+        },
+        "signing": {
+          "sighashPolicy": "ALL"
+        },
+        "digest": "c53f51c869efbe95b346a9234dcb5001cde01b0f087e08dfee8b3f8a1b56fa6b"
+      },
+      "expected": {
+        "ok": false,
+        "code": "ADAPTER_UNSUPPORTED"
+      }
+    },
+    {
+      "name": "a plan that could only confirm after the intent expires is refused",
+      "intent": {
+        "schema": "ordex.swap-intent/v1",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "visibility": "PUBLIC",
+        "makerReceiveScriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "gives": [
+          {
+            "assetType": "BTC",
+            "outpoint": {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0
+            },
+            "quantitySats": "100000"
+          }
+        ],
+        "requires": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+            "minQuantitySats": "1"
+          }
+        ],
+        "maxMakerFeeSats": "1000",
+        "expiryHeight": 900100,
+        "nonce": "nonce-12345678",
+        "createdAtHeight": 900000,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "adapterVersions": [
+          {
+            "protocol": "ordinals",
+            "version": "1.2"
+          },
+          {
+            "protocol": "runes",
+            "version": "1.2"
+          }
+        ],
+        "digest": "5b098dd8e6cd34291c07d949190ffabc63037dbfd964e2f090e11e6ecb2cc100",
+        "makerIdentityProof": {
+          "kind": "bip322",
+          "address": "bc1qexampleaddress0000000000000000000000000000",
+          "signature": "MEUCIQ=="
+        }
+      },
+      "acceptance": {
+        "schema": "ordex.swap-acceptance-plan/v2",
+        "intentDigest": "5b098dd8e6cd34291c07d949190ffabc63037dbfd964e2f090e11e6ecb2cc100",
+        "network": "mainnet",
+        "checkpoint": {
+          "height": 900099,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "taker": {
+          "receiveScriptHex": "51207777777777777777777777777777777777777777777777777777777777777777",
+          "changeScriptHex": "00148888888888888888888888888888888888888888"
+        },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
+        "tx": {
+          "inputs": [
+            {
+              "outpoint": {
+                "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                "vout": 1
+              },
+              "party": "taker",
+              "valueSats": "10000",
+              "scriptPubKeyHex": "0014dd6a092633cb98b6487d771cec811f013ecc75a0",
+              "sequence": 4294967293,
+              "inventory": {
+                "examined": true,
+                "inscriptions": [
+                  {
+                    "inscriptionId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+                    "offset": "0"
+                  }
+                ]
+              }
+            },
+            {
+              "outpoint": {
+                "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "vout": 0
+              },
+              "party": "maker",
+              "valueSats": "101000",
+              "scriptPubKeyHex": "51204ae4b6480945daba679a946c672cb625184b83079c6a435c6bbad25ecfe5d588",
+              "sequence": 4294967293,
+              "inventory": {
+                "examined": true
+              }
+            }
+          ],
+          "outputs": [
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "10000"
+            },
+            {
+              "scriptHex": "51207777777777777777777777777777777777777777777777777777777777777777",
+              "valueSats": "100000"
+            },
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "400"
+            }
+          ]
+        },
+        "assetTransitions": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+            "fromInput": 0,
+            "toOutput": 0,
+            "quantity": "1"
+          }
+        ],
+        "fee": {
+          "feeSats": "600",
+          "makerFeeSats": "600",
+          "takerFeeSats": "0"
+        },
+        "signing": {
+          "sighashPolicy": "ALL"
+        },
+        "digest": "a937f315bd0c4200cb94ccf638221e174d8e2278d11a4efa5354b67eb3f6f14d"
+      },
+      "expected": {
+        "ok": false,
+        "code": "INTENT_EXPIRED"
+      }
+    },
+    {
+      "name": "a taker-bound intent needs that taker identity",
+      "intent": {
+        "schema": "ordex.swap-intent/v1",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "visibility": "PRIVATE",
+        "makerReceiveScriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "gives": [
+          {
+            "assetType": "BTC",
+            "outpoint": {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0
+            },
+            "quantitySats": "100000"
+          }
+        ],
+        "requires": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+            "minQuantitySats": "1"
+          }
+        ],
+        "maxMakerFeeSats": "1000",
+        "expiryHeight": 900100,
+        "nonce": "nonce-12345678",
+        "createdAtHeight": 900000,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "adapterVersions": [
+          {
+            "protocol": "ordinals",
+            "version": "1.2"
+          },
+          {
+            "protocol": "runes",
+            "version": "1.2"
+          }
+        ],
+        "digest": "3ed9e61e8112ab24b65916c086438d7f8c1a417dac7450ecf70f349a48dd4475",
+        "makerIdentityProof": {
+          "kind": "bip322",
+          "address": "bc1qexampleaddress0000000000000000000000000000",
+          "signature": "MEUCIQ=="
+        },
+        "takerBinding": {
+          "address": "bc1qboundtaker0000000000000000000000000000"
+        }
+      },
+      "acceptance": {
+        "schema": "ordex.swap-acceptance-plan/v2",
+        "intentDigest": "3ed9e61e8112ab24b65916c086438d7f8c1a417dac7450ecf70f349a48dd4475",
+        "network": "mainnet",
+        "checkpoint": {
+          "height": 900005,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "taker": {
+          "receiveScriptHex": "51207777777777777777777777777777777777777777777777777777777777777777",
+          "changeScriptHex": "00148888888888888888888888888888888888888888"
+        },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
+        "tx": {
+          "inputs": [
+            {
+              "outpoint": {
+                "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                "vout": 1
+              },
+              "party": "taker",
+              "valueSats": "10000",
+              "scriptPubKeyHex": "0014dd6a092633cb98b6487d771cec811f013ecc75a0",
+              "sequence": 4294967293,
+              "inventory": {
+                "examined": true,
+                "inscriptions": [
+                  {
+                    "inscriptionId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+                    "offset": "0"
+                  }
+                ]
+              }
+            },
+            {
+              "outpoint": {
+                "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "vout": 0
+              },
+              "party": "maker",
+              "valueSats": "101000",
+              "scriptPubKeyHex": "51204ae4b6480945daba679a946c672cb625184b83079c6a435c6bbad25ecfe5d588",
+              "sequence": 4294967293,
+              "inventory": {
+                "examined": true
+              }
+            }
+          ],
+          "outputs": [
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "10000"
+            },
+            {
+              "scriptHex": "51207777777777777777777777777777777777777777777777777777777777777777",
+              "valueSats": "100000"
+            },
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "400"
+            }
+          ]
+        },
+        "assetTransitions": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+            "fromInput": 0,
+            "toOutput": 0,
+            "quantity": "1"
+          }
+        ],
+        "fee": {
+          "feeSats": "600",
+          "makerFeeSats": "600",
+          "takerFeeSats": "0"
+        },
+        "signing": {
+          "sighashPolicy": "ALL"
+        },
+        "digest": "5d7404c659ff27a47d9651be367b67975065de16997df4287bef85cc84f0eb68"
+      },
+      "expected": {
+        "ok": false,
+        "code": "TAKER_BINDING_MISMATCH"
+      }
+    },
+    {
+      "name": "an acceptance whose digest was edited is refused",
+      "intent": {
+        "schema": "ordex.swap-intent/v1",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "visibility": "PUBLIC",
+        "makerReceiveScriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "gives": [
+          {
+            "assetType": "BTC",
+            "outpoint": {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0
+            },
+            "quantitySats": "100000"
+          }
+        ],
+        "requires": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+            "minQuantitySats": "1"
+          }
+        ],
+        "maxMakerFeeSats": "1000",
+        "expiryHeight": 900100,
+        "nonce": "nonce-12345678",
+        "createdAtHeight": 900000,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "adapterVersions": [
+          {
+            "protocol": "ordinals",
+            "version": "1.2"
+          },
+          {
+            "protocol": "runes",
+            "version": "1.2"
+          }
+        ],
+        "digest": "5b098dd8e6cd34291c07d949190ffabc63037dbfd964e2f090e11e6ecb2cc100",
+        "makerIdentityProof": {
+          "kind": "bip322",
+          "address": "bc1qexampleaddress0000000000000000000000000000",
+          "signature": "MEUCIQ=="
+        }
+      },
+      "acceptance": {
+        "schema": "ordex.swap-acceptance-plan/v2",
+        "intentDigest": "5b098dd8e6cd34291c07d949190ffabc63037dbfd964e2f090e11e6ecb2cc100",
+        "network": "mainnet",
+        "checkpoint": {
+          "height": 900005,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "taker": {
+          "receiveScriptHex": "51207777777777777777777777777777777777777777777777777777777777777777",
+          "changeScriptHex": "00148888888888888888888888888888888888888888"
+        },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
+        "tx": {
+          "inputs": [
+            {
+              "outpoint": {
+                "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                "vout": 1
+              },
+              "party": "taker",
+              "valueSats": "10000",
+              "scriptPubKeyHex": "0014dd6a092633cb98b6487d771cec811f013ecc75a0",
+              "sequence": 4294967293,
+              "inventory": {
+                "examined": true,
+                "inscriptions": [
+                  {
+                    "inscriptionId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+                    "offset": "0"
+                  }
+                ]
+              }
+            },
+            {
+              "outpoint": {
+                "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "vout": 0
+              },
+              "party": "maker",
+              "valueSats": "101000",
+              "scriptPubKeyHex": "51204ae4b6480945daba679a946c672cb625184b83079c6a435c6bbad25ecfe5d588",
+              "sequence": 4294967293,
+              "inventory": {
+                "examined": true
+              }
+            }
+          ],
+          "outputs": [
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "10000"
+            },
+            {
+              "scriptHex": "51207777777777777777777777777777777777777777777777777777777777777777",
+              "valueSats": "100000"
+            },
+            {
+              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "valueSats": "400"
+            }
+          ]
+        },
+        "assetTransitions": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+            "fromInput": 0,
+            "toOutput": 0,
+            "quantity": "1"
+          }
+        ],
+        "fee": {
+          "feeSats": "600",
+          "makerFeeSats": "600",
+          "takerFeeSats": "0"
+        },
+        "signing": {
+          "sighashPolicy": "ALL"
+        },
+        "digest": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+      },
+      "expected": {
+        "ok": false,
+        "code": "DIGEST_MISMATCH"
       }
     }
   ]

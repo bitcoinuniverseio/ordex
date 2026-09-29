@@ -2315,13 +2315,6 @@ export interface components {
             allowed?: boolean;
             refusalCode?: string;
         };
-        SwapAsset: {
-            /** @enum {string} */
-            assetType: "BTC" | "ORDINAL" | "RARE_SAT" | "RUNE" | "COUNTERPARTY";
-            assetId?: string;
-            inscriptionId?: string;
-            quantitySats?: components["schemas"]["AtomicSats"];
-        };
         /** @description A BIP-322 proof that the maker controls the intent address. The gateway verifies the signature before publishing. */
         MakerIdentityProof: {
             /** @constant */
@@ -2391,29 +2384,43 @@ export interface components {
             takerReceiveScriptHex?: string;
             maxTakerFeeSats?: components["schemas"]["AtomicSats"];
         };
+        /** @description One transaction settling both sides. Every asset movement is derived from the input inventories by the owning protocol; the maker receives every required asset at its receive script, the taker every given asset at its receive script, and each party fee share follows from its value flow. */
         SwapAcceptancePlanDocument: {
             /** @constant */
-            schema: "ordex.swap-acceptance-plan/v1";
+            schema: "ordex.swap-acceptance-plan/v2";
             intentDigest: string;
             network: components["schemas"]["Network"];
+            checkpoint: components["schemas"]["Checkpoint"];
+            taker: {
+                receiveScriptHex: string;
+                changeScriptHex?: string;
+                identityProof?: {
+                    /** @constant */
+                    kind?: "bip322";
+                    address?: string;
+                    signature?: string;
+                };
+            };
+            transaction: {
+                version: number;
+                lockTime: number;
+            };
             tx: {
                 inputs: {
                     outpoint: components["schemas"]["Outpoint"];
                     /** @enum {string} */
                     party: "maker" | "taker";
                     valueSats: components["schemas"]["AtomicSats"];
-                    assets?: components["schemas"]["SwapAsset"][];
+                    scriptPubKeyHex: string;
+                    sequence: number;
+                    inventory: components["schemas"]["SafeOpsInventory"];
                 }[];
                 outputs: {
                     scriptHex: string;
                     valueSats: components["schemas"]["AtomicSats"];
-                    /** @enum {string} */
-                    role: "makerConsideration" | "takerAsset" | "makerChange" | "takerChange" | "preserve";
                 }[];
             };
-            assetTransitions: {
-                [key: string]: unknown;
-            }[];
+            assetTransitions: components["schemas"]["SafeOpsAssetTransition"][];
             fee: {
                 feeSats: components["schemas"]["AtomicSats"];
                 makerFeeSats: components["schemas"]["AtomicSats"];
@@ -2423,6 +2430,7 @@ export interface components {
                 /** @constant */
                 sighashPolicy: "ALL";
             };
+            digest: string;
         };
         SwapSession: {
             sessionId: string;

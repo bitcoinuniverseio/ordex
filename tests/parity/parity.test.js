@@ -10,11 +10,12 @@ import { runAllVectors } from '../../site/src/lib/conformance-engine.mjs';
 // it to 220 with 63 rune vectors for ord 0.29.0 field consumption and
 // allocation, OX-P10 to 236 with Counterparty v11.4.0 move vectors that
 // replace the old sat-flow ones, OX-P01 to 261 with SafeOps v2 vectors that
-// carry real signatures, and OX-P03 to 278 with cold signing v2 results read
-// from raw transactions and PSBT v0 and v2.
-test('278/278 official protocol vectors pass deterministically against reference verifiers', () => {
+// carry real signatures, OX-P03 to 278 with cold signing v2 results read from
+// raw transactions and PSBT v0 and v2, and OX-P02 to 294 with swap acceptance
+// v2 plans judged by derived asset movements.
+test('294/294 official protocol vectors pass deterministically against reference verifiers', () => {
   const result = runAllVectors();
-  assert.equal(result.total, 278, `Expected 278 vectors, ran ${result.total}`);
+  assert.equal(result.total, 294, `Expected 294 vectors, ran ${result.total}`);
   assert.equal(result.failed, 0, `Expected 0 failures, had ${result.failed}`);
-  assert.equal(result.passed, 278, `Expected 278 passed, had ${result.passed}`);
+  assert.equal(result.passed, 294, `Expected 294 passed, had ${result.passed}`);
 });

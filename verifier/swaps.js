@@ -13,13 +13,25 @@
 
 import { createHash } from 'node:crypto';
 
+import { checkTransitionShapes, deriveAssetFlow, matchTransitions, readInventory } from './asset-flow.js';
+import {
+  MAX_OP_RETURN_RELAY_BYTES,
+  bytesToHex,
+  dustThresholdSats,
+  parseTransaction,
+  serializeTransaction,
+  unsignedCopy,
+  verifyInputSignature,
+} from './bitcoin-tx.js';
+
 const DECIMAL = /^(0|[1-9][0-9]*)$/;
 const HEX64 = /^[0-9a-f]{64}$/;
 const EVEN_HEX = /^(?:[0-9a-f]{2})+$/;
 const NETWORKS = ['mainnet', 'testnet', 'signet', 'regtest'];
 const ASSET_TYPES = ['BTC', 'ORDINAL', 'RARE_SAT', 'RUNE', 'COUNTERPARTY'];
 export const SWAP_INTENT_SCHEMA = 'ordex.swap-intent/v1';
-export const SWAP_ACCEPTANCE_SCHEMA = 'ordex.swap-acceptance-plan/v1';
+export const SWAP_ACCEPTANCE_SCHEMA = 'ordex.swap-acceptance-plan/v2';
+export const SWAP_SIGNED_TRANSACTION_SCHEMA = 'ordex.swap-signed-transaction/v1';
 
 export function parseSats(value) {
   if (typeof value !== 'string' || !DECIMAL.test(value)) return null;
@@ -174,66 +186,75 @@ export function verifySwapIntent(intent) {
 }
 
 /**
- * Verify a swap acceptance plan against its intent.
+ * SHA-256 over the sorted-key JSON of an acceptance plan without its digest:
+ * the one immutable identity both parties sign against.
+ */
+export function swapAcceptanceDigest(acceptance) {
+  const binding = {};
+  for (const [key, value] of Object.entries(acceptance)) {
+    if (key === 'digest') continue;
+    binding[key] = value;
+  }
+  return createHash('sha256').update(sortedJson(binding), 'utf8').digest('hex');
+}
+
+const U32_MAX = 0xffffffff;
+const isU32 = (n) => Number.isInteger(n) && n >= 0 && n <= U32_MAX;
+
+/** Asset types each adapter settles, and the adapter versions this verifier runs. */
+const ADAPTER_OF = { ORDINAL: 'ordinals', RARE_SAT: 'ordinals', RUNE: 'runes', COUNTERPARTY: 'counterparty' };
+const SUPPORTED_ADAPTERS = { ordinals: ['1.2'], runes: ['1.2'], counterparty: ['1.2'] };
+
+const requiredId = (r) => (r.assetType === 'ORDINAL' && (r.assetId === undefined || r.assetId === '') ? r.inscriptionId : r.assetId);
+
+/** The unsigned transaction an acceptance plan describes. */
+export function swapUnsignedTransaction(acceptance) {
+  return {
+    version: acceptance.transaction.version,
+    lockTime: acceptance.transaction.lockTime,
+    inputs: acceptance.tx.inputs.map((input) => ({
+      txid: input.outpoint.txid,
+      vout: input.outpoint.vout,
+      scriptSigHex: '',
+      sequence: input.sequence,
+      witness: [],
+    })),
+    outputs: acceptance.tx.outputs.map((output) => ({ valueSats: String(parseSats(output.valueSats)), scriptHex: output.scriptHex })),
+  };
+}
+
+/**
+ * Verify that an acceptance plan settles an intent in one transaction.
  *
  * acceptance:
- *   schema, intentDigest, network,
- *   tx { inputs  [{ txid, vout, party, valueSats }],
- *        outputs [{ scriptHex, valueSats, role }] },
- *   assetTransitions [{ assetType, assetId, fromInput, toOutput }],
+ *   schema, intentDigest, network, checkpoint { height, blockHash },
+ *   taker { receiveScriptHex, changeScriptHex?, identityProof? },
+ *   transaction { version, lockTime },
+ *   tx { inputs  [{ outpoint, party, valueSats, scriptPubKeyHex, sequence,
+ *                   inventory }],
+ *        outputs [{ scriptHex, valueSats }] },
+ *   assetTransitions [{ assetType, assetId, fromInput?, toOutput, quantity }],
  *   fee { feeSats, makerFeeSats, takerFeeSats },
- *   signing { sighashPolicy }
+ *   signing { sighashPolicy: 'ALL' }, digest
  *
- * The invariant this check proves: with SIGHASH_ALL on every input, no
- * transaction carrying only one party's signatures can confirm, so neither
- * side can lose its asset while the other withholds the final signature.
+ * Every asset movement is derived from the inputs' inventories by the owning
+ * protocol's rule. The maker must receive every required asset at its
+ * receive script, the taker must receive every given asset at its receive
+ * script, every other asset returns to its owner, every output belongs to one
+ * party, and each party's fee share is computed from its value flow.
+ *
+ * Answers { ok: true, digest, makerFeeSats, takerFeeSats } or a refusal.
  */
-/*
- * IMPLEMENTATION-HANDOFF [OX-P02] Preparation only; functional status FAIL, repair NOT IMPLEMENTED.
- * Coverage: OX-P-C024, OX-P-C025, OX-P-C026, OX-P-C027, OX-P-C028, OX-P-C029, OX-P-C030, OX-P-C031,
- * OX-P-C032, OX-P-C033, OX-P-C034. Evidence: P-R09, P-R10 in handoff/evidence.
- * Verified cause: verifySwapAcceptance satisfies every requires item with a BTC output value, ignores
- * required asset identity/quantity, and accepts give transitions back to maker script. Shared
- * first-sat shortcut is wrong for nonzero inscription offsets, Runes, and Counterparty.
- * Required behavior: Verify bilateral swap consideration and actual destination ownership. Governing
- * refs: P-S01 (Ord0.29.0 applicability; handbook accessed2026-09-29); P-S02 (Ord0.29.0
- * commit7e37a3bd3391044b39f5f11f20dfdb8b3764cd0e; runestone
- * blob98022fb2a25d587a59a4a2ac40cd9de9bc5a6d0b); P-S03 (Ord0.29.0;
- * blobbce2ae16336368bba3f7d70eed2a1493a67f45c9); P-S06 (BIP341;
- * blob0764e6cb762b6c17d3b3430af5532e0c63365993); complete URLs in reports/protocol.md.
- * Prerequisites/order: OX-P01, OX-P03, OX-P04, OX-P10. Related files: sdk/src/swaps.ts, spec/swaps.md;
- * Core backend/src/ordex-v12 corresponding service and caller adapters.
- * 1. Resolve complete authoritative input inventories and both parties' controlled receive/change
- * scripts before construction; enforce maker/taker ownership proof and optional taker binding.
- * 2. Evaluate each consideration by family+asset identity+atomic quantity delivered to
- * makerReceiveScriptHex using actual protocol allocation, aggregate obligations without double
- * counting one output; use BTC value only for BTC.
- * 3. Require every maker give reaches authenticated taker receive script with committed quantity and
- * every unrelated asset is preserved to its owner; require both distinct party input sets and
- * reconcile actual fee contribution from party value flow, not caller labels.
- * 4. Extend acceptance contract and intent binding where necessary; compare parsed full transaction,
- * approved sighash, signatures and complete inventories; fail unknown capabilities closed. Correct
- * spec/swaps.md and mirror SDK; wire Core planner to same verification.
- * Validation (PROPOSED NEW tests, commands unverified until implemented):
- * verifier/swaps.consideration.test.js, sdk/test/swaps.consideration.test.js. node --test
- * verifier/swaps.test.js verifier/swaps.consideration.test.js; npm --prefix sdk run build; node --test
- * sdk/test/swaps.test.js sdk/test/swaps.consideration.test.js.
- * Assertions/evidence: Required Rune absent/wrong ID/wrong quantity refuses; Maker give returned to
- * maker refuses even with taker role label; Distinct parties, no extra outputs/fee theft; every
- * settlement cohort both directions settles one actual Signet tx; Taker
- * refusal/expired/withdrawn/private tamper/replay/network mismatch/reorg leaves recoverable truthful
- * state. Offline probes are not end-to-end PASS; require actual Signet transaction, authoritative
- * indexed outcome and consumer readback where applicable.
- * Rollback: Invalidate unbroadcast affected sessions and request fresh participant approval for new
- * digest; retain private ciphertext, historical intents, signatures and chain outcomes. Stop matching
- * if corrected adapters unavailable.
- */
+// OX-P02: P-R09 accepted a required Rune that never arrived and P-R10 a maker asset
+// paid back to the maker. Consideration is now judged by asset identity and quantity
+// at the owning party's script, never by a BTC value, and fee shares come from each
+// party's actual value flow with postage kept with the asset it carries.
 export function verifySwapAcceptance(acceptance, intent) {
   if (!acceptance || typeof acceptance !== 'object' || Array.isArray(acceptance)) {
     return refuse('MALFORMED_ACCEPTANCE', 'Expected an acceptance plan object.');
   }
   if (acceptance.schema !== SWAP_ACCEPTANCE_SCHEMA) {
-    return refuse('SCHEMA_UNSUPPORTED', 'The acceptance schema is not ordex.swap-acceptance-plan/v1.');
+    return refuse('SCHEMA_UNSUPPORTED', 'The acceptance schema is not ordex.swap-acceptance-plan/v2. Build the plan again.');
   }
   const intentVerdict = verifySwapIntent(intent);
   if (!intentVerdict.ok) return intentVerdict;
@@ -243,24 +264,73 @@ export function verifySwapAcceptance(acceptance, intent) {
   if (acceptance.network !== intent.network) {
     return refuse('NETWORK_MISMATCH', 'The acceptance plan was built for a different network.');
   }
-  const tx = acceptance.tx;
-  if (!tx || !Array.isArray(tx.inputs) || tx.inputs.length < 2 || !Array.isArray(tx.outputs) || tx.outputs.length < 2) {
-    return refuse(
-      'ATOMICITY_IMPOSSIBLE',
-      'A swap settles both sides in one transaction with inputs and outputs from both parties.',
-    );
+  const checkpoint = acceptance.checkpoint;
+  if (
+    !checkpoint ||
+    !Number.isInteger(checkpoint.height) ||
+    checkpoint.height < intent.checkpoint.height ||
+    typeof checkpoint.blockHash !== 'string' ||
+    !HEX64.test(checkpoint.blockHash)
+  ) {
+    return refuse('CHECKPOINT_INVALID', 'The plan must carry the checkpoint its outpoints were revalidated at, no earlier than the intent.');
+  }
+  if (checkpoint.height + 1 >= intent.expiryHeight) {
+    return refuse('INTENT_EXPIRED', 'The intent expires before this plan could confirm.');
   }
   if (
-    !acceptance.signing ||
-    acceptance.signing.sighashPolicy !== 'ALL'
+    !acceptance.transaction ||
+    !isU32(acceptance.transaction.version) ||
+    acceptance.transaction.version < 1 ||
+    !isU32(acceptance.transaction.lockTime)
   ) {
+    return refuse('TRANSACTION_INVALID', 'The plan must fix the transaction version and locktime.');
+  }
+  const taker = acceptance.taker;
+  if (
+    !taker ||
+    typeof taker.receiveScriptHex !== 'string' ||
+    !EVEN_HEX.test(taker.receiveScriptHex) ||
+    (taker.changeScriptHex !== undefined && (typeof taker.changeScriptHex !== 'string' || !EVEN_HEX.test(taker.changeScriptHex)))
+  ) {
+    return refuse('TAKER_INVALID', 'The plan must name the taker receive script, and a change script only as hex.');
+  }
+  if (intent.takerBinding !== undefined) {
+    const proof = taker.identityProof;
+    if (!proof || proof.kind !== 'bip322' || proof.address !== intent.takerBinding.address) {
+      return refuse('TAKER_BINDING_MISMATCH', 'This intent is bound to one taker, and the plan does not carry that taker identity proof.');
+    }
+  }
+  const makerScripts = new Set([intent.makerReceiveScriptHex]);
+  const takerScripts = new Set([taker.receiveScriptHex, ...(taker.changeScriptHex ? [taker.changeScriptHex] : [])]);
+  if ([...takerScripts].some((script) => makerScripts.has(script))) {
+    return refuse('PARTY_SCRIPTS_OVERLAP', 'The taker would receive at a maker script, so nothing could prove which party an output belongs to.');
+  }
+  if (!acceptance.signing || acceptance.signing.sighashPolicy !== 'ALL') {
     return refuse(
       'UNCLOSED_SIGHASH',
       'Every input must commit to every output (SIGHASH_ALL), or one party could move its asset without the other receiving theirs.',
     );
   }
+  for (const entry of [...intent.gives, ...intent.requires]) {
+    const adapter = ADAPTER_OF[entry.assetType];
+    if (!adapter) continue;
+    const pinned = intent.adapterVersions.find((a) => a && a.protocol === adapter);
+    if (!pinned || !SUPPORTED_ADAPTERS[adapter].includes(pinned.version)) {
+      return refuse('ADAPTER_UNSUPPORTED', `The intent relies on ${adapter} adapter ${pinned ? pinned.version : 'none'}, which this verifier does not run.`);
+    }
+    const quantity = entry.assetType === 'ORDINAL' ? entry.quantitySats ?? entry.minQuantitySats : null;
+    if (quantity !== null && quantity !== '1') {
+      return refuse('QUANTITY_UNSUPPORTED', 'An inscription is exchanged whole: its quantity is 1.');
+    }
+  }
+
+  const tx = acceptance.tx;
+  if (!tx || !Array.isArray(tx.inputs) || tx.inputs.length < 2 || !Array.isArray(tx.outputs) || tx.outputs.length < 2) {
+    return refuse('ATOMICITY_IMPOSSIBLE', 'A swap settles both sides in one transaction with inputs and outputs from both parties.');
+  }
 
   let totalIn = 0n;
+  const inputs = [];
   const inputByOutpoint = new Map();
   for (let i = 0; i < tx.inputs.length; i += 1) {
     const input = tx.inputs[i];
@@ -270,59 +340,211 @@ export function verifySwapAcceptance(acceptance, intent) {
     if (input.party !== 'maker' && input.party !== 'taker') {
       return refuse('INPUT_PARTY_INVALID', `Input ${i} must name the maker or the taker.`);
     }
-    const value = parseSats(input && input.valueSats);
+    const value = parseSats(input.valueSats);
     if (value === null) {
       return refuse('INPUT_VALUE_INVALID', `Input ${i} does not carry an exact decimal value.`);
+    }
+    if (typeof input.scriptPubKeyHex !== 'string' || !EVEN_HEX.test(input.scriptPubKeyHex)) {
+      return refuse('INPUT_SCRIPT_INVALID', `Input ${i} does not carry the script of the output it spends.`);
+    }
+    if (!isU32(input.sequence)) {
+      return refuse('INPUT_SEQUENCE_INVALID', `Input ${i} does not fix its sequence number.`);
     }
     const key = `${input.outpoint.txid}:${input.outpoint.vout}`;
     if (inputByOutpoint.has(key)) {
       return refuse('INPUT_DUPLICATED', `Input ${key} appears more than once.`);
     }
-    inputByOutpoint.set(key, { index: i, party: input.party, value });
+    const read = readInventory(input.inventory, i, value, input.outpoint);
+    if (!read.assets) return read;
+    inputByOutpoint.set(key, i);
+    inputs.push({ outpoint: input.outpoint, party: input.party, value, assets: read.assets });
     totalIn += value;
   }
+  if (!inputs.some((input) => input.party === 'taker')) {
+    return refuse('ATOMICITY_IMPOSSIBLE', 'The taker contributes no input, so this is not a swap.');
+  }
 
-  // Every maker commitment must be spent by exactly one maker input, and no
-  // maker input may spend anything the intent did not commit.
+  // Every maker commitment is spent exactly once, by the maker, and carries
+  // what the intent says it gives. No uncommitted maker input appears.
   for (const give of intent.gives) {
     const key = `${give.outpoint.txid}:${give.outpoint.vout}`;
-    const input = inputByOutpoint.get(key);
-    if (!input) {
+    const index = inputByOutpoint.get(key);
+    if (index === undefined) {
       return refuse('MAKER_OUTPOINT_MISSING', `The committed outpoint ${key} is not spent by the acceptance plan.`);
     }
+    const input = inputs[index];
     if (input.party !== 'maker') {
       return refuse('MAKER_OUTPOINT_REASSIGNED', `The committed outpoint ${key} is claimed by the taker.`);
     }
+    const quantity = BigInt(give.quantitySats);
+    const held =
+      give.assetType === 'BTC'
+        ? input.value >= quantity
+        : input.assets.some(
+            (a) =>
+              a.assetType === give.assetType &&
+              a.assetId === give.assetId &&
+              (give.assetType === 'RUNE' ? BigInt(a.amount) >= quantity : give.assetType === 'COUNTERPARTY' ? BigInt(a.quantitySats) >= quantity : true),
+          );
+    if (!held) {
+      return refuse('GIVE_NOT_HELD', `The committed outpoint ${key} does not carry the ${give.assetType} the intent gives.`);
+    }
   }
-  for (const [key, input] of inputByOutpoint) {
-    if (input.party !== 'maker') continue;
-    const committed = intent.gives.some(
-      (give) => `${give.outpoint.txid}:${give.outpoint.vout}` === key,
-    );
-    if (!committed) {
+  for (const [key, index] of inputByOutpoint) {
+    if (inputs[index].party !== 'maker') continue;
+    if (!intent.gives.some((give) => `${give.outpoint.txid}:${give.outpoint.vout}` === key)) {
       return refuse('UNEXPECTED_MAKER_INPUT', `Input ${key} spends an outpoint the intent never committed.`);
     }
   }
 
+  // Every output belongs to exactly one party, apart from one zero-value
+  // runestone when runes move.
+  const carriesRunes = inputs.some((input) => input.assets.some((a) => a.assetType === 'RUNE'));
   let totalOut = 0n;
+  const owners = [];
+  let dataOutputs = 0;
   for (let i = 0; i < tx.outputs.length; i += 1) {
     const output = tx.outputs[i];
     if (typeof (output && output.scriptHex) !== 'string' || !EVEN_HEX.test(output.scriptHex)) {
       return refuse('OUTPUT_SCRIPT_INVALID', `Output ${i} does not carry lowercase hex script bytes.`);
     }
-    const value = parseSats(output && output.valueSats);
+    const value = parseSats(output.valueSats);
     if (value === null) {
       return refuse('OUTPUT_VALUE_INVALID', `Output ${i} does not carry an exact decimal value.`);
     }
-    if (value < 546n) {
-      return refuse('DUST_OUTPUT', `Output ${i} is below the 546 sat dust floor.`);
+    if (output.scriptHex.startsWith('6a')) {
+      dataOutputs += 1;
+      if (value !== 0n) return refuse('DATA_OUTPUT_BURNS_VALUE', `Output ${i} would burn ${output.valueSats} sats in an OP_RETURN.`);
+      if (dataOutputs > 1 || !carriesRunes || !output.scriptHex.startsWith('6a5d')) {
+        return refuse('DATA_OUTPUT_NOT_PERMITTED', 'The only data output a swap may carry is one runestone for the runes it moves.');
+      }
+      if (output.scriptHex.length / 2 > MAX_OP_RETURN_RELAY_BYTES) {
+        return refuse('DATA_OUTPUT_NONSTANDARD', `The runestone exceeds the ${MAX_OP_RETURN_RELAY_BYTES} byte relay limit.`);
+      }
+      owners.push('data');
+    } else {
+      if (value < dustThresholdSats(output.scriptHex)) {
+        return refuse('DUST_OUTPUT', `Output ${i} is below the ${dustThresholdSats(output.scriptHex)} sat dust threshold for its script.`);
+      }
+      const owner = makerScripts.has(output.scriptHex) ? 'maker' : takerScripts.has(output.scriptHex) ? 'taker' : null;
+      if (!owner) {
+        return refuse('OUTPUT_UNOWNED', `Output ${i} pays a script that belongs to neither party.`);
+      }
+      owners.push(owner);
     }
     totalOut += value;
+  }
+  if (!owners.includes('maker') || !owners.includes('taker')) {
+    return refuse('ATOMICITY_IMPOSSIBLE', 'Both parties must receive an output.');
   }
   const fee = totalIn - totalOut;
   if (fee < 0n) {
     return refuse('VALUE_NOT_CONSERVED', 'The outputs exceed the inputs.');
   }
+
+  const transitions = acceptance.assetTransitions;
+  const shapes = checkTransitionShapes(transitions, tx.outputs.length);
+  if (!shapes.ok) return shapes;
+  const flow = deriveAssetFlow({
+    network: intent.network,
+    height: checkpoint.height + 1,
+    inputs,
+    outputs: tx.outputs,
+  });
+  if (!flow.ok) return flow;
+  const matched = matchTransitions(transitions, flow.movements);
+  if (!matched.ok) return matched;
+
+  // Where each asset lands, by party.
+  const gives = new Map(intent.gives.filter((g) => g.assetType !== 'BTC').map((g) => [`${g.assetType}|${g.assetId}`, g]));
+  const requires = new Map(intent.requires.filter((r) => r.assetType !== 'BTC').map((r) => [`${r.assetType}|${requiredId(r)}`, r]));
+  const runeTotals = new Map();
+  const runeKey = (party, runeId) => `${party}|${runeId}`;
+  for (const input of inputs) {
+    for (const a of input.assets) {
+      if (a.assetType !== 'RUNE') continue;
+      const k = runeKey(`${input.party}In`, a.assetId);
+      runeTotals.set(k, (runeTotals.get(k) ?? 0n) + BigInt(a.amount));
+    }
+  }
+  const crossed = new Map();
+  const kept = new Set();
+  const received = new Map();
+  for (const m of flow.movements) {
+    const owner = owners[m.toOutput];
+    if (m.assetType === 'RUNE') {
+      const k = runeKey(`${owner}Out`, m.assetId);
+      runeTotals.set(k, (runeTotals.get(k) ?? 0n) + BigInt(m.quantity));
+      continue;
+    }
+    const from = inputs[m.fromInput].party;
+    const key = `${m.assetType}|${m.assetId}`;
+    if (from === 'maker' && gives.has(key)) {
+      if (tx.outputs[m.toOutput].scriptHex !== taker.receiveScriptHex) {
+        return refuse('MAKER_ASSET_NOT_DELIVERED', `${m.assetType} ${m.assetId} would not reach the taker receive script.`);
+      }
+      if (m.assetType === 'COUNTERPARTY' && m.quantity !== gives.get(key).quantitySats) {
+        return refuse('GIVE_QUANTITY_MISMATCH', `Counterparty moves all ${m.quantity} of ${m.assetId}, not the ${gives.get(key).quantitySats} the intent gives.`);
+      }
+    } else if (from === 'taker' && requires.has(key)) {
+      if (owner !== 'maker') {
+        return refuse('CONSIDERATION_SHORTFALL', `${m.assetType} ${m.assetId} the maker requires would not reach the maker.`);
+      }
+      received.set(key, (received.get(key) ?? 0n) + BigInt(m.quantity));
+    } else if (owner !== from) {
+      return refuse('ASSET_MISDIRECTED', `${m.assetType} ${m.assetId} belongs to the ${from} and would land with the ${owner}.`);
+    }
+    if (m.assetType === 'ORDINAL' || m.assetType === 'RARE_SAT') {
+      if (from === owner) kept.add(m.toOutput);
+      else crossed.set(m.toOutput, owner);
+    }
+  }
+  // Postage travels with a sat-bound asset across parties, not as payment. An
+  // output holding both a traded and an owner's own sat-bound asset has no
+  // single meaning, so it is refused.
+  let makerPostageIn = 0n;
+  let takerPostageIn = 0n;
+  for (const [output, owner] of crossed) {
+    if (kept.has(output)) {
+      return refuse('ASSET_OUTPUT_MIXED', `Output ${output} carries a traded sat-bound asset together with its owner's own.`);
+    }
+    const value = BigInt(tx.outputs[output].valueSats);
+    if (owner === 'maker') makerPostageIn += value;
+    else takerPostageIn += value;
+  }
+  for (const [key, give] of gives) {
+    const [assetType, assetId] = key.split('|');
+    if (assetType === 'RUNE') {
+      const gain = (runeTotals.get(runeKey('takerOut', assetId)) ?? 0n) - (runeTotals.get(runeKey('takerIn', assetId)) ?? 0n);
+      if (gain !== BigInt(give.quantitySats)) {
+        return refuse('MAKER_ASSET_NOT_DELIVERED', `The taker would gain ${gain} of rune ${assetId}, not the ${give.quantitySats} the intent gives.`);
+      }
+    } else if (!flow.movements.some((m) => m.assetType === assetType && m.assetId === assetId)) {
+      return refuse('MAKER_ASSET_NOT_DELIVERED', `${assetType} ${assetId} is not moved by this transaction.`);
+    }
+  }
+  for (const [key, requirement] of requires) {
+    const [assetType, assetId] = key.split('|');
+    const minimum = assetType === 'ORDINAL' ? 1n : BigInt(requirement.minQuantitySats);
+    const got =
+      assetType === 'RUNE'
+        ? (runeTotals.get(runeKey('makerOut', assetId)) ?? 0n) - (runeTotals.get(runeKey('makerIn', assetId)) ?? 0n)
+        : (received.get(key) ?? 0n);
+    if (got < minimum) {
+      return refuse('CONSIDERATION_SHORTFALL', `The maker would receive ${got} of ${assetType} ${assetId}, less than the ${minimum} it requires.`);
+    }
+  }
+  const runeIds = new Set([...runeTotals.keys()].map((k) => k.split('|')[1]));
+  for (const runeId of runeIds) {
+    if (gives.has(`RUNE|${runeId}`) || requires.has(`RUNE|${runeId}`)) continue;
+    for (const party of ['maker', 'taker']) {
+      const gain = (runeTotals.get(runeKey(`${party}Out`, runeId)) ?? 0n) - (runeTotals.get(runeKey(`${party}In`, runeId)) ?? 0n);
+      if (gain !== 0n) return refuse('ASSET_MISDIRECTED', `Rune ${runeId} would move between the parties though neither side trades it.`);
+    }
+  }
+
+  // Fee shares from value flow: each party's net change, with postage kept
+  // with the asset it carries, measured against the BTC terms of the intent.
   const feeSpec = acceptance.fee;
   if (!feeSpec || typeof feeSpec !== 'object') {
     return refuse('FEE_INVALID', 'The acceptance plan must carry a fee object.');
@@ -330,96 +552,81 @@ export function verifySwapAcceptance(acceptance, intent) {
   const declaredFee = parseSats(feeSpec.feeSats);
   const makerFee = parseSats(feeSpec.makerFeeSats);
   const takerFee = parseSats(feeSpec.takerFeeSats);
-  if (declaredFee === null || makerFee === null || takerFee === null || declaredFee < 0n) {
+  if (declaredFee === null || makerFee === null || takerFee === null) {
     return refuse('FEE_INVALID', 'Fee contributions must be exact decimal strings.');
   }
-  if (makerFee + takerFee !== declaredFee) {
-    return refuse('FEE_SPLIT_INVALID', 'The maker and taker contributions must equal the declared fee.');
-  }
-  if (fee !== declaredFee) {
+  if (declaredFee !== fee) {
     return refuse('FEE_CHANGED', 'The declared fee does not match the transaction.');
   }
-  if (makerFee > parseSats(intent.maxMakerFeeSats)) {
-    return refuse('FEE_BUDGET_EXCEEDED', 'The maker contribution exceeds the budget the intent approved.');
+  let makerIn = 0n;
+  let makerOut = 0n;
+  inputs.forEach((input) => {
+    if (input.party === 'maker') makerIn += input.value;
+  });
+  tx.outputs.forEach((output, i) => {
+    if (owners[i] === 'maker') makerOut += BigInt(output.valueSats);
+  });
+  const btcGiven = intent.gives.filter((g) => g.assetType === 'BTC').reduce((n, g) => n + BigInt(g.quantitySats), 0n);
+  const btcRequired = intent.requires.filter((r) => r.assetType === 'BTC').reduce((n, r) => n + BigInt(r.minQuantitySats), 0n);
+  const makerBtcChange = makerOut - makerPostageIn - makerIn + takerPostageIn;
+  const makerFeeActual = btcRequired - btcGiven - makerBtcChange;
+  if (makerFeeActual > parseSats(intent.maxMakerFeeSats)) {
+    return btcRequired > 0n
+      ? refuse('CONSIDERATION_SHORTFALL', `The maker would receive less BTC than the ${btcRequired} sats it requires within its fee budget.`)
+      : refuse('FEE_BUDGET_EXCEEDED', `The maker would contribute ${makerFeeActual} sats, above the budget the intent approved.`);
   }
-
-  // Each required criterion must be satisfied by an output paying the maker
-  // receive script with at least the minimum quantity.
-  for (const criterion of intent.requires) {
-    const minimum = parseSats(criterion.minQuantitySats);
-    const satisfied = tx.outputs.some(
-      (output) =>
-        output.scriptHex === intent.makerReceiveScriptHex &&
-        parseSats(output.valueSats) >= minimum,
+  const takerFeeActual = fee - makerFeeActual;
+  if (makerFee !== makerFeeActual || takerFee !== takerFeeActual) {
+    return refuse(
+      'FEE_SPLIT_INVALID',
+      `From the value flow the maker contributes ${makerFeeActual} and the taker ${takerFeeActual}, not the ${feeSpec.makerFeeSats} and ${feeSpec.takerFeeSats} declared.`,
     );
-    if (!satisfied) {
-      return refuse(
-        'CONSIDERATION_SHORTFALL',
-        `No output pays the maker receive script at least ${criterion.minQuantitySats} for ${criterion.assetType}.`,
-      );
-    }
   }
 
-  // Every asset the maker gives must be delivered to a taker asset output
-  // through an explicit transition, and every taker asset must be preserved
-  // or delivered the same way. An unassigned asset could land in the fee
-  // region or in unrelated change. For every non-BTC asset the declared
-  // destination must also be the output that receives the input's first
-  // sat: the first output whose accumulated value passes the range start.
-  const transitions = Array.isArray(acceptance.assetTransitions) ? acceptance.assetTransitions : [];
-  const inputValues = tx.inputs.map((input) => parseSats(input.valueSats));
-  const firstSatOutput = (fromInput) => {
-    let rangeStart = 0n;
-    for (let i = 0; i < fromInput; i += 1) rangeStart += inputValues[i];
-    let accumulated = 0n;
-    for (let j = 0; j < tx.outputs.length; j += 1) {
-      accumulated += parseSats(tx.outputs[j].valueSats);
-      if (accumulated > rangeStart) return j;
-    }
-    return -1;
-  };
-  const seen = new Set();
-  const checkAsset = (assetType, assetId, fromIndex, label) => {
-    const key = `${assetType}:${assetId}`;
-    if (seen.has(key)) {
-      return refuse('ASSET_TRANSITION_DUPLICATED', `Asset ${key} is assigned to more than one transition.`);
-    }
-    seen.add(key);
-    const transition = transitions.find((t) => t && t.assetType === assetType && t.assetId === assetId);
-    if (!transition) {
-      return refuse(`${label}_UNASSIGNED`, `Asset ${key} has no destination in the asset transitions.`);
-    }
-    if (!Number.isInteger(transition.fromInput) || transition.fromInput !== fromIndex) {
-      return refuse(
-        'TRANSITION_SOURCE_MISMATCH',
-        `Asset ${key} declares input ${transition.fromInput} but rides on input ${fromIndex}.`,
-      );
-    }
-    const output = tx.outputs[transition.toOutput];
-    if (!Number.isInteger(transition.toOutput) || !output) {
-      return refuse('TRANSITION_OUTPUT_MISSING', `Asset ${key} names output ${transition.toOutput}, which does not exist.`);
-    }
-    if (assetType !== 'BTC' && transition.toOutput !== firstSatOutput(fromIndex)) {
-      return refuse(
-        'TRANSITION_SAT_FLOW_MISMATCH',
-        `Asset ${key} declares output ${transition.toOutput}, but the sat range of input ${fromIndex} begins in a different output.`,
-      );
-    }
-    return null;
-  };
-  for (const give of intent.gives) {
-    const key = `${give.outpoint.txid}:${give.outpoint.vout}`;
-    const error = checkAsset(give.assetType, give.assetId || 'BTC', inputByOutpoint.get(key).index, 'MAKER_ASSET');
-    if (error) return error;
+  const digest = swapAcceptanceDigest(acceptance);
+  if (acceptance.digest !== digest) {
+    return refuse('DIGEST_MISMATCH', 'The acceptance digest does not match the plan.');
   }
+  return { ok: true, digest, makerFeeSats: makerFeeActual.toString(), takerFeeSats: takerFeeActual.toString() };
+}
+
+/**
+ * Verify the fully signed settlement transaction of an accepted swap: the
+ * exact planned transaction, every input signed and verified, every signature
+ * closing the transaction with SIGHASH_ALL (or the Taproot default).
+ *
+ * signed: { schema, acceptanceDigest, signedTxHex }
+ */
+// OX-P02: a settlement is proved from its bytes. Both parties' signatures must
+// verify over the planned transaction, and only a closing sighash is accepted.
+export function verifySwapSignedTransaction(signed, acceptance, intent) {
+  if (!signed || typeof signed !== 'object' || Array.isArray(signed)) {
+    return refuse('MALFORMED_SIGNED_RESULT', 'Expected a signed settlement object.');
+  }
+  if (signed.schema !== SWAP_SIGNED_TRANSACTION_SCHEMA) {
+    return refuse('SCHEMA_UNSUPPORTED', 'The signed settlement schema is not ordex.swap-signed-transaction/v1.');
+  }
+  const plan = verifySwapAcceptance(acceptance, intent);
+  if (!plan.ok) return plan;
+  if (signed.acceptanceDigest !== plan.digest) {
+    return refuse('ACCEPTANCE_DIGEST_MISMATCH', 'The signed settlement was not produced from this acceptance plan.');
+  }
+  const parsed = parseTransaction(signed.signedTxHex);
+  if (!parsed.ok) return refuse('MALFORMED_SIGNED_RESULT', parsed.reason);
+  const tx = parsed.tx;
+  if (bytesToHex(serializeTransaction(unsignedCopy(tx))) !== bytesToHex(serializeTransaction(swapUnsignedTransaction(acceptance)))) {
+    return refuse('TRANSACTION_CHANGED', 'The signed settlement is not the planned transaction.');
+  }
+  const prevouts = acceptance.tx.inputs.map((input) => ({ valueSats: String(parseSats(input.valueSats)), scriptHex: input.scriptPubKeyHex }));
   for (let i = 0; i < tx.inputs.length; i += 1) {
-    const input = tx.inputs[i];
-    if (input.party !== 'taker') continue;
-    for (const carried of Array.isArray(input.assets) ? input.assets : []) {
-      const error = checkAsset(carried.assetType, carried.assetId || 'BTC', i, 'TAKER_ASSET');
-      if (error) return error;
+    const verdict = verifyInputSignature(tx, i, prevouts);
+    if (verdict.status === 'UNSIGNED') return refuse('SIGNATURE_MISSING', `Input ${i} of the ${acceptance.tx.inputs[i].party} is unsigned.`);
+    if (verdict.status === 'UNSUPPORTED') return refuse('SIGNATURE_UNVERIFIABLE', `Input ${i} spends a script this verifier cannot check.`);
+    if (verdict.status !== 'VALID') return refuse('SIGNATURE_INVALID', `Input ${i} carries a signature that does not verify against the planned transaction.`);
+    const closing = verdict.type === 'p2tr' ? [0x00, 0x01] : [0x01];
+    if (!closing.includes(verdict.sighashType)) {
+      return refuse('UNCLOSED_SIGHASH', `Input ${i} was signed without committing to every input and output.`);
     }
   }
-
-  return { ok: true };
+  return { ok: true, txid: parsed.txid };
 }

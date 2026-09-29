@@ -6414,33 +6414,6 @@
           }
         }
       },
-      "SwapAsset": {
-        "type": "object",
-        "required": [
-          "assetType"
-        ],
-        "properties": {
-          "assetType": {
-            "type": "string",
-            "enum": [
-              "BTC",
-              "ORDINAL",
-              "RARE_SAT",
-              "RUNE",
-              "COUNTERPARTY"
-            ]
-          },
-          "assetId": {
-            "type": "string"
-          },
-          "inscriptionId": {
-            "type": "string"
-          },
-          "quantitySats": {
-            "$ref": "#/components/schemas/AtomicSats"
-          }
-        }
-      },
       "MakerIdentityProof": {
         "type": "object",
         "description": "A BIP-322 proof that the maker controls the intent address. The gateway verifies the signature before publishing.",
@@ -6707,19 +6680,24 @@
       },
       "SwapAcceptancePlanDocument": {
         "type": "object",
+        "description": "One transaction settling both sides. Every asset movement is derived from the input inventories by the owning protocol; the maker receives every required asset at its receive script, the taker every given asset at its receive script, and each party fee share follows from its value flow.",
         "required": [
           "schema",
           "intentDigest",
           "network",
+          "checkpoint",
+          "taker",
+          "transaction",
           "tx",
           "assetTransitions",
           "fee",
-          "signing"
+          "signing",
+          "digest"
         ],
         "properties": {
           "schema": {
             "type": "string",
-            "const": "ordex.swap-acceptance-plan/v1"
+            "const": "ordex.swap-acceptance-plan/v2"
           },
           "intentDigest": {
             "type": "string",
@@ -6727,6 +6705,59 @@
           },
           "network": {
             "$ref": "#/components/schemas/Network"
+          },
+          "checkpoint": {
+            "$ref": "#/components/schemas/Checkpoint"
+          },
+          "taker": {
+            "type": "object",
+            "required": [
+              "receiveScriptHex"
+            ],
+            "properties": {
+              "receiveScriptHex": {
+                "type": "string",
+                "pattern": "^(?:[0-9a-f]{2})+$"
+              },
+              "changeScriptHex": {
+                "type": "string",
+                "pattern": "^(?:[0-9a-f]{2})+$"
+              },
+              "identityProof": {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "bip322"
+                  },
+                  "address": {
+                    "type": "string"
+                  },
+                  "signature": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "transaction": {
+            "type": "object",
+            "required": [
+              "version",
+              "lockTime"
+            ],
+            "properties": {
+              "version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 4294967295
+              },
+              "lockTime": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 4294967295
+              }
+            }
           },
           "tx": {
             "type": "object",
@@ -6742,7 +6773,10 @@
                   "required": [
                     "outpoint",
                     "party",
-                    "valueSats"
+                    "valueSats",
+                    "scriptPubKeyHex",
+                    "sequence",
+                    "inventory"
                   ],
                   "properties": {
                     "outpoint": {
@@ -6758,11 +6792,17 @@
                     "valueSats": {
                       "$ref": "#/components/schemas/AtomicSats"
                     },
-                    "assets": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/SwapAsset"
-                      }
+                    "scriptPubKeyHex": {
+                      "type": "string",
+                      "pattern": "^(?:[0-9a-f]{2})+$"
+                    },
+                    "sequence": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 4294967295
+                    },
+                    "inventory": {
+                      "$ref": "#/components/schemas/SafeOpsInventory"
                     }
                   }
                 }
@@ -6773,25 +6813,15 @@
                   "type": "object",
                   "required": [
                     "scriptHex",
-                    "valueSats",
-                    "role"
+                    "valueSats"
                   ],
                   "properties": {
                     "scriptHex": {
-                      "type": "string"
+                      "type": "string",
+                      "pattern": "^(?:[0-9a-f]{2})+$"
                     },
                     "valueSats": {
                       "$ref": "#/components/schemas/AtomicSats"
-                    },
-                    "role": {
-                      "type": "string",
-                      "enum": [
-                        "makerConsideration",
-                        "takerAsset",
-                        "makerChange",
-                        "takerChange",
-                        "preserve"
-                      ]
                     }
                   }
                 }
@@ -6801,8 +6831,7 @@
           "assetTransitions": {
             "type": "array",
             "items": {
-              "type": "object",
-              "additionalProperties": true
+              "$ref": "#/components/schemas/SafeOpsAssetTransition"
             }
           },
           "fee": {
@@ -6835,6 +6864,10 @@
                 "const": "ALL"
               }
             }
+          },
+          "digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
           }
         }
       },

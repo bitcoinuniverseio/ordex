@@ -39,7 +39,7 @@ test('the digest excludes the identity proof and the digest itself', () => {
 });
 
 test('an acceptance plan against a refused intent is refused', () => {
-  const verdict = verifySwapAcceptance({ schema: 'ordex.swap-acceptance-plan/v1' }, { schema: 'ordex.swap-intent/v1' });
+  const verdict = verifySwapAcceptance({ schema: 'ordex.swap-acceptance-plan/v2' }, { schema: 'ordex.swap-intent/v1' });
   assert.equal(verdict.ok, false);
   assert.equal(verdict.code, 'PROTOCOL_UNSUPPORTED');
 });

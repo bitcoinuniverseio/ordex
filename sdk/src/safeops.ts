@@ -22,13 +22,18 @@ import {
   verifyInputSignature,
   type Transaction,
 } from './bitcoin-tx.js';
-import { counterpartyMoveOutcome } from './counterparty.js';
-import { verifyRuneAllocation } from './runes.js';
+import {
+  checkTransitionShapes,
+  deriveAssetFlow,
+  matchTransitions,
+  readInventory,
+  type InventoryAsset,
+  type StatedTransition,
+} from './asset-flow.js';
 
 const DECIMAL = /^(0|[1-9][0-9]*)$/;
 const HEX64 = /^[0-9a-f]{64}$/;
 const EVEN_HEX = /^(?:[0-9a-f]{2})+$/;
-const RUNE_ID = /^(0|[1-9][0-9]*):(0|[1-9][0-9]*)$/;
 const NETWORKS = ['mainnet', 'testnet', 'testnet4', 'signet', 'regtest'];
 const OPERATION_KINDS = [
   'BTC_BATCH_SEND',
@@ -258,106 +263,6 @@ function validOutpoint(outpoint: SafeOpsOutpoint | undefined): outpoint is { txi
 
 const isU32 = (n: unknown): n is number => typeof n === 'number' && Number.isInteger(n) && n >= 0 && n <= U32_MAX;
 const isOpReturn = (scriptHex: string): boolean => scriptHex.startsWith('6a');
-const listOf = (value: unknown[] | undefined): unknown[] => (value === undefined ? [] : value);
-
-type Asset =
-  | { assetType: 'ORDINAL' | 'RARE_SAT'; assetId: string; offset: bigint; count: bigint }
-  | { assetType: 'RUNE'; assetId: string; amount: string }
-  | { assetType: 'COUNTERPARTY'; assetId: string; name: string; quantitySats: string };
-
-type Refusal = { ok: false; code: SafeOpsPlanRefusalCode; reason: string };
-
-function readInventory(
-  inventory: SafeOpsInventory | undefined,
-  index: number,
-  value: bigint,
-  outpoint: { txid: string; vout: number }
-): { assets: Asset[] } | Refusal {
-  if (!inventory || typeof inventory !== 'object' || inventory.examined !== true) {
-    return refuse('INVENTORY_UNEXAMINED', `Input ${index} was never examined against the protocol authorities.`);
-  }
-  const bad = (what: string): Refusal => refuse('INVENTORY_INVALID', `Input ${index} ${what}.`);
-  const record = inventory as Record<string, unknown>;
-  for (const field of ['inscriptions', 'rareSatRanges', 'runeAllocations', 'counterpartyAssets', 'unknownClaims']) {
-    if (record[field] !== undefined && !Array.isArray(record[field])) return bad(`lists ${field} as something other than an array`);
-  }
-  const unknownClaims = listOf(inventory.unknownClaims);
-  if (unknownClaims.length > 0) {
-    return refuse(
-      'UNKNOWN_CLAIM_FAILS_CLOSED',
-      `Input ${index} carries an unrecognized claim (${String(unknownClaims[0])}); resolve it before planning.`
-    );
-  }
-  const assets: Asset[] = [];
-  for (const raw of listOf(inventory.inscriptions)) {
-    const entry = raw as { inscriptionId?: unknown; offset?: unknown; satpoint?: unknown } | null;
-    const offset = parseSats(entry?.offset);
-    if (!entry || typeof entry.inscriptionId !== 'string' || !/^[0-9a-f]{64}i(0|[1-9][0-9]*)$/.test(entry.inscriptionId)) {
-      return bad('names an inscription without a valid inscription id');
-    }
-    if (offset === null || offset >= value) return bad(`places ${entry.inscriptionId} at an offset the input does not have`);
-    if (entry.satpoint !== undefined && entry.satpoint !== `${outpoint.txid}:${outpoint.vout}:${String(entry.offset)}`) {
-      return bad(`gives ${entry.inscriptionId} a satpoint that is not this input at this offset`);
-    }
-    assets.push({ assetType: 'ORDINAL', assetId: entry.inscriptionId, offset, count: 1n });
-  }
-  for (const raw of listOf(inventory.rareSatRanges)) {
-    const entry = raw as { rangeId?: unknown; offset?: unknown; count?: unknown } | null;
-    const offset = parseSats(entry?.offset);
-    const count = parseSats(entry?.count);
-    if (!entry || typeof entry.rangeId !== 'string' || entry.rangeId.length === 0) return bad('names a rare sat range without an id');
-    if (offset === null || count === null || count === 0n || offset + count > value) {
-      return bad(`places rare sat range ${entry.rangeId} outside the input`);
-    }
-    assets.push({ assetType: 'RARE_SAT', assetId: entry.rangeId, offset, count });
-  }
-  const runes = new Set<string>();
-  for (const raw of listOf(inventory.runeAllocations)) {
-    const entry = raw as { runeId?: unknown; amount?: unknown } | null;
-    if (!entry || typeof entry.runeId !== 'string' || !RUNE_ID.test(entry.runeId) || parseSats(entry.amount) === null) {
-      return bad('lists a rune balance without an exact rune id and amount');
-    }
-    if (runes.has(entry.runeId)) return bad(`lists rune ${entry.runeId} twice`);
-    runes.add(entry.runeId);
-    assets.push({ assetType: 'RUNE', assetId: entry.runeId, amount: entry.amount as string });
-  }
-  for (const raw of listOf(inventory.counterpartyAssets)) {
-    const entry = raw as { name?: unknown; assetId?: unknown; quantitySats?: unknown } | null;
-    const quantity = parseSats(entry?.quantitySats);
-    if (
-      !entry ||
-      typeof entry.name !== 'string' ||
-      typeof entry.assetId !== 'string' ||
-      !DECIMAL.test(entry.assetId) ||
-      quantity === null ||
-      quantity === 0n
-    ) {
-      return bad('lists a Counterparty attachment without a name, a numeric asset id and an exact quantity');
-    }
-    assets.push({ assetType: 'COUNTERPARTY', assetId: entry.assetId, name: entry.name, quantitySats: entry.quantitySats as string });
-  }
-  return { assets };
-}
-
-function outputAt(outputValues: bigint[], position: bigint): number {
-  let end = 0n;
-  for (let j = 0; j < outputValues.length; j += 1) {
-    end += outputValues[j] ?? 0n;
-    if (position < end) return j;
-  }
-  return -1;
-}
-
-interface Movement {
-  assetType: string;
-  assetId: string;
-  fromInput?: unknown;
-  toOutput: unknown;
-  quantity: unknown;
-}
-
-const transitionKey = (t: Movement): string =>
-  `${t.assetType}|${t.assetId}|${t.fromInput === undefined ? '' : String(t.fromInput)}|${String(t.toOutput)}|${String(t.quantity)}`;
 
 /**
  * Verify a SafeOps plan. Answers { ok: true, digest } or a refusal.
@@ -422,7 +327,7 @@ export function verifySafeOpsPlan(plan: SafeOpsPlan): SafeOpsPlanVerdict {
 
   let totalIn = 0n;
   const inputValues: bigint[] = [];
-  const inputAssets: Asset[][] = [];
+  const inputAssets: InventoryAsset[][] = [];
   const outpoints = new Set<string>();
   const assetIds = new Set<string>();
   for (let i = 0; i < inputs.length; i += 1) {
@@ -445,7 +350,7 @@ export function verifySafeOpsPlan(plan: SafeOpsPlan): SafeOpsPlanVerdict {
       return refuse('INPUT_SEQUENCE_INVALID', `Input ${i} does not fix its sequence number.`);
     }
     const read = readInventory(input.inventory, i, value, outpoint);
-    if (!('assets' in read)) return read;
+    if (!('assets' in read)) return refuse(read.code as SafeOpsPlanRefusalCode, read.reason);
     for (const asset of read.assets) {
       if (asset.assetType === 'RUNE' || asset.assetType === 'COUNTERPARTY') continue;
       const id = `${asset.assetType}:${asset.assetId}`;
@@ -519,109 +424,31 @@ export function verifySafeOpsPlan(plan: SafeOpsPlan): SafeOpsPlanVerdict {
     }
   }
 
-  const derived: Movement[] = [];
-  let inputStart = 0n;
-  for (let i = 0; i < inputs.length; i += 1) {
-    for (const asset of inputAssets[i] ?? []) {
-      if (asset.assetType !== 'ORDINAL' && asset.assetType !== 'RARE_SAT') continue;
-      const start = inputStart + asset.offset;
-      const first = outputAt(outputValues, start);
-      const last = outputAt(outputValues, start + asset.count - 1n);
-      if (first === -1 || last === -1) {
-        return refuse('ASSET_TO_FEE', `${asset.assetType} ${asset.assetId} would land in the fee and be lost to the miner.`);
-      }
-      if (first !== last) {
-        return refuse('RARE_SAT_RANGE_SPLIT', `Rare sat range ${asset.assetId} would be split across outputs ${first} and ${last}.`);
-      }
-      if ((outputValues[first] ?? 0n) < BigInt(SAFEOPS_POSTAGE_FLOOR_SATS)) {
-        return refuse('POSTAGE_BELOW_FLOOR', `Output ${first} carries ${asset.assetId} with less than the ${SAFEOPS_POSTAGE_FLOOR_SATS} sat postage floor.`);
-      }
-      derived.push({ assetType: asset.assetType, assetId: asset.assetId, fromInput: i, toOutput: first, quantity: asset.count.toString() });
-    }
-    inputStart += inputValues[i] ?? 0n;
-  }
-
   const transitions = plan.assetTransitions;
   if (!Array.isArray(transitions)) return refuse('MALFORMED_PLAN', 'Expected an assetTransitions array.');
-  for (const t of transitions) {
-    if (!t || typeof t !== 'object' || typeof t.assetType !== 'string' || typeof t.assetId !== 'string') {
-      return refuse('TRANSITION_INVALID', 'Every asset transition names an asset type and id.');
-    }
-    if (typeof t.toOutput !== 'number' || !Number.isInteger(t.toOutput) || !outputs[t.toOutput]) {
-      return refuse('TRANSITION_OUTPUT_MISSING', `Asset ${t.assetType}:${t.assetId} names output ${String(t.toOutput)}, which does not exist.`);
-    }
-    if (parseSats(t.quantity) === null) return refuse('TRANSITION_INVALID', `Asset ${t.assetType}:${t.assetId} carries no exact quantity.`);
-  }
-  const typed = transitions as Array<Movement & { toOutput: number; quantity: string }>;
+  const shapes = checkTransitionShapes(transitions, outputs.length);
+  if (!shapes.ok) return refuse(shapes.code as SafeOpsPlanRefusalCode, shapes.reason);
 
-  if (carriesRunes) {
-    const runePlan = typed
-      .filter((t) => t.assetType === 'RUNE')
-      .map((t) => ({ output: t.toOutput, runeId: t.assetId, amount: t.quantity }));
-    const verdict = verifyRuneAllocation(
-      scripts,
-      inputs.map((input) => ({
-        indexed: true,
-        balances: listOf(input.inventory?.runeAllocations) as Array<{ runeId: string; amount: string }>,
-      })),
-      runePlan
-    );
-    if (!verdict.ok) return refuse(verdict.code as SafeOpsPlanRefusalCode, verdict.reason);
-  } else if (typed.some((t) => t.assetType === 'RUNE')) {
-    return refuse('TRANSITION_UNEXPECTED', 'The plan moves runes no input carries.');
-  }
-
-  if (inputAssets.some((assets) => assets.some((a) => a.assetType === 'COUNTERPARTY'))) {
-    const outcome = counterpartyMoveOutcome(
-      {
-        inputs: inputs.map((input) => ({
-          txid: input.outpoint?.txid,
-          vout: input.outpoint?.vout,
-          attachments: listOf(input.inventory?.counterpartyAssets),
-        })),
-        outputs: scripts.map((scriptHex) => ({ scriptHex })),
-      },
-      { network: plan.network, height: checkpointHeight + 1 }
-    );
-    if (!outcome.ok) return refuse(outcome.code as SafeOpsPlanRefusalCode, outcome.reason);
-    if (outcome.operation !== 'MOVE') {
-      return refuse(
-        'COUNTERPARTY_NOT_MOVED',
-        `Counterparty would ${outcome.operation === 'STRANDED' ? 'strand' : 'detach'} the attached assets instead of moving them.`
-      );
-    }
-    for (const moved of outcome.moved) {
-      const toOutput = moved.toOutput as number;
-      if ((outputs[toOutput] as SafeOpsOutput).role === 'data') {
-        return refuse('ASSET_TO_FEE', `Counterparty asset ${moved.assetId} would be credited to an unspendable output.`);
-      }
-      derived.push({ assetType: 'COUNTERPARTY', assetId: moved.assetId, fromInput: moved.fromInput, toOutput, quantity: moved.quantitySats });
+  // Derive every asset movement from the protocol rules, then require the
+  // plan's transitions to be exactly that multiset.
+  const flow = deriveAssetFlow({
+    network: plan.network,
+    height: checkpointHeight + 1,
+    inputs: inputs.map((input, i) => ({
+      outpoint: input.outpoint as { txid: string; vout: number },
+      value: inputValues[i] as bigint,
+      assets: inputAssets[i] as InventoryAsset[],
+    })),
+    outputs: scripts.map((scriptHex, i) => ({ scriptHex, valueSats: (outputValues[i] as bigint).toString() })),
+  });
+  if (!flow.ok) return refuse(flow.code as SafeOpsPlanRefusalCode, flow.reason);
+  for (const m of flow.movements) {
+    if ((m.assetType === 'ORDINAL' || m.assetType === 'RARE_SAT') && (outputValues[m.toOutput] ?? 0n) < BigInt(SAFEOPS_POSTAGE_FLOOR_SATS)) {
+      return refuse('POSTAGE_BELOW_FLOOR', `Output ${m.toOutput} carries ${m.assetId} with less than the ${SAFEOPS_POSTAGE_FLOOR_SATS} sat postage floor.`);
     }
   }
-
-  const planned = new Map<string, number>();
-  for (const t of typed) {
-    if (t.assetType === 'RUNE') continue;
-    const key = transitionKey(t);
-    planned.set(key, (planned.get(key) ?? 0) + 1);
-  }
-  for (const d of derived) {
-    const key = transitionKey(d);
-    const count = planned.get(key) ?? 0;
-    if (count === 0) {
-      const named = typed.some((t) => t.assetType === d.assetType && t.assetId === d.assetId);
-      return refuse(
-        named ? 'TRANSITION_MISMATCH' : 'TRACKED_ASSET_UNASSIGNED',
-        named
-          ? `${d.assetType} ${d.assetId} moves to output ${String(d.toOutput)} with quantity ${String(d.quantity)}, which the plan does not state.`
-          : `${d.assetType} ${d.assetId} has no destination in the asset transitions.`
-      );
-    }
-    planned.set(key, count - 1);
-  }
-  for (const [key, count] of planned) {
-    if (count > 0) return refuse('TRANSITION_UNEXPECTED', `The plan states a movement no input asset makes: ${key.split('|').slice(0, 2).join(' ')}.`);
-  }
+  const matched = matchTransitions(transitions as StatedTransition[], flow.movements);
+  if (!matched.ok) return refuse(matched.code as SafeOpsPlanRefusalCode, matched.reason);
 
   const signing = plan.signing;
   if (!signing || typeof signing !== 'object' || Array.isArray(signing)) {
