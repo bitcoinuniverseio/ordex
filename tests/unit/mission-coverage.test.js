@@ -21,7 +21,7 @@ const EMITTERS = [
   { file: 'components/sandbox/TransactionSandbox.tsx', template: 'key = `injection:${selectedScenario.id}:${injection}`', runs: [['sandbox', 'injection:ask.publish-and-settle.success:inject-reorder-output', 'refused']] },
   { file: 'components/lab/ProtocolLab.jsx', template: 'operation: `${family}/${variant}`', runs: FAMILIES.flatMap((f) => [['lab', `${f}/x`, 'accepted'], ['lab', `${f}/x`, 'refused']]) },
   { file: 'components/verify/ConformanceStudio.jsx', template: 'operation: `suite:${selectedFamily}`', runs: [...FAMILIES, 'all'].map((f) => ['conformance', `suite:${f}`, 'passed']) },
-  { file: 'components/playground/ApiPlayground.jsx', template: 'operation: `api:${op.operationId}`', runs: [['playground', 'api:getHealth', 'passed'], ['playground', 'api:getProtocol', 'passed'], ['playground', 'api:listOrders', 'refused']], gateway: true },
+  { file: 'components/playground/ApiPlayground.jsx', template: 'operation: `api:${op.operationId}`', runs: [['playground', 'api:getHealth', 'passed'], ['playground', 'api:getProtocol', 'passed'], ['playground', 'api:getCatalog', 'passed'], ['playground', 'api:quoteOrder', 'passed'], ['playground', 'api:listOrders', 'refused']], gateway: true },
   { file: 'components/playground/EventPlayground.jsx', template: 'operation: `events:stream:${tab}`', runs: [['events', 'events:stream:sse', 'passed']], gateway: true },
   { file: 'components/playground/EventPlayground.jsx', template: "operation: 'events:webhook'", runs: [['events', 'events:webhook', 'accepted']] },
   { file: 'components/verify/GatewayDoctor.jsx', template: 'operation: `doctor:${o.origin}`', runs: [['doctor', 'doctor:https://gateway.example', 'passed']], gateway: true },
@@ -51,6 +51,14 @@ test('every stage of every mission is satisfiable by a real emitted run, and onl
       assert.equal(evaluateStage(m.id, stage, all.map((r) => ({ ...r, context: { ...context, network: 'mainnet' } })), context).satisfied, false, `${m.id}/${stage} ignores another network`);
     }
   }
+});
+
+test('an API stage counts only the operations its label names', () => {
+  const health = [record(['playground', 'api:getHealth', 'passed'], 0)];
+  assert.equal(evaluateStage('integrate-public-asks', 'prepare', health, context).satisfied, false);
+  assert.equal(evaluateStage('complete-single-or-batch-purchase', 'prepare', health, context).satisfied, false);
+  assert.equal(evaluateStage('integrate-public-asks', 'prepare', [record(['playground', 'api:getCatalog', 'passed'], 1)], context).satisfied, true);
+  assert.equal(evaluateStage('complete-single-or-batch-purchase', 'prepare', [record(['playground', 'api:quoteOrder', 'passed'], 2)], context).satisfied, true);
 });
 
 test('the tool a stage opens is the tool its requirement needs', () => {
