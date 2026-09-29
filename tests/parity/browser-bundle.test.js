@@ -71,7 +71,7 @@ test('the shipped Worker bundle runs every vector with the exact CLI verdicts', 
   assert.equal(final.type, 'result', JSON.stringify(final.error || {}));
   const browser = final.result;
   const cli = runConformanceSuite(data, FAMILIES);
-  assert.equal(browser.total, 157);
+  assert.equal(browser.total, 353);
   assert.equal(browser.total, cli.total);
   assert.equal(browser.failed, 0);
   cli.results.forEach((a, i) => {

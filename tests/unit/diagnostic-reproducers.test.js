@@ -20,18 +20,26 @@ const refusals = JSON.parse(readFileSync(new URL('site/src/data/refusals.json', 
 const vectors = new Map(JSON.parse(readFileSync(new URL('site/src/data/allVectors.json', root), 'utf8')).map((v) => [v.id, v]));
 const reproducerFile = JSON.parse(readFileSync(new URL('site/src/lib/diagnostics/reproducers.json', root), 'utf8'));
 const sources = scanRefusalSources();
+// Codes every site of which is recorded unreachable are never returned, so they have no rule.
+const neverReturned = [...sources].filter(([code, e]) => e.sites.every((s) => reproducerFile.unreachable[`${code}|${s.family}`])).map(([code]) => code).sort();
+const returned = [...sources.keys()].filter((code) => !neverReturned.includes(code)).sort();
 
 test('every code a verifier can return has exactly one rule, and nothing else does', () => {
-  assert.deepEqual(diagnostics.map((d) => d.exactCodes[0]).sort(), [...sources.keys()].sort());
-  assert.deepEqual(refusals.map((r) => r.code).sort(), [...sources.keys()].sort());
-  assert.ok(sources.has('MAKER_ASSET_UNASSIGNED') && sources.has('TAKER_ASSET_UNASSIGNED'), 'template codes are expanded');
+  assert.deepEqual(diagnostics.map((d) => d.exactCodes[0]).sort(), returned);
+  assert.deepEqual(refusals.map((r) => r.code).sort(), returned);
+  // Parse failures in bitcoin-tx.js are wrapped by every caller into its own code.
+  assert.deepEqual(neverReturned, ['PSBT_MALFORMED', 'TX_MALFORMED']);
+  // refuse(named ? 'TRANSITION_MISMATCH' : 'TRACKED_ASSET_UNASSIGNED', ...) yields both codes.
+  assert.ok(sources.get('TRACKED_ASSET_UNASSIGNED')?.sites.some((s) => s.file === 'verifier/asset-flow.js') && sources.get('TRANSITION_MISMATCH')?.sites.some((s) => s.file === 'verifier/asset-flow.js'), 'both codes of a ternary refusal are found');
 });
 
 test('every (code, family) branch has a reproducer or a written reason it is unreachable', () => {
   assert.deepEqual(reproducerFile.unavailable, []);
   for (const d of diagnostics) {
     for (const f of d.families) {
-      const covered = d.reproducers.some((r) => r.family === f) || d.unreachable.some((u) => u.family === f);
+      // A helper module's branch (asset-flow, bitcoin-tx) is covered by a reproducer run
+      // through a family whose verifier reaches it.
+      const covered = d.reproducers.some((r) => (r.covers || r.family) === f) || d.unreachable.some((u) => u.family === f);
       assert.ok(covered, `${d.exactCodes[0]} in ${f}`);
     }
   }
@@ -92,7 +100,9 @@ test('rules are bound to their source, spec, lifecycle, versions and a fitting r
       assert.ok(c.predicate.length > 10, code);
     }
     assert.ok(d.lifecyclePhases.length > 0 && d.evidenceRequirements.length > 0, code);
-    const introduced = d.families.map((f) => FAMILY_INTRODUCED_IN[f]).sort()[0];
+    const reaching = sources.get(code).sites.flatMap((s) => (FAMILY_INTRODUCED_IN[s.family] ? [s.family] : s.via));
+    assert.ok(reaching.length && reaching.every((f) => FAMILY_INTRODUCED_IN[f]), code);
+    const introduced = reaching.map((f) => FAMILY_INTRODUCED_IN[f]).sort()[0];
     assert.equal(d.supportedProtocolVersions[0], introduced, code);
     if (d.invariant) assert.ok(readFileSync(new URL(d.sourceRefs.find((s) => s.type === 'spec').path, root), 'utf8').includes(code), code);
     const steps = d.resolutionSteps.map((s) => s.action).join(' ');
@@ -110,7 +120,12 @@ test('shared codes keep every family: causes and reproducers per family', () => 
   const svm = diagnostics.find((d) => d.exactCodes[0] === 'SELLER_VALUE_MISMATCH');
   assert.deepEqual(svm.families, ['offers', 'purchase']);
   assert.deepEqual(svm.reproducers.map((r) => r.family), ['offers', 'purchase']);
+  // SafeOps v2 (OX-P01) no longer returns FEE_CHANGED; the swaps acceptance check still does.
   const fee = diagnostics.find((d) => d.exactCodes[0] === 'FEE_CHANGED');
-  assert.deepEqual(fee.unreachable.map((u) => u.family), ['safeops']);
-  assert.equal(fee.causes.find((c) => c.family === 'safeops').reachable, false);
+  assert.deepEqual(fee.families, ['swaps']);
+  assert.deepEqual(fee.reproducers.map((r) => r.family), ['swaps']);
+  // A helper module branch is reproduced through a family that reaches it, and says so.
+  const toFee = diagnostics.find((d) => d.exactCodes[0] === 'ASSET_TO_FEE');
+  assert.deepEqual(toFee.families, ['asset-flow']);
+  assert.ok(toFee.reproducers.every((r) => r.covers === 'asset-flow' && sources.get('ASSET_TO_FEE').sites[0].via.includes(r.family)));
 });

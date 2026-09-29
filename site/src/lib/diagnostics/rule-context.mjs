@@ -49,6 +49,11 @@ export const RULE_CONTEXT = Object.freeze({
     inputs: ['Every output script (hex) of the transaction, including any runestone', 'The rune balances each input carries'],
     recovery: 'Do not sign or broadcast: confirming this transaction would burn runes. Fix or remove the runestone and check again.'
   },
+  'runes:allocation': {
+    lifecycle: 'Before signing a transaction that moves runes, against the planned destinations',
+    inputs: ['Every output script (hex) of the transaction', 'The rune balances each input carries, as the rune index reports them', 'The expected allocation: output, rune and amount', 'The mint result, when the runestone mints'],
+    recovery: 'Do not sign. Rebuild the runestone so every rune lands exactly where the plan says, then check again.'
+  },
   'safeops:plan': {
     lifecycle: 'SafeOps plan review, before signing',
     inputs: ['The SafeOps plan, including the examined inventory of every input'],
@@ -63,6 +68,11 @@ export const RULE_CONTEXT = Object.freeze({
     lifecycle: 'Swap intent publication',
     inputs: ['The swap intent exactly as it will be published'],
     recovery: 'Correct the intent and publish it again.'
+  },
+  'swaps:signed': {
+    lifecycle: 'After both parties sign a swap, before broadcast',
+    inputs: ['The signed settlement transaction', 'The acceptance plan and the intent it settles'],
+    recovery: 'Do not broadcast. The settlement is not the agreed plan with both valid signatures; sign the planned transaction again.'
   },
   'swaps:acceptance': {
     lifecycle: 'Swap acceptance, before either party signs',
@@ -93,6 +103,11 @@ export const RULE_CONTEXT = Object.freeze({
     lifecycle: 'Applying a manifest revocation',
     inputs: ['The revocation', 'The manifest it names'],
     recovery: 'Ignore the revocation: it does not validly revoke this manifest. Keep the manifest status unchanged.'
+  },
+  'counterparty-asset:ledger': {
+    lifecycle: 'After broadcast, reading the Counterparty ledger for the transaction',
+    inputs: ['The ledger events the plan expects for the transaction', 'The ledger events observed, with the checkpoint they were read at'],
+    recovery: 'Treat the move as unsettled. Read the ledger again after the next block, and after any reorg, before relying on it.'
   },
   'counterparty-asset:record': {
     lifecycle: 'Counterparty UTXO asset record validation',

@@ -8,6 +8,7 @@ import {
   counterpartyRecordDigest,
   parseSats,
   verifyAttachmentFollows,
+  verifyCounterpartyLedgerEvents,
   verifyCounterpartyUtxoAsset,
 } from './counterparty-asset.js';
 
@@ -21,9 +22,11 @@ test('the vector file names at least one accepting and one refusing case', () =>
 
 for (const vector of vectors.cases) {
   test(`vector: ${vector.name}`, () => {
-    const verdict = vector.spendTx
-      ? verifyAttachmentFollows(vector.record, vector.spendTx, vector.expectedOutputIndex)
-      : verifyCounterpartyUtxoAsset(vector.record);
+    const verdict = vector.expectedEvents
+      ? verifyCounterpartyLedgerEvents(vector.expectedEvents, vector.observedEvents)
+      : vector.spendTx
+        ? verifyAttachmentFollows(vector.record, vector.spendTx, vector.expectedOutputIndex)
+        : verifyCounterpartyUtxoAsset(vector.record);
     assert.equal(verdict.ok, vector.expected.ok, verdict.reason || '');
     if (vector.expected.ok) {
       if (vector.expected.carriedToIndex !== undefined) {

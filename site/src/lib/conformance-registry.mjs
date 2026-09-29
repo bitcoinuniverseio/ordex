@@ -33,7 +33,7 @@ export const FAMILY_REGISTRY = Object.freeze({
     label: 'Offers',
     spec: 'spec/offers.md',
     result: 'ok',
-    expectedFields: ['ok', 'code', 'sharedIndex', 'offerTermsHash'],
+    expectedFields: ['ok', 'code', 'sharedIndex', 'offerTermsHash', 'offerInputIndex', 'felineInputIndex', 'buyerAssetOutputIndex', 'sellerPaymentIndex', 'feeSats'],
     variants: {
       terms: { label: 'Offer terms', args: ['terms'], match: (c) => c.kind === 'terms' },
       acceptance: { label: 'Offer acceptance', args: ['acceptance', 'offer'], match: (c) => c.kind === 'acceptance' },
@@ -48,6 +48,8 @@ export const FAMILY_REGISTRY = Object.freeze({
     result: 'safe',
     expectedFields: ['safe', 'code', 'runestone', 'flaw'],
     variants: {
+      // OX-P04 verifyRuneAllocation reports ok, not safe.
+      allocation: { label: 'Rune allocation against the expected destinations', args: ['outputScriptsHex', 'inputs', 'expectedAllocation'], optional: ['mint'], result: 'ok', match: has('expectedAllocation') },
       'burn-safety': { label: 'Rune burn safety', args: ['outputScriptsHex', 'inputs'], optional: ['outputCount'], match: always }
     }
   },
@@ -71,6 +73,7 @@ export const FAMILY_REGISTRY = Object.freeze({
     result: 'ok',
     expectedFields: ['ok', 'code'],
     variants: {
+      signed: { label: 'Signed settlement against the acceptance plan', args: ['signed', 'acceptance', 'intent'], match: has('signed') },
       acceptance: { label: 'Swap acceptance', args: ['acceptance', 'intent'], match: has('acceptance') },
       intent: { label: 'Swap intent', args: ['intent'], match: always }
     }
@@ -93,10 +96,10 @@ export const FAMILY_REGISTRY = Object.freeze({
     label: 'Collection manifest',
     spec: 'spec/collection-manifest.md',
     result: 'ok',
-    expectedFields: ['ok', 'code'],
+    expectedFields: ['ok', 'code', 'scope'],
     variants: {
       membership: { label: 'Membership proof', args: ['manifest', 'membership'], match: has('membership') },
-      revocation: { label: 'Manifest revocation', args: ['revocation', 'manifest'], match: has('revocation') },
+      revocation: { label: 'Manifest revocation', args: ['revocation'], optional: ['manifest'], match: has('revocation') },
       manifest: { label: 'Collection manifest', args: ['manifest'], match: always }
     }
   },
@@ -109,6 +112,7 @@ export const FAMILY_REGISTRY = Object.freeze({
     expectedFields: ['ok', 'code', 'carriedToIndex'],
     variants: {
       attachment: { label: 'Attachment follows spend', args: ['record', 'spendTx', 'expectedOutputIndex'], match: has('spendTx') },
+      ledger: { label: 'Ledger events after broadcast', args: ['expectedEvents', 'observedEvents'], match: has('expectedEvents') },
       record: { label: 'UTXO asset record', args: ['record'], match: always }
     }
   },
@@ -154,6 +158,20 @@ export function variantOf(family, vectorCase) {
 }
 
 /** Argument names a variant needs, for editors and input validation. */
+/**
+ * The verdict field of a variant: the family's, unless the variant calls a verifier that
+ * answers with another one (verifyRuneAllocation answers ok, the burn-safety check safe).
+ */
+export function resultKey(family, variant) {
+  return FAMILY_REGISTRY[family]?.variants?.[variant]?.result || FAMILY_REGISTRY[family]?.result;
+}
+
+/** The expected fields a vector of this variant may state. */
+export function expectedFieldsOf(family, variant) {
+  const v = FAMILY_REGISTRY[family]?.variants?.[variant];
+  return v?.result ? [v.result, 'code'] : [...(FAMILY_REGISTRY[family]?.expectedFields || [])];
+}
+
 export function variantArguments(family, variant) {
   const v = FAMILY_REGISTRY[family]?.variants?.[variant];
   if (!v) return null;

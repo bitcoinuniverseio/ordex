@@ -42,7 +42,9 @@ const allVectors = json('site', 'src', 'data', 'allVectors.json');
 check('conformance vectors', sourceCount === manifest.total && sourceCount === allVectors.length, `${sourceCount} in files, ${manifest.total} in the manifest, ${allVectors.length} generated`);
 
 // 3. Refusal codes: verifiers, rules and reproducers.
-const codes = [...scanRefusalSources().keys()].sort();
+// A code whose every branch is recorded unreachable is never returned, so it has no rule.
+const reproducerFile = json('site', 'src', 'lib', 'diagnostics', 'reproducers.json');
+const codes = [...scanRefusalSources()].filter(([code, e]) => !e.sites.every((site) => reproducerFile.unreachable?.[`${code}|${site.family}`])).map(([code]) => code).sort();
 const diagnostics = json('site', 'src', 'data', 'diagnostics.json');
 const ruleCodes = diagnostics.map((d) => d.exactCodes[0]).sort();
 check('refusal codes with diagnostic rules', JSON.stringify(codes) === JSON.stringify(ruleCodes), `${codes.length} returned by verifiers, ${ruleCodes.length} rules`);

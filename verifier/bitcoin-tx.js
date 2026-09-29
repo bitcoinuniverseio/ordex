@@ -374,9 +374,15 @@ export function tapLeafHash(scriptHex, leafVersion = 0xc0) {
   return taggedHash('TapLeaf', Uint8Array.of(leafVersion), varBytes(hexToBytes(scriptHex)));
 }
 
+// Lexicographic byte order, as Buffer.compare, without Node's Buffer so browser bundles run it.
+function compareBytes(a, b) {
+  for (let i = 0; i < Math.min(a.length, b.length); i++) if (a[i] !== b[i]) return a[i] - b[i];
+  return a.length - b.length;
+}
+
 /** BIP341 branch hash of two child hashes, sorted. */
 export function tapBranchHash(a, b) {
-  const [left, right] = Buffer.compare(Buffer.from(a), Buffer.from(b)) <= 0 ? [a, b] : [b, a];
+  const [left, right] = compareBytes(a, b) <= 0 ? [a, b] : [b, a];
   return taggedHash('TapBranch', left, right);
 }
 
@@ -699,6 +705,16 @@ function readTxOut(hex) {
   return { valueSats: value.toString(), scriptHex: bytesToHex(script) };
 }
 
+// Base64 through atob, which browsers and Node both provide, so no Buffer is needed. Invalid
+// base64 gives null and the caller refuses it as malformed.
+function base64Bytes(text) {
+  try {
+    return Uint8Array.from(atob(text), (c) => c.charCodeAt(0));
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Parse a PSBT given as base64 or lowercase hex. Returns { ok: true, psbt } or
  * { ok: false, code: 'PSBT_MALFORMED', reason }.
@@ -712,7 +728,7 @@ function readTxOut(hex) {
 export function parsePsbt(encoded) {
   let bytes = null;
   if (typeof encoded === 'string' && encoded.startsWith('70736274ff')) bytes = hexToBytes(encoded);
-  else if (typeof encoded === 'string' && /^[A-Za-z0-9+/]+={0,2}$/.test(encoded)) bytes = new Uint8Array(Buffer.from(encoded, 'base64'));
+  else if (typeof encoded === 'string' && /^[A-Za-z0-9+/]+={0,2}$/.test(encoded)) bytes = base64Bytes(encoded);
   if (!bytes || bytes.length < 5 || PSBT_MAGIC.some((b, i) => bytes[i] !== b)) {
     return { ok: false, code: 'PSBT_MALFORMED', reason: 'The data does not start with the PSBT magic bytes.' };
   }

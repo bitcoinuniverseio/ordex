@@ -39,7 +39,7 @@ test('every advertised tool is callable over HTTP with a real result', async () 
     'ordex.get_asyncapi_channel': { channelName: 'webhookDelivery' },
     'ordex.run_verifier': { family: 'events', variant: 'event', arguments: { event: { id: 'x' } } },
     'ordex.explain_refusal': { code: 'CENOTAPH_BURNS_BALANCE' },
-    'ordex.get_conformance_vector': { family: 'swaps', vectorId: 'swaps/a-consideration-shortfall-is-refused' },
+    'ordex.get_conformance_vector': { family: 'swaps', vectorId: 'swaps/a-required-rune-delivered-short-is-refused' },
     'ordex.create_deterministic_example': { scenarioId: 'purchase.batch.success' },
     'ordex.get_mission': { missionId: 'protect-wallet-signing' }
   };

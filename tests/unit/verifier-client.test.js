@@ -41,7 +41,7 @@ test('a suite job resolves with real results and reports progress, then the work
     { type: 'suite', familiesData: loadAllFamilies() },
     { createWorker: () => (worker = makeWorker()), onProgress: (p) => progress.push(p) }
   );
-  assert.equal(result.total, 157);
+  assert.equal(result.total, 353);
   assert.equal(result.success, true);
   assert.ok(progress.length >= 1);
   assert.equal(worker.terminated, true);

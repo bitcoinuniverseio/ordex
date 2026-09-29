@@ -15,7 +15,7 @@ export function toolExamples(): Record<string, Record<string, unknown>> {
     'ordex.get_asyncapi_channel': { channelName: 'eventsStream' },
     'ordex.run_verifier': { family: 'runes', variant: 'burn-safety', arguments: vector?.vector?.case ? argsFromCase('runes', 'burn-safety', vector.vector.case) : {} },
     'ordex.explain_refusal': { code: 'SELLER_VALUE_MISMATCH' },
-    'ordex.get_conformance_vector': { family: 'offers', vectorId: 'offers/a-valid-acceptance-passes' },
+    'ordex.get_conformance_vector': { family: 'offers', vectorId: 'offers/a-valid-item-acceptance-settles-through-both-policy-signers' },
     'ordex.create_deterministic_example': { scenarioId: 'purchase.batch.success' },
     'ordex.get_mission': { missionId: 'integrate-public-asks' }
   };

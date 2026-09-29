@@ -13,7 +13,7 @@ import {
   readResource,
   JSONRPC
 } from '../../site/src/lib/mcp/server.js';
-import { FAMILIES, FAMILY_REGISTRY } from '../../site/src/lib/conformance-registry.mjs';
+import { FAMILIES, FAMILY_REGISTRY, resultKey } from '../../site/src/lib/conformance-registry.mjs';
 import { argsFromCase } from '../../site/src/lib/lab-report.mjs';
 import { validateSchema } from '../../site/src/lib/api/schema.mjs';
 
@@ -101,7 +101,7 @@ test('unknown tools are protocol errors; bad arguments are tool errors; results 
     'ordex.get_asyncapi_channel': { channelName: 'eventsStream' },
     'ordex.run_verifier': { family: 'runes', arguments: argsFromCase('runes', 'burn-safety', vectors.find((v) => v.id === 'runes/single-edict').case) },
     'ordex.explain_refusal': { code: 'SELLER_SCRIPT_MISMATCH' },
-    'ordex.get_conformance_vector': { family: 'offers', vectorId: 'offers/a-valid-acceptance-passes' },
+    'ordex.get_conformance_vector': { family: 'offers', vectorId: 'offers/a-valid-item-acceptance-settles-through-both-policy-signers' },
     'ordex.create_deterministic_example': { scenarioId: 'runes.cenotaph.refusal' },
     'ordex.get_mission': { missionId: 'integrate-public-asks' }
   };
@@ -128,7 +128,7 @@ test('run_verifier returns the real verdict for every family and variant, accept
   for (const family of FAMILIES) {
     for (const variant of Object.keys(FAMILY_REGISTRY[family].variants)) {
       for (const accept of [true, false]) {
-        const key = FAMILY_REGISTRY[family].result;
+        const key = resultKey(family, variant);
         const v = vectors.find((x) => x.family === family && x.variant === variant && x.case.expected[key] === accept);
         if (!v) continue;
         const r = callTool('ordex.run_verifier', { family, variant, arguments: argsFromCase(family, variant, v.case) });

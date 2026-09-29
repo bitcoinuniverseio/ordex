@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { FAMILIES, FAMILY_REGISTRY, variantOf } from '../../site/src/lib/conformance-registry.mjs';
+import { FAMILIES, variantOf, resultKey } from '../../site/src/lib/conformance-registry.mjs';
 import { argsFromCase } from '../../site/src/lib/lab-report.mjs';
 import { loadVectorFile } from '../../scripts/docs/vector-loader.mjs';
 import { MCP_VERSION, ROOT, mcpClient, startBuiltHost, tempDir } from './service-host.mjs';
@@ -51,9 +51,9 @@ test('discover and tools/list over HTTP report the built revision and ten tools'
 test('run_verifier over HTTP returns the verdict every checked-in conformance vector expects', async () => {
   let checked = 0;
   for (const family of FAMILIES) {
-    const key = FAMILY_REGISTRY[family].result;
     for (const vectorCase of loadVectorFile(family).cases) {
       const variant = variantOf(family, vectorCase);
+      const key = resultKey(family, variant);
       const result = await callOk('ordex.run_verifier', { family, variant, arguments: argsFromCase(family, variant, vectorCase) });
       const expectedAccept = vectorCase.expected[key];
       assert.equal(result.isError, false, `${family}/${vectorCase.name}`);

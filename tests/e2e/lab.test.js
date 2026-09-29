@@ -3,7 +3,7 @@ import { test, before, after } from 'node:test';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { startStaticServer, launch, openPage, DIST } from './harness.mjs';
-import { FAMILIES, FAMILY_REGISTRY } from '../../site/src/lib/conformance-registry.mjs';
+import { FAMILIES, FAMILY_REGISTRY, resultKey } from '../../site/src/lib/conformance-registry.mjs';
 
 // OX-S07 browser gate for /lab and /verify. Proves the islands hydrate with no errors, the
 // Worker runs every family and variant, and exact counts come from the built data.
@@ -38,7 +38,7 @@ test('/lab hydrates and runs an accepted and a refused example for every family 
     await page.getByLabel('Verifier family').selectOption(family);
     for (const variant of Object.keys(FAMILY_REGISTRY[family].variants)) {
       await page.getByLabel('Variant').selectOption(variant);
-      const key = FAMILY_REGISTRY[family].result;
+      const key = resultKey(family, variant);
       const cases = vectors.filter((v) => v.family === family && v.variant === variant);
       const picks = [cases.find((c) => c.case.expected[key] === true), cases.find((c) => c.case.expected[key] === false)].filter(Boolean);
       assert.ok(picks.length > 0, `${family}/${variant} has no example`);

@@ -83,8 +83,13 @@ function exactInputs(inputs) {
   return inputs.map((i) => ({ indexed: true, balances: Array.isArray(i.balances) ? i.balances : [] }));
 }
 
+// A vector that checks a plan against a transaction another vector already put to ord (the
+// same output scripts and inputs) is compared with that recorded answer.
+const sameTransaction = (a, b) => JSON.stringify([a.outputScriptsHex, a.inputs, a.mint ?? null]) === JSON.stringify([b.outputScriptsHex, b.inputs, b.mint ?? null]);
+const answerFor = (c) => oracle[c.name] ?? oracle[vectors.find((v) => oracle[v.name] && sameTransaction(v, c))?.name];
+
 function checkAgainstOracle(c) {
-  const answer = oracle[c.name];
+  const answer = answerFor(c);
   assert.ok(answer, `ord recorded no answer for ${c.name}`);
   const runestone = decipherRunestone(c.outputScriptsHex);
   assert.deepEqual(asOracle(runestone), oracleArtifact(answer), `decipher differs from ord for ${c.name}`);
@@ -100,7 +105,7 @@ function checkAgainstOracle(c) {
 }
 
 test('the oracle holds an answer for every vector and every corpus case', () => {
-  for (const c of [...vectors, ...corpus]) assert.ok(oracle[c.name], c.name);
+  for (const c of [...vectors, ...corpus]) assert.ok(answerFor(c), c.name);
 });
 
 test('every rune vector deciphers and allocates exactly as ord 0.29.0 does', () => {

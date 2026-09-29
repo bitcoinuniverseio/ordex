@@ -134,7 +134,7 @@ const addSats = (value: string, delta: bigint) => (BigInt(value) + delta).toStri
 const CONSOLIDATION_PLAN = vectorCheck('safeops/a-cardinal-batch-send-plan-with-examined-inputs-is-accepted', (args) => {
   args.plan.operationKind = 'CARDINAL_CONSOLIDATION';
   args.plan.outputs = [{ scriptHex: '5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', valueSats: '109400', role: 'change' }];
-  args.plan.digest = '3afb5ab44f6177f350d9223119d0f187aa6107dd57f640b00e5c20fb37d8e62d';
+  args.plan.digest = '213699586a2be73424a23971712171d8a20e4afcdfc34a44c1709e2fbb59d528';
   return args;
 });
 
@@ -517,13 +517,13 @@ export const SCENARIOS: ScenarioDefinition[] = [
         actor: 'seller',
         intent: 'Accept the offer by spending the acceptance leaf',
         operation: 'Local offers verifier (verifyOfferAcceptance)',
-        inputs: { vector: 'offers/a-valid-acceptance-passes' },
+        inputs: { vector: 'offers/a-valid-item-acceptance-settles-through-both-policy-signers' },
         stateTransition: { from: 'OFFER_FUNDED', to: 'ACCEPTANCE_VERIFIED' },
         whyThisStepExists: 'Lets a buyer and seller trade without custody.',
         whatCouldFail: 'A terms hash mismatch, an expired offer, or a changed payment.',
         nextRecommendedAction: 'Sign and broadcast the acceptance.',
         evidenceClass: 'Protocol verification',
-        verifierCheck: vectorCheck('offers/a-valid-acceptance-passes')
+        verifierCheck: vectorCheck('offers/a-valid-item-acceptance-settles-through-both-policy-signers')
       }
     ],
     failureInjections: [
@@ -532,7 +532,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
         label: 'Change the seller payment',
         description: 'Applies the exact change of the refusal vector: the payment output value no longer matches the offer price.',
         stepId: 'step-1',
-        mutate: vectorDelta('offers/a-valid-acceptance-passes', 'offers/a-changed-seller-payment-is-refused'),
+        mutate: vectorDelta('offers/a-valid-item-acceptance-settles-through-both-policy-signers', 'offers/a-changed-seller-payment-is-refused'),
         expectedRefusalCode: 'SELLER_VALUE_MISMATCH',
         affectedInvariant: 'The payment must carry exactly the committed price.',
         vectorId: 'offers/a-changed-seller-payment-is-refused'
@@ -559,13 +559,13 @@ export const SCENARIOS: ScenarioDefinition[] = [
         actor: 'buyer',
         intent: 'Reclaim the offer funds with a locktime at or after the expiry height',
         operation: 'Local offers verifier (verifyOfferRecovery)',
-        inputs: { vector: 'offers/a-valid-recovery-after-expiry-passes' },
+        inputs: { vector: 'offers/a-valid-recovery-at-the-expiry-height-passes' },
         stateTransition: { from: 'EXPIRED', to: 'RECOVERY_VERIFIED' },
         whyThisStepExists: 'Buyer funds can never stay trapped if the seller never accepts.',
         whatCouldFail: 'A locktime before expiry or a payout to another script.',
         nextRecommendedAction: 'Broadcast the recovery after the expiry height on a real node.',
         evidenceClass: 'Protocol verification',
-        verifierCheck: vectorCheck('offers/a-valid-recovery-after-expiry-passes')
+        verifierCheck: vectorCheck('offers/a-valid-recovery-at-the-expiry-height-passes')
       }
     ],
     failureInjections: [
@@ -574,10 +574,10 @@ export const SCENARIOS: ScenarioDefinition[] = [
         label: 'Recover before expiry',
         description: 'Applies the refusal vector change: the recovery locktime is below the expiry height.',
         stepId: 'step-1',
-        mutate: vectorDelta('offers/a-valid-recovery-after-expiry-passes', 'offers/a-recovery-before-expiry-is-refused'),
+        mutate: vectorDelta('offers/a-valid-recovery-at-the-expiry-height-passes', 'offers/a-recovery-one-block-before-expiry-is-refused'),
         expectedRefusalCode: 'RECOVERY_BEFORE_EXPIRY',
         affectedInvariant: 'Recovery is valid only from the expiry height on.',
-        vectorId: 'offers/a-recovery-before-expiry-is-refused'
+        vectorId: 'offers/a-recovery-one-block-before-expiry-is-refused'
       }
     ]
   },
@@ -682,7 +682,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
         mutate: (args) => {
           args.plan.inputs[1].inventory = {
             examined: true,
-            inscriptions: [{ inscriptionId: 'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccci0' }]
+            inscriptions: [{ inscriptionId: 'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccci0', offset: '0' }]
           };
           return args;
         },
@@ -768,13 +768,13 @@ export const SCENARIOS: ScenarioDefinition[] = [
         actor: 'buyer',
         intent: 'The taker accepts, providing the consideration and receiving the asset',
         operation: 'Local swaps verifier (verifySwapAcceptance)',
-        inputs: { vector: 'swaps/an-acceptance-plan-matching-its-intent-is-accepted' },
+        inputs: { vector: 'swaps/btc-for-a-rune-settles-with-the-exact-rune-amount-at-the-maker' },
         stateTransition: { from: 'INTENT_OPEN', to: 'ACCEPTANCE_VERIFIED' },
         whyThisStepExists: 'Guarantees either both legs move or neither does.',
         whatCouldFail: 'A consideration shortfall or an unclosed sighash.',
         nextRecommendedAction: 'Both parties sign; broadcast on a real node.',
         evidenceClass: 'Protocol verification',
-        verifierCheck: vectorCheck('swaps/an-acceptance-plan-matching-its-intent-is-accepted')
+        verifierCheck: vectorCheck('swaps/btc-for-a-rune-settles-with-the-exact-rune-amount-at-the-maker')
       }
     ],
     failureInjections: [
@@ -783,10 +783,10 @@ export const SCENARIOS: ScenarioDefinition[] = [
         label: 'Short the maker consideration',
         description: 'Applies the refusal vector change: the maker receives less than the intent requires.',
         stepId: 'step-2',
-        mutate: vectorDelta('swaps/an-acceptance-plan-matching-its-intent-is-accepted', 'swaps/a-consideration-shortfall-is-refused'),
+        mutate: vectorDelta('swaps/btc-for-a-rune-settles-with-the-exact-rune-amount-at-the-maker', 'swaps/a-required-rune-delivered-short-is-refused'),
         expectedRefusalCode: 'CONSIDERATION_SHORTFALL',
         affectedInvariant: 'The maker must receive at least the committed consideration.',
-        vectorId: 'swaps/a-consideration-shortfall-is-refused'
+        vectorId: 'swaps/a-required-rune-delivered-short-is-refused'
       }
     ]
   },
@@ -898,13 +898,13 @@ export const SCENARIOS: ScenarioDefinition[] = [
         actor: 'seller',
         intent: 'Spend the attached UTXO with the asset planned for output 0',
         operation: 'Local attachment verifier (verifyAttachmentFollows)',
-        inputs: { vector: 'counterparty-asset/a-spend-whose-sat-flow-lands-the-asset-elsewhere-is-refused' },
+        inputs: { vector: 'counterparty-asset/p-r18-planning-the-sat-range-output-instead-is-refused' },
         stateTransition: { from: 'INITIAL', to: 'ATTACHMENT_REFUSED' },
         whyThisStepExists: 'An attached asset follows sat flow, not intent.',
         whatCouldFail: 'The verifier refuses the destination.',
         nextRecommendedAction: 'Re-align output values so the attachment lands where planned.',
         evidenceClass: 'Protocol verification',
-        verifierCheck: vectorCheck('counterparty-asset/a-spend-whose-sat-flow-lands-the-asset-elsewhere-is-refused')
+        verifierCheck: vectorCheck('counterparty-asset/p-r18-planning-the-sat-range-output-instead-is-refused')
       }
     ]
   },
