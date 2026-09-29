@@ -38,6 +38,7 @@ export function OfflineStatus() {
         const active = reg.active;
         if (!active) return;
         const status = await askStatus(active);
+        if (status?.servedOffline) setOnline(false);
         if (status) setSw((s) => (s.state === 'update-ready' ? { ...s, status } : { state: status.cached === status.total ? 'saved' : 'partial', status, reg }));
       };
       navigator.serviceWorker
