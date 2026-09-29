@@ -86,6 +86,10 @@ await cp(resolve(dist, 'client'), resolve(root, 'docs'), { recursive: true });
 await writeFile(resolve(root, 'docs', 'api-reference.html'), renderApiReference(contract));
 await cp(resolve(root, 'docs', 'api-reference.html'), resolve(dist, 'client', 'api-reference.html'));
 
+// OX-S12: the service worker lists exactly this build's files and changes with them.
+execSync('node scripts/docs/build-service-worker.mjs', { cwd: root, stdio: 'inherit' });
+await cp(resolve(dist, 'client', 'sw.js'), resolve(root, 'docs', 'sw.js'));
+
 console.log('--- Step 7: Build the docs service, MCP engine and stdio server ---');
 // OX-S04 / OX-P07: bundled handler (dist/server/index.js), Node host, migrations and build
 // identity; the MCP engine and the self-contained stdio server in dist/mcp.

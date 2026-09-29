@@ -100,6 +100,14 @@ for (const tour of tours) {
     check(`tour ${tour.id}/${step.id}`, ok, detail);
   }
 }
+// 7. Offline: the service worker lists exactly the built files.
+if (built && exists('dist', 'client', 'sw.js')) {
+  const sw = read('dist', 'client', 'sw.js');
+  const m = JSON.parse(sw.match(/const MANIFEST = (\{.*?\});\n/s)[1]);
+  const walk = (d) => fs.readdirSync(d).flatMap((n) => (fs.statSync(path.join(d, n)).isDirectory() ? walk(path.join(d, n)) : [path.join(d, n)]));
+  const onDisk = walk(path.join(root, 'dist', 'client')).map((f) => path.relative(path.join(root, 'dist', 'client'), f).split(path.sep).join('/')).filter((f) => f !== 'sw.js').sort();
+  check('service worker precache list', JSON.stringify(onDisk) === JSON.stringify(m.files), `${m.files.length} listed, ${onDisk.length} built`);
+}
 const captures = json('site', 'src', 'data', 'tourCaptures.json');
 const missingFiles = Object.values(captures.captures).flat().filter((c) => !exists('site', 'public', ...c.file.split('/')));
 check('tour screenshots on disk', missingFiles.length === 0, `${Object.values(captures.captures).flat().length} listed${missingFiles.length ? `, missing ${missingFiles.length}` : ''}`);
