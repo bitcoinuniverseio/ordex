@@ -1,6 +1,6 @@
-# SafeOps v1
+# SafeOps v2
 
-Status: active at protocol 1.2. Artifacts: `ordex.safeops-plan/v1`, `ordex.safeops-signed-result/v1`. Reference verifier: `verifier/safeops.js`. Vectors: `conformance/safeops-vectors.json`.
+Status: active at protocol 1.2. Artifacts: `ordex.safeops-plan/v2`, `ordex.safeops-signed-result/v2`. A v1 plan or result is refused (`SCHEMA_UNSUPPORTED`) and replanned; its digest is never reinterpreted under v2 rules. Reference verifier: `verifier/safeops.js`. Vectors: `conformance/safeops-vectors.json`.
 
 SafeOps turns planning into one executable, protocol aware operations desk: cardinal batch sends, ordinal and rune batch transfers, cardinal consolidations, split and postage preparation, recovery of unused padding, RBF replacement, CPFP children, inspection, and post broadcast monitoring. One plan describes one logical operation. One signature flow covers it.
 
@@ -10,69 +10,40 @@ The gateway composes plans and verifies signed results. The user signs every inp
 
 ## Inventory resolution
 
-Before a plan exists, every candidate outpoint is resolved against the authorities into one inventory: Bitcoin Core amount and script, confirmation state, inscription ids and satpoints, rare sat ranges, rune allocations, Counterparty attachments, and any claim the desk does not recognize. The rules:
+Before a plan exists, every candidate outpoint is resolved against the authorities, at one checkpoint, into one inventory: Bitcoin Core amount and script, confirmation state, every inscription with its offset inside the input, every rare sat range with its offset and length, every rune balance with its exact amount, every Counterparty attachment with its numeric asset id and exact quantity, and any claim the desk does not recognize. The rules:
 
 1. An outpoint whose inventory was never examined is refused (`INVENTORY_UNEXAMINED`). It is never assumed cardinal.
-2. An unrecognized claim fails the plan closed (`UNKNOWN_CLAIM_FAILS_CLOSED`). Resolve the claim first.
-3. Cardinal only operations refuse inputs that carry any tracked asset (`ASSET_IN_CARDINAL_OPERATION`).
-4. A rune transfer refuses inputs without a rune allocation (`RUNE_INPUT_MISSING_ALLOCATION`).
-5. Authorities that disagree, stale data, or an indexer behind its accepted checkpoint fail the resolution closed.
+2. An inventory that lists an asset without its exact position or quantity, places it outside the input, or lists the same inscription or range on two inputs is refused (`INVENTORY_INVALID`).
+3. An unrecognized claim fails the plan closed (`UNKNOWN_CLAIM_FAILS_CLOSED`). Resolve the claim first.
+4. Cardinal only operations refuse inputs that carry any tracked asset (`ASSET_IN_CARDINAL_OPERATION`).
+5. A rune transfer refuses inputs without a rune allocation (`RUNE_INPUT_MISSING_ALLOCATION`).
+6. Authorities that disagree, stale data, or an indexer behind its accepted checkpoint fail the resolution closed.
 
 ## The plan
 
-A plan carries: schema and protocol version, network, operation kind, the chain checkpoint it was built against, an expiry height after that checkpoint, every selected input with its complete resolved inventory, the deterministic output map with recipient, change, and preserve roles, one asset transition per tracked asset naming its exact destination output, the fee with a permitted maximum, the signing policy with required indexes and the sighash type, human readable findings, and the digest.
+A plan carries: schema and protocol version, network, operation kind, the chain checkpoint it was built against, an expiry height after that checkpoint, the transaction version and locktime, every selected input with its outpoint, value, the script it spends, its sequence and its complete resolved inventory, the deterministic output map with recipient, change, preserve, and data roles, one transition per derived asset movement with its exact quantity, the fee with a permitted maximum, the signing policy, human readable findings, and the digest. Together the transaction fields, inputs and outputs fix the unsigned transaction byte for byte.
+
+A selected outpoint appears once (`INPUT_DUPLICATED`). Each input names the script it spends (`INPUT_SCRIPT_INVALID`) and its sequence (`INPUT_SEQUENCE_INVALID`), and the plan names the version and locktime (`TRANSACTION_INVALID`).
 
 The digest is SHA-256 over the sorted-key JSON of everything except the findings and the digest itself. A consumer can recompute it and must.
 
-<!--
-IMPLEMENTATION-HANDOFF [OX-P01] Preparation only; functional status FAIL, repair NOT IMPLEMENTED.
-Coverage: OX-P-C015, OX-P-C016, OX-P-C017, OX-P-C018, OX-P-C019, OX-P-C020, OX-P-C021, OX-P-C022,
-OX-P-C023. Evidence: P-R01, P-R02, P-R03, P-R04 in handoff/evidence.
-Verified cause: SafeOps assumes every tracked asset follows input first sat; ignores inscription
-offsets/ranges and rune allocation. Every output is subject to 546-sat dust, including runestones.
-Duplicate outpoints and null signing also bypass refusal contract.
-Required behavior: Protocol-specific SafeOps asset allocation and valid output policy. Governing
-refs: P-S01 (Ord0.29.0 applicability; handbook accessed2026-09-29); P-S02 (Ord0.29.0
-commit7e37a3bd3391044b39f5f11f20dfdb8b3764cd0e; runestone
-blob98022fb2a25d587a59a4a2ac40cd9de9bc5a6d0b); P-S03 (Ord0.29.0;
-blobbce2ae16336368bba3f7d70eed2a1493a67f45c9); P-S04 (v29.0 policy reference;
-blobed3369282351766bcba38cf71c491b5916718971; installed node policy must be read); complete URLs in
-reports/protocol.md.
-Prerequisites/order: OX-P04, OX-P10. Related files: verifier/safeops.js, sdk/src/safeops.ts; Core
-backend/src/ordex-v12 corresponding service and caller adapters.
-1. Replace firstSatOutputIndex asset dispatch with adapters keyed by actual asset family. Resolve
-inscription offsets as sum(prior input sats)+offset, track every rare-sat interval, decipher and
-allocate Runes from authoritative balances, and use corrected Counterparty move semantics.
-2. Expand inventory and transition schemas to bind outpoint, asset id, exact quantity,
-satpoint/ranges, target script/party and checkpoint; reject unknown or incomplete inventories before
-planning; compare complete transition multisets and forbid duplicate inputs.
-3. Add explicit data output role, allow zero-value OP_RETURN only for required validated protocol
-messages, and distinguish product postage policy from Bitcoin Core dust threshold; forbid unplanned
-burns. Validate non-null signing object, exact permitted sighash and required index uniqueness.
-4. Mirror JS reference and TypeScript SDK, correct spec/safeops.md, regenerate schema from
-spec/openapi.json through its generator, wire Core SafeOps inventory/builder/shield to same
-adapters. Never treat labels/signaturePresent booleans as authoritative proof.
-Validation (PROPOSED NEW tests, commands unverified until implemented):
-verifier/safeops.protocol-safety.test.js, sdk/test/safeops.protocol-safety.test.js. node --test
-verifier/safeops.test.js verifier/safeops.protocol-safety.test.js; npm --prefix sdk run build; node
---test sdk/test/safeops.test.js sdk/test/safeops.protocol-safety.test.js.
-Assertions/evidence: P-R01 wrong destination refuses; offset0 and1500 correct destinations match
-ord0.29; Duplicate inputs/null inventory/signing return stable refusals; Real zero-sat rune message
-accepted only when exact allocation proved; Signet actual BTC/Ordinal/Runes/SafeOps split/RBF/CPFP
-confirm and match node/indexer outputs. Offline probes are not end-to-end PASS; require actual
-Signet transaction, authoritative indexed outcome and consumer readback where applicable.
-Rollback: Version changed binding schema; invalidate old unsafe unsigned plans and replan. Retain
-signed/broadcast evidence and monitor; never reinterpret old digests as new version. Roll back
-public actionability if adapters fail.
--->
+<!-- OX-P01: v2 derives every asset movement from the protocol that owns it instead
+of one first-sat shortcut, binds the complete unsigned transaction, and proves
+signatures from signed bytes. The P-R01 to P-R04 counterexamples are vectors. -->
 
 ## Asset safety rules
 
 1. Value conservation: inputs equal outputs plus the declared fee, exactly, in BigInt. No other total is accepted (`VALUE_NOT_CONSERVED`).
-2. Every tracked asset has exactly one transition to an existing output (`TRACKED_ASSET_UNASSIGNED`, `TRANSITION_OUTPUT_MISSING`).
-3. The transition destination must be the output that receives the input's first sat: the first output whose accumulated value passes the input range start (`TRANSITION_SAT_FLOW_MISMATCH`). This is the same rule that decides inscription delivery everywhere else in Ordex, so no plan can send an asset to the fee region, to unrelated change, or to the wrong recipient.
-4. Outputs respect the 546 sat dust floor (`DUST_OUTPUT`).
-5. Nothing outside the selected inputs can move. A plan names its inputs exactly; a signed result spending anything else is refused.
+2. Every asset moves by the rule of the protocol that owns it, and the plan's transitions must equal the derived movements as a complete multiset: nothing missing (`TRACKED_ASSET_UNASSIGNED`), nothing different (`TRANSITION_MISMATCH`), nothing extra (`TRANSITION_UNEXPECTED`), and never an output that does not exist (`TRANSITION_OUTPUT_MISSING`).
+   - **Inscriptions** sit on one sat: the sum of the values of the inputs before theirs plus their offset. They land in the output whose range holds that sat. An inscription 1,500 sats into a 2,000 sat input, spent into outputs of 1,000 and 900, lands in output 1.
+   - **Rare sat ranges** land whole in one output or the plan is refused (`RARE_SAT_RANGE_SPLIT`).
+   - **Runes** are allocated exactly as ord 0.29.0 does it (see `spec/runes.md`) from the exact input balances, and each output must receive exactly the amount the transitions state (`RUNE_ALLOCATION_MISMATCH`). Any burn, from a cenotaph, an edict or pointer naming an OP_RETURN, or no spendable output, is refused (`CENOTAPH_BURNS_BALANCE`, `ALLOCATION_BURNS_BALANCE`).
+   - **Counterparty attachments** move, all of them, to the first output Counterparty does not pass over (see `spec/counterparty-utxo-asset.md`). A spend that would detach or strand them instead is refused (`COUNTERPARTY_NOT_MOVED`).
+3. A sat-bound asset never lands in the fee (`ASSET_TO_FEE`), and an output carrying an inscription or rare sat range holds at least the 546 sat product postage floor (`POSTAGE_BELOW_FLOOR`). Postage is an Ordex product rule.
+4. Every spendable output meets the Bitcoin Core v29 dust threshold for its script at the default dust relay fee, for example 294 sats for P2WPKH, 330 for P2TR and P2WSH, 540 for P2SH and 546 for P2PKH (`DUST_OUTPUT`). Node preflight remains the relay authority.
+5. An OP_RETURN output is a `data` output and a `data` output is an OP_RETURN (`DATA_OUTPUT_ROLE_MISMATCH`). It carries zero value (`DATA_OUTPUT_BURNS_VALUE`). The only data output a plan may carry is one runestone moving the runes the plan's inputs hold (`DATA_OUTPUT_NOT_PERMITTED`), within the 83 byte relay limit (`DATA_OUTPUT_NONSTANDARD`).
+6. The user signs every selected input exactly once (`SIGNING_INVALID`), with `DEFAULT` (Taproot) or `ALL` only, so no input or output can change after signing (`SIGHASH_NOT_PERMITTED`).
+7. Nothing outside the selected inputs can move. A plan names its inputs exactly; a signed result spending anything else is refused.
 
 ## Partitioning at scale
 
@@ -84,12 +55,12 @@ Immediately before every signature and again before broadcast, the desk refreshe
 
 ## Signed results
 
-A signed result carries the plan digest and the normalized transaction: inputs with signature presence and sighash type, outputs with script and value. The verifier refuses when:
+A signed result carries the plan digest and the complete signed transaction as hex (`signedTxHex`). The verifier reads the transaction from those bytes; a caller's statement that an input is signed proves nothing. It refuses when:
 
-1. The plan digest does not match (`PLAN_DIGEST_MISMATCH`).
-2. The inputs or outputs differ from the plan in identity, order, script, or value (`INPUT_SET_CHANGED`, `INPUT_ORDER_CHANGED`, `INPUT_VALUE_CHANGED`, `OUTPUT_SET_CHANGED`, `SCRIPT_CHANGED`, `VALUE_CHANGED`).
-3. The recomputed fee differs from the plan (`FEE_CHANGED`).
-4. A required index is unsigned (`SIGNATURE_MISSING`), an index outside the policy carries a signature (`UNEXPECTED_SIGNATURE`), or a sighash differs from the approved type (`SIGHASH_CHANGED`).
+1. The plan digest does not match (`PLAN_DIGEST_MISMATCH`), or the bytes do not parse (`MALFORMED_SIGNED_RESULT`).
+2. The version or locktime changed (`TRANSACTION_CHANGED`), or the inputs or outputs differ from the plan in identity, order, sequence, script, or value (`INPUT_SET_CHANGED`, `INPUT_ORDER_CHANGED`, `SEQUENCE_CHANGED`, `OUTPUT_SET_CHANGED`, `SCRIPT_CHANGED`, `VALUE_CHANGED`). With all of these equal the fee is the plan's fee.
+3. An input is unsigned (`SIGNATURE_MISSING`), its signature does not verify against the plan's prevout scripts and values under the BIP143 or BIP341 signature hash (`SIGNATURE_INVALID`), or it spends a script the verifier cannot check (`SIGNATURE_UNVERIFIABLE`).
+4. A signature uses another sighash than the plan approved (`SIGHASH_CHANGED`).
 
 Every signed PSBT is reverified after the wallet returns. Verification disagreement between browser, backend, SDK, and reference implementation is a release blocker.
 

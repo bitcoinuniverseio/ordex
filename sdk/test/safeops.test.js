@@ -37,8 +37,8 @@ for (const vector of vectors.cases) {
 }
 
 test('the schema names are stable', () => {
-  assert.equal(SAFEOPS_PLAN_SCHEMA, 'ordex.safeops-plan/v1');
-  assert.equal(SAFEOPS_SIGNED_RESULT_SCHEMA, 'ordex.safeops-signed-result/v1');
+  assert.equal(SAFEOPS_PLAN_SCHEMA, 'ordex.safeops-plan/v2');
+  assert.equal(SAFEOPS_SIGNED_RESULT_SCHEMA, 'ordex.safeops-signed-result/v2');
   assert.equal(SAFEOPS_PROTOCOL_MIN, '1.2');
 });
 

@@ -5807,7 +5807,7 @@
       },
       "SafeOpsInventory": {
         "type": "object",
-        "description": "One exact inventory for one outpoint, resolved from the protocol authorities. Unexamined inputs fail closed.",
+        "description": "One exact inventory for one outpoint, resolved from the protocol authorities at the plan checkpoint. Unexamined inputs fail closed; every sat-bound asset carries its offset inside the input, every rune its exact balance, every Counterparty attachment its exact quantity.",
         "required": [
           "examined"
         ],
@@ -5822,28 +5822,87 @@
             "type": "array",
             "items": {
               "type": "object",
-              "additionalProperties": true
+              "required": [
+                "inscriptionId",
+                "offset"
+              ],
+              "properties": {
+                "inscriptionId": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}i(0|[1-9][0-9]*)$"
+                },
+                "offset": {
+                  "$ref": "#/components/schemas/AtomicSats"
+                },
+                "satpoint": {
+                  "type": "string",
+                  "description": "txid:vout:offset of this input; when present it must agree with the outpoint and offset."
+                }
+              }
             }
           },
           "runeAllocations": {
             "type": "array",
             "items": {
               "type": "object",
-              "additionalProperties": true
+              "required": [
+                "runeId",
+                "amount"
+              ],
+              "properties": {
+                "runeId": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*):(0|[1-9][0-9]*)$"
+                },
+                "amount": {
+                  "$ref": "#/components/schemas/AtomicSats"
+                }
+              }
             }
           },
           "counterpartyAssets": {
             "type": "array",
             "items": {
               "type": "object",
-              "additionalProperties": true
+              "required": [
+                "name",
+                "assetId",
+                "quantitySats"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "assetId": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "quantitySats": {
+                  "$ref": "#/components/schemas/AtomicSats"
+                }
+              }
             }
           },
           "rareSatRanges": {
             "type": "array",
             "items": {
               "type": "object",
-              "additionalProperties": true
+              "required": [
+                "rangeId",
+                "offset",
+                "count"
+              ],
+              "properties": {
+                "rangeId": {
+                  "type": "string"
+                },
+                "offset": {
+                  "$ref": "#/components/schemas/AtomicSats"
+                },
+                "count": {
+                  "$ref": "#/components/schemas/AtomicSats"
+                }
+              }
             }
           },
           "unknownClaims": {
@@ -5859,6 +5918,8 @@
         "required": [
           "outpoint",
           "valueSats",
+          "scriptPubKeyHex",
+          "sequence",
           "inventory"
         ],
         "properties": {
@@ -5867,6 +5928,16 @@
           },
           "valueSats": {
             "$ref": "#/components/schemas/AtomicSats"
+          },
+          "scriptPubKeyHex": {
+            "type": "string",
+            "pattern": "^(?:[0-9a-f]{2})+$",
+            "description": "The script of the output this input spends; signatures are verified against it."
+          },
+          "sequence": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4294967295
           },
           "inventory": {
             "$ref": "#/components/schemas/SafeOpsInventory"
@@ -5893,8 +5964,10 @@
             "enum": [
               "recipient",
               "change",
-              "preserve"
-            ]
+              "preserve",
+              "data"
+            ],
+            "description": "data marks the one zero-value runestone OP_RETURN a rune transfer may carry; every other output meets the Bitcoin Core dust threshold for its script."
           },
           "explanation": {
             "type": "string"
@@ -5903,11 +5976,12 @@
       },
       "SafeOpsAssetTransition": {
         "type": "object",
+        "description": "One derived asset movement. Inscriptions and rare sats name their input; runes are fungible and name only the output and amount.",
         "required": [
           "assetType",
           "assetId",
-          "fromInput",
-          "toOutput"
+          "toOutput",
+          "quantity"
         ],
         "properties": {
           "assetType": {
@@ -5929,6 +6003,9 @@
           "toOutput": {
             "type": "integer",
             "minimum": 0
+          },
+          "quantity": {
+            "$ref": "#/components/schemas/AtomicSats"
           }
         }
       },
@@ -5942,6 +6019,7 @@
           "operationKind",
           "expiryHeight",
           "checkpoint",
+          "transaction",
           "inputs",
           "outputs",
           "assetTransitions",
@@ -5953,7 +6031,7 @@
         "properties": {
           "schema": {
             "type": "string",
-            "const": "ordex.safeops-plan/v1"
+            "const": "ordex.safeops-plan/v2"
           },
           "protocolVersion": {
             "type": "string"
@@ -6014,18 +6092,25 @@
           "signing": {
             "type": "object",
             "required": [
-              "requiredIndexes"
+              "requiredIndexes",
+              "sighashType"
             ],
             "properties": {
               "requiredIndexes": {
                 "type": "array",
+                "uniqueItems": true,
                 "items": {
                   "type": "integer",
                   "minimum": 0
-                }
+                },
+                "description": "Every input index, once: the user signs every input."
               },
               "sighashType": {
-                "type": "string"
+                "type": "string",
+                "enum": [
+                  "DEFAULT",
+                  "ALL"
+                ]
               }
             }
           },
@@ -6039,6 +6124,26 @@
           "digest": {
             "type": "string",
             "pattern": "^[0-9a-f]{64}$"
+          },
+          "transaction": {
+            "type": "object",
+            "required": [
+              "version",
+              "lockTime"
+            ],
+            "description": "The transaction version and locktime the plan signs, so the unsigned transaction is fully determined.",
+            "properties": {
+              "version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 4294967295
+              },
+              "lockTime": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 4294967295
+              }
+            }
           }
         }
       },
@@ -6180,19 +6285,21 @@
         "required": [
           "schema",
           "planDigest",
-          "tx"
+          "signedTxHex"
         ],
         "properties": {
           "schema": {
             "type": "string",
-            "const": "ordex.safeops-signed-result/v1"
+            "const": "ordex.safeops-signed-result/v2"
           },
           "planDigest": {
             "type": "string",
             "pattern": "^[0-9a-f]{64}$"
           },
-          "tx": {
-            "$ref": "#/components/schemas/TxDescription"
+          "signedTxHex": {
+            "type": "string",
+            "pattern": "^(?:[0-9a-f]{2})+$",
+            "description": "The complete signed transaction. Signatures are verified from these bytes, never from a flag."
           }
         }
       },

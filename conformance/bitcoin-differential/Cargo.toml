@@ -1,0 +1,15 @@
+# Differential oracle for verifier/bitcoin-tx.js signature hashes. It runs the
+# rust-bitcoin 0.32.5 SighashCache (legacy, BIP143 and BIP341, every flag,
+# annex and script path) over the seeded corpus in corpus.mjs. Run it through
+# run.mjs; it is not part of the npm test path because it needs a Rust toolchain.
+[package]
+name = "ordex-sighash-differential"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[workspace]
+
+[dependencies]
+bitcoin = "=0.32.5"
+serde_json = "1.0.81"
