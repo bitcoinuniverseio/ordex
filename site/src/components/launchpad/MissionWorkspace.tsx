@@ -42,6 +42,12 @@ function missionFromUrl(fallback: string): MissionDefinition {
  * another context are shown as needing a repeat, never as done. Tool links carry the
  * session and stage as opaque ids so the tool's run is attached to this mission.
  */
+// This mission's evidence plus runs made outside any mission (a tool opened directly),
+// which evaluateStage also accepts; another mission's runs are never counted.
+async function missionEvidence(missionId: string): Promise<EvidenceRecord[]> {
+  return (await journeyStore.listEvidence()).filter((e) => e.missionId === null || e.missionId === missionId);
+}
+
 export function MissionWorkspace({ initialMissionId = 'integrate-public-asks', basePath = '/ordex' }: WorkspaceProps): JSX.Element {
   const [mission] = useState<MissionDefinition>(() => missionFromUrl(initialMissionId));
   const [session, setSession] = useState<OrdexJourneySession | null>(null);
@@ -58,7 +64,7 @@ export function MissionWorkspace({ initialMissionId = 'integrate-public-asks', b
   useEffect(() => {
     let live = true;
     const loadEvidence = async () => {
-      const list = await journeyStore.listEvidence({ missionId: mission.id }).catch(() => []);
+      const list = await missionEvidence(mission.id).catch(() => []);
       if (live) setEvidence(list);
     };
     const loadSession = async (id?: string) => {
@@ -148,7 +154,7 @@ export function MissionWorkspace({ initialMissionId = 'integrate-public-asks', b
     );
     setBusy(false);
     if (!ev) setMessage({ tone: 'error', text: 'The acknowledgement could not be saved in this browser.' });
-    else setEvidence(await journeyStore.listEvidence({ missionId: mission.id }));
+    else setEvidence(await missionEvidence(mission.id));
   };
 
   const completeStage = async () => {

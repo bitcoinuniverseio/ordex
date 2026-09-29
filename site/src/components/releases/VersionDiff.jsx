@@ -20,10 +20,11 @@ export function VersionDiff() {
               Inspect additive capabilities, schema changes, and migration steps between protocol versions.
             </p>
           </div>
-          <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
             <div>
-              <label style="font-size: 0.8rem; font-weight: 600; margin-right: 0.4rem;">Base:</label>
+              <label for="version-diff-base" style="font-size: 0.8rem; font-weight: 600; margin-right: 0.4rem;">Base:</label>
               <select
+                id="version-diff-base"
                 class="btn btn-outline"
                 value={baseVer}
                 onChange={(e) => setBaseVer(e.target.value)}
@@ -38,8 +39,9 @@ export function VersionDiff() {
             <span style="color: var(--color-text-muted);">➔</span>
 
             <div>
-              <label style="font-size: 0.8rem; font-weight: 600; margin-right: 0.4rem;">Target:</label>
+              <label for="version-diff-target" style="font-size: 0.8rem; font-weight: 600; margin-right: 0.4rem;">Target:</label>
               <select
+                id="version-diff-target"
                 class="btn btn-outline"
                 value={targetVer}
                 onChange={(e) => setTargetVer(e.target.value)}

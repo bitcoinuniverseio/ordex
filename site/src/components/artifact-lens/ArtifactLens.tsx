@@ -319,7 +319,7 @@ export function ArtifactLens({ initialPayload = SAMPLE_PSBT_HEX }: LensProps): J
 
           {activeTab === 'summary' && (
             <div {...tabPanelProps('lens', 'summary')} style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(180px, 100%), 1fr))', gap: '0.75rem' }}>
                 <div style={tile}><div style={tileLabel}>Status</div><div style={tileValue}>{parsed.status}</div></div>
                 <div style={tile}><div style={tileLabel}>Format</div><div style={tileValue}>{parsed.format}</div></div>
                 <div style={tile}><div style={tileLabel}>Size</div><div style={tileValue}>{parsed.totalByteLength} bytes</div></div>
@@ -357,7 +357,7 @@ export function ArtifactLens({ initialPayload = SAMPLE_PSBT_HEX }: LensProps): J
           )}
 
           {activeTab === 'io' && (
-            <div {...tabPanelProps('lens', 'io')} style={{ padding: '1.25rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem', fontSize: '0.8125rem' }}>
+            <div {...tabPanelProps('lens', 'io')} style={{ padding: '1.25rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(300px, 100%), 1fr))', gap: '1rem', fontSize: '0.8125rem' }}>
               {parsed.status !== 'decoded' ? (
                 <div>Inputs and outputs are shown only for a decoded artifact.</div>
               ) : (

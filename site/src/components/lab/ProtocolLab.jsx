@@ -246,7 +246,7 @@ export function ProtocolLab() {
               Run the reference verifiers on your own input. Every family and variant takes its real argument shape.
             </p>
           </div>
-          <div role="tablist" aria-label="Lab mode" style="display: flex; gap: 0.5rem;">
+          <div role="tablist" aria-label="Lab mode" style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
             {TABS.map((t) => (
               <button
                 key={t}
@@ -268,7 +268,7 @@ export function ProtocolLab() {
       {activeTab === 'inspect' && (
         <div {...tabPanelProps('lab', 'inspect')} style="display: flex; flex-direction: column; gap: 1.5rem;">
           <div class="panel">
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem; margin-bottom: 0.75rem;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr)); gap: 0.75rem; margin-bottom: 0.75rem;">
               <label style="display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.8rem; font-weight: 700;">
                 Verifier family
                 <select class="btn btn-outline" value={family} onChange={(e) => onFamily(e.currentTarget.value)} style="font-size: 0.85rem;">
@@ -398,7 +398,7 @@ export function ProtocolLab() {
             </p>
           ) : (
             <div>
-              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem;">
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); gap: 1.5rem;">
                 {['A', 'B'].map((k) => (
                   <div key={k}>
                     <h4 style="margin: 0 0 0.35rem 0;">Run {k}: {slots[k].family} / {slots[k].variant}</h4>

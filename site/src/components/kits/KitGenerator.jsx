@@ -92,11 +92,11 @@ export function KitGenerator() {
   const busy = phase === 'loading' || phase === 'generating';
   const fieldset = 'border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 0.75rem 1rem; margin: 0; min-width: 0;';
   const legend = 'font-weight: 700; font-size: 0.95rem; padding: 0 0.25rem;';
-  const hint = 'font-size: 0.8rem; color: var(--color-text-secondary);';
+  const hint = 'font-size: 0.8rem; color: var(--color-text-secondary); overflow-wrap: anywhere;';
 
   return (
     <div class="kit-generator-container panel" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem;">
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem;">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr)); gap: 1rem;">
         <fieldset style={fieldset}>
           <legend style={legend}>1. Runtime</legend>
           {KIT_RUNTIMES.map((r) => (
@@ -162,11 +162,13 @@ export function KitGenerator() {
       </div>
 
       {problems.length > 0 && (
-        <ul id="kit-status" role="alert" style="margin: 0; padding-left: 1.2rem; color: var(--color-danger, #a61e4d); font-size: 0.875rem;">
-          {problems.map((p) => (
-            <li key={p}>{p}</li>
-          ))}
-        </ul>
+        <div id="kit-status" role="alert">
+          <ul style="margin: 0; padding-left: 1.2rem; color: var(--color-danger, #a61e4d); font-size: 0.875rem;">
+            {problems.map((p) => (
+              <li key={p}>{p}</li>
+            ))}
+          </ul>
+        </div>
       )}
       {problems.length === 0 && (
         <div id="kit-status" role="status" aria-live="polite" style="font-size: 0.9rem;">

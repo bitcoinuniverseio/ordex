@@ -107,7 +107,7 @@ export function VersionEnvironmentController({ settings, onChange, buildRevision
           ref={dialogRef}
           role="dialog"
           aria-modal="false"
-          aria-label="Network, gateway and protocol settings"
+          aria-label="Connection settings"
           style={{
             position: 'absolute',
             top: 'calc(100% + 4px)',

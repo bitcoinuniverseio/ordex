@@ -54,7 +54,7 @@ test('a generated browser kit renders every check as a match', { timeout: 300000
     const status = page.getByRole('status');
     await status.waitFor();
     assert.match(await status.textContent(), /^201 of 201 conformance cases give the recorded verdict/);
-    assert.equal(await page.getByRole('cell', { name: 'MISMATCH' }).count(), 0);
+    assert.equal(await page.getByRole('cell', { name: 'MISMATCH', exact: true }).count(), 0);
     assert.deepEqual(errors, []);
     await context.close();
   } finally {

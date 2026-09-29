@@ -54,8 +54,9 @@ export function CompatibilityMatrix() {
             Complete capability matrix across protocol releases, runtimes, transports, and verifiers.
           </p>
         </div>
-        <div style="display: flex; align-items: center; gap: 0.5rem;">
+        <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
           <input
+            aria-label="Filter capabilities"
             type="text"
             value={filterQuery}
             onInput={(e) => setFilterQuery(e.target.value)}
@@ -71,7 +72,7 @@ export function CompatibilityMatrix() {
         </div>
       </div>
 
-      <div style="overflow-x: auto;">
+      <div tabIndex={0} role="region" aria-label="Compatibility matrix" style="overflow-x: auto;">
         <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
           <thead>
             <tr style="background: var(--color-bg-subtle); border-bottom: 2px solid var(--color-border); text-align: left;">

@@ -66,7 +66,7 @@ export function FailureNavigator({ initialCode = '', basePath = '/ordex' }: Navi
         .then((m) => setScenarios(m.SCENARIOS.filter((s) => s.expectedRefusalCode === code).map((s) => ({ id: s.id, title: s.title }))))
         .catch(() => setScenarios([]));
     }
-    setAnnounce(res.matchedRule ? `Diagnosis: ${code}, ${res.confidence.toLowerCase()}.` : `No rule matched. ${res.evidenceUsed}`);
+    setAnnounce(res.matchedRule ? `Diagnosis: ${code}, ${res.confidence.toLowerCase()}.` : `No rule matched, confidence ${res.confidence.toLowerCase()}. The details follow the input.`);
   };
 
   useEffect(() => {

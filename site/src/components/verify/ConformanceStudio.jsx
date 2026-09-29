@@ -170,7 +170,7 @@ export function ConformanceStudio() {
       </div>
 
       <div class="panel" style="padding: 0; overflow: hidden;">
-        <div style="overflow-x: auto; max-height: 550px; overflow-y: auto;">
+        <div tabIndex={0} role="region" aria-label="Conformance results" style="overflow-x: auto; max-height: 550px; overflow-y: auto;">
           <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
             <caption class="ox-sr-only">Conformance vectors and their results</caption>
             <thead>

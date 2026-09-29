@@ -51,7 +51,7 @@ export function TourGuide({ basePath = '/ordex' }: TourProps): JSX.Element {
         {pausedTour && paused && paused.step < pausedTour.steps.length && (
           <p role="status" style={{ margin: 0, fontSize: '0.875rem' }}>
             Paused: {pausedTour.title}, step {paused.step + 1} of {pausedTour.steps.length}.{' '}
-            <a href={stepHref(basePath, pausedTour, paused.step)}>Resume the tour</a>
+            <a href={stepHref(basePath, pausedTour, paused.step)} style={{ textDecoration: 'underline' }}>Resume the tour</a>
           </p>
         )}
       </div>
@@ -67,7 +67,7 @@ export function TourGuide({ basePath = '/ordex' }: TourProps): JSX.Element {
             <ol style={{ margin: 0, paddingLeft: '1.25rem', fontSize: '0.875rem', lineHeight: 1.6 }}>
               {tour.steps.map((s, i) => (
                 <li key={s.id}>
-                  <a href={stepHref(basePath, tour, i)}>{s.title}</a> <span style={{ color: 'var(--ox-text-secondary)' }}>on {s.route.split('?')[0]}</span>
+                  <a href={stepHref(basePath, tour, i)} style={{ textDecoration: 'underline' }}>{s.title}</a> <span style={{ color: 'var(--ox-text-secondary)' }}>on {s.route.split('?')[0]}</span>
                 </li>
               ))}
             </ol>
