@@ -18,6 +18,11 @@ export function effectOf(operation, raw = {}) {
   return ['GET', 'HEAD'].includes(operation.method) ? 'read' : 'write';
 }
 
+/** The credential a route documents: 'developer' for a developer API key (bearer), else null. */
+export function credentialOf(raw = {}) {
+  return Array.isArray(raw.security) && raw.security.some((s) => Object.keys(s).includes('developerBearer')) ? 'developer' : null;
+}
+
 /** The raw contract operation for a generated operation entry. */
 export function contractOperation(doc, operation) {
   return doc.paths?.[operation.path]?.[operation.method.toLowerCase()] || null;
@@ -127,7 +132,7 @@ export function buildRequestPlan({ doc, operation, origin, values = {}, bodyText
     const qs = query.toString();
     url = `${origin}${path}${qs ? `?${qs}` : ''}`;
   }
-  return { ok: errors.length === 0, errors, method: operation.method, url, headers, body, effect, operationId: operation.operationId };
+  return { ok: errors.length === 0, errors, method: operation.method, url, headers, body, effect, credential: credentialOf(raw), operationId: operation.operationId };
 }
 
 /** A stable fingerprint of the exact request, used to bind a write approval to it. */
@@ -139,7 +144,7 @@ export function planFingerprint(plan, settings) {
  * Decide whether a plan may be sent under the settings. `approval` is the fingerprint the
  * user confirmed; any change to the request or context makes it stale.
  */
-export function authorizePlan(plan, settings, approval) {
+export function authorizePlan(plan, settings, approval, { developerKey = '' } = {}) {
   // The route and the mode decide first: they refuse whatever the form holds.
   if (plan.effect === 'operator') {
     return { allowed: false, reason: 'Operator routes need operator credentials. Use your operator tooling; the documentation site never handles them.' };
@@ -148,6 +153,9 @@ export function authorizePlan(plan, settings, approval) {
     return { allowed: false, reason: `Read-only mode never sends a ${plan.effect === 'broadcast' ? 'broadcast' : 'request with an effect'}. Switch to write mode in settings to continue on a test network.` };
   }
   if (!plan.ok) return { allowed: false, reason: plan.errors[0] };
+  if (plan.credential === 'developer' && !developerKey.trim()) {
+    return { allowed: false, reason: 'This route needs a developer API key with the webhooks:write scope. Enter it above; it stays in this page only and is never saved.' };
+  }
   if (plan.effect === 'read') return { allowed: true, reason: null };
   if (settings.network === 'mainnet') {
     return { allowed: false, reason: 'The playground sends effects only to Signet, Testnet4 or Regtest gateways. Use your wallet or the SDK for mainnet actions.' };
@@ -202,20 +210,51 @@ export function curlFor(plan) {
   for (const [k, v] of Object.entries(plan.headers || {})) parts.push(`-H ${shellQuote(`${k}: ${v}`)}`);
   if (plan.body !== null && plan.body !== undefined) parts.push(`--data-binary ${shellQuote(plan.body)}`);
   if (plan.effect === 'operator') parts.push('-u "$ORDEX_OPERATOR_USER:$ORDEX_OPERATOR_PASSWORD"');
+  if (plan.credential === 'developer') parts.push('-H "authorization: Bearer $ORDEX_DEVELOPER_KEY"');
   return parts.join(' \\\n  ');
+}
+
+export const STREAM_SAMPLE_MS = 3000;
+export const STREAM_SAMPLE_BYTES = 16384;
+
+/**
+ * An event stream never ends on its own, so a request shows what arrived in the first
+ * STREAM_SAMPLE_MS (at most STREAM_SAMPLE_BYTES) and then closes the connection. The Event
+ * Playground is the tool that consumes a stream.
+ */
+async function streamSample(body) {
+  if (!body) return '';
+  const reader = body.getReader();
+  const decoder = new TextDecoder();
+  const deadline = Date.now() + STREAM_SAMPLE_MS;
+  let text = '';
+  try {
+    while (text.length < STREAM_SAMPLE_BYTES) {
+      const left = deadline - Date.now();
+      if (left <= 0) break;
+      const next = await Promise.race([reader.read(), new Promise((r) => setTimeout(() => r({ timeout: true }), left))]);
+      if (next.timeout || next.done) break;
+      text += decoder.decode(next.value, { stream: true });
+    }
+  } finally {
+    reader.cancel().catch(() => {});
+  }
+  return text.slice(0, STREAM_SAMPLE_BYTES);
 }
 
 /**
  * Send a plan with a timeout and caller cancellation. Resolves with the validated response
  * or a typed failure; the caller suppresses results of superseded requests.
  */
-export async function executePlan({ doc, operation, plan, fetchImpl = fetch, signal, timeoutMs = REQUEST_TIMEOUT_MS }) {
+export async function executePlan({ doc, operation, plan, fetchImpl = fetch, signal, timeoutMs = REQUEST_TIMEOUT_MS, developerKey = '' }) {
   const signals = [AbortSignal.timeout(timeoutMs)];
   if (signal) signals.push(signal);
   const started = Date.now();
   let response;
   try {
-    response = await fetchImpl(plan.url, { method: plan.method, headers: plan.headers, body: plan.body ?? undefined, signal: AbortSignal.any(signals), credentials: 'omit', redirect: 'error' });
+    // The key joins the request only here, so plans, fingerprints and cURL never carry it.
+    const headers = plan.credential === 'developer' ? { ...plan.headers, authorization: `Bearer ${developerKey.trim()}` } : plan.headers;
+    response = await fetchImpl(plan.url, { method: plan.method, headers, body: plan.body ?? undefined, signal: AbortSignal.any(signals), credentials: 'omit', redirect: 'error' });
   } catch (err) {
     const name = err?.name;
     const code = signal?.aborted ? 'CANCELLED' : name === 'TimeoutError' ? 'TIMEOUT' : 'NETWORK_ERROR';
@@ -226,7 +265,7 @@ export async function executePlan({ doc, operation, plan, fetchImpl = fetch, sig
       durationMs: Date.now() - started
     };
   }
-  const bodyText = await response.text();
+  const bodyText = /^text\/event-stream\b/i.test(response.headers.get('content-type') || '') ? await streamSample(response.body) : await response.text();
   const headers = {};
   response.headers.forEach((v, k) => {
     headers[k] = v;

@@ -113,6 +113,54 @@ test('read-only mode, mainnet and operator routes never send an effect; approval
   assert.equal(authorizePlan(buildRequestPlan({ doc, operation: health, origin: ORIGIN }), READ, null).allowed, true);
 });
 
+test('developer-key routes need a key, send it only at request time and never put it in the plan or cURL', async () => {
+  const list = operations.find((o) => o.operationId === 'listWebhookSubscriptions');
+  const plan = buildRequestPlan({ doc, operation: list, origin: ORIGIN, values: valuesFor(list) });
+  assert.equal(plan.credential, 'developer');
+  assert.match(authorizePlan(plan, READ, null).reason, /developer API key/);
+  assert.equal(authorizePlan(plan, READ, null, { developerKey: 'test-key' }).allowed, true);
+  assert.doesNotMatch(JSON.stringify(plan), /test-key/);
+  assert.doesNotMatch(planFingerprint(plan, READ), /test-key/);
+  const curl = curlFor(plan);
+  assert.match(curl, /authorization: Bearer \$ORDEX_DEVELOPER_KEY/);
+  assert.doesNotMatch(curl, /test-key/);
+  let sent = null;
+  const fetchImpl = async (url, init) => {
+    sent = init.headers;
+    return new Response('{"items":[],"nextCursor":null}', { status: 200, headers: { 'content-type': 'application/json' } });
+  };
+  await executePlan({ doc, operation: list, plan, fetchImpl, developerKey: ' test-key ' });
+  assert.equal(sent.authorization, 'Bearer test-key');
+  assert.equal(plan.headers.authorization, undefined);
+  const health = operations.find((o) => o.operationId === 'getHealth');
+  const healthPlan = buildRequestPlan({ doc, operation: health, origin: ORIGIN });
+  assert.equal(healthPlan.credential, null);
+  await executePlan({ doc, operation: health, plan: healthPlan, fetchImpl, developerKey: 'test-key' });
+  assert.equal(sent.authorization, undefined, 'a public route never carries the key');
+});
+
+test('an event stream is sampled and closed instead of waiting for an end that never comes', async () => {
+  const stream = operations.find((o) => o.operationId === 'streamOrdexEvents');
+  const plan = buildRequestPlan({ doc, operation: stream, origin: ORIGIN, values: valuesFor(stream) });
+  let cancelled = false;
+  const body = new ReadableStream({
+    start(c) {
+      c.enqueue(new TextEncoder().encode(': connected\n\nid: 1:a\ndata: {"id":"a"}\n\n'));
+    },
+    cancel() {
+      cancelled = true;
+    }
+  });
+  const fetchImpl = async () => new Response(body, { status: 200, headers: { 'content-type': 'text/event-stream; charset=utf-8' } });
+  const started = Date.now();
+  const res = await executePlan({ doc, operation: stream, plan, fetchImpl, timeoutMs: 60000 });
+  assert.ok(Date.now() - started < 10000, 'the sample did not end');
+  assert.equal(res.ok, true);
+  assert.match(res.body, /data: \{"id":"a"\}/);
+  assert.equal(res.schema.state, 'not-validated');
+  assert.equal(cancelled, true, 'the stream was left open');
+});
+
 test('a 200 with a body the schema rejects is not a pass, and HTTP and contract results are separate', () => {
   const health = operations.find((o) => o.operationId === 'getHealth');
   const good = validateResponse({ doc, operation: health, status: 200, contentType: 'application/json', bodyText: JSON.stringify(health.responseExample) });

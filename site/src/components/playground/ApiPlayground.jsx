@@ -46,6 +46,8 @@ export function ApiPlayground({ initialOperationId: fallbackId = null }) {
   const [showExample, setShowExample] = useState(false);
   const [running, setRunning] = useState(false);
   const [notice, setNotice] = useState(null);
+  // A developer API key lives in this component only: never stored, logged or put in cURL.
+  const [developerKey, setDeveloperKey] = useState('');
   const abortRef = useRef(null);
   const seqRef = useRef(0);
 
@@ -82,7 +84,7 @@ export function ApiPlayground({ initialOperationId: fallbackId = null }) {
   }, [selectedOpId]);
 
   const plan = buildRequestPlan({ doc: openapi, operation: op, origin: settings.gatewayOrigin, values, bodyText });
-  const auth = authorizePlan(plan, settings, approval);
+  const auth = authorizePlan(plan, settings, approval, { developerKey });
 
   const setValue = (loc, name, v) => {
     setValues((prev) => ({ ...prev, [loc]: { ...prev[loc], [name]: v } }));
@@ -98,12 +100,13 @@ export function ApiPlayground({ initialOperationId: fallbackId = null }) {
     setRunning(true);
     setResult(null);
     setReviewing(false);
-    const res = await executePlan({ doc: openapi, operation: op, plan, signal: controller.signal });
+    const res = await executePlan({ doc: openapi, operation: op, plan, signal: controller.signal, developerKey });
     if (seq !== seqRef.current) return; // a newer request superseded this one
     setRunning(false);
     setResult(res);
     setApproval(null);
-    if (res.ok) {
+    // A stream sample is shown as received; it is neither a pass nor a failure of the contract.
+    if (res.ok && res.schema.state !== 'not-validated') {
       const conforms = res.schema.state === 'valid';
       recordToolEvidence({
         tool: 'playground',
@@ -204,6 +207,24 @@ export function ApiPlayground({ initialOperationId: fallbackId = null }) {
                 })}
               </div>
             </fieldset>
+          )}
+
+          {plan.credential === 'developer' && (
+            <div style="display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.85rem; margin-bottom: 1rem;">
+              <label for="api-developer-key">Developer API key (webhooks:write)</label>
+              <input
+                id="api-developer-key"
+                type="password"
+                autocomplete="off"
+                value={developerKey}
+                onInput={(e) => {
+                  setDeveloperKey(e.currentTarget.value);
+                  setResult(null);
+                }}
+                style="padding: 0.35rem 0.5rem; font-family: var(--font-mono); font-size: 0.85rem; border: 1px solid var(--color-border); border-radius: var(--radius-sm);"
+              />
+              <span style="font-size: 0.75rem; color: var(--color-text-secondary);">Sent as Authorization: Bearer to the configured gateway only. It stays in this page, is cleared on reload and never appears in cURL or saved evidence. Use a test key.</span>
+            </div>
           )}
 
           {raw?.requestBody && (
