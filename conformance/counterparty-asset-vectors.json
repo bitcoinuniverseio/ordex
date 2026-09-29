@@ -204,7 +204,7 @@
       }
     },
     {
-      "name": "a spend that carries the attachment to the planned output is accepted",
+      "name": "P-R18: the attachment moves to the first non-OP_RETURN output, not along its sat range",
       "record": {
         "schema": "ordex.counterparty-utxo-asset/v1",
         "network": "mainnet",
@@ -237,22 +237,219 @@
           {
             "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             "vout": 0,
-            "valueSats": "15000"
+            "valueSats": "20000",
+            "attachments": []
           },
           {
             "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
             "vout": 2,
-            "valueSats": "20000"
+            "valueSats": "20000",
+            "attachments": [
+              {
+                "name": "RAREPEPE",
+                "assetId": "137",
+                "quantitySats": "1"
+              }
+            ]
           }
         ],
         "outputs": [
           {
             "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-            "valueSats": "10000"
+            "valueSats": "20000"
           },
           {
             "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-            "valueSats": "25000"
+            "valueSats": "19000"
+          }
+        ]
+      },
+      "expectedOutputIndex": 0,
+      "expected": {
+        "ok": true,
+        "carriedToIndex": 0
+      }
+    },
+    {
+      "name": "P-R18: planning the sat-range output instead is refused",
+      "record": {
+        "schema": "ordex.counterparty-utxo-asset/v1",
+        "network": "mainnet",
+        "asset": {
+          "name": "RAREPEPE",
+          "assetId": "137",
+          "divisible": false,
+          "quantitySats": "1"
+        },
+        "outpoint": {
+          "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "vout": 2
+        },
+        "address": "1CounterpartyExampleAddress000000000",
+        "sourceValueSats": "20000",
+        "coTravelingAssets": [],
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112",
+          "ledgerHash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+        },
+        "authority": {
+          "kind": "counterparty-core",
+          "ready": true
+        },
+        "attached": true
+      },
+      "spendTx": {
+        "inputs": [
+          {
+            "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "vout": 0,
+            "valueSats": "20000",
+            "attachments": []
+          },
+          {
+            "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "vout": 2,
+            "valueSats": "20000",
+            "attachments": [
+              {
+                "name": "RAREPEPE",
+                "assetId": "137",
+                "quantitySats": "1"
+              }
+            ]
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "valueSats": "20000"
+          },
+          {
+            "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "valueSats": "19000"
+          }
+        ]
+      },
+      "expectedOutputIndex": 1,
+      "expected": {
+        "ok": false,
+        "code": "DESTINATION_MISMATCH"
+      }
+    },
+    {
+      "name": "output values play no part in the destination",
+      "record": {
+        "schema": "ordex.counterparty-utxo-asset/v1",
+        "network": "mainnet",
+        "asset": {
+          "name": "RAREPEPE",
+          "assetId": "137",
+          "divisible": false,
+          "quantitySats": "1"
+        },
+        "outpoint": {
+          "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "vout": 2
+        },
+        "address": "1CounterpartyExampleAddress000000000",
+        "sourceValueSats": "20000",
+        "coTravelingAssets": [],
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112",
+          "ledgerHash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+        },
+        "authority": {
+          "kind": "counterparty-core",
+          "ready": true
+        },
+        "attached": true
+      },
+      "spendTx": {
+        "inputs": [
+          {
+            "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "vout": 2,
+            "valueSats": "20000",
+            "attachments": [
+              {
+                "name": "RAREPEPE",
+                "assetId": "137",
+                "quantitySats": "1"
+              }
+            ]
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "valueSats": "546"
+          }
+        ]
+      },
+      "expectedOutputIndex": 0,
+      "expected": {
+        "ok": true,
+        "carriedToIndex": 0
+      }
+    },
+    {
+      "name": "a leading OP_RETURN is passed over",
+      "record": {
+        "schema": "ordex.counterparty-utxo-asset/v1",
+        "network": "mainnet",
+        "asset": {
+          "name": "RAREPEPE",
+          "assetId": "137",
+          "divisible": false,
+          "quantitySats": "1"
+        },
+        "outpoint": {
+          "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "vout": 2
+        },
+        "address": "1CounterpartyExampleAddress000000000",
+        "sourceValueSats": "20000",
+        "coTravelingAssets": [],
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112",
+          "ledgerHash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+        },
+        "authority": {
+          "kind": "counterparty-core",
+          "ready": true
+        },
+        "attached": true
+      },
+      "spendTx": {
+        "inputs": [
+          {
+            "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "vout": 2,
+            "valueSats": "20000",
+            "attachments": [
+              {
+                "name": "RAREPEPE",
+                "assetId": "137",
+                "quantitySats": "1"
+              }
+            ]
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "6a0401020304",
+            "valueSats": "0"
+          },
+          {
+            "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "valueSats": "20000"
+          },
+          {
+            "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "valueSats": "19000"
           }
         ]
       },
@@ -260,6 +457,894 @@
       "expected": {
         "ok": true,
         "carriedToIndex": 1
+      }
+    },
+    {
+      "name": "a one-byte push of 0x6a is passed over like OP_RETURN",
+      "record": {
+        "schema": "ordex.counterparty-utxo-asset/v1",
+        "network": "mainnet",
+        "asset": {
+          "name": "RAREPEPE",
+          "assetId": "137",
+          "divisible": false,
+          "quantitySats": "1"
+        },
+        "outpoint": {
+          "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "vout": 2
+        },
+        "address": "1CounterpartyExampleAddress000000000",
+        "sourceValueSats": "20000",
+        "coTravelingAssets": [],
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112",
+          "ledgerHash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+        },
+        "authority": {
+          "kind": "counterparty-core",
+          "ready": true
+        },
+        "attached": true
+      },
+      "spendTx": {
+        "inputs": [
+          {
+            "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "vout": 2,
+            "valueSats": "20000",
+            "attachments": [
+              {
+                "name": "RAREPEPE",
+                "assetId": "137",
+                "quantitySats": "1"
+              }
+            ]
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "016a",
+            "valueSats": "1000"
+          },
+          {
+            "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "valueSats": "18000"
+          }
+        ]
+      },
+      "expectedOutputIndex": 1,
+      "expected": {
+        "ok": true,
+        "carriedToIndex": 1
+      }
+    },
+    {
+      "name": "an OP_RETURN that fails to decode is a destination, and it cannot be spent",
+      "record": {
+        "schema": "ordex.counterparty-utxo-asset/v1",
+        "network": "mainnet",
+        "asset": {
+          "name": "RAREPEPE",
+          "assetId": "137",
+          "divisible": false,
+          "quantitySats": "1"
+        },
+        "outpoint": {
+          "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "vout": 2
+        },
+        "address": "1CounterpartyExampleAddress000000000",
+        "sourceValueSats": "20000",
+        "coTravelingAssets": [],
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112",
+          "ledgerHash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+        },
+        "authority": {
+          "kind": "counterparty-core",
+          "ready": true
+        },
+        "attached": true
+      },
+      "spendTx": {
+        "inputs": [
+          {
+            "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "vout": 2,
+            "valueSats": "20000",
+            "attachments": [
+              {
+                "name": "RAREPEPE",
+                "assetId": "137",
+                "quantitySats": "1"
+              }
+            ]
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "6a4c",
+            "valueSats": "0"
+          },
+          {
+            "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "valueSats": "19000"
+          }
+        ]
+      },
+      "expectedOutputIndex": 0,
+      "expected": {
+        "ok": false,
+        "code": "DESTINATION_UNSPENDABLE"
+      }
+    },
+    {
+      "name": "an OP_RETURN ending in OP_CHECKMULTISIG is never passed over",
+      "record": {
+        "schema": "ordex.counterparty-utxo-asset/v1",
+        "network": "mainnet",
+        "asset": {
+          "name": "RAREPEPE",
+          "assetId": "137",
+          "divisible": false,
+          "quantitySats": "1"
+        },
+        "outpoint": {
+          "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "vout": 2
+        },
+        "address": "1CounterpartyExampleAddress000000000",
+        "sourceValueSats": "20000",
+        "coTravelingAssets": [],
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112",
+          "ledgerHash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+        },
+        "authority": {
+          "kind": "counterparty-core",
+          "ready": true
+        },
+        "attached": true
+      },
+      "spendTx": {
+        "inputs": [
+          {
+            "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "vout": 2,
+            "valueSats": "20000",
+            "attachments": [
+              {
+                "name": "RAREPEPE",
+                "assetId": "137",
+                "quantitySats": "1"
+              }
+            ]
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "6a51ae",
+            "valueSats": "0"
+          },
+          {
+            "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "valueSats": "19000"
+          }
+        ]
+      },
+      "expectedOutputIndex": 1,
+      "expected": {
+        "ok": false,
+        "code": "DESTINATION_MISMATCH"
+      }
+    },
+    {
+      "name": "another attached input would co-move to the same output",
+      "record": {
+        "schema": "ordex.counterparty-utxo-asset/v1",
+        "network": "mainnet",
+        "asset": {
+          "name": "RAREPEPE",
+          "assetId": "137",
+          "divisible": false,
+          "quantitySats": "1"
+        },
+        "outpoint": {
+          "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "vout": 2
+        },
+        "address": "1CounterpartyExampleAddress000000000",
+        "sourceValueSats": "20000",
+        "coTravelingAssets": [],
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112",
+          "ledgerHash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+        },
+        "authority": {
+          "kind": "counterparty-core",
+          "ready": true
+        },
+        "attached": true
+      },
+      "spendTx": {
+        "inputs": [
+          {
+            "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "vout": 2,
+            "valueSats": "20000",
+            "attachments": [
+              {
+                "name": "RAREPEPE",
+                "assetId": "137",
+                "quantitySats": "1"
+              }
+            ]
+          },
+          {
+            "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "vout": 0,
+            "valueSats": "20000",
+            "attachments": [
+              {
+                "name": "PEPECASH",
+                "assetId": "18279",
+                "quantitySats": "100"
+              }
+            ]
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "valueSats": "20000"
+          },
+          {
+            "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "valueSats": "19000"
+          }
+        ]
+      },
+      "expectedOutputIndex": 0,
+      "expected": {
+        "ok": false,
+        "code": "OTHER_ATTACHMENTS_COMOVE"
+      }
+    },
+    {
+      "name": "an undeclared co-traveling asset on the outpoint is refused",
+      "record": {
+        "schema": "ordex.counterparty-utxo-asset/v1",
+        "network": "mainnet",
+        "asset": {
+          "name": "RAREPEPE",
+          "assetId": "137",
+          "divisible": false,
+          "quantitySats": "1"
+        },
+        "outpoint": {
+          "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "vout": 2
+        },
+        "address": "1CounterpartyExampleAddress000000000",
+        "sourceValueSats": "20000",
+        "coTravelingAssets": [],
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112",
+          "ledgerHash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+        },
+        "authority": {
+          "kind": "counterparty-core",
+          "ready": true
+        },
+        "attached": true
+      },
+      "spendTx": {
+        "inputs": [
+          {
+            "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "vout": 2,
+            "valueSats": "20000",
+            "attachments": [
+              {
+                "name": "RAREPEPE",
+                "assetId": "137",
+                "quantitySats": "1"
+              },
+              {
+                "name": "PEPECASH",
+                "assetId": "18279",
+                "quantitySats": "100"
+              }
+            ]
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "valueSats": "20000"
+          },
+          {
+            "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "valueSats": "19000"
+          }
+        ]
+      },
+      "expectedOutputIndex": 0,
+      "expected": {
+        "ok": false,
+        "code": "ATTACHMENT_INVENTORY_MISMATCH"
+      }
+    },
+    {
+      "name": "declared co-traveling assets move together",
+      "record": {
+        "schema": "ordex.counterparty-utxo-asset/v1",
+        "network": "mainnet",
+        "asset": {
+          "name": "RAREPEPE",
+          "assetId": "137",
+          "divisible": false,
+          "quantitySats": "1"
+        },
+        "outpoint": {
+          "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "vout": 2
+        },
+        "address": "1CounterpartyExampleAddress000000000",
+        "sourceValueSats": "20000",
+        "coTravelingAssets": [
+          {
+            "name": "PEPECASH",
+            "assetId": "18279",
+            "quantitySats": "100"
+          }
+        ],
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112",
+          "ledgerHash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+        },
+        "authority": {
+          "kind": "counterparty-core",
+          "ready": true
+        },
+        "attached": true
+      },
+      "spendTx": {
+        "inputs": [
+          {
+            "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "vout": 2,
+            "valueSats": "20000",
+            "attachments": [
+              {
+                "name": "PEPECASH",
+                "assetId": "18279",
+                "quantitySats": "100"
+              },
+              {
+                "name": "RAREPEPE",
+                "assetId": "137",
+                "quantitySats": "1"
+              }
+            ]
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "valueSats": "20000"
+          },
+          {
+            "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "valueSats": "19000"
+          }
+        ]
+      },
+      "expectedOutputIndex": 0,
+      "expected": {
+        "ok": true,
+        "carriedToIndex": 0
+      }
+    },
+    {
+      "name": "an input without its ledger attachment reading is refused",
+      "record": {
+        "schema": "ordex.counterparty-utxo-asset/v1",
+        "network": "mainnet",
+        "asset": {
+          "name": "RAREPEPE",
+          "assetId": "137",
+          "divisible": false,
+          "quantitySats": "1"
+        },
+        "outpoint": {
+          "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "vout": 2
+        },
+        "address": "1CounterpartyExampleAddress000000000",
+        "sourceValueSats": "20000",
+        "coTravelingAssets": [],
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112",
+          "ledgerHash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+        },
+        "authority": {
+          "kind": "counterparty-core",
+          "ready": true
+        },
+        "attached": true
+      },
+      "spendTx": {
+        "inputs": [
+          {
+            "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "vout": 0,
+            "valueSats": "20000"
+          },
+          {
+            "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "vout": 2,
+            "valueSats": "20000",
+            "attachments": [
+              {
+                "name": "RAREPEPE",
+                "assetId": "137",
+                "quantitySats": "1"
+              }
+            ]
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "valueSats": "20000"
+          },
+          {
+            "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "valueSats": "19000"
+          }
+        ]
+      },
+      "expectedOutputIndex": 0,
+      "expected": {
+        "ok": false,
+        "code": "INPUT_ATTACHMENTS_UNKNOWN"
+      }
+    },
+    {
+      "name": "with no spendable output the spend detaches to the owner",
+      "record": {
+        "schema": "ordex.counterparty-utxo-asset/v1",
+        "network": "mainnet",
+        "asset": {
+          "name": "RAREPEPE",
+          "assetId": "137",
+          "divisible": false,
+          "quantitySats": "1"
+        },
+        "outpoint": {
+          "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "vout": 2
+        },
+        "address": "1CounterpartyExampleAddress000000000",
+        "sourceValueSats": "20000",
+        "coTravelingAssets": [],
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112",
+          "ledgerHash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+        },
+        "authority": {
+          "kind": "counterparty-core",
+          "ready": true
+        },
+        "attached": true
+      },
+      "spendTx": {
+        "inputs": [
+          {
+            "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "vout": 2,
+            "valueSats": "20000",
+            "attachments": [
+              {
+                "name": "RAREPEPE",
+                "assetId": "137",
+                "quantitySats": "1"
+              }
+            ]
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "6a0401020304",
+            "valueSats": "0"
+          }
+        ]
+      },
+      "expectedOutputIndex": 0,
+      "expected": {
+        "ok": false,
+        "code": "NO_DESTINATION_DETACHES"
+      }
+    },
+    {
+      "name": "before spend_utxo_to_detach an OP_RETURN-only spend strands the attachment",
+      "record": {
+        "schema": "ordex.counterparty-utxo-asset/v1",
+        "network": "mainnet",
+        "asset": {
+          "name": "RAREPEPE",
+          "assetId": "137",
+          "divisible": false,
+          "quantitySats": "1"
+        },
+        "outpoint": {
+          "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "vout": 2
+        },
+        "address": "1CounterpartyExampleAddress000000000",
+        "sourceValueSats": "20000",
+        "coTravelingAssets": [],
+        "checkpoint": {
+          "height": 870000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112",
+          "ledgerHash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+        },
+        "authority": {
+          "kind": "counterparty-core",
+          "ready": true
+        },
+        "attached": true
+      },
+      "spendTx": {
+        "inputs": [
+          {
+            "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "vout": 2,
+            "valueSats": "20000",
+            "attachments": [
+              {
+                "name": "RAREPEPE",
+                "assetId": "137",
+                "quantitySats": "1"
+              }
+            ]
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "6a0401020304",
+            "valueSats": "0"
+          }
+        ]
+      },
+      "expectedOutputIndex": 0,
+      "expected": {
+        "ok": false,
+        "code": "NO_DESTINATION_STRANDS"
+      }
+    },
+    {
+      "name": "before utxo_support there is no attachment to move",
+      "record": {
+        "schema": "ordex.counterparty-utxo-asset/v1",
+        "network": "mainnet",
+        "asset": {
+          "name": "RAREPEPE",
+          "assetId": "137",
+          "divisible": false,
+          "quantitySats": "1"
+        },
+        "outpoint": {
+          "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "vout": 2
+        },
+        "address": "1CounterpartyExampleAddress000000000",
+        "sourceValueSats": "20000",
+        "coTravelingAssets": [],
+        "checkpoint": {
+          "height": 800000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112",
+          "ledgerHash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+        },
+        "authority": {
+          "kind": "counterparty-core",
+          "ready": true
+        },
+        "attached": true
+      },
+      "spendTx": {
+        "inputs": [
+          {
+            "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "vout": 2,
+            "valueSats": "20000",
+            "attachments": [
+              {
+                "name": "RAREPEPE",
+                "assetId": "137",
+                "quantitySats": "1"
+              }
+            ]
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "valueSats": "20000"
+          },
+          {
+            "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "valueSats": "19000"
+          }
+        ]
+      },
+      "expectedOutputIndex": 0,
+      "expected": {
+        "ok": false,
+        "code": "UTXO_SUPPORT_INACTIVE"
+      }
+    },
+    {
+      "name": "a detach message sends the asset to an address, not an output",
+      "record": {
+        "schema": "ordex.counterparty-utxo-asset/v1",
+        "network": "mainnet",
+        "asset": {
+          "name": "RAREPEPE",
+          "assetId": "137",
+          "divisible": false,
+          "quantitySats": "1"
+        },
+        "outpoint": {
+          "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "vout": 2
+        },
+        "address": "1CounterpartyExampleAddress000000000",
+        "sourceValueSats": "20000",
+        "coTravelingAssets": [],
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112",
+          "ledgerHash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+        },
+        "authority": {
+          "kind": "counterparty-core",
+          "ready": true
+        },
+        "attached": true
+      },
+      "spendTx": {
+        "inputs": [
+          {
+            "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "vout": 2,
+            "valueSats": "20000",
+            "attachments": [
+              {
+                "name": "RAREPEPE",
+                "assetId": "137",
+                "quantitySats": "1"
+              }
+            ]
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "valueSats": "20000"
+          },
+          {
+            "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "valueSats": "19000"
+          }
+        ],
+        "counterpartyMessage": "detach"
+      },
+      "expectedOutputIndex": 0,
+      "expected": {
+        "ok": false,
+        "code": "DETACH_NOT_A_MOVE"
+      }
+    },
+    {
+      "name": "an attach message still moves existing attachments to the first spendable output",
+      "record": {
+        "schema": "ordex.counterparty-utxo-asset/v1",
+        "network": "mainnet",
+        "asset": {
+          "name": "RAREPEPE",
+          "assetId": "137",
+          "divisible": false,
+          "quantitySats": "1"
+        },
+        "outpoint": {
+          "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "vout": 2
+        },
+        "address": "1CounterpartyExampleAddress000000000",
+        "sourceValueSats": "20000",
+        "coTravelingAssets": [],
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112",
+          "ledgerHash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+        },
+        "authority": {
+          "kind": "counterparty-core",
+          "ready": true
+        },
+        "attached": true
+      },
+      "spendTx": {
+        "inputs": [
+          {
+            "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "vout": 2,
+            "valueSats": "20000",
+            "attachments": [
+              {
+                "name": "RAREPEPE",
+                "assetId": "137",
+                "quantitySats": "1"
+              }
+            ]
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "valueSats": "20000"
+          },
+          {
+            "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "valueSats": "19000"
+          }
+        ],
+        "counterpartyMessage": "attach"
+      },
+      "expectedOutputIndex": 0,
+      "expected": {
+        "ok": true,
+        "carriedToIndex": 0
+      }
+    },
+    {
+      "name": "an unknown message kind is refused",
+      "record": {
+        "schema": "ordex.counterparty-utxo-asset/v1",
+        "network": "mainnet",
+        "asset": {
+          "name": "RAREPEPE",
+          "assetId": "137",
+          "divisible": false,
+          "quantitySats": "1"
+        },
+        "outpoint": {
+          "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "vout": 2
+        },
+        "address": "1CounterpartyExampleAddress000000000",
+        "sourceValueSats": "20000",
+        "coTravelingAssets": [],
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112",
+          "ledgerHash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+        },
+        "authority": {
+          "kind": "counterparty-core",
+          "ready": true
+        },
+        "attached": true
+      },
+      "spendTx": {
+        "inputs": [
+          {
+            "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "vout": 2,
+            "valueSats": "20000",
+            "attachments": [
+              {
+                "name": "RAREPEPE",
+                "assetId": "137",
+                "quantitySats": "1"
+              }
+            ]
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "valueSats": "20000"
+          },
+          {
+            "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "valueSats": "19000"
+          }
+        ],
+        "counterpartyMessage": "send"
+      },
+      "expectedOutputIndex": 0,
+      "expected": {
+        "ok": false,
+        "code": "COUNTERPARTY_MESSAGE_UNKNOWN"
+      }
+    },
+    {
+      "name": "a Signet attachment follows the same rule from its first block",
+      "record": {
+        "schema": "ordex.counterparty-utxo-asset/v1",
+        "network": "signet",
+        "asset": {
+          "name": "RAREPEPE",
+          "assetId": "137",
+          "divisible": false,
+          "quantitySats": "1"
+        },
+        "outpoint": {
+          "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "vout": 2
+        },
+        "address": "tb1qcounterpartysignetexample000000000000",
+        "sourceValueSats": "20000",
+        "coTravelingAssets": [],
+        "checkpoint": {
+          "height": 1000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112",
+          "ledgerHash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+        },
+        "authority": {
+          "kind": "counterparty-core",
+          "ready": true
+        },
+        "attached": true
+      },
+      "spendTx": {
+        "inputs": [
+          {
+            "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "vout": 0,
+            "valueSats": "20000",
+            "attachments": []
+          },
+          {
+            "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "vout": 2,
+            "valueSats": "20000",
+            "attachments": [
+              {
+                "name": "RAREPEPE",
+                "assetId": "137",
+                "quantitySats": "1"
+              }
+            ]
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "valueSats": "20000"
+          },
+          {
+            "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "valueSats": "19000"
+          }
+        ]
+      },
+      "expectedOutputIndex": 0,
+      "expected": {
+        "ok": true,
+        "carriedToIndex": 0
       }
     },
     {
@@ -296,7 +1381,8 @@
           {
             "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             "vout": 0,
-            "valueSats": "15000"
+            "valueSats": "20000",
+            "attachments": []
           }
         ],
         "outputs": [
@@ -313,7 +1399,7 @@
       }
     },
     {
-      "name": "a spend whose sat flow lands the asset elsewhere is refused",
+      "name": "a plan naming a missing output is refused",
       "record": {
         "schema": "ordex.counterparty-utxo-asset/v1",
         "network": "mainnet",
@@ -344,86 +1430,33 @@
       "spendTx": {
         "inputs": [
           {
-            "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-            "vout": 0,
-            "valueSats": "15000"
-          },
-          {
             "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
             "vout": 2,
-            "valueSats": "20000"
+            "valueSats": "20000",
+            "attachments": [
+              {
+                "name": "RAREPEPE",
+                "assetId": "137",
+                "quantitySats": "1"
+              }
+            ]
           }
         ],
         "outputs": [
           {
             "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-            "valueSats": "10000"
+            "valueSats": "20000"
           },
           {
             "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-            "valueSats": "25000"
+            "valueSats": "19000"
           }
         ]
       },
-      "expectedOutputIndex": 0,
+      "expectedOutputIndex": 2,
       "expected": {
         "ok": false,
-        "code": "DESTINATION_MISMATCH"
-      }
-    },
-    {
-      "name": "a spend that never reabsorbs the range start is refused",
-      "record": {
-        "schema": "ordex.counterparty-utxo-asset/v1",
-        "network": "mainnet",
-        "asset": {
-          "name": "RAREPEPE",
-          "assetId": "137",
-          "divisible": false,
-          "quantitySats": "1"
-        },
-        "outpoint": {
-          "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
-          "vout": 2
-        },
-        "address": "1CounterpartyExampleAddress000000000",
-        "sourceValueSats": "20000",
-        "coTravelingAssets": [],
-        "checkpoint": {
-          "height": 900000,
-          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112",
-          "ledgerHash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
-        },
-        "authority": {
-          "kind": "counterparty-core",
-          "ready": true
-        },
-        "attached": true
-      },
-      "spendTx": {
-        "inputs": [
-          {
-            "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-            "vout": 0,
-            "valueSats": "15000"
-          },
-          {
-            "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
-            "vout": 2,
-            "valueSats": "20000"
-          }
-        ],
-        "outputs": [
-          {
-            "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-            "valueSats": "5000"
-          }
-        ]
-      },
-      "expectedOutputIndex": 0,
-      "expected": {
-        "ok": false,
-        "code": "SAT_FLOW_SHORTFALL"
+        "code": "DESTINATION_MISSING"
       }
     },
     {
@@ -460,17 +1493,24 @@
           {
             "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
             "vout": 2,
-            "valueSats": "20000"
+            "valueSats": "20000",
+            "attachments": [
+              {
+                "name": "RAREPEPE",
+                "assetId": "137",
+                "quantitySats": "1"
+              }
+            ]
           }
         ],
         "outputs": [
           {
             "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-            "valueSats": "10000"
+            "valueSats": "20000"
           },
           {
             "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-            "valueSats": "10000"
+            "valueSats": "19000"
           }
         ]
       },
@@ -514,12 +1554,26 @@
           {
             "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
             "vout": 2,
-            "valueSats": "20000"
+            "valueSats": "20000",
+            "attachments": [
+              {
+                "name": "RAREPEPE",
+                "assetId": "137",
+                "quantitySats": "1"
+              }
+            ]
           },
           {
             "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
             "vout": 2,
-            "valueSats": "20000"
+            "valueSats": "20000",
+            "attachments": [
+              {
+                "name": "RAREPEPE",
+                "assetId": "137",
+                "quantitySats": "1"
+              }
+            ]
           }
         ],
         "outputs": [

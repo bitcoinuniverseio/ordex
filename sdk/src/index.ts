@@ -140,14 +140,28 @@ export {
   type MembershipVerdict,
 } from './collection-manifest.js';
 export {
+  COUNTERPARTY_UTXO_ACTIVATION,
   COUNTERPARTY_UTXO_ASSET_SCHEMA,
+  counterpartyMoveDestination,
+  counterpartyMoveOutcome,
   counterpartyRecordDigest,
+  counterpartyUtxoGates,
   verifyAttachmentFollows,
+  verifyCounterpartyLedgerEvents,
   verifyCounterpartyUtxoAsset,
+  type CounterpartyAttachment,
+  type CounterpartyAttachmentVerdict,
+  type CounterpartyLedgerEvent,
+  type CounterpartyLedgerVerdict,
+  type CounterpartyMovedAsset,
+  type CounterpartyMoveOutcome,
+  type CounterpartyObservedEvent,
+  type CounterpartyOperation,
   type CounterpartyRefusalCode,
   type CounterpartyRecordVerdict,
   type CounterpartySpendTransaction,
   type CounterpartyUtxoAssetRecord,
+  type CounterpartyUtxoGates,
 } from './counterparty.js';
 export {
   EXPECTED_TRANSACTION_MANIFEST_SCHEMA,
