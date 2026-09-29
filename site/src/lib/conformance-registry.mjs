@@ -49,7 +49,7 @@ export const FAMILY_REGISTRY = Object.freeze({
     expectedFields: ['safe', 'code', 'runestone', 'flaw'],
     variants: {
       // OX-P04 verifyRuneAllocation reports ok, not safe.
-      allocation: { label: 'Rune allocation against the expected destinations', args: ['outputScriptsHex', 'inputs', 'expectedAllocation'], optional: ['mint'], result: 'ok', match: has('expectedAllocation') },
+      allocation: { label: 'Rune allocation against the expected destinations', args: ['outputScriptsHex', 'inputs', 'expectedAllocation'], optional: ['mint'], result: 'ok', expectedFields: ['safe', 'runestone'], match: has('expectedAllocation') },
       'burn-safety': { label: 'Rune burn safety', args: ['outputScriptsHex', 'inputs'], optional: ['outputCount'], match: always }
     }
   },
@@ -169,7 +169,7 @@ export function resultKey(family, variant) {
 /** The expected fields a vector of this variant may state. */
 export function expectedFieldsOf(family, variant) {
   const v = FAMILY_REGISTRY[family]?.variants?.[variant];
-  return v?.result ? [v.result, 'code'] : [...(FAMILY_REGISTRY[family]?.expectedFields || [])];
+  return v?.result ? [v.result, 'code', ...(v.expectedFields || [])] : [...(FAMILY_REGISTRY[family]?.expectedFields || [])];
 }
 
 export function variantArguments(family, variant) {

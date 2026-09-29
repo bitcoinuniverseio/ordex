@@ -363,6 +363,12 @@ export interface RequestOptions {
   signal?: AbortSignal;
 }
 
+/** Options of the swap session routes. */
+export interface SwapSessionOptions extends RequestOptions {
+  /** The swc_ capability of a PRIVATE intent's session, sent as X-Ordex-Swap-Capability. */
+  sessionCapability?: string;
+}
+
 /** Codes of a response the client refuses to interpret. */
 export type OrdexResponseErrorCode =
   | 'UNEXPECTED_MEDIA_TYPE'
@@ -785,16 +791,33 @@ export class OrdexClient {
     return this.#request({ method: 'POST', path: `/api/ordex/swaps/intents/${segment(intentId)}/acceptance-plan`, body, signal: options.signal });
   }
 
-  getSwapSession(sessionId: string, options: RequestOptions = {}): Promise<Ok<'getSwapSession', 200>> {
-    return this.#request({ method: 'GET', path: `/api/ordex/swaps/sessions/${segment(sessionId)}`, signal: options.signal });
+  /** sessionCapability: the swc_ token a PRIVATE intent's acceptance answered once; PUBLIC sessions need none. */
+  getSwapSession(sessionId: string, options: SwapSessionOptions = {}): Promise<Ok<'getSwapSession', 200>> {
+    return this.#request({
+      method: 'GET',
+      path: `/api/ordex/swaps/sessions/${segment(sessionId)}`,
+      headers: { 'x-ordex-swap-capability': options.sessionCapability },
+      signal: options.signal,
+    });
   }
 
-  submitSwapSignature(sessionId: string, body: JsonBody<'submitSwapSignature'>, options: RequestOptions = {}): Promise<Ok<'submitSwapSignature', 201>> {
-    return this.#request({ method: 'POST', path: `/api/ordex/swaps/sessions/${segment(sessionId)}/signatures`, body, signal: options.signal });
+  submitSwapSignature(sessionId: string, body: JsonBody<'submitSwapSignature'>, options: SwapSessionOptions = {}): Promise<Ok<'submitSwapSignature', 201>> {
+    return this.#request({
+      method: 'POST',
+      path: `/api/ordex/swaps/sessions/${segment(sessionId)}/signatures`,
+      body,
+      headers: { 'x-ordex-swap-capability': options.sessionCapability },
+      signal: options.signal,
+    });
   }
 
-  preflightSwapSession(sessionId: string, options: RequestOptions = {}): Promise<Ok<'preflightSwapSession', 201>> {
-    return this.#request({ method: 'POST', path: `/api/ordex/swaps/sessions/${segment(sessionId)}/preflight`, signal: options.signal });
+  preflightSwapSession(sessionId: string, options: SwapSessionOptions = {}): Promise<Ok<'preflightSwapSession', 201>> {
+    return this.#request({
+      method: 'POST',
+      path: `/api/ordex/swaps/sessions/${segment(sessionId)}/preflight`,
+      headers: { 'x-ordex-swap-capability': options.sessionCapability },
+      signal: options.signal,
+    });
   }
 
   storePrivateSwap(body: JsonBody<'storePrivateSwap'>, options: RequestOptions = {}): Promise<Ok<'storePrivateSwap', 201>> {
@@ -1013,6 +1036,56 @@ export class OrdexClient {
     return this.#request({ method: 'POST', path: '/api/ordex/heritage/detach', body, signal: options.signal });
   }
 
+  getHeritageOperation(operationId: string, options: RequestOptions = {}): Promise<Ok<'getHeritageOperation', 200>> {
+    return this.#request({ method: 'GET', path: `/api/ordex/heritage/operations/${segment(operationId)}`, signal: options.signal });
+  }
+
+  draftHeritageAsk(body: JsonBody<'draftHeritageAsk'>, options: RequestOptions = {}): Promise<Ok<'draftHeritageAsk', 201>> {
+    return this.#request({ method: 'POST', path: '/api/ordex/heritage/asks', body, signal: options.signal });
+  }
+
+  draftHeritageSwap(body: JsonBody<'draftHeritageSwap'>, options: RequestOptions = {}): Promise<Ok<'draftHeritageSwap', 201>> {
+    return this.#request({ method: 'POST', path: '/api/ordex/heritage/swaps', body, signal: options.signal });
+  }
+
+  publishHeritageIntent(body: JsonBody<'publishHeritageIntent'>, options: RequestOptions = {}): Promise<Ok<'publishHeritageIntent', 201>> {
+    return this.#request({ method: 'POST', path: '/api/ordex/heritage/intents', body, signal: options.signal });
+  }
+
+  acceptHeritageIntent(intentId: string, body: JsonBody<'acceptHeritageIntent'>, options: RequestOptions = {}): Promise<Ok<'acceptHeritageIntent', 201>> {
+    return this.#request({ method: 'POST', path: `/api/ordex/heritage/intents/${segment(intentId)}/accept`, body, signal: options.signal });
+  }
+
+  // Funded offers. The client never signs for a policy signer, a seller or a buyer.
+
+  listOffers(query: Query<'listOffers'> = {}, options: RequestOptions = {}): Promise<Ok<'listOffers', 200>> {
+    return this.#request({ method: 'GET', path: '/api/ordex/offers', query, signal: options.signal });
+  }
+
+  publishOffer(body: JsonBody<'publishOffer'>, options: RequestOptions = {}): Promise<Ok<'publishOffer', 201>> {
+    return this.#request({ method: 'POST', path: '/api/ordex/offers', body, signal: options.signal });
+  }
+
+  getOffer(id: string, options: RequestOptions = {}): Promise<Ok<'getOffer', 200>> {
+    return this.#request({ method: 'GET', path: `/api/ordex/offers/${segment(id)}`, signal: options.signal });
+  }
+
+  revalidateOffer(id: string, body?: JsonBody<'revalidateOffer'>, options: RequestOptions = {}): Promise<Ok<'revalidateOffer', 201>> {
+    return this.#request({ method: 'POST', path: `/api/ordex/offers/${segment(id)}/revalidate`, body, signal: options.signal });
+  }
+
+  withdrawOffer(id: string, body: JsonBody<'withdrawOffer'>, options: RequestOptions = {}): Promise<Ok<'withdrawOffer', 201>> {
+    return this.#request({ method: 'POST', path: `/api/ordex/offers/${segment(id)}/withdraw`, body, signal: options.signal });
+  }
+
+  planOfferAcceptance(id: string, body: JsonBody<'planOfferAcceptance'>, options: RequestOptions = {}): Promise<Ok<'planOfferAcceptance', 201>> {
+    return this.#request({ method: 'POST', path: `/api/ordex/offers/${segment(id)}/acceptance-plan`, body, signal: options.signal });
+  }
+
+  preflightOfferAcceptance(id: string, body: JsonBody<'preflightOfferAcceptance'>, options: RequestOptions = {}): Promise<Ok<'preflightOfferAcceptance', 201>> {
+    return this.#request({ method: 'POST', path: `/api/ordex/offers/${segment(id)}/preflight`, body, signal: options.signal });
+  }
+
   // Offline signing sessions. Capabilities are returned once, at opening.
 
   openSigningSession(body: JsonBody<'openSigningSession'>, options: RequestOptions = {}): Promise<Ok<'openSigningSession', 201>> {
@@ -1071,11 +1144,6 @@ export const SDK_EXCLUDED_OPERATIONS: Readonly<Record<string, string>> = Object.
     'Relays signed bytes to the network. The client broadcasts nothing; broadcasting is a deliberate step of the owner, through its own node or wallet.',
   broadcastSwapSession:
     'Relays a signed swap settlement. The client broadcasts nothing; broadcasting is a deliberate step of a party that owns the money that moves.',
-  listOffers: 'Funded offers are not served by the gateway yet (Core OX-B01); the client wraps a route once the gateway serves it.',
-  publishOffer: 'Funded offers are not served by the gateway yet (Core OX-B01).',
-  getOffer: 'Funded offers are not served by the gateway yet (Core OX-B01).',
-  revalidateOffer: 'Funded offers are not served by the gateway yet (Core OX-B01).',
-  withdrawOffer: 'Funded offers are not served by the gateway yet (Core OX-B01).',
-  planOfferAcceptance: 'Funded offers are not served by the gateway yet (Core OX-B01).',
-  preflightOfferAcceptance: 'Funded offers are not served by the gateway yet (Core OX-B01).',
+  relayHeritageOperation:
+    'Relays a signed heritage transaction to the network (sendrawtransaction). The client broadcasts nothing; relaying is a deliberate step of the owner.',
 });

@@ -58,17 +58,31 @@ export const RECIPES = [
         sdk: "client.publishAsk({ protocolId: catalog[0]!.id, token: 'inscription', quotedPriceSats: '150000', sellerPaymentAddress: 'tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx', psbt: sellerSignedPsbt })"
       },
       {
+        var: 'quote',
+        operationId: 'quoteOrder',
+        title: 'Quote the purchase for the buyer',
+        why: 'The gateway stores the reviewed purchase under quoteId and returns the unsigned buyer half. The buyer wallet signs exactly that PSBT.',
+        args: {
+          path: { id: { from: 'published.id' } },
+          body: {
+            assetReceiveAddress: 'tb1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3q0sl5k7',
+            paymentAddress: 'tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx'
+          }
+        },
+        sdk: "client.quoteOrder(published.id, { assetReceiveAddress: 'tb1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3q0sl5k7', paymentAddress: 'tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx' })"
+      },
+      {
         var: 'preflight',
         operationId: 'preflightOrder',
         title: 'Preflight the buyer transaction',
-        why: 'buyerSignedPsbt is the purchase the buyer wallet signed. Broadcast only when the verdict accepts it.',
-        args: { path: { id: { from: 'published.id' } }, body: { signedPsbt: { from: 'buyerSignedPsbt' } } },
-        sdk: 'client.preflightOrder(published.id, { signedPsbt: buyerSignedPsbt })'
+        why: 'buyerSignedPsbt is the quoted PSBT after the buyer wallet signed it. Preflight binds it to quoteId; broadcast only when the verdict accepts it.',
+        args: { path: { id: { from: 'published.id' } }, body: { quoteId: { from: 'quote.quoteId' }, signedPsbt: { from: 'buyerSignedPsbt' } } },
+        sdk: 'client.preflightOrder(published.id, { quoteId: quote.quoteId, signedPsbt: buyerSignedPsbt })'
       }
     ],
     inputs: {
       sellerSignedPsbt: 'the PSBT from buildAsk, signed by the seller wallet',
-      buyerSignedPsbt: 'the purchase PSBT, signed by the buyer wallet'
+      buyerSignedPsbt: 'the quoted purchase PSBT, signed by the buyer wallet'
     }
   }
 ];

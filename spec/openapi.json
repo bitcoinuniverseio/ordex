@@ -1284,6 +1284,16 @@
           "default": {
             "$ref": "#/components/responses/Error"
           }
+        },
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfferRevalidateRequest"
+              }
+            }
+          }
         }
       }
     },
@@ -1294,7 +1304,7 @@
         ],
         "operationId": "withdrawOffer",
         "summary": "Remove an offer from discovery, proved by the recovery key",
-        "description": "Discovery, not cancellation: the funded output stays spendable by the acceptance path until it is spent, and by the recovery path after expiry. A BIP 322 signature by the recovery key proves who may stop publishing the offer.",
+        "description": "Discovery, not cancellation: the funded output stays spendable by the acceptance path until it is spent, and by the recovery path after expiry. A BIP-340 signature by the recovery key over the offer withdrawal message proves who may stop publishing the offer.",
         "parameters": [
           {
             "$ref": "#/components/parameters/OfferId"
@@ -1305,7 +1315,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/OwnershipProof"
+                "$ref": "#/components/schemas/OfferWithdrawalProof"
               }
             }
           }
@@ -1944,6 +1954,9 @@
               "maxLength": 200
             },
             "description": "The session identifier."
+          },
+          {
+            "$ref": "#/components/parameters/SwapCapability"
           }
         ]
       }
@@ -1982,6 +1995,9 @@
               "maxLength": 200
             },
             "description": "The session identifier."
+          },
+          {
+            "$ref": "#/components/parameters/SwapCapability"
           }
         ],
         "requestBody": {
@@ -2030,6 +2046,9 @@
               "maxLength": 200
             },
             "description": "The session identifier."
+          },
+          {
+            "$ref": "#/components/parameters/SwapCapability"
           }
         ]
       }
@@ -2068,6 +2087,9 @@
               "maxLength": 200
             },
             "description": "The session identifier."
+          },
+          {
+            "$ref": "#/components/parameters/SwapCapability"
           }
         ]
       }
@@ -3625,6 +3647,238 @@
           }
         }
       }
+    },
+    "/api/ordex/heritage/operations/{operationId}/relay": {
+      "post": {
+        "operationId": "relayHeritageOperation",
+        "summary": "Relay the signed transaction of a composed attach or detach",
+        "description": "Checks, in order: the heritage authority is ready; the signed bytes are the stored manifest with every input signed and the asset landing where the manifest says; every input is unspent with the balances it carried when composed; the node decodes the composed message; testmempoolaccept allows it; then sendrawtransaction. The operation becomes RELAYED. An operation no longer COMPOSED answers its stored state and sends nothing, which is why this route answers 200.",
+        "x-ordex-success-status": 200,
+        "tags": [
+          "heritage"
+        ],
+        "parameters": [
+          {
+            "name": "operationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The heritage operation id, hop_<uuid>."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HeritageRelayRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The operation after relay, or its stored state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HeritageOperation"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/ordex/heritage/operations/{operationId}": {
+      "get": {
+        "operationId": "getHeritageOperation",
+        "summary": "One heritage operation and its ledger settlement",
+        "description": "An unknown id answers 404 HERITAGE_OPERATION_NOT_FOUND.",
+        "tags": [
+          "heritage"
+        ],
+        "parameters": [
+          {
+            "name": "operationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The heritage operation id, hop_<uuid>."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The operation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HeritageOperation"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/ordex/heritage/asks": {
+      "post": {
+        "operationId": "draftHeritageAsk",
+        "summary": "Draft an unsigned ask over one carrying UTXO",
+        "tags": [
+          "heritage"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HeritageAskDraftRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The unsigned intent and what to sign.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HeritageIntentDraft"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/ordex/heritage/swaps": {
+      "post": {
+        "operationId": "draftHeritageSwap",
+        "summary": "Draft an unsigned swap over one carrying UTXO",
+        "tags": [
+          "heritage"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HeritageSwapDraftRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The unsigned intent and what to sign.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HeritageIntentDraft"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/ordex/heritage/intents": {
+      "post": {
+        "operationId": "publishHeritageIntent",
+        "summary": "Publish a maker-signed heritage ask or swap",
+        "description": "A PRIVATE intent travels as an encrypted envelope and is accepted through the private acceptance route instead.",
+        "tags": [
+          "heritage"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HeritageIntentPublishRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The published intent.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SwapIntentView"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/ordex/heritage/intents/{intentId}/accept": {
+      "post": {
+        "operationId": "acceptHeritageIntent",
+        "summary": "Accept a published heritage ask or swap",
+        "description": "Proves the gives whole again, builds the plan through the swaps desk and adds the UTXO_MOVE ledger events the settlement must produce. Signing, preflight and broadcast use the swap session routes.",
+        "tags": [
+          "heritage"
+        ],
+        "parameters": [
+          {
+            "name": "intentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The published intent id."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SwapAcceptancePlanRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The acceptance plan with its expected ledger events.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HeritageAcceptanceResult"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -3732,6 +3986,16 @@
           "type": "string"
         },
         "description": "Resume after this event id, as an EventSource reconnect sends it."
+      },
+      "SwapCapability": {
+        "name": "x-ordex-swap-capability",
+        "in": "header",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "pattern": "^swc_[A-Za-z0-9_-]{43}$"
+        },
+        "description": "The session capability of a PRIVATE intent, returned once in its acceptance answer. Every route of that session requires it (401 SESSION_CAPABILITY_REQUIRED without it or with another token); sessions of PUBLIC intents ignore it."
       }
     },
     "responses": {
@@ -4459,6 +4723,7 @@
         "type": "object",
         "description": "Everything a buyer needs to decide, and the unsigned half their wallet will be asked to sign. Every amount is atomic sats as a string.",
         "required": [
+          "quoteId",
           "orderId",
           "network",
           "psbt",
@@ -4487,6 +4752,10 @@
           "feeOutputs"
         ],
         "properties": {
+          "quoteId": {
+            "type": "string",
+            "description": "The stored reviewed purchase. Preflight needs it; it expires with expiresAt and reserves nothing."
+          },
           "orderId": {
             "type": "string"
           },
@@ -4610,15 +4879,22 @@
       },
       "PreflightRequest": {
         "type": "object",
-        "description": "Either the final transaction hex or the signed PSBT a wallet actually answers with.",
+        "description": "The quoteId of the reviewed quote and either the final transaction hex or the signed PSBT a wallet actually answers with.",
         "properties": {
+          "quoteId": {
+            "type": "string",
+            "description": "The quoteId of the reviewed quote. Every unsigned field of the signed bytes must equal that quote; the first differing field is named."
+          },
           "finalTxHex": {
             "type": "string"
           },
           "signedPsbt": {
             "type": "string"
           }
-        }
+        },
+        "required": [
+          "quoteId"
+        ]
       },
       "PreflightResult": {
         "type": "object",
@@ -4653,6 +4929,10 @@
           "checkedAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "quoteId": {
+            "type": "string",
+            "description": "The reviewed quote the bytes were checked against."
           }
         }
       },
@@ -5602,6 +5882,14 @@
           },
           "funding": {
             "$ref": "#/components/schemas/OfferFunding"
+          },
+          "traitMembers": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string"
+            },
+            "description": "TRAIT offers: the member identities the buyer accepted, whose Merkle root is criteriaHash."
           }
         }
       },
@@ -5647,115 +5935,176 @@
           "estimatedFeeSats",
           "withinMaxNetworkFee",
           "expiresAtHeight",
-          "checkpoint"
+          "checkpoint",
+          "psbt",
+          "acceptance"
         ],
         "properties": {
           "offerId": {
-            "type": "string",
-            "description": "The offer this plan settles."
+            "type": "string"
           },
           "sellerInputIndex": {
             "type": "integer",
             "minimum": 0,
-            "description": "Where the Feline input sits among the seller inputs."
+            "description": "The Feline input: always 0."
           },
           "offerInputIndex": {
             "type": "integer",
             "minimum": 0,
-            "description": "Where the funded offer output sits: always the last input."
+            "description": "The funded offer output: always the last input."
           },
           "sellerPaymentOutputIndex": {
             "type": "integer",
-            "minimum": 0,
-            "description": "The seller payment, immediately after the asset outputs."
+            "minimum": 0
           },
           "buyerAssetOutputIndex": {
             "type": "integer",
-            "minimum": 0,
-            "description": "The output the Feline lands in, derived from its satpoint."
+            "minimum": 0
           },
           "inputs": {
             "type": "array",
-            "description": "Every input in transaction order, with the exact values read from the node. The buyer contributes no input: the funded output is spent by the two policy signers, and the buyer signs nothing at acceptance.",
+            "description": "Every input in transaction order, as the authorities read it. The buyer contributes none.",
             "items": {
               "type": "object",
               "additionalProperties": false,
               "required": [
-                "txid",
-                "vout",
+                "outpoint",
+                "party",
                 "valueSats",
-                "role"
+                "scriptPubKeyHex"
               ],
               "properties": {
-                "txid": {
-                  "type": "string"
+                "outpoint": {
+                  "$ref": "#/components/schemas/Outpoint"
                 },
-                "vout": {
-                  "type": "integer",
-                  "minimum": 0
+                "party": {
+                  "type": "string",
+                  "enum": [
+                    "SELLER",
+                    "OFFER"
+                  ]
                 },
                 "valueSats": {
                   "$ref": "#/components/schemas/AtomicSats"
                 },
-                "role": {
+                "scriptPubKeyHex": {
                   "type": "string",
-                  "enum": [
-                    "SELLER_FELINE",
-                    "SELLER",
-                    "OFFER"
-                  ]
+                  "pattern": "^(?:[0-9a-f]{2})+$"
                 }
               }
             }
           },
           "outputs": {
             "type": "array",
-            "description": "Every output in transaction order: asset outputs absorbing exactly the seller inputs (the buyer asset output and seller preserves in sat order), the seller payment, and buyer change last.",
             "items": {
               "type": "object",
               "additionalProperties": false,
               "required": [
                 "scriptHex",
-                "valueSats",
-                "role"
+                "valueSats"
               ],
               "properties": {
                 "scriptHex": {
-                  "type": "string"
+                  "type": "string",
+                  "pattern": "^(?:[0-9a-f]{2})+$"
                 },
                 "valueSats": {
                   "$ref": "#/components/schemas/AtomicSats"
-                },
-                "role": {
-                  "type": "string",
-                  "enum": [
-                    "BUYER_ASSET",
-                    "SELLER_PRESERVE",
-                    "SELLER_PAYMENT",
-                    "BUYER_CHANGE"
-                  ]
                 }
               }
             }
           },
           "estimatedFeeSats": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/AtomicSats"
-              }
-            ],
-            "description": "The fee the composed arrangement pays at the current rate."
+            "$ref": "#/components/schemas/AtomicSats"
           },
           "withinMaxNetworkFee": {
-            "type": "boolean",
-            "description": "False means the terms refuse acceptance as composed."
+            "type": "boolean"
           },
           "expiresAtHeight": {
-            "type": "integer",
-            "description": "The terms expiry height, restated so a stale plan is visible."
+            "type": "integer"
           },
           "checkpoint": {
-            "$ref": "#/components/schemas/ListingReadiness"
+            "type": "object",
+            "required": [
+              "heightAtomic",
+              "blockHash"
+            ],
+            "properties": {
+              "heightAtomic": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]*)$"
+              },
+              "blockHash": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            }
+          },
+          "psbt": {
+            "type": "string",
+            "description": "The unsigned acceptance, base64."
+          },
+          "acceptance": {
+            "type": "object",
+            "required": [
+              "seller",
+              "feline",
+              "eligibility"
+            ],
+            "description": "The ordex.offer-acceptance/v2 fields the policy signers and preflight read, besides the transaction.",
+            "properties": {
+              "seller": {
+                "type": "object",
+                "required": [
+                  "paymentScriptHex"
+                ],
+                "properties": {
+                  "paymentScriptHex": {
+                    "type": "string",
+                    "pattern": "^(?:[0-9a-f]{2})+$"
+                  },
+                  "returnScriptHex": {
+                    "type": "string",
+                    "pattern": "^(?:[0-9a-f]{2})+$"
+                  }
+                }
+              },
+              "feline": {
+                "type": "object",
+                "required": [
+                  "inscriptionId",
+                  "outpoint"
+                ],
+                "properties": {
+                  "inscriptionId": {
+                    "type": "string"
+                  },
+                  "outpoint": {
+                    "$ref": "#/components/schemas/Outpoint"
+                  }
+                }
+              },
+              "eligibility": {
+                "type": "object",
+                "required": [
+                  "membershipProof"
+                ],
+                "properties": {
+                  "membershipProof": {
+                    "type": "array",
+                    "items": {
+                      "type": "object"
+                    }
+                  },
+                  "traitProof": {
+                    "type": "array",
+                    "items": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       },
@@ -6139,7 +6488,7 @@
         "properties": {
           "batchId": {
             "type": "string",
-            "description": "The identifier the batch-purchase answer carried."
+            "description": "The identifier the batch-purchase answer carried. The asks are taken from the stored batch."
           },
           "signedPsbt": {
             "type": "string",
@@ -7231,6 +7580,38 @@
           },
           "maxTakerFeeSats": {
             "$ref": "#/components/schemas/AtomicSats"
+          },
+          "takerChangeScriptHex": {
+            "type": "string",
+            "pattern": "^(?:[0-9a-f]{2})+$"
+          },
+          "takerIdentityProof": {
+            "type": "object",
+            "required": [
+              "kind",
+              "address",
+              "signature"
+            ],
+            "properties": {
+              "kind": {
+                "const": "bip322"
+              },
+              "address": {
+                "type": "string"
+              },
+              "signature": {
+                "type": "string"
+              }
+            },
+            "description": "Required for a taker-bound intent: the bound address signs ordex:swap-taker:<intent digest>:<sorted taker outpoints> (TAKER_BINDING_MISMATCH)."
+          },
+          "intent": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SwapIntentDocument"
+              }
+            ],
+            "description": "PRIVATE intents only: the decrypted maker-signed intent, whose digest must equal the path intentId (SWAP_INTENT_MALFORMED, SWAP_INTENT_INVALID, MAKER_PROOF_INVALID)."
           }
         }
       },
@@ -7464,6 +7845,11 @@
           "psbt": {
             "type": "string",
             "description": "The current unsigned or partially signed PSBT, base64."
+          },
+          "sessionCapability": {
+            "type": "string",
+            "pattern": "^swc_[A-Za-z0-9_-]{43}$",
+            "description": "PRIVATE intents only, and only in the acceptance answer: returned exactly once. Only its SHA-256 is stored."
           }
         }
       },
@@ -9198,6 +9584,415 @@
             "items": {
               "$ref": "#/components/schemas/PrivateSwapEnvelope"
             }
+          }
+        }
+      },
+      "HeritageExpectedLedgerEvent": {
+        "type": "object",
+        "required": [
+          "event",
+          "source",
+          "destination",
+          "asset",
+          "quantity"
+        ],
+        "properties": {
+          "event": {
+            "type": "string",
+            "enum": [
+              "ATTACH_TO_UTXO",
+              "DETACH_FROM_UTXO",
+              "UTXO_MOVE"
+            ]
+          },
+          "source": {
+            "type": "string",
+            "description": "The source address or txid:vout."
+          },
+          "destination": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "An address or txid:vout; null before relay, when outputIndex names an output of the operation itself."
+          },
+          "outputIndex": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "asset": {
+            "type": "string",
+            "description": "The ledger's own asset name."
+          },
+          "quantity": {
+            "type": "string",
+            "pattern": "^(0|[1-9][0-9]*)$",
+            "description": "Whole atomic units as decimal text."
+          }
+        }
+      },
+      "HeritageOperation": {
+        "type": "object",
+        "required": [
+          "operationId",
+          "kind",
+          "state",
+          "network",
+          "txid",
+          "manifestDigest",
+          "swapSessionId",
+          "expectedLedgerEvents",
+          "settlement",
+          "refusalCode",
+          "createdAt",
+          "updatedAt"
+        ],
+        "description": "A composed heritage operation until the Counterparty ledger proves it: COMPOSED, then RELAYED, then SETTLED or LEDGER_MISMATCH.",
+        "properties": {
+          "operationId": {
+            "type": "string",
+            "description": "hop_<uuid>"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "ATTACH",
+              "DETACH",
+              "SWAP_MOVE"
+            ]
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "COMPOSED",
+              "RELAYED",
+              "SETTLED",
+              "LEDGER_MISMATCH"
+            ]
+          },
+          "network": {
+            "$ref": "#/components/schemas/V12Network"
+          },
+          "txid": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "manifestDigest": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "swapSessionId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "expectedLedgerEvents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HeritageExpectedLedgerEvent"
+            }
+          },
+          "settlement": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "required": [
+              "blockHash",
+              "height",
+              "ledgerHash",
+              "eventId"
+            ],
+            "properties": {
+              "blockHash": {
+                "type": "string"
+              },
+              "height": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "ledgerHash": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "eventId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          },
+          "refusalCode": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "HeritageRelayRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "Exactly one of signedTxHex or a finalized psbt (base64 or hex, at most 1600000 characters); anything else is HERITAGE_RELAY_BODY_INVALID.",
+        "properties": {
+          "signedTxHex": {
+            "type": "string",
+            "pattern": "^(?:[0-9a-f]{2})+$",
+            "maxLength": 1600000
+          },
+          "psbt": {
+            "type": "string",
+            "maxLength": 1600000
+          }
+        },
+        "oneOf": [
+          {
+            "required": [
+              "signedTxHex"
+            ]
+          },
+          {
+            "required": [
+              "psbt"
+            ]
+          }
+        ]
+      },
+      "HeritageAskDraftRequest": {
+        "type": "object",
+        "required": [
+          "utxo",
+          "makerReceiveAddress",
+          "priceSats"
+        ],
+        "properties": {
+          "utxo": {
+            "type": "string",
+            "description": "The carrying outpoint, txid:vout. Every balance on it is given whole."
+          },
+          "makerReceiveAddress": {
+            "type": "string"
+          },
+          "maxMakerFeeSats": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AtomicSats"
+              }
+            ],
+            "description": "Defaults to the carrying output value."
+          },
+          "expiryBlocks": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "visibility": {
+            "type": "string",
+            "enum": [
+              "PUBLIC",
+              "PRIVATE"
+            ]
+          },
+          "takerAddress": {
+            "type": "string",
+            "description": "Binds the intent to one taker."
+          },
+          "priceSats": {
+            "$ref": "#/components/schemas/AtomicSats"
+          }
+        }
+      },
+      "HeritageSwapDraftRequest": {
+        "type": "object",
+        "required": [
+          "utxo",
+          "makerReceiveAddress",
+          "requires"
+        ],
+        "properties": {
+          "utxo": {
+            "type": "string",
+            "description": "The carrying outpoint, txid:vout. Every balance on it is given whole."
+          },
+          "makerReceiveAddress": {
+            "type": "string"
+          },
+          "maxMakerFeeSats": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AtomicSats"
+              }
+            ],
+            "description": "Defaults to the carrying output value."
+          },
+          "expiryBlocks": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "visibility": {
+            "type": "string",
+            "enum": [
+              "PUBLIC",
+              "PRIVATE"
+            ]
+          },
+          "takerAddress": {
+            "type": "string",
+            "description": "Binds the intent to one taker."
+          },
+          "requires": {
+            "type": "array",
+            "minItems": 1,
+            "description": "What the maker wants instead of BTC: ORDINAL, RARE_SAT, RUNE or BTC. COUNTERPARTY answers COUNTERPARTY_BOTH_SIDES.",
+            "items": {
+              "type": "object",
+              "required": [
+                "assetType",
+                "minQuantitySats"
+              ],
+              "properties": {
+                "assetType": {
+                  "type": "string",
+                  "enum": [
+                    "ORDINAL",
+                    "RARE_SAT",
+                    "RUNE",
+                    "BTC"
+                  ]
+                },
+                "assetId": {
+                  "type": "string"
+                },
+                "inscriptionId": {
+                  "type": "string"
+                },
+                "minQuantitySats": {
+                  "$ref": "#/components/schemas/AtomicSats"
+                }
+              }
+            }
+          }
+        }
+      },
+      "HeritageIntentDraft": {
+        "type": "object",
+        "required": [
+          "intent",
+          "digest",
+          "record",
+          "signing"
+        ],
+        "description": "An unsigned ordex.swap-intent/v1 over one carrying UTXO. Nothing is stored; the maker signs digest with BIP-322 and publishes it.",
+        "properties": {
+          "intent": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "The swap intent without makerIdentityProof."
+          },
+          "digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "record": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "The ordex.counterparty-utxo-asset/v1 record of the carrying UTXO."
+          },
+          "signing": {
+            "type": "object",
+            "required": [
+              "message",
+              "kind",
+              "address"
+            ],
+            "properties": {
+              "message": {
+                "type": "string"
+              },
+              "kind": {
+                "const": "bip322"
+              },
+              "address": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "HeritageIntentPublishRequest": {
+        "type": "object",
+        "required": [
+          "intent"
+        ],
+        "properties": {
+          "intent": {
+            "$ref": "#/components/schemas/SwapIntentDocument"
+          }
+        },
+        "description": "A maker-signed intent that gives Counterparty attachments only, each exactly what the ledger holds now (GIVE_QUANTITY_MISMATCH)."
+      },
+      "HeritageAcceptanceResult": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SwapSession"
+          },
+          {
+            "type": "object",
+            "required": [
+              "expectedLedgerEvents"
+            ],
+            "properties": {
+              "expectedLedgerEvents": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/HeritageExpectedLedgerEvent"
+                },
+                "description": "One UTXO_MOVE per moved balance."
+              }
+            }
+          }
+        ]
+      },
+      "OfferRevalidateRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "txid": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "description": "A transaction the caller says spent the funded output, checked against the node."
+          }
+        }
+      },
+      "OfferWithdrawalProof": {
+        "type": "object",
+        "required": [
+          "signature"
+        ],
+        "properties": {
+          "address": {
+            "type": "string",
+            "description": "Informational; the key that must sign is terms.buyerRecoveryKeyHex."
+          },
+          "signature": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{128}$",
+            "description": "A BIP-340 signature by buyerRecoveryKeyHex over the tagged hash (tag ordex/offer-withdrawal) of the message \"Ordex offer withdrawal\\nnetwork: <network>\\noffer: <id>\\nterms: <offerTermsHash>\"."
           }
         }
       }

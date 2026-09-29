@@ -79,9 +79,9 @@ const CALLS = {
   getSwapIntent: (c, a) => c.getSwapIntent(a.path[0]),
   withdrawSwapIntent: (c, a) => c.withdrawSwapIntent(a.path[0], a.body),
   buildSwapAcceptancePlan: (c, a) => c.buildSwapAcceptancePlan(a.path[0], a.body),
-  getSwapSession: (c, a) => c.getSwapSession(a.path[0]),
-  submitSwapSignature: (c, a) => c.submitSwapSignature(a.path[0], a.body),
-  preflightSwapSession: (c, a) => c.preflightSwapSession(a.path[0]),
+  getSwapSession: (c, a) => c.getSwapSession(a.path[0], { sessionCapability: a.headers['x-ordex-swap-capability'] }),
+  submitSwapSignature: (c, a) => c.submitSwapSignature(a.path[0], a.body, { sessionCapability: a.headers['x-ordex-swap-capability'] }),
+  preflightSwapSession: (c, a) => c.preflightSwapSession(a.path[0], { sessionCapability: a.headers['x-ordex-swap-capability'] }),
   storePrivateSwap: (c, a) => c.storePrivateSwap(a.body),
   listPrivateSwaps: (c) => c.listPrivateSwaps(),
   getPrivateSwap: (c, a) => c.getPrivateSwap(a.path[0]),
@@ -111,6 +111,18 @@ const CALLS = {
   listHeritageAddressAssets: (c, a) => c.listHeritageAddressAssets(a.path[0]),
   buildHeritageAttach: (c, a) => c.buildHeritageAttach(a.body),
   buildHeritageDetach: (c, a) => c.buildHeritageDetach(a.body),
+  getHeritageOperation: (c, a) => c.getHeritageOperation(a.path[0]),
+  draftHeritageAsk: (c, a) => c.draftHeritageAsk(a.body),
+  draftHeritageSwap: (c, a) => c.draftHeritageSwap(a.body),
+  publishHeritageIntent: (c, a) => c.publishHeritageIntent(a.body),
+  acceptHeritageIntent: (c, a) => c.acceptHeritageIntent(a.path[0], a.body),
+  listOffers: (c, a) => c.listOffers(a.query),
+  publishOffer: (c, a) => c.publishOffer(a.body),
+  getOffer: (c, a) => c.getOffer(a.path[0]),
+  revalidateOffer: (c, a) => c.revalidateOffer(a.path[0], a.body),
+  withdrawOffer: (c, a) => c.withdrawOffer(a.path[0], a.body),
+  planOfferAcceptance: (c, a) => c.planOfferAcceptance(a.path[0], a.body),
+  preflightOfferAcceptance: (c, a) => c.preflightOfferAcceptance(a.path[0], a.body),
   openSigningSession: (c, a) => c.openSigningSession(a.body),
   listSigningSessions: (c, a) => c.listSigningSessions(a.headers['x-ordex-signing-capability'].split(','), a.query),
   getSigningSession: (c, a) => c.getSigningSession(a.path[0], a.headers['x-ordex-signing-capability']),
@@ -122,6 +134,7 @@ const HEADER_SAMPLES = {
   'idempotency-key': 'op-7',
   'x-ordex-signing-capability': 'sgr_a,sgi_b',
   'last-event-id': 'evt-9',
+  'x-ordex-swap-capability': `swc_${'A'.repeat(43)}`,
 };
 
 function argumentsFor(op) {
@@ -161,14 +174,14 @@ test('every contract operation is a client method or a documented exclusion, nev
     assert.ok(operations.some((op) => op.id === id), `excluded ${id} is not a contract operation`);
     assert.ok(typeof reason === 'string' && reason.length > 20, `${id} needs a reason`);
   }
-  assert.equal(operations.length, 79);
-  assert.equal(wrapped.length, 70);
-  assert.equal(excluded.length, 9);
+  assert.equal(operations.length, 85);
+  assert.equal(wrapped.length, 82);
+  assert.equal(excluded.length, 3);
   assert.deepEqual(Object.keys(CALLS).sort(), wrapped.map((op) => op.id).sort());
 });
 
 test('the client never broadcasts: every relay route is excluded', () => {
-  for (const op of operations.filter((o) => /broadcast/i.test(o.id) || /broadcast/i.test(o.path))) {
+  for (const op of operations.filter((o) => /broadcast|relay/i.test(o.id) || /broadcast|relay/i.test(o.path))) {
     assert.ok(op.id in SDK_EXCLUDED_OPERATIONS, `${op.id} relays to the network and must not be wrapped`);
   }
 });

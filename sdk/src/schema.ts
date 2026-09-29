@@ -475,7 +475,7 @@ export interface paths {
         put?: never;
         /**
          * Remove an offer from discovery, proved by the recovery key
-         * @description Discovery, not cancellation: the funded output stays spendable by the acceptance path until it is spent, and by the recovery path after expiry. A BIP 322 signature by the recovery key proves who may stop publishing the offer.
+         * @description Discovery, not cancellation: the funded output stays spendable by the acceptance path until it is spent, and by the recovery path after expiry. A BIP-340 signature by the recovery key over the offer withdrawal message proves who may stop publishing the offer.
          */
         post: operations["withdrawOffer"];
         delete?: never;
@@ -1416,6 +1416,120 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/ordex/heritage/operations/{operationId}/relay": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Relay the signed transaction of a composed attach or detach
+         * @description Checks, in order: the heritage authority is ready; the signed bytes are the stored manifest with every input signed and the asset landing where the manifest says; every input is unspent with the balances it carried when composed; the node decodes the composed message; testmempoolaccept allows it; then sendrawtransaction. The operation becomes RELAYED. An operation no longer COMPOSED answers its stored state and sends nothing, which is why this route answers 200.
+         */
+        post: operations["relayHeritageOperation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ordex/heritage/operations/{operationId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * One heritage operation and its ledger settlement
+         * @description An unknown id answers 404 HERITAGE_OPERATION_NOT_FOUND.
+         */
+        get: operations["getHeritageOperation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ordex/heritage/asks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Draft an unsigned ask over one carrying UTXO */
+        post: operations["draftHeritageAsk"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ordex/heritage/swaps": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Draft an unsigned swap over one carrying UTXO */
+        post: operations["draftHeritageSwap"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ordex/heritage/intents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Publish a maker-signed heritage ask or swap
+         * @description A PRIVATE intent travels as an encrypted envelope and is accepted through the private acceptance route instead.
+         */
+        post: operations["publishHeritageIntent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ordex/heritage/intents/{intentId}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Accept a published heritage ask or swap
+         * @description Proves the gives whole again, builds the plan through the swaps desk and adds the UTXO_MOVE ledger events the settlement must produce. Signing, preflight and broadcast use the swap session routes.
+         */
+        post: operations["acceptHeritageIntent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1612,6 +1726,8 @@ export interface components {
         };
         /** @description Everything a buyer needs to decide, and the unsigned half their wallet will be asked to sign. Every amount is atomic sats as a string. */
         Quote: {
+            /** @description The stored reviewed purchase. Preflight needs it; it expires with expiresAt and reserves nothing. */
+            quoteId: string;
             orderId: string;
             network: components["schemas"]["Network"];
             psbt: string;
@@ -1647,8 +1763,10 @@ export interface components {
             /** @description Every fee or royalty output the composed transaction carries. Empty under a zero policy; a zero is stated as an empty list, never omitted. */
             feeOutputs: components["schemas"]["FeeOutput"][];
         };
-        /** @description Either the final transaction hex or the signed PSBT a wallet actually answers with. */
+        /** @description The quoteId of the reviewed quote and either the final transaction hex or the signed PSBT a wallet actually answers with. */
         PreflightRequest: {
+            /** @description The quoteId of the reviewed quote. Every unsigned field of the signed bytes must equal that quote; the first differing field is named. */
+            quoteId: string;
             finalTxHex?: string;
             signedPsbt?: string;
         };
@@ -1663,6 +1781,8 @@ export interface components {
             feesSats?: components["schemas"]["AtomicSats"];
             /** Format: date-time */
             checkedAt: string;
+            /** @description The reviewed quote the bytes were checked against. */
+            quoteId?: string;
         };
         BuildAskRequest: {
             protocolId: string;
@@ -1941,6 +2061,8 @@ export interface components {
         OfferPublishRequest: {
             terms: components["schemas"]["OfferTerms"];
             funding: components["schemas"]["OfferFunding"];
+            /** @description TRAIT offers: the member identities the buyer accepted, whose Merkle root is criteriaHash. */
+            traitMembers?: string[];
         };
         OfferAcceptancePlanRequest: {
             /** @description The output the accepting seller will spend to deliver the Feline. */
@@ -1951,38 +2073,49 @@ export interface components {
             sellerReturnScriptHex?: string;
         };
         OfferAcceptancePlan: {
-            /** @description The offer this plan settles. */
             offerId: string;
-            /** @description Where the Feline input sits among the seller inputs. */
+            /** @description The Feline input: always 0. */
             sellerInputIndex: number;
-            /** @description Where the funded offer output sits: always the last input. */
+            /** @description The funded offer output: always the last input. */
             offerInputIndex: number;
-            /** @description The seller payment, immediately after the asset outputs. */
             sellerPaymentOutputIndex: number;
-            /** @description The output the Feline lands in, derived from its satpoint. */
             buyerAssetOutputIndex: number;
-            /** @description Every input in transaction order, with the exact values read from the node. The buyer contributes no input: the funded output is spent by the two policy signers, and the buyer signs nothing at acceptance. */
+            /** @description Every input in transaction order, as the authorities read it. The buyer contributes none. */
             inputs: {
-                txid: string;
-                vout: number;
-                valueSats: components["schemas"]["AtomicSats"];
+                outpoint: components["schemas"]["Outpoint"];
                 /** @enum {string} */
-                role: "SELLER_FELINE" | "SELLER" | "OFFER";
+                party: "SELLER" | "OFFER";
+                valueSats: components["schemas"]["AtomicSats"];
+                scriptPubKeyHex: string;
             }[];
-            /** @description Every output in transaction order: asset outputs absorbing exactly the seller inputs (the buyer asset output and seller preserves in sat order), the seller payment, and buyer change last. */
             outputs: {
                 scriptHex: string;
                 valueSats: components["schemas"]["AtomicSats"];
-                /** @enum {string} */
-                role: "BUYER_ASSET" | "SELLER_PRESERVE" | "SELLER_PAYMENT" | "BUYER_CHANGE";
             }[];
-            /** @description The fee the composed arrangement pays at the current rate. */
             estimatedFeeSats: components["schemas"]["AtomicSats"];
-            /** @description False means the terms refuse acceptance as composed. */
             withinMaxNetworkFee: boolean;
-            /** @description The terms expiry height, restated so a stale plan is visible. */
             expiresAtHeight: number;
-            checkpoint: components["schemas"]["ListingReadiness"];
+            checkpoint: {
+                heightAtomic: string;
+                blockHash: string;
+            };
+            /** @description The unsigned acceptance, base64. */
+            psbt: string;
+            /** @description The ordex.offer-acceptance/v2 fields the policy signers and preflight read, besides the transaction. */
+            acceptance: {
+                seller: {
+                    paymentScriptHex: string;
+                    returnScriptHex?: string;
+                };
+                feline: {
+                    inscriptionId: string;
+                    outpoint: components["schemas"]["Outpoint"];
+                };
+                eligibility: {
+                    membershipProof: Record<string, never>[];
+                    traitProof?: Record<string, never>[];
+                };
+            };
         };
         OfferPreflightRequest: {
             /** @description The complete acceptance, seller signature and both policy signatures included. */
@@ -2089,7 +2222,7 @@ export interface components {
             refusals: components["schemas"]["BatchRefusal"][];
         };
         BatchPreflightRequest: {
-            /** @description The identifier the batch-purchase answer carried. */
+            /** @description The identifier the batch-purchase answer carried. The asks are taken from the stored batch. */
             batchId: string;
             /** @description The batch PSBT with every buyer input signed. */
             signedPsbt?: string;
@@ -2388,6 +2521,16 @@ export interface components {
             takerInputs: components["schemas"]["Outpoint"][];
             takerReceiveScriptHex?: string;
             maxTakerFeeSats?: components["schemas"]["AtomicSats"];
+            takerChangeScriptHex?: string;
+            /** @description Required for a taker-bound intent: the bound address signs ordex:swap-taker:<intent digest>:<sorted taker outpoints> (TAKER_BINDING_MISMATCH). */
+            takerIdentityProof?: {
+                /** @constant */
+                kind: "bip322";
+                address: string;
+                signature: string;
+            };
+            /** @description PRIVATE intents only: the decrypted maker-signed intent, whose digest must equal the path intentId (SWAP_INTENT_MALFORMED, SWAP_INTENT_INVALID, MAKER_PROOF_INVALID). */
+            intent?: components["schemas"]["SwapIntentDocument"];
         };
         /** @description One transaction settling both sides. Every asset movement is derived from the input inventories by the owning protocol; the maker receives every required asset at its receive script, the taker every given asset at its receive script, and each party fee share follows from its value flow. */
         SwapAcceptancePlanDocument: {
@@ -2449,6 +2592,8 @@ export interface components {
             updatedAt: string;
             /** @description The current unsigned or partially signed PSBT, base64. */
             psbt?: string;
+            /** @description PRIVATE intents only, and only in the acceptance answer: returned exactly once. Only its SHA-256 is stored. */
+            sessionCapability?: string;
         };
         SwapSignatureSubmission: {
             /** @description The PSBT after this party signed, base64. */
@@ -2942,6 +3087,118 @@ export interface components {
         PrivateSwapList: {
             privateSwaps: components["schemas"]["PrivateSwapEnvelope"][];
         };
+        HeritageExpectedLedgerEvent: {
+            /** @enum {string} */
+            event: "ATTACH_TO_UTXO" | "DETACH_FROM_UTXO" | "UTXO_MOVE";
+            /** @description The source address or txid:vout. */
+            source: string;
+            /** @description An address or txid:vout; null before relay, when outputIndex names an output of the operation itself. */
+            destination: string | null;
+            outputIndex?: number;
+            /** @description The ledger's own asset name. */
+            asset: string;
+            /** @description Whole atomic units as decimal text. */
+            quantity: string;
+        };
+        /** @description A composed heritage operation until the Counterparty ledger proves it: COMPOSED, then RELAYED, then SETTLED or LEDGER_MISMATCH. */
+        HeritageOperation: {
+            /** @description hop_<uuid> */
+            operationId: string;
+            /** @enum {string} */
+            kind: "ATTACH" | "DETACH" | "SWAP_MOVE";
+            /** @enum {string} */
+            state: "COMPOSED" | "RELAYED" | "SETTLED" | "LEDGER_MISMATCH";
+            network: components["schemas"]["V12Network"];
+            txid: string | null;
+            manifestDigest: string | null;
+            swapSessionId: string | null;
+            expectedLedgerEvents: components["schemas"]["HeritageExpectedLedgerEvent"][];
+            settlement: {
+                blockHash: string;
+                height: number;
+                ledgerHash: string | null;
+                eventId: string | null;
+            } | null;
+            refusalCode: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        /** @description Exactly one of signedTxHex or a finalized psbt (base64 or hex, at most 1600000 characters); anything else is HERITAGE_RELAY_BODY_INVALID. */
+        HeritageRelayRequest: {
+            signedTxHex?: string;
+            psbt?: string;
+        } & (unknown | unknown);
+        HeritageAskDraftRequest: {
+            /** @description The carrying outpoint, txid:vout. Every balance on it is given whole. */
+            utxo: string;
+            makerReceiveAddress: string;
+            /** @description Defaults to the carrying output value. */
+            maxMakerFeeSats?: components["schemas"]["AtomicSats"];
+            expiryBlocks?: number;
+            /** @enum {string} */
+            visibility?: "PUBLIC" | "PRIVATE";
+            /** @description Binds the intent to one taker. */
+            takerAddress?: string;
+            priceSats: components["schemas"]["AtomicSats"];
+        };
+        HeritageSwapDraftRequest: {
+            /** @description The carrying outpoint, txid:vout. Every balance on it is given whole. */
+            utxo: string;
+            makerReceiveAddress: string;
+            /** @description Defaults to the carrying output value. */
+            maxMakerFeeSats?: components["schemas"]["AtomicSats"];
+            expiryBlocks?: number;
+            /** @enum {string} */
+            visibility?: "PUBLIC" | "PRIVATE";
+            /** @description Binds the intent to one taker. */
+            takerAddress?: string;
+            /** @description What the maker wants instead of BTC: ORDINAL, RARE_SAT, RUNE or BTC. COUNTERPARTY answers COUNTERPARTY_BOTH_SIDES. */
+            requires: {
+                /** @enum {string} */
+                assetType: "ORDINAL" | "RARE_SAT" | "RUNE" | "BTC";
+                assetId?: string;
+                inscriptionId?: string;
+                minQuantitySats: components["schemas"]["AtomicSats"];
+            }[];
+        };
+        /** @description An unsigned ordex.swap-intent/v1 over one carrying UTXO. Nothing is stored; the maker signs digest with BIP-322 and publishes it. */
+        HeritageIntentDraft: {
+            /** @description The swap intent without makerIdentityProof. */
+            intent: {
+                [key: string]: unknown;
+            };
+            digest: string;
+            /** @description The ordex.counterparty-utxo-asset/v1 record of the carrying UTXO. */
+            record: {
+                [key: string]: unknown;
+            };
+            signing: {
+                message: string;
+                /** @constant */
+                kind: "bip322";
+                address: string;
+            };
+        };
+        /** @description A maker-signed intent that gives Counterparty attachments only, each exactly what the ledger holds now (GIVE_QUANTITY_MISMATCH). */
+        HeritageIntentPublishRequest: {
+            intent: components["schemas"]["SwapIntentDocument"];
+        };
+        HeritageAcceptanceResult: components["schemas"]["SwapSession"] & {
+            /** @description One UTXO_MOVE per moved balance. */
+            expectedLedgerEvents: components["schemas"]["HeritageExpectedLedgerEvent"][];
+        };
+        OfferRevalidateRequest: {
+            /** @description A transaction the caller says spent the funded output, checked against the node. */
+            txid?: string;
+        };
+        OfferWithdrawalProof: {
+            /** @description Informational; the key that must sign is terms.buyerRecoveryKeyHex. */
+            address?: string;
+            /** @description A BIP-340 signature by buyerRecoveryKeyHex over the tagged hash (tag ordex/offer-withdrawal) of the message "Ordex offer withdrawal\nnetwork: <network>\noffer: <id>\nterms: <offerTermsHash>". */
+            signature: string;
+        };
     };
     responses: {
         /** @description The request failed. The envelope states the status, a human readable message, and the request id. */
@@ -2999,6 +3256,8 @@ export interface components {
         SigningCapability: string;
         /** @description Resume after this event id, as an EventSource reconnect sends it. */
         LastEventId: string;
+        /** @description The session capability of a PRIVATE intent, returned once in its acceptance answer. Every route of that session requires it (401 SESSION_CAPABILITY_REQUIRED without it or with another token); sessions of PUBLIC intents ignore it. */
+        SwapCapability: string;
     };
     requestBodies: never;
     headers: never;
@@ -3735,7 +3994,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["OfferRevalidateRequest"];
+            };
+        };
         responses: {
             /** @description The rechecked offer. */
             201: {
@@ -3764,7 +4027,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["OwnershipProof"];
+                "application/json": components["schemas"]["OfferWithdrawalProof"];
             };
         };
         responses: {
@@ -4159,7 +4422,10 @@ export interface operations {
     getSwapSession: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description The session capability of a PRIVATE intent, returned once in its acceptance answer. Every route of that session requires it (401 SESSION_CAPABILITY_REQUIRED without it or with another token); sessions of PUBLIC intents ignore it. */
+                "x-ordex-swap-capability"?: components["parameters"]["SwapCapability"];
+            };
             path: {
                 /** @description The session identifier. */
                 sessionId: string;
@@ -4183,7 +4449,10 @@ export interface operations {
     submitSwapSignature: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description The session capability of a PRIVATE intent, returned once in its acceptance answer. Every route of that session requires it (401 SESSION_CAPABILITY_REQUIRED without it or with another token); sessions of PUBLIC intents ignore it. */
+                "x-ordex-swap-capability"?: components["parameters"]["SwapCapability"];
+            };
             path: {
                 /** @description The session identifier. */
                 sessionId: string;
@@ -4211,7 +4480,10 @@ export interface operations {
     preflightSwapSession: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description The session capability of a PRIVATE intent, returned once in its acceptance answer. Every route of that session requires it (401 SESSION_CAPABILITY_REQUIRED without it or with another token); sessions of PUBLIC intents ignore it. */
+                "x-ordex-swap-capability"?: components["parameters"]["SwapCapability"];
+            };
             path: {
                 /** @description The session identifier. */
                 sessionId: string;
@@ -4235,7 +4507,10 @@ export interface operations {
     broadcastSwapSession: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description The session capability of a PRIVATE intent, returned once in its acceptance answer. Every route of that session requires it (401 SESSION_CAPABILITY_REQUIRED without it or with another token); sessions of PUBLIC intents ignore it. */
+                "x-ordex-swap-capability"?: components["parameters"]["SwapCapability"];
+            };
             path: {
                 /** @description The session identifier. */
                 sessionId: string;
@@ -5194,6 +5469,161 @@ export interface operations {
             };
             404: components["responses"]["NotFound"];
             429: components["responses"]["RateLimited"];
+            default: components["responses"]["Error"];
+        };
+    };
+    relayHeritageOperation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The heritage operation id, hop_<uuid>. */
+                operationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HeritageRelayRequest"];
+            };
+        };
+        responses: {
+            /** @description The operation after relay, or its stored state. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HeritageOperation"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    getHeritageOperation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The heritage operation id, hop_<uuid>. */
+                operationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The operation. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HeritageOperation"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    draftHeritageAsk: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HeritageAskDraftRequest"];
+            };
+        };
+        responses: {
+            /** @description The unsigned intent and what to sign. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HeritageIntentDraft"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    draftHeritageSwap: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HeritageSwapDraftRequest"];
+            };
+        };
+        responses: {
+            /** @description The unsigned intent and what to sign. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HeritageIntentDraft"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    publishHeritageIntent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HeritageIntentPublishRequest"];
+            };
+        };
+        responses: {
+            /** @description The published intent. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SwapIntentView"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    acceptHeritageIntent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The published intent id. */
+                intentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SwapAcceptancePlanRequest"];
+            };
+        };
+        responses: {
+            /** @description The acceptance plan with its expected ledger events. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HeritageAcceptanceResult"];
+                };
+            };
             default: components["responses"]["Error"];
         };
     };

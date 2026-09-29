@@ -2024,7 +2024,9 @@ function runestoneScript(integers) {
 }
 
 const counted = [{ indexed: true, runes: 1 }];
-const held = (...balances) => [{ indexed: true, balances: balances.map(([runeId, amount]) => ({ runeId, amount })) }];
+// The count field rides beside the exact balances so a count-only consumer reaches
+// the same safety verdict as one that reads the balances.
+const held = (...balances) => [{ indexed: true, runes: balances.length, balances: balances.map(([runeId, amount]) => ({ runeId, amount })) }];
 const refused = (runestone, code, flaw) => ({ safe: false, runestone, code, ...(flaw ? { flaw } : {}) });
 const accepted = (runestone) => ({ safe: true, runestone });
 const cenotaph = (flaw) => refused('CENOTAPH', 'CENOTAPH_BURNS_BALANCE', flaw);
@@ -2092,7 +2094,7 @@ const runeAllocationCases = [
   runeCase('pointer-takes-the-leftover', 'An edict sends 300 to output 1 and the pointer sends the other 700 to output 2.', [runestoneScript([22, 2, 0, 840000, 1, 300, 1]), RUNE_SPEND_1, RUNE_SPEND_2], held(['840000:1', '1000']), accepted('RUNESTONE')),
   runeCase('cenotaph-burns-exact-balances', 'A cenotaph burns the exact balances listed.', [runestoneScript([126, 1]), RUNE_SPEND_1], held(['840000:1', '1000']), cenotaph('UNRECOGNIZED_EVEN_TAG')),
   runeCase('mint-of-held-rune-needs-the-mint-result', 'The runestone mints a rune the input also carries and its pointer is the OP_RETURN, so the burn depends on the minted amount.', [runestoneScript([20, 840000, 20, 1, 22, 0, 0, 840000, 1, 500, 1]), RUNE_SPEND_1], held(['840000:1', '1000']), refused('RUNESTONE', 'RUNE_MINT_UNRESOLVED'), { mint: { runeId: '840000:1', amount: '0' } }),
-  runeCase('two-runes-one-left-for-an-op-return-pointer', 'Two inputs carry 840000:1 and 840000:2. The edict moves all of 840000:1; 840000:2 falls to the OP_RETURN pointer.', [runestoneScript([22, 0, 0, 840000, 1, 1000, 1]), RUNE_SPEND_1], [{ indexed: true, balances: [{ runeId: '840000:1', amount: '600' }] }, { indexed: true, balances: [{ runeId: '840000:1', amount: '400' }, { runeId: '840000:2', amount: '50' }] }], refused('RUNESTONE', 'ALLOCATION_BURNS_BALANCE')),
+  runeCase('two-runes-one-left-for-an-op-return-pointer', 'Two inputs carry 840000:1 and 840000:2. The edict moves all of 840000:1; 840000:2 falls to the OP_RETURN pointer.', [runestoneScript([22, 0, 0, 840000, 1, 1000, 1]), RUNE_SPEND_1], [{ indexed: true, runes: 1, balances: [{ runeId: '840000:1', amount: '600' }] }, { indexed: true, runes: 2, balances: [{ runeId: '840000:1', amount: '400' }, { runeId: '840000:2', amount: '50' }] }], refused('RUNESTONE', 'ALLOCATION_BURNS_BALANCE')),
   runeCase('edicts-cover-everything-before-an-op-return-pointer', 'The edict moves the whole balance, so the OP_RETURN pointer receives nothing.', [runestoneScript([22, 0, 0, 840000, 1, 1000, 1]), RUNE_SPEND_1], held(['840000:1', '1000']), accepted('RUNESTONE')),
   runeCase('op-return-pointer-with-edicts-needs-balances', 'From counts alone it cannot be known whether the edicts leave anything for the OP_RETURN pointer.', [runestoneScript([22, 0, 0, 840000, 1, 1000, 1]), RUNE_SPEND_1], counted, refused('RUNESTONE', 'RUNE_BALANCES_REQUIRED')),
   runeCase('unindexed-input-with-a-burn-path', 'The pointer is the OP_RETURN and an input was never examined.', [runestoneScript([22, 0]), RUNE_SPEND_1], [{ indexed: false, runes: 0 }], refused('RUNESTONE', 'BURN_PATH_WITH_UNPROVEN_INPUT')),
@@ -2522,8 +2524,8 @@ const offerCases = [...offerTermsCases, ...offerAcceptanceCases, ...offerRecover
 // verifyCounterpartyLedgerEvents had no vector of their own. One vector each, with the
 // allocation, signatures and ledger rows stated by hand, so every published entry point runs.
 const runePlanCases = [
-  runeCase('allocation-matching-the-plan-is-accepted', 'An edict sends 300 of 840000:1 to output 1 and the pointer the other 700 to output 2, exactly as planned.', [runestoneScript([22, 2, 0, 840000, 1, 300, 1]), RUNE_SPEND_1, RUNE_SPEND_2], held(['840000:1', '1000']), { ok: true }, { expectedAllocation: [{ output: 1, runeId: '840000:1', amount: '300' }, { output: 2, runeId: '840000:1', amount: '700' }] }),
-  runeCase('allocation-differing-from-the-plan-is-refused', 'The same transaction against a plan that expects all 1000 at output 1.', [runestoneScript([22, 2, 0, 840000, 1, 300, 1]), RUNE_SPEND_1, RUNE_SPEND_2], held(['840000:1', '1000']), { ok: false, code: 'RUNE_ALLOCATION_MISMATCH' }, { expectedAllocation: [{ output: 1, runeId: '840000:1', amount: '1000' }] }),
+  runeCase('allocation-matching-the-plan-is-accepted', 'An edict sends 300 of 840000:1 to output 1 and the pointer the other 700 to output 2, exactly as planned.', [runestoneScript([22, 2, 0, 840000, 1, 300, 1]), RUNE_SPEND_1, RUNE_SPEND_2], held(['840000:1', '1000']), { ok: true, safe: true, runestone: 'RUNESTONE' }, { expectedAllocation: [{ output: 1, runeId: '840000:1', amount: '300' }, { output: 2, runeId: '840000:1', amount: '700' }] }),
+  runeCase('allocation-differing-from-the-plan-is-refused', 'The same transaction against a plan that expects all 1000 at output 1.', [runestoneScript([22, 2, 0, 840000, 1, 300, 1]), RUNE_SPEND_1, RUNE_SPEND_2], held(['840000:1', '1000']), { ok: false, code: 'RUNE_ALLOCATION_MISMATCH', safe: true, runestone: 'RUNESTONE' }, { expectedAllocation: [{ output: 1, runeId: '840000:1', amount: '1000' }] }),
 ];
 
 // A settlement both parties signed with their test keys over the exact acceptance plan.

@@ -17,7 +17,7 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const doc = JSON.parse(readFileSync(join(root, 'spec', 'openapi.json'), 'utf8'));
 const operations = JSON.parse(readFileSync(join(root, 'site', 'src', 'data', 'operations.json'), 'utf8'));
 const kitAssets = JSON.parse(readFileSync(join(root, 'site', 'src', 'data', 'kitAssets.json'), 'utf8'));
-const SAMPLE = { 'catalog[0].id': 'ordinals', 'page.orders[0].id': 'ord_1', 'published.id': 'ord_2', sellerSignedPsbt: 'cHNidP8BAAoCAAAAAAAAAAAAAAAA', buyerSignedPsbt: 'cHNidP8BAAoCAAAAAAAAAAAAAAAA' };
+const SAMPLE = { 'catalog[0].id': 'ordinals', 'page.orders[0].id': 'ord_1', 'published.id': 'ord_2', 'quote.quoteId': 'q_1', sellerSignedPsbt: 'cHNidP8BAAoCAAAAAAAAAAAAAAAA', buyerSignedPsbt: 'cHNidP8BAAoCAAAAAAAAAAAAAAAA' };
 
 test('every recipe step is a contract operation with arguments the contract accepts', () => {
   for (const recipe of RECIPES) {
