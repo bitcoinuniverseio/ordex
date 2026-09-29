@@ -5,6 +5,8 @@ import { CommandCenter } from './CommandCenter.js';
 import { VersionEnvironmentController } from './VersionEnvironmentController.js';
 import { ProgressiveDisclosureToggle } from './ProgressiveDisclosureToggle.js';
 import { ContextRail } from './ContextRail.js';
+import { TourOverlay } from './TourOverlay.js';
+import { ThemeToggle } from '../shell/ThemeToggle.jsx';
 import {
   IconLaunchpad,
   IconSandbox,
@@ -121,7 +123,7 @@ export function OrdexExperienceShell({
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-          <a href={`${basePath}/`} style={{ textDecoration: 'none' }}>
+          <a href={`${basePath}/`} style={{ textDecoration: 'none' }} data-tour="brand" aria-label="Ordex home">
             <OrdexBrandMark version={`v${settings.protocolVersion}`} />
           </a>
 
@@ -139,6 +141,7 @@ export function OrdexExperienceShell({
           />
 
           <VersionEnvironmentController settings={settings} onChange={saveSettings} buildRevision={SOURCE_BUILD} storageState={storageState} />
+          <ThemeToggle />
         </div>
       </header>
 
@@ -275,6 +278,7 @@ export function OrdexExperienceShell({
         <main
           id="main-content"
           role="main"
+          tabIndex={-1}
           style={{
             flex: 1,
             overflowY: 'auto',
@@ -335,6 +339,8 @@ export function OrdexExperienceShell({
           <span>Agents</span>
         </a>
       </nav>
+
+      <TourOverlay basePath={basePath} />
 
       <style>{`
         @media (max-width: 768px) {

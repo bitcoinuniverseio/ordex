@@ -1,8 +1,13 @@
 import type { JSX } from 'preact';
-import { useState, useEffect, useRef } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import { MISSIONS } from '../../lib/experience/mission-registry.js';
 import operationsData from '../../data/operations.json';
 import refusalsData from '../../data/refusals.json';
+
+// OX-S10: modal command palette following the APG combobox-with-listbox pattern. The input
+// owns focus and points at the active option with aria-activedescendant; Tab is trapped in the
+// dialog, Escape or a click outside closes it and focus returns to what opened it. Links use
+// the base-aware routes and the OX-S05 playground deep link (?operation=).
 
 interface CommandItem {
   id: string;
@@ -10,7 +15,8 @@ interface CommandItem {
   title: string;
   subtitle: string;
   badge?: string;
-  handler: () => void;
+  href?: string;
+  run?: () => void;
 }
 
 interface CommandCenterProps {
@@ -19,413 +25,249 @@ interface CommandCenterProps {
   basePath?: string;
 }
 
-export function CommandCenter({
-  onSelectDisclosureMode,
-  onSelectProtocolVersion,
-  basePath = '/ordex'
-}: CommandCenterProps): JSX.Element {
+const MAX_RESULTS = 40;
+
+const isEditable = (el: Element | null) =>
+  !!el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || (el as HTMLElement).isContentEditable);
+
+export function CommandCenter({ onSelectDisclosureMode, basePath = '/ordex' }: CommandCenterProps): JSX.Element {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
-  /* IMPLEMENTATION-HANDOFF [OX-S10]
-   * Defect OX-S-D10; coverage OX-S-C1304..OX-S-C1307. Command dialog focuses its input but has no complete focus
-   * trap/restore path; API links must match the OX-S05 deep-link contract.
-   * 1. Keep a trigger ref, focus the dialog only after mount, trap Tab while modal, prevent background
-   * interaction, close on Escape and restore focus. Use aria-controls, active-descendant, listbox/option
-   * semantics and stable IDs for keyboard selection.
-   * 2. Keep selectedIndex valid when filtering yields zero/fewer results, preserve editable control shortcuts
-   * and display a useful empty state. Use the common base-aware route builder and encode
-   * operation/refusal/mission parameters.
-   * 3. Verify Ctrl/Cmd+K, slash outside editors, arrows/Enter/Tab/Shift+Tab/Escape, no results, long names,
-   * mobile overlay and route changes with real browser accessibility assertions. Await OX-S05 operation
-   * selection on destination before claiming navigation worked.
-   * Dependencies: OX-S03 settings/missions, OX-S05, OX-S10 browser matrix. PROPOSED NEW
-   * tests/e2e/navigation-accessibility.test.js; existing static HTML checks are insufficient. Rollback
-   * routing/focus behavior together without losing keyboard access.
-   */
   const inputRef = useRef<HTMLInputElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const returnFocusRef = useRef<HTMLElement | null>(null);
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
-        e.preventDefault();
-        setIsOpen((prev) => !prev);
-      } else if (e.key === '/' && !isOpen) {
-        const active = document.activeElement;
-        const isEditable = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || (active as HTMLElement).isContentEditable);
-        if (!isEditable) {
-          e.preventDefault();
-          setIsOpen(true);
-        }
-      } else if (e.key === 'Escape' && isOpen) {
-        setIsOpen(false);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen]);
+  const route = (path: string) => `${basePath}${path.startsWith('/') ? '' : '/'}${path}`;
 
-  useEffect(() => {
-    if (isOpen) {
-      setTimeout(() => inputRef.current?.focus(), 50);
-    }
-  }, [isOpen]);
-
-  const navigateTo = (path: string) => {
+  const open = () => {
+    returnFocusRef.current = (document.activeElement as HTMLElement) || triggerRef.current;
+    setIsOpen(true);
+  };
+  const close = () => {
     setIsOpen(false);
-    const normalized = path.startsWith(basePath) ? path : `${basePath}${path.startsWith('/') ? '' : '/'}${path}`;
-    window.location.href = normalized;
+    setQuery('');
+    setSelectedIndex(0);
+    const target = returnFocusRef.current && document.contains(returnFocusRef.current) ? returnFocusRef.current : triggerRef.current;
+    requestAnimationFrame(() => target?.focus());
   };
 
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        // Leave the shortcut to other editable controls; inside the palette it closes it.
+        if (!isOpen && isEditable(document.activeElement)) return;
+        e.preventDefault();
+        if (isOpen) close();
+        else open();
+      } else if (e.key === '/' && !isOpen && !isEditable(document.activeElement) && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        e.preventDefault();
+        open();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    inputRef.current?.focus();
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [isOpen]);
+
   const q = query.trim().toLowerCase();
-  const items: CommandItem[] = [];
-
-  // Core Actions
-  const coreActions: CommandItem[] = [
-    {
-      id: 'action-launchpad',
-      category: 'Actions',
-      title: 'Open Launchpad',
-      subtitle: 'View guided missions and start interactive tasks',
-      badge: 'Start',
-      handler: () => navigateTo('/')
-    },
-    {
-      id: 'action-sandbox',
-      category: 'Actions',
-      title: 'Open Transaction Sandbox',
-      subtitle: 'Simulate multi-actor trading flows with deterministic verifiers',
-      badge: 'Simulator',
-      handler: () => navigateTo('/sandbox/')
-    },
-    {
-      id: 'action-inspect',
-      category: 'Actions',
-      title: 'Open Artifact Lens',
-      subtitle: 'Inspect binary PSBTs, hex payloads, and detect mutations',
-      badge: 'Inspector',
-      handler: () => navigateTo('/inspect/')
-    },
-    {
-      id: 'action-diagnose',
-      category: 'Actions',
-      title: 'Open Failure Navigator',
-      subtitle: 'Triage protocol refusals, verify causes, and generate reproducers',
-      badge: 'Triage',
-      handler: () => navigateTo('/diagnose/')
-    },
-    {
-      id: 'action-agents',
-      category: 'Actions',
-      title: 'Open Agent Bridge',
-      subtitle: 'Configure MCP 2026-07-28 server, inspect tools and resources',
-      badge: 'MCP',
-      handler: () => navigateTo('/agents/')
-    },
-    {
-      id: 'action-mode-plain',
-      category: 'Actions',
-      title: 'Switch to Plain English Mode',
-      subtitle: 'Show direct outcomes and non-technical explanations',
-      badge: 'Mode',
-      handler: () => {
-        onSelectDisclosureMode?.('plain');
-        setIsOpen(false);
-      }
-    },
-    {
-      id: 'action-mode-builder',
-      category: 'Actions',
-      title: 'Switch to Builder Mode',
-      subtitle: 'Show API fields, schemas, and integration code',
-      badge: 'Mode',
-      handler: () => {
-        onSelectDisclosureMode?.('builder');
-        setIsOpen(false);
-      }
-    },
-    {
-      id: 'action-mode-proof',
-      category: 'Actions',
-      title: 'Switch to Protocol Proof Mode',
-      subtitle: 'Show exact verifier invariants, evidence classes, and byte offsets',
-      badge: 'Mode',
-      handler: () => {
-        onSelectDisclosureMode?.('proof');
-        setIsOpen(false);
-      }
-    }
+  const matches = (...fields: string[]) => !q || fields.some((f) => f.toLowerCase().includes(q));
+  const all: CommandItem[] = [];
+  const actions: CommandItem[] = [
+    { id: 'launchpad', category: 'Actions', title: 'Open Launchpad', subtitle: 'Guided missions and tasks', badge: 'Start', href: '/' },
+    { id: 'sandbox', category: 'Actions', title: 'Open Transaction Sandbox', subtitle: 'Step through trading scenarios with the reference verifiers', badge: 'Simulator', href: '/sandbox/' },
+    { id: 'inspect', category: 'Actions', title: 'Open Artifact Lens', subtitle: 'Decode PSBTs and transactions and compare them', badge: 'Inspector', href: '/inspect/' },
+    { id: 'diagnose', category: 'Actions', title: 'Open Failure Navigator', subtitle: 'Diagnose refusals and run their reproducers', badge: 'Triage', href: '/diagnose/' },
+    { id: 'agents', category: 'Actions', title: 'Open Agent Bridge', subtitle: 'MCP server setup and tools', badge: 'MCP', href: '/agents/' },
+    { id: 'playground', category: 'Actions', title: 'Open API Playground', subtitle: 'Build and send gateway requests', badge: 'API', href: '/build/playground/' },
+    { id: 'mode-plain', category: 'Actions', title: 'Switch to Plain English mode', subtitle: 'Outcomes in plain language', badge: 'Mode', run: () => onSelectDisclosureMode?.('plain') },
+    { id: 'mode-builder', category: 'Actions', title: 'Switch to Builder mode', subtitle: 'API fields, schemas and code', badge: 'Mode', run: () => onSelectDisclosureMode?.('builder') },
+    { id: 'mode-proof', category: 'Actions', title: 'Switch to Protocol Proof mode', subtitle: 'Verifier invariants and byte offsets', badge: 'Mode', run: () => onSelectDisclosureMode?.('proof') }
   ];
-
-  for (const item of coreActions) {
-    if (!q || item.title.toLowerCase().includes(q) || item.subtitle.toLowerCase().includes(q)) {
-      items.push(item);
-    }
-  }
-
-  // Missions
+  for (const a of actions) if (matches(a.title, a.subtitle)) all.push({ ...a, id: `action-${a.id}` });
   for (const m of MISSIONS) {
-    if (!q || m.title.toLowerCase().includes(q) || m.plainEnglishGoal.toLowerCase().includes(q)) {
-      items.push({
-        id: `mission-${m.id}`,
-        category: 'Missions',
-        title: `Mission: ${m.title}`,
-        subtitle: m.plainEnglishGoal,
-        badge: m.category,
-        handler: () => navigateTo(`/workspace/?mission=${m.id}`)
-      });
+    if (matches(m.title, m.plainEnglishGoal)) all.push({ id: `mission-${m.id}`, category: 'Missions', title: m.title, subtitle: m.plainEnglishGoal, badge: m.category, href: `/workspace/?mission=${encodeURIComponent(m.id)}` });
+  }
+  for (const op of operationsData as Array<{ operationId: string; method: string; path: string; summary: string; authorityLevel: string }>) {
+    if (matches(op.operationId, op.path, op.summary)) {
+      all.push({ id: `op-${op.operationId}`, category: 'API', title: `${op.method} ${op.path}`, subtitle: `${op.operationId}: ${op.summary}`, badge: op.authorityLevel, href: `/build/playground/?operation=${encodeURIComponent(op.operationId)}` });
     }
   }
-
-  // API Operations
-  for (const op of (operationsData as Array<{ operationId: string; method: string; path: string; summary: string; authorityLevel: string }>)) {
-    if (!q || op.operationId.toLowerCase().includes(q) || op.path.toLowerCase().includes(q) || op.summary.toLowerCase().includes(q)) {
-      items.push({
-        id: `op-${op.operationId}`,
-        category: 'API',
-        title: `${op.method} ${op.path}`,
-        subtitle: `${op.operationId}: ${op.summary}`,
-        badge: op.authorityLevel,
-        handler: () => navigateTo(`/reference/api/#${op.operationId}`)
-      });
-      if (items.length > 30) break;
-    }
+  for (const ref of refusalsData as Array<{ code: string; explanation: string; category: string }>) {
+    if (matches(ref.code, ref.explanation)) all.push({ id: `ref-${ref.code}`, category: 'Refusals', title: ref.code, subtitle: ref.explanation, badge: ref.category, href: `/diagnose/?code=${encodeURIComponent(ref.code)}` });
   }
+  const items = all.slice(0, MAX_RESULTS);
+  const active = items.length ? Math.min(selectedIndex, items.length - 1) : -1;
+  const optionId = (i: number) => `ox-command-option-${items[i]?.id.replace(/[^A-Za-z0-9_-]/g, '-')}`;
 
-  // Refusals
-  for (const ref of (refusalsData as Array<{ code: string; explanation: string; category: string }>)) {
-    if (!q || ref.code.toLowerCase().includes(q) || ref.explanation.toLowerCase().includes(q)) {
-      items.push({
-        id: `ref-${ref.code}`,
-        category: 'Refusals',
-        title: ref.code,
-        subtitle: ref.explanation,
-        badge: ref.category,
-        handler: () => navigateTo(`/diagnose/?code=${ref.code}`)
-      });
-      if (items.length > 40) break;
+  const choose = (item: CommandItem) => {
+    if (item.run) {
+      item.run();
+      close();
+      return;
     }
-  }
+    setIsOpen(false);
+    window.location.href = route(item.href || '/');
+  };
 
-  const handleKeyDown = (e: KeyboardEvent) => {
+  useEffect(() => {
+    if (active >= 0) document.getElementById(optionId(active))?.scrollIntoView({ block: 'nearest' });
+  }, [active, isOpen]);
+
+  const onInputKey = (e: KeyboardEvent) => {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setSelectedIndex((prev) => Math.min(prev + 1, Math.max(0, items.length - 1)));
+      setSelectedIndex(items.length ? (active + 1) % items.length : 0);
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      setSelectedIndex((prev) => Math.max(prev - 1, 0));
+      setSelectedIndex(items.length ? (active - 1 + items.length) % items.length : 0);
+    } else if (e.key === 'Home' && e.ctrlKey) {
+      setSelectedIndex(0);
+    } else if (e.key === 'End' && e.ctrlKey) {
+      setSelectedIndex(Math.max(0, items.length - 1));
     } else if (e.key === 'Enter') {
       e.preventDefault();
-      if (items[selectedIndex]) {
-        items[selectedIndex].handler();
-      }
+      if (active >= 0) choose(items[active]);
+    }
+  };
+
+  const onDialogKey = (e: KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      close();
+      return;
+    }
+    if (e.key !== 'Tab' || !dialogRef.current) return;
+    const focusable = [...dialogRef.current.querySelectorAll<HTMLElement>('input, button, a[href], [tabindex]:not([tabindex="-1"])')].filter((el) => !el.hasAttribute('disabled'));
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
     }
   };
 
   return (
     <div>
       <button
+        ref={triggerRef}
         type="button"
-        onClick={() => setIsOpen(true)}
-        aria-label="Open Command Center (Cmd+K)"
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-          padding: '0.35rem 0.625rem',
-          borderRadius: 'var(--ox-radius-md)',
-          border: '1px solid var(--ox-border-default)',
-          background: 'var(--ox-surface-subtle)',
-          color: 'var(--ox-text-secondary)',
-          fontSize: '0.75rem',
-          cursor: 'pointer'
-        }}
+        class="ox-command-trigger"
+        data-tour="command-center"
+        onClick={open}
+        aria-haspopup="dialog"
+        aria-keyshortcuts="Control+K Meta+K /"
+        style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', minHeight: '32px', padding: '0.35rem 0.625rem', borderRadius: 'var(--ox-radius-md)', border: '1px solid var(--ox-border-default)', background: 'var(--ox-surface-subtle)', color: 'var(--ox-text-secondary)', fontSize: '0.75rem', cursor: 'pointer' }}
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <circle cx="11" cy="11" r="8" />
           <line x1="21" y1="21" x2="16.65" y2="16.65" />
         </svg>
-        <span>Search or Jump...</span>
-        <kbd
-          style={{
-            fontSize: '0.6875rem',
-            background: 'var(--ox-surface-panel)',
-            padding: '0.1rem 0.35rem',
-            borderRadius: 'var(--ox-radius-sm)',
-            border: '1px solid var(--ox-border-strong)',
-            color: 'var(--ox-text-muted)'
-          }}
-        >
-          ⌘K
+        <span>Search or jump</span>
+        <kbd aria-hidden="true" style={{ fontSize: '0.6875rem', background: 'var(--ox-surface-panel)', padding: '0.1rem 0.35rem', borderRadius: 'var(--ox-radius-sm)', border: '1px solid var(--ox-border-strong)', color: 'var(--ox-text-secondary)' }}>
+          Ctrl K
         </kbd>
       </button>
 
       {isOpen && (
         <div
           role="presentation"
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 9999,
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            backdropFilter: 'blur(2px)',
-            display: 'flex',
-            alignItems: 'flex-start',
-            justifyContent: 'center',
-            paddingTop: '12vh'
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) close();
           }}
-          onClick={() => setIsOpen(false)}
+          style={{ position: 'fixed', inset: 0, zIndex: 9999, backgroundColor: 'rgba(0, 0, 0, 0.5)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '12vh 1rem 1rem' }}
         >
           <div
+            ref={dialogRef}
             role="dialog"
             aria-modal="true"
-            aria-label="Command Center"
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              width: '100%',
-              maxWidth: '640px',
-              maxHeight: '75vh',
-              backgroundColor: 'var(--ox-surface-panel)',
-              borderRadius: 'var(--ox-radius-lg)',
-              border: '1px solid var(--ox-border-strong)',
-              boxShadow: 'var(--ox-shadow-lg)',
-              display: 'flex',
-              flexDirection: 'column',
-              overflow: 'hidden'
-            }}
+            aria-labelledby="ox-command-title"
+            onKeyDown={onDialogKey}
+            style={{ width: '100%', maxWidth: '640px', maxHeight: '75vh', backgroundColor: 'var(--ox-surface-panel)', borderRadius: 'var(--ox-radius-lg)', border: '1px solid var(--ox-border-strong)', boxShadow: 'var(--ox-shadow-lg)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
           >
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.75rem',
-                padding: '0.875rem 1.125rem',
-                borderBottom: '1px solid var(--ox-border-subtle)'
-              }}
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--ox-text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <circle cx="11" cy="11" r="8" />
-                <line x1="21" y1="21" x2="16.65" y2="16.65" />
-              </svg>
+            <h2 id="ox-command-title" class="ox-sr-only">
+              Command Center
+            </h2>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.875rem 1.125rem', borderBottom: '1px solid var(--ox-border-subtle)' }}>
+              <label for="ox-command-input" class="ox-sr-only">
+                Search commands, missions, API operations and refusal codes
+              </label>
               <input
+                id="ox-command-input"
                 ref={inputRef}
                 type="text"
+                role="combobox"
+                aria-expanded="true"
+                aria-controls="ox-command-listbox"
+                aria-autocomplete="list"
+                aria-activedescendant={active >= 0 ? optionId(active) : undefined}
+                autoComplete="off"
+                spellcheck={false}
                 value={query}
                 onInput={(e) => {
                   setQuery((e.target as HTMLInputElement).value);
                   setSelectedIndex(0);
                 }}
-                onKeyDown={handleKeyDown}
-                placeholder="Type a command, mission, API endpoint, or refusal code..."
-                style={{
-                  flex: 1,
-                  border: 'none',
-                  outline: 'none',
-                  background: 'transparent',
-                  color: 'var(--ox-text-primary)',
-                  fontSize: '0.9375rem',
-                  fontFamily: 'inherit'
-                }}
+                onKeyDown={onInputKey}
+                placeholder="Command, mission, API operation or refusal code"
+                style={{ flex: 1, minWidth: 0, border: 'none', background: 'transparent', color: 'var(--ox-text-primary)', fontSize: '0.9375rem', fontFamily: 'inherit' }}
               />
-              <button
-                type="button"
-                onClick={() => setIsOpen(false)}
-                style={{
-                  padding: '0.2rem 0.4rem',
-                  fontSize: '0.6875rem',
-                  background: 'var(--ox-surface-subtle)',
-                  border: '1px solid var(--ox-border-default)',
-                  borderRadius: 'var(--ox-radius-sm)',
-                  cursor: 'pointer',
-                  color: 'var(--ox-text-muted)'
-                }}
-              >
-                ESC
+              <button type="button" onClick={close} aria-label="Close the Command Center" style={{ minHeight: '32px', minWidth: '44px', padding: '0.2rem 0.4rem', fontSize: '0.75rem', background: 'var(--ox-surface-subtle)', border: '1px solid var(--ox-border-default)', borderRadius: 'var(--ox-radius-sm)', cursor: 'pointer', color: 'var(--ox-text-secondary)' }}>
+                Esc
               </button>
             </div>
 
-            <div
-              role="listbox"
-              style={{
-                flex: 1,
-                overflowY: 'auto',
-                padding: '0.375rem 0',
-                maxHeight: '50vh'
-              }}
-            >
-              {items.length === 0 ? (
-                <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--ox-text-muted)' }}>
-                  No matching commands found.
-                </div>
-              ) : (
-                items.map((item, idx) => {
-                  const isSelected = idx === selectedIndex;
-                  return (
-                    <div
-                      key={item.id}
-                      role="option"
-                      aria-selected={isSelected}
-                      onClick={() => item.handler()}
-                      onMouseEnter={() => setSelectedIndex(idx)}
-                      style={{
-                        padding: '0.625rem 1.125rem',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        gap: '0.75rem',
-                        backgroundColor: isSelected ? 'var(--ox-surface-subtle)' : 'transparent',
-                        borderLeft: isSelected ? '3px solid var(--ox-bitcoin-orange)' : '3px solid transparent'
-                      }}
-                    >
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <span style={{ fontSize: '0.6875rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--ox-text-muted)' }}>
-                            {item.category}
-                          </span>
-                          <span style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--ox-text-primary)' }}>
-                            {item.title}
-                          </span>
-                        </div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--ox-text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {item.subtitle}
-                        </div>
+            <ul id="ox-command-listbox" role="listbox" aria-label="Results" style={{ flex: 1, overflowY: 'auto', margin: 0, padding: '0.375rem 0', listStyle: 'none', maxHeight: '50vh' }}>
+              {items.map((item, idx) => {
+                const selected = idx === active;
+                return (
+                  <li
+                    key={item.id}
+                    id={optionId(idx)}
+                    role="option"
+                    aria-selected={selected ? 'true' : 'false'}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => choose(item)}
+                    onMouseMove={() => idx !== active && setSelectedIndex(idx)}
+                    style={{ padding: '0.625rem 1.125rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', backgroundColor: selected ? 'var(--ox-surface-subtle)' : 'transparent', borderLeft: selected ? '3px solid var(--ox-bitcoin-orange)' : '3px solid transparent' }}
+                  >
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', minWidth: 0 }}>
+                        <span style={{ fontSize: '0.6875rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--ox-text-secondary)', flexShrink: 0 }}>{item.category}</span>
+                        <span style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--ox-text-primary)', overflowWrap: 'anywhere' }}>{item.title}</span>
                       </div>
-                      {item.badge && (
-                        <span
-                          style={{
-                            fontSize: '0.6875rem',
-                            fontWeight: 600,
-                            padding: '0.125rem 0.375rem',
-                            borderRadius: 'var(--ox-radius-sm)',
-                            backgroundColor: 'var(--ox-surface-panel)',
-                            border: '1px solid var(--ox-border-default)',
-                            color: 'var(--ox-text-secondary)',
-                            flexShrink: 0
-                          }}
-                        >
-                          {item.badge}
-                        </span>
-                      )}
+                      <div style={{ fontSize: '0.75rem', color: 'var(--ox-text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.subtitle}</div>
                     </div>
-                  );
-                })
-              )}
-            </div>
+                    {item.badge && (
+                      <span style={{ fontSize: '0.6875rem', fontWeight: 600, padding: '0.125rem 0.375rem', borderRadius: 'var(--ox-radius-sm)', backgroundColor: 'var(--ox-surface-panel)', border: '1px solid var(--ox-border-default)', color: 'var(--ox-text-secondary)', flexShrink: 0 }}>{item.badge}</span>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+            {items.length === 0 && (
+              <p role="status" style={{ margin: 0, padding: '1.5rem', textAlign: 'center', color: 'var(--ox-text-secondary)', fontSize: '0.875rem' }}>
+                Nothing matches "{query}". Try a refusal code such as SELLER_VALUE_MISMATCH, an operation such as listOrders, or a mission name.
+              </p>
+            )}
 
-            <div
-              style={{
-                padding: '0.5rem 1.125rem',
-                borderTop: '1px solid var(--ox-border-subtle)',
-                backgroundColor: 'var(--ox-surface-subtle)',
-                fontSize: '0.6875rem',
-                color: 'var(--ox-text-muted)',
-                display: 'flex',
-                justifyContent: 'space-between'
-              }}
-            >
-              <div>Navigate: <strong>↑</strong> <strong>↓</strong> | Select: <strong>Enter</strong></div>
-              <div>{items.length} options</div>
+            <div style={{ padding: '0.5rem 1.125rem', borderTop: '1px solid var(--ox-border-subtle)', backgroundColor: 'var(--ox-surface-subtle)', fontSize: '0.75rem', color: 'var(--ox-text-secondary)', display: 'flex', justifyContent: 'space-between', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <span>Up and Down to move, Enter to open, Esc to close</span>
+              <span role="status">{all.length > items.length ? `Showing ${items.length} of ${all.length}; type to narrow` : `${items.length} results`}</span>
             </div>
           </div>
         </div>

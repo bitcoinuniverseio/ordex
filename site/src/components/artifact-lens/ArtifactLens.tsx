@@ -279,6 +279,7 @@ export function ArtifactLens({ initialPayload = SAMPLE_PSBT_HEX }: LensProps): J
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
           <textarea
             id="ox-artifact-input"
+            data-tour="lens-input"
             value={rawInput}
             spellcheck={false}
             onInput={(e) => {
@@ -297,7 +298,7 @@ export function ArtifactLens({ initialPayload = SAMPLE_PSBT_HEX }: LensProps): J
 
       {parsed && (
         <div style={{ ...panel, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-          <div role="tablist" aria-label="Artifact views" style={{ display: 'flex', flexWrap: 'wrap', borderBottom: '1px solid var(--ox-border-subtle)', backgroundColor: 'var(--ox-surface-subtle)', fontSize: '0.8125rem', fontWeight: 600 }}>
+          <div role="tablist" aria-label="Artifact views" data-tour="lens-tabs" style={{ display: 'flex', flexWrap: 'wrap', borderBottom: '1px solid var(--ox-border-subtle)', backgroundColor: 'var(--ox-surface-subtle)', fontSize: '0.8125rem', fontWeight: 600 }}>
             {TABS.map((id) => (
               <button
                 key={id}

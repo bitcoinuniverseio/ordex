@@ -248,7 +248,7 @@ export function ContextRail({
                     border: '1px solid var(--ox-bitcoin-border)'
                   }}
                 >
-                  <div style={{ fontWeight: 700, color: 'var(--ox-bitcoin-orange)', fontSize: '0.75rem' }}>
+                  <div style={{ fontWeight: 700, color: 'var(--ox-accent-text)', fontSize: '0.75rem' }}>
                     Term: {detectedTerm.term}
                   </div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--ox-text-primary)', marginTop: '0.25rem', lineHeight: 1.4 }}>

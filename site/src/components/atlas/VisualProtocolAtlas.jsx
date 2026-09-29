@@ -151,7 +151,7 @@ export function VisualProtocolAtlas({ initialDiagramId = null }) {
                           x={x}
                           y={32}
                           text-anchor="middle"
-                          fill={isFrom || isTo ? '#ffffff' : 'var(--color-text-primary)'}
+                          fill={isFrom || isTo ? 'var(--color-on-brand)' : 'var(--color-text-primary)'}
                           font-size="11"
                           font-weight="700"
                           font-family="system-ui"
@@ -244,7 +244,7 @@ export function VisualProtocolAtlas({ initialDiagramId = null }) {
         </div>
 
         {/* Step Details & Side Panels */}
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); gap: 1.5rem;">
           {/* Left: Step Breakdown */}
           <div style="background: var(--color-bg-subtle); padding: 1.25rem; border-radius: var(--radius-md);">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">

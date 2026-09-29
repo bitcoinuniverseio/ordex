@@ -252,7 +252,7 @@ export function MissionWorkspace({ initialMissionId = 'integrate-public-asks', b
         </div>
       </div>
 
-      <nav aria-label="Mission stages" style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
+      <nav aria-label="Mission stages" data-tour="mission-stages" style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
         {mission.stages.map((st, idx) => {
           const isActive = st.id === activeStageId;
           const done = completionCurrent(st.id);
@@ -284,7 +284,7 @@ export function MissionWorkspace({ initialMissionId = 'integrate-public-asks', b
           <p style={{ fontSize: '0.875rem', color: 'var(--ox-text-secondary)', marginTop: '0.375rem', lineHeight: 1.4 }}>{activeStage.description}</p>
         </div>
 
-        <div style={{ padding: '1rem', borderRadius: 'var(--ox-radius-md)', backgroundColor: 'var(--ox-surface-subtle)', display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.8125rem' }}>
+        <div data-tour="stage-evidence" style={{ padding: '1rem', borderRadius: 'var(--ox-radius-md)', backgroundColor: 'var(--ox-surface-subtle)', display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.8125rem' }}>
           <div>
             <strong>What completes this stage:</strong>{' '}
             {activeStage.id === 'finish' ? 'Every other stage complete with evidence from the current context.' : requirement?.label || 'No requirement defined.'}

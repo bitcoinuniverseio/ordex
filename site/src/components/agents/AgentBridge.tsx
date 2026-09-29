@@ -152,7 +152,7 @@ export function AgentBridge(_props: AgentProps): JSX.Element {
 
       <div style={{ ...panel, padding: '1.5rem', borderRadius: 'var(--ox-radius-lg)' }}>
         <div style={{ fontSize: '0.75rem', color: 'var(--ox-text-secondary)' }}>
-          <strong style={{ color: 'var(--ox-bitcoin-orange)', textTransform: 'uppercase' }}>Agent Bridge</strong> · MCP revision {MCP_PROTOCOL_VERSION} · build <code>{BUILD_REVISION}</code>
+          <strong style={{ color: 'var(--ox-accent-text)', textTransform: 'uppercase' }}>Agent Bridge</strong> · MCP revision {MCP_PROTOCOL_VERSION} · build <code>{BUILD_REVISION}</code>
         </div>
         <h1 style={{ fontSize: '1.5rem', fontWeight: 800, margin: 0, color: 'var(--ox-text-primary)' }}>Ordex MCP server</h1>
         <p style={{ fontSize: '0.875rem', color: 'var(--ox-text-secondary)', margin: 0, lineHeight: 1.5 }}>
@@ -164,7 +164,7 @@ export function AgentBridge(_props: AgentProps): JSX.Element {
         </div>
       </div>
 
-      <section style={panel} aria-labelledby="mcp-install-heading">
+      <section style={panel} aria-labelledby="mcp-install-heading" data-tour="mcp-install">
         <h2 id="mcp-install-heading" style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0 }}>
           1. Build the stdio server
         </h2>
@@ -186,7 +186,7 @@ export function AgentBridge(_props: AgentProps): JSX.Element {
         </p>
       </section>
 
-      <section style={panel} aria-labelledby="mcp-client-heading">
+      <section style={panel} aria-labelledby="mcp-client-heading" data-tour="mcp-clients">
         <h2 id="mcp-client-heading" style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0 }}>
           2. Add it to your client
         </h2>
@@ -214,7 +214,7 @@ export function AgentBridge(_props: AgentProps): JSX.Element {
         </div>
       </section>
 
-      <section style={panel} aria-labelledby="mcp-remote-heading">
+      <section style={panel} aria-labelledby="mcp-remote-heading" data-tour="mcp-remote">
         <h2 id="mcp-remote-heading" style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0 }}>
           3. Check an HTTP endpoint
         </h2>
@@ -270,7 +270,7 @@ export function AgentBridge(_props: AgentProps): JSX.Element {
         )}
       </section>
 
-      <section style={{ ...panel, padding: 0, overflow: 'hidden' }} aria-labelledby="mcp-tools-heading">
+      <section style={{ ...panel, padding: 0, overflow: 'hidden' }} aria-labelledby="mcp-tools-heading" data-tour="mcp-tools">
         <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--ox-border-subtle)', backgroundColor: 'var(--ox-surface-subtle)' }}>
           <h2 id="mcp-tools-heading" style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0 }}>
             Tools ({MCP_TOOLS.length})

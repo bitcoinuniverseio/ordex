@@ -79,6 +79,7 @@ export function VersionEnvironmentController({ settings, onChange, buildRevision
         onClick={() => (isOpen ? close() : setIsOpen(true))}
         aria-expanded={isOpen}
         aria-haspopup="dialog"
+        data-tour="environment"
         aria-label={`Settings: protocol ${settings.protocolVersion}, ${NETWORK_LABEL[settings.network]}, ${where}, ${settings.mode}`}
         style={{
           display: 'inline-flex',

@@ -94,6 +94,10 @@ jobs:
       - name: Run the built-site browser gates
         run: npm run test:browser
 
+      # OX-S10: the tour screenshot pipeline runs against the built site; output is checked, not committed.
+      - name: Capture every tour step from the built site
+        run: node scripts/capture-walkthroughs.mjs --out dist/tour-captures
+
       # dist/ is a build output and stays untracked. The build itself fails
       # loudly on an error, so the check here is that everything the deploy
       # needs actually came out of it.
