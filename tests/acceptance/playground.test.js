@@ -80,7 +80,10 @@ before(async () => {
     }
     res.writeHead(404, { 'content-type': 'application/json' }).end('{"statusCode":404,"error":"Not Found","message":"no route","requestId":"r"}');
   });
+  const sockets = new Set();
   server.on('upgrade', (req, socket) => {
+    sockets.add(socket);
+    socket.on('close', () => sockets.delete(socket));
     if (!req.url.startsWith('/api/ordex/events/ws')) return socket.destroy();
     socket.write(`HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: ${wsAccept(req.headers['sec-websocket-key'])}\r\n\r\n`);
     socket.once('data', (buf) => {
@@ -93,7 +96,7 @@ before(async () => {
     socket.on('error', () => {});
   });
   await new Promise((r) => server.listen(0, '127.0.0.1', r));
-  stream = { origin: `http://127.0.0.1:${server.address().port}`, requests, close: () => new Promise((r) => { server.closeAllConnections?.(); server.close(r); }) };
+  stream = { origin: `http://127.0.0.1:${server.address().port}`, requests, close: () => new Promise((r) => { for (const s of sockets) s.destroy(); server.closeAllConnections?.(); server.close(r); }) };
   browser = await launch();
 });
 after(async () => {

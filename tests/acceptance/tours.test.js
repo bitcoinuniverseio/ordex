@@ -100,7 +100,7 @@ test('Product Tour rows', { timeout: 900000 }, async () => {
         await page.getByRole('button', { name: 'Next step' }).click();
         await page.locator(`[data-tour-step="${tour.steps[1].id}"]`).waitFor({ timeout: 15000 });
         seen.push(tour.steps[1].id);
-        await page.getByRole('heading', { name: tour.steps[1].title }).press('ArrowLeft');
+        await page.locator(`[data-tour-step="${tour.steps[1].id}"]`).getByRole('heading', { name: tour.steps[1].title }).press('ArrowLeft');
         await page.locator(`[data-tour-step="${tour.steps[0].id}"]`).waitFor({ timeout: 15000 });
         seen.push(tour.steps[0].id);
       }
