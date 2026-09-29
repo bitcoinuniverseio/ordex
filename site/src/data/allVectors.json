@@ -7179,7 +7179,7 @@
     "title": "pointer-to-its-own-op-return-burns-exact",
     "description": "P-R08 with exact balances: the whole balance of 840000:1 lands on the OP_RETURN.",
     "sourceFile": "conformance/rune-burn-vectors.json",
-    "sourceSha256": "c8043401687cfc63d15d92321e93bd367395fa9375ca11feb816be6573f116ea",
+    "sourceSha256": "744c3a9bb9e77a7c2d08cd0e25ef9ca905ad20d5bfe6013223d474a1c584116e",
     "case": {
       "name": "pointer-to-its-own-op-return-burns-exact",
       "description": "P-R08 with exact balances: the whole balance of 840000:1 lands on the OP_RETURN.",
@@ -7190,6 +7190,7 @@
       "inputs": [
         {
           "indexed": true,
+          "runes": 1,
           "balances": [
             {
               "runeId": "840000:1",
@@ -8420,7 +8421,7 @@
     "title": "edict-to-op-return-burns",
     "description": "An edict sends 400 of 840000:1 to the runestone output itself; the rest falls to output 1.",
     "sourceFile": "conformance/rune-burn-vectors.json",
-    "sourceSha256": "b5b63e1726d083db1ea389a46981a2a5d8a7a379ff9db7ec6b2d9110141cea05",
+    "sourceSha256": "af2f93bb43791bcd18c236ac8602dd1bc6c1c6a18f126c7ed75d508c5622f815",
     "case": {
       "name": "edict-to-op-return-burns",
       "description": "An edict sends 400 of 840000:1 to the runestone output itself; the rest falls to output 1.",
@@ -8431,6 +8432,7 @@
       "inputs": [
         {
           "indexed": true,
+          "runes": 1,
           "balances": [
             {
               "runeId": "840000:1",
@@ -8455,7 +8457,7 @@
     "title": "edict-zero-amount-to-op-return-burns-all",
     "description": "Amount 0 means the whole balance, here sent to the OP_RETURN.",
     "sourceFile": "conformance/rune-burn-vectors.json",
-    "sourceSha256": "d31eba75f50065b0214519da356ff77dce1b24b2c0fb678cdbee87eac3185bc0",
+    "sourceSha256": "e2e02d5d7fd17c8f592e6070cc2592fab2d4b047e56cfb88ca6cdf61998efb28",
     "case": {
       "name": "edict-zero-amount-to-op-return-burns-all",
       "description": "Amount 0 means the whole balance, here sent to the OP_RETURN.",
@@ -8466,6 +8468,7 @@
       "inputs": [
         {
           "indexed": true,
+          "runes": 1,
           "balances": [
             {
               "runeId": "840000:1",
@@ -8490,7 +8493,7 @@
     "title": "edict-for-unheld-rune-is-skipped",
     "description": "An edict to the OP_RETURN for a rune no input carries allocates nothing, so nothing burns.",
     "sourceFile": "conformance/rune-burn-vectors.json",
-    "sourceSha256": "c6b7906edbfacdd9bc93c9de4f4973e9b481e9ae2ec16f1306bc35fa4e7df84a",
+    "sourceSha256": "4c183c8caf865981ee624de4605c6a31291ede889414bd5d902485841dafb321",
     "case": {
       "name": "edict-for-unheld-rune-is-skipped",
       "description": "An edict to the OP_RETURN for a rune no input carries allocates nothing, so nothing burns.",
@@ -8501,6 +8504,7 @@
       "inputs": [
         {
           "indexed": true,
+          "runes": 1,
           "balances": [
             {
               "runeId": "840000:1",
@@ -8524,7 +8528,7 @@
     "title": "split-zero-amount-across-spendable-outputs",
     "description": "Output count with amount 0 divides the balance, remainder to the first outputs: 334, 333, 333.",
     "sourceFile": "conformance/rune-burn-vectors.json",
-    "sourceSha256": "e14545a0947b83dae85af7320d15f815d9401fba0d8772b6e16105e5476952d3",
+    "sourceSha256": "a9d0949f85d2e4a2e6001c6056da418d6b23ae195ddc06b23e76fac7cf915dbd",
     "case": {
       "name": "split-zero-amount-across-spendable-outputs",
       "description": "Output count with amount 0 divides the balance, remainder to the first outputs: 334, 333, 333.",
@@ -8537,6 +8541,7 @@
       "inputs": [
         {
           "indexed": true,
+          "runes": 1,
           "balances": [
             {
               "runeId": "840000:1",
@@ -8560,7 +8565,7 @@
     "title": "split-fixed-amount-until-exhausted",
     "description": "Output count with amount 400 gives 400, 400, then the 200 left.",
     "sourceFile": "conformance/rune-burn-vectors.json",
-    "sourceSha256": "e0f9564b23e04515ae49c1a47b4cf36e933b0df5989c0f77f74965d19c42e2b5",
+    "sourceSha256": "c3d172509bd79eba0f2129a38a2a65cff6704b6c21efb3298080a77778aa7560",
     "case": {
       "name": "split-fixed-amount-until-exhausted",
       "description": "Output count with amount 400 gives 400, 400, then the 200 left.",
@@ -8573,6 +8578,7 @@
       "inputs": [
         {
           "indexed": true,
+          "runes": 1,
           "balances": [
             {
               "runeId": "840000:1",
@@ -8596,7 +8602,7 @@
     "title": "no-runestone-and-no-spendable-output-burns",
     "description": "Without a runestone the balance falls to the first non-OP_RETURN output, and there is none.",
     "sourceFile": "conformance/rune-burn-vectors.json",
-    "sourceSha256": "4d3183100a5958c1b8d6463407ed44cda45e972e5e3d28caca165f39330d6fd5",
+    "sourceSha256": "59524ba250802a23daf176760589da8192175ca55a7b87696437db3a1a2a6a2a",
     "case": {
       "name": "no-runestone-and-no-spendable-output-burns",
       "description": "Without a runestone the balance falls to the first non-OP_RETURN output, and there is none.",
@@ -8607,6 +8613,7 @@
       "inputs": [
         {
           "indexed": true,
+          "runes": 1,
           "balances": [
             {
               "runeId": "840000:1",
@@ -8661,7 +8668,7 @@
     "title": "pointer-takes-the-leftover",
     "description": "An edict sends 300 to output 1 and the pointer sends the other 700 to output 2.",
     "sourceFile": "conformance/rune-burn-vectors.json",
-    "sourceSha256": "a5973f60ba5f1f7b5ccd3be81537d3da6dfcfd0005a10cff337693f78119fb91",
+    "sourceSha256": "1153bc26a0744ff233af2e7352158f282c5b9c7baee54aaa30a61d6e499f4810",
     "case": {
       "name": "pointer-takes-the-leftover",
       "description": "An edict sends 300 to output 1 and the pointer sends the other 700 to output 2.",
@@ -8673,6 +8680,7 @@
       "inputs": [
         {
           "indexed": true,
+          "runes": 1,
           "balances": [
             {
               "runeId": "840000:1",
@@ -8696,7 +8704,7 @@
     "title": "cenotaph-burns-exact-balances",
     "description": "A cenotaph burns the exact balances listed.",
     "sourceFile": "conformance/rune-burn-vectors.json",
-    "sourceSha256": "5ad5ddd31a1986e22a9d3a68af26e47332b80b00b1c6f1759eff3633dff000ef",
+    "sourceSha256": "b11756aabcc1bfd6824694a903e18a04ac23cdd177a5e89ab70c1bebef7ded0c",
     "case": {
       "name": "cenotaph-burns-exact-balances",
       "description": "A cenotaph burns the exact balances listed.",
@@ -8707,6 +8715,7 @@
       "inputs": [
         {
           "indexed": true,
+          "runes": 1,
           "balances": [
             {
               "runeId": "840000:1",
@@ -8732,7 +8741,7 @@
     "title": "mint-of-held-rune-needs-the-mint-result",
     "description": "The runestone mints a rune the input also carries and its pointer is the OP_RETURN, so the burn depends on the minted amount.",
     "sourceFile": "conformance/rune-burn-vectors.json",
-    "sourceSha256": "64cd433f7f69f968926e2ca21fd1383d39f771e3ba02e9ba05ba47392dd9e207",
+    "sourceSha256": "17ae3b959f8b93cfe35717b6c5fa1fd5199546f10b9042397a5cfab3a42936e8",
     "case": {
       "name": "mint-of-held-rune-needs-the-mint-result",
       "description": "The runestone mints a rune the input also carries and its pointer is the OP_RETURN, so the burn depends on the minted amount.",
@@ -8743,6 +8752,7 @@
       "inputs": [
         {
           "indexed": true,
+          "runes": 1,
           "balances": [
             {
               "runeId": "840000:1",
@@ -8771,7 +8781,7 @@
     "title": "two-runes-one-left-for-an-op-return-pointer",
     "description": "Two inputs carry 840000:1 and 840000:2. The edict moves all of 840000:1; 840000:2 falls to the OP_RETURN pointer.",
     "sourceFile": "conformance/rune-burn-vectors.json",
-    "sourceSha256": "407ee0c17da3683ed9b76f9d460d5183f5c4ffe3b371546715a2033239681a50",
+    "sourceSha256": "c66236f6540b27f68ceb127ce76066fc1d325befc82df46bd74c612880d5b896",
     "case": {
       "name": "two-runes-one-left-for-an-op-return-pointer",
       "description": "Two inputs carry 840000:1 and 840000:2. The edict moves all of 840000:1; 840000:2 falls to the OP_RETURN pointer.",
@@ -8782,6 +8792,7 @@
       "inputs": [
         {
           "indexed": true,
+          "runes": 1,
           "balances": [
             {
               "runeId": "840000:1",
@@ -8791,6 +8802,7 @@
         },
         {
           "indexed": true,
+          "runes": 2,
           "balances": [
             {
               "runeId": "840000:1",
@@ -8819,7 +8831,7 @@
     "title": "edicts-cover-everything-before-an-op-return-pointer",
     "description": "The edict moves the whole balance, so the OP_RETURN pointer receives nothing.",
     "sourceFile": "conformance/rune-burn-vectors.json",
-    "sourceSha256": "3ac6e1709568f75314edae6fc8dd0c89bdfdb5f4b4f3735c231d89885dc51584",
+    "sourceSha256": "26e846b984125539803992be87088467a2437a67bb8d18462929f54e1cb8ea64",
     "case": {
       "name": "edicts-cover-everything-before-an-op-return-pointer",
       "description": "The edict moves the whole balance, so the OP_RETURN pointer receives nothing.",
@@ -8830,6 +8842,7 @@
       "inputs": [
         {
           "indexed": true,
+          "runes": 1,
           "balances": [
             {
               "runeId": "840000:1",
@@ -9037,7 +9050,7 @@
     "title": "allocation-matching-the-plan-is-accepted",
     "description": "An edict sends 300 of 840000:1 to output 1 and the pointer the other 700 to output 2, exactly as planned.",
     "sourceFile": "conformance/rune-burn-vectors.json",
-    "sourceSha256": "5b45127217db9322c43603ff7ac999656e2786d41bdc3f0d3c715d86b34fe79c",
+    "sourceSha256": "d7338b3b77629b836a06131ef2edde109a0a11e31f6c3b0898f42fdfdb294ee3",
     "case": {
       "name": "allocation-matching-the-plan-is-accepted",
       "description": "An edict sends 300 of 840000:1 to output 1 and the pointer the other 700 to output 2, exactly as planned.",
@@ -9049,6 +9062,7 @@
       "inputs": [
         {
           "indexed": true,
+          "runes": 1,
           "balances": [
             {
               "runeId": "840000:1",
@@ -9070,7 +9084,9 @@
         }
       ],
       "expected": {
-        "ok": true
+        "ok": true,
+        "safe": true,
+        "runestone": "RUNESTONE"
       }
     }
   },
@@ -9083,7 +9099,7 @@
     "title": "allocation-differing-from-the-plan-is-refused",
     "description": "The same transaction against a plan that expects all 1000 at output 1.",
     "sourceFile": "conformance/rune-burn-vectors.json",
-    "sourceSha256": "9fceba394b5a3cd616d2af4a20687a8e36e0257e3244d59699e52538d5c371ac",
+    "sourceSha256": "c6aead9e91ad54e6bd8a5772ca573b87ee4a8aa95f9cc2d9a7b077cea4b53351",
     "case": {
       "name": "allocation-differing-from-the-plan-is-refused",
       "description": "The same transaction against a plan that expects all 1000 at output 1.",
@@ -9095,6 +9111,7 @@
       "inputs": [
         {
           "indexed": true,
+          "runes": 1,
           "balances": [
             {
               "runeId": "840000:1",
@@ -9112,7 +9129,9 @@
       ],
       "expected": {
         "ok": false,
-        "code": "RUNE_ALLOCATION_MISMATCH"
+        "code": "RUNE_ALLOCATION_MISMATCH",
+        "safe": true,
+        "runestone": "RUNESTONE"
       }
     }
   },

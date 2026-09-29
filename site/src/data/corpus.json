@@ -739,8 +739,8 @@
     "protocolVersion": "1.2",
     "contentType": "specification",
     "title": "Offers v1 - Offer lifecycle",
-    "content": "| State | What it means |\n| --- | --- |\n| `PENDING_CONFIRMATION` | The funded output is in the mempool or otherwise unconfirmed. The offer is not live. |\n| `LIVE` | The funded output is confirmed and unspent, and both authorities currently agree the terms are satisfiable. |\n| `ACCEPTED` | A transaction carrying this offer's exact acceptance confirmed. |\n| `RECOVERED` | A transaction spending the output by the recovery leaf confirmed. |\n| `MEMPOOL_CONFLICTED` | An unconfirmed transaction spends the funded output. It can still be replaced or dropped. |\n| `SPENT` | The funded output was spent on chain by a transaction that was neither its acceptance nor its recovery. |\n| `EXPIRED` | The current height reached `expiryHeight` with the output unspent. Acceptance is refused; recovery confirms from the next block. |\n| `WITHDRAWN` | The buyer proved ownership of the recovery key before expiry and removed the offer from discovery. Withdrawal is discovery, not cancellation; only a spend settles the funds. |\n| `REJECTED` | The posted evidence was unusable: malformed terms, wrong network, a root that does not exist, or a funded output that is not the tree the terms and policy keys produce. |\n\nA",
-    "digest": "f4929dc6d4d8e1ef",
+    "content": "| State | What it means |\n| --- | --- |\n| `PENDING_CONFIRMATION` | The funded output is in the mempool or otherwise unconfirmed. The offer is not live. |\n| `LIVE` | The funded output is confirmed and unspent, and both authorities currently agree the terms are satisfiable. |\n| `ACCEPTED` | A transaction carrying this offer's exact acceptance confirmed. |\n| `RECOVERED` | A transaction spending the output by the recovery leaf confirmed. |\n| `MEMPOOL_CONFLICTED` | An unconfirmed transaction spends the funded output. It can still be replaced or dropped. |\n| `SPENT` | The funded output was spent on chain by a transaction that was neither its acceptance nor its recovery. |\n| `EXPIRED` | The current height reached `expiryHeight` with the output unspent. Acceptance is refused; recovery confirms from the next block. |\n| `WITHDRAWN` | The buyer proved ownership of the recovery key before expiry and removed the offer from discovery, with a BIP-340 signature by `buyerRecoveryKeyHex` over the tagged hash (tag `ordex/offer-withdrawal`) of the message `Ordex offer withdrawal\\nnetwork: <network>\\noffer: <id>\\nterms: <offerTermsHash>`. Withdrawal is discovery, not cancellation; only a spend settles ",
+    "digest": "a3ddfad6f5dc3397",
     "docUrl": "/reference/specifications/#spec-offers"
   },
   {
@@ -1471,8 +1471,8 @@
     "protocolVersion": "1.2",
     "contentType": "api-operation",
     "title": "POST /api/ordex/offers/{id}/withdraw (withdrawOffer)",
-    "content": "POST /api/ordex/offers/{id}/withdraw (withdrawOffer): Remove an offer from discovery, proved by the recovery key. Discovery, not cancellation: the funded output stays spendable by the acceptance path until it is spent, and by the recovery path after expiry. A BIP 322 signature by the recovery key proves who may stop publishing the offer.. Evidence level: Deterministic example. Tag: offers.",
-    "digest": "e93f9dd9a1bca6b5",
+    "content": "POST /api/ordex/offers/{id}/withdraw (withdrawOffer): Remove an offer from discovery, proved by the recovery key. Discovery, not cancellation: the funded output stays spendable by the acceptance path until it is spent, and by the recovery path after expiry. A BIP-340 signature by the recovery key over the offer withdrawal message proves who may stop publishing the offer.. Evidence level: Deterministic example. Tag: offers.",
+    "digest": "1870c4be5d40a681",
     "docUrl": "/reference/api/#withdrawOffer"
   },
   {
@@ -2110,6 +2110,78 @@
     "content": "GET /api/ordex/operations/{operationId} (getOperation): The receipt a mutation committed under an idempotency key. Lets a caller that lost a reply learn what the gateway committed under the operation id it sent, instead of repeating the mutation. Unknown ids answer 404 so a lost request is distinguishable from a lost reply.. Evidence level: Deterministic example. Tag: status.",
     "digest": "4b296daa1ab81931",
     "docUrl": "/reference/api/#getOperation"
+  },
+  {
+    "id": "api-op-relayHeritageOperation",
+    "sourcePath": "spec/openapi.json",
+    "pointer": "/paths~1api~1ordex~1heritage~1operations~1{operationId}~1relay/post",
+    "product": "heritage",
+    "protocolVersion": "1.2",
+    "contentType": "api-operation",
+    "title": "POST /api/ordex/heritage/operations/{operationId}/relay (relayHeritageOperation)",
+    "content": "POST /api/ordex/heritage/operations/{operationId}/relay (relayHeritageOperation): Relay the signed transaction of a composed attach or detach. Checks, in order: the heritage authority is ready; the signed bytes are the stored manifest with every input signed and the asset landing where the manifest says; every input is unspent with the balances it carried when composed; the node decodes the composed message; testmempoolaccept allows it; then sendrawtransaction. The operation becomes RELAYED. An operation no longer COMPOSED answers its stored state and sends nothing, which is why this route answers 200.. Evidence level: Deterministic example. Tag: heritage.",
+    "digest": "3cbf2ad9a17c2d62",
+    "docUrl": "/reference/api/#relayHeritageOperation"
+  },
+  {
+    "id": "api-op-getHeritageOperation",
+    "sourcePath": "spec/openapi.json",
+    "pointer": "/paths~1api~1ordex~1heritage~1operations~1{operationId}/get",
+    "product": "heritage",
+    "protocolVersion": "1.2",
+    "contentType": "api-operation",
+    "title": "GET /api/ordex/heritage/operations/{operationId} (getHeritageOperation)",
+    "content": "GET /api/ordex/heritage/operations/{operationId} (getHeritageOperation): One heritage operation and its ledger settlement. An unknown id answers 404 HERITAGE_OPERATION_NOT_FOUND.. Evidence level: Deterministic example. Tag: heritage.",
+    "digest": "7bccf4d0efe87719",
+    "docUrl": "/reference/api/#getHeritageOperation"
+  },
+  {
+    "id": "api-op-draftHeritageAsk",
+    "sourcePath": "spec/openapi.json",
+    "pointer": "/paths~1api~1ordex~1heritage~1asks/post",
+    "product": "heritage",
+    "protocolVersion": "1.2",
+    "contentType": "api-operation",
+    "title": "POST /api/ordex/heritage/asks (draftHeritageAsk)",
+    "content": "POST /api/ordex/heritage/asks (draftHeritageAsk): Draft an unsigned ask over one carrying UTXO. . Evidence level: Deterministic example. Tag: heritage.",
+    "digest": "58d7665bd3dc4d06",
+    "docUrl": "/reference/api/#draftHeritageAsk"
+  },
+  {
+    "id": "api-op-draftHeritageSwap",
+    "sourcePath": "spec/openapi.json",
+    "pointer": "/paths~1api~1ordex~1heritage~1swaps/post",
+    "product": "heritage",
+    "protocolVersion": "1.2",
+    "contentType": "api-operation",
+    "title": "POST /api/ordex/heritage/swaps (draftHeritageSwap)",
+    "content": "POST /api/ordex/heritage/swaps (draftHeritageSwap): Draft an unsigned swap over one carrying UTXO. . Evidence level: Deterministic example. Tag: heritage.",
+    "digest": "238f5052db78f17a",
+    "docUrl": "/reference/api/#draftHeritageSwap"
+  },
+  {
+    "id": "api-op-publishHeritageIntent",
+    "sourcePath": "spec/openapi.json",
+    "pointer": "/paths~1api~1ordex~1heritage~1intents/post",
+    "product": "heritage",
+    "protocolVersion": "1.2",
+    "contentType": "api-operation",
+    "title": "POST /api/ordex/heritage/intents (publishHeritageIntent)",
+    "content": "POST /api/ordex/heritage/intents (publishHeritageIntent): Publish a maker-signed heritage ask or swap. A PRIVATE intent travels as an encrypted envelope and is accepted through the private acceptance route instead.. Evidence level: Deterministic example. Tag: heritage.",
+    "digest": "5c545f0d219ba958",
+    "docUrl": "/reference/api/#publishHeritageIntent"
+  },
+  {
+    "id": "api-op-acceptHeritageIntent",
+    "sourcePath": "spec/openapi.json",
+    "pointer": "/paths~1api~1ordex~1heritage~1intents~1{intentId}~1accept/post",
+    "product": "heritage",
+    "protocolVersion": "1.2",
+    "contentType": "api-operation",
+    "title": "POST /api/ordex/heritage/intents/{intentId}/accept (acceptHeritageIntent)",
+    "content": "POST /api/ordex/heritage/intents/{intentId}/accept (acceptHeritageIntent): Accept a published heritage ask or swap. Proves the gives whole again, builds the plan through the swaps desk and adds the UTXO_MOVE ledger events the settlement must produce. Signing, preflight and broadcast use the swap session routes.. Evidence level: Deterministic example. Tag: heritage.",
+    "digest": "2b2f860aa7a1d7a7",
+    "docUrl": "/reference/api/#acceptHeritageIntent"
   },
   {
     "id": "ref-ACCEPTANCE_DIGEST_MISMATCH",
