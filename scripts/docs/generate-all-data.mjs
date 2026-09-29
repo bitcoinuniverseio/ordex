@@ -78,6 +78,28 @@ const channels = Object.entries(asyncapi.channels).map(([name, ch]) => ({
   messages: ch.messages || {}
 }));
 
+/* IMPLEMENTATION-HANDOFF [OX-S07]
+ * Defect OX-S-D07; coverage OX-S-C900..OX-S-C918. Generator derives singular file-name families the executor
+ * does not recognize and flattens away kind, plan, signed, intent, acceptance, event, membership, record and
+ * other required arguments.
+ * 1. Import the OX-S07 explicit family/file registry. Preserve the complete source case in each generated
+ * entry, adding stable family+case IDs and display metadata without replacing its argument shape. Assert every
+ * case maps to an executor and each generated/source count matches.
+ * 2. Derive displayed counts from generated data; current README/UI says151 while source test expects157. Pin
+ * metadata to actual build revision, spec digest and vector digest; reject stale generated data.
+ * 3. Make examples obey OpenAPI 3.1 referenced schema including const, enum, oneOf/allOf, nullable and
+ * required fields. Validate each generated example before publication; represent missing examples truthfully
+ * rather than {status:200,ok:true}.
+ * 4. Add parity tests that execute every generated case and every source case through the same shared
+ * executor; compare expected/actual fields, not just aggregate pass counts. Run node
+ * scripts/docs/generate-all-data.mjs only in a build/validation workspace during this preparation;
+ * implementation may regenerate tracked data after changes are accepted.
+ * 5. Rebuild Lab/Studio/MCP/Playground/Kits together; PROPOSED NEW tests/unit/generated-contracts.test.js must
+ * assert source preservation and complete required fields for all nine families.
+ * Dependencies: OX-S07 executor registry, SDK/spec fixes and OX-S11 source metadata. Generated JSON cannot
+ * take comments, so this is its owning annotation. Rollback generator and all generated assets together,
+ * retaining prior verified case hashes.
+ */
 // 3. Conformance vectors
 const conformanceDir = path.join(root, 'conformance');
 const vectorFiles = fs.readdirSync(conformanceDir).filter(f => f.endsWith('.json'));
@@ -984,6 +1006,24 @@ function resolveRef(ref, doc) {
   return curr || {};
 }
 
+/* IMPLEMENTATION-HANDOFF [OX-S09]
+ * Defect OX-S-D09; coverage OX-S-C300..OX-S-C471 and OX-S-C500..OX-S-C671. Every code receives the same
+ * lifecycle, PSBT evidence requirements, generic UTXO cause and a reproducerFactoryId for a factory that does
+ * not exist.
+ * 1. Replace generic mapping with a versioned authored rule registry tied to verifier branch/spec requirement,
+ * lifecycle and concrete validated reproducer. Preserve shared codes across all relevant families instead of
+ * always choosing verifiers[0].
+ * 2. Use existing conformance refusals where sufficient; add minimal source fixtures for uncovered codes with
+ * an actual verifier call and exact assertion. Derive valid supportedProtocolVersions from spec metadata
+ * (SafeOps/swaps are1.2 in README/spec), not family name guesses.
+ * 3. Generate diagnostics/refusal catalog from that source and fail generation for dangling source/factory
+ * refs, unknown versions or unexecuted examples. Do not edit generated JSON directly.
+ * 4. PROPOSED NEW tests/unit/diagnostic-reproducers.test.js executes all172 advertised code examples and
+ * asserts actual code/remediation provenance; tests/unit/diagnostic-detector.test.js covers envelope
+ * classification and cautious confidence for unrecognized codes.
+ * Dependencies: OX-S09 UI, OX-S07 normalized verifier registry, governing protocol work packages. Rollback
+ * generated rules, fixtures and references together; preserve intentional unknown states.
+ */
 // 10. Diagnostics Registry Generation for Failure Navigator
 const diagnostics = refusalList.map(r => {
   const family = r.verifiers[0] || 'purchase';

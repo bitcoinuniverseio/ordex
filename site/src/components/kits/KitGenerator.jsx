@@ -14,6 +14,29 @@ export function KitGenerator() {
     );
   };
 
+  /* IMPLEMENTATION-HANDOFF [OX-S06]
+   * Defect OX-S-D06; coverage OX-S-C1000..OX-S-C1014. Runtime/capabilities/mode do not change generated source;
+   * all kits emit Node code, start expects unbuilt index.js, SDK method signatures drift, and CI uses prohibited
+   * hosted runners.
+   * 1. Extract PROPOSED NEW site/src/lib/kits/generator.ts with deterministic pure templates. Generate actual
+   * Node, Browser and Worker entry/build/runtime files and separate checked-in offline-example versus
+   * configured-gateway adapters; wire selected capabilities into real typed SDK calls.
+   * 2. Resolve the accepted SDK package version/export shape with sdk/src/index.ts and generator; add package
+   * lock, exact package/runtime pins and build-before-start scripts. Browser code cannot reference
+   * process.env/node modules; Worker output must export a real fetch handler and explicit bindings.
+   * 3. Generate schema-correct request examples and per-capability verifiers/consumer tests using OX-S07
+   * normalized data. Include real project CI on authorized self-hosted runner labels; do not copy ubuntu-latest
+   * or unpinned install steps.
+   * 4. Replace tests/unit/kit-generator.test.js's independently constructed sample ZIP with assertions against
+   * the actual generator and extraction of every runtime/mode/capability choice. Run clean
+   * install/build/test/start on generated packages; verify Browser render and Worker request outcomes.
+   * 5. Label configured mode with required origin/network and no credentials in ZIP; keep key
+   * custody/signing/broadcast responsibilities with the real consumer. Await download completion and report
+   * failure accessibly.
+   * Dependencies: SDK repair package, OX-S03 settings, OX-S05 requests, OX-S07 browser verifier. Acceptance is a
+   * runnable extracted kit with correct advertised selected features, not ZIP nonemptiness. Rollback generated
+   * package/version as a unit; avoid shipping a template whose SDK is unavailable.
+   */
   const handleGenerateZip = async () => {
     setIsGenerating(true);
     try {

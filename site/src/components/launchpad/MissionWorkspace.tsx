@@ -103,6 +103,29 @@ export function MissionWorkspace({
     }
   };
 
+  /* IMPLEMENTATION-HANDOFF [OX-S03]
+   * Defect OX-S-D03; coverage OX-S-C010..OX-S-C089. Clicking complete records PASS/Protocol verification without
+   * running criteria, prerequisite checks are always green, and tool links do not transfer structured state.
+   * 1. Add typed stage adapters to mission-registry.ts, including operation/scenario/vector IDs, input
+   * requirements and evidence predicates. Treat reading acknowledgments as progress only; require an actual
+   * matching verifier or gateway run before completion of execution stages.
+   * 2. Replace static prerequisite checkmarks and unused prereqStates with validated prerequisite states. Bind
+   * completion to mission ID, stage, network, protocol version, artifact digest and source build;
+   * pending/stale/refused runs cannot satisfy criteria.
+   * 3. Wire each toolRoute to a bounded opaque journey/artifact reference in journeyStore. Consume the reference
+   * in Sandbox, Lens, Lab, Playground, Doctor and Kits; return the run ID and persist it before advancing. Do
+   * not place signed bytes or secrets in URL parameters.
+   * 4. Fix session initialization races by loading the validated query mission once, selecting the saved session
+   * for that mission, and cancelling stale async loads. Reset local completed/prerequisite state when changing
+   * mission; subscribe to OX-S03 session sync.
+   * 5. Extend tests/unit/mission-registry.test.js and PROPOSED NEW tests/e2e/missions.test.js: all nine missions
+   * through eight stages, premature completion rejected, tool transfer/readback, wrong network,
+   * refresh/back/reconnect, reset and cross-tab update. Local deterministic lessons remain labeled examples and
+   * cannot satisfy real gateway/transaction acceptance.
+   * Dependencies: OX-S01/02/05/06/07/08 supply real tool results; journey-store.ts owns durable records.
+   * Preserve old sessions through explicit schema migration and mark unsupported old evidence unverified.
+   * Rollback preserves user progress, never upgrades acknowledgments to verification.
+   */
   const handleCompleteCurrentStage = async () => {
     const nextCompleted = Array.from(new Set([...completedStageIds, activeStageId]));
     setCompletedStageIds(nextCompleted);

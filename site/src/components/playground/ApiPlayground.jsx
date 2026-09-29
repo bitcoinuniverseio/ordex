@@ -24,6 +24,29 @@ export function ApiPlayground({ initialOperationId = null }) {
     setResponseOutput(null);
   }, [selectedOpId]);
 
+  /* IMPLEMENTATION-HANDOFF [OX-S05]
+   * Defect OX-S-D05; coverage OX-S-C700..OX-S-C877. Read mode can dispatch POST/DELETE, paths retain {id},
+   * parameters are display-only, and schema PASS is fabricated from examples or HTTP success.
+   * 1. Use spec/openapi.json (OpenAPI 3.1) to construct validated path/query/header/body editors, resolve
+   * references and serialize style/explode correctly. Encode path values, reject unresolved templates, and
+   * preserve decimal strings. Honor ?operation= deep links and shared OX-S03 network/origin context.
+   * 2. Enforce effect permissions in handleExecute: read-only mode cannot call mutations; explicitly authorized
+   * write mode previews exact origin/network/method/path/body and its effect. A changed request invalidates
+   * approval. Never rotate production credentials implicitly; keep signing/broadcast owner-controlled and obey
+   * the protocol's specific user-intent gate.
+   * 3. Validate request and actual response against the referenced schema/status/media type using a pinned JSON
+   * Schema 2020-12 implementation. Label HTTP acceptance separately from protocol/application outcome. Mock
+   * responses must be validated examples with no E2E/chain success claim.
+   * 4. Add timeout/cancel, duplicate-submit protection, stale-result suppression and safe structured error
+   * display. Keep auth session-only, sanitized from copy/export/history. Correct cURL escaping for
+   * apostrophes/newlines and preserve payload bytes.
+   * 5. PROPOSED NEW tests/unit/api-playground.test.js plus browser cases for all 78 operation templates,
+   * missing/invalid required values, read-mode mutation refusal, explicit writes only to isolated Signet
+   * services, schema-invalid 200, non-JSON/errors and cancellation. Real API/authority/persistence/transaction
+   * checks belong to corresponding protocol rows.
+   * Dependencies: OX-S03, generator OX-S07/11, SDK/API contract packages. Re-test mission/gateway/kit consumers.
+   * Rollback request builder and operation metadata together; never restore silent writes in read mode.
+   */
   const handleExecute = async () => {
     setLoading(true);
     const start = performance.now();

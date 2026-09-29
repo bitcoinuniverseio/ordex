@@ -45,6 +45,43 @@ is not.
 
 `OP_0` is an empty push, not an opcode.
 
+<!--
+IMPLEMENTATION-HANDOFF [OX-P04] Preparation only; functional status FAIL, repair NOT IMPLEMENTED.
+Coverage: OX-P-C001, OX-P-C009, OX-P-C017, OX-P-C031, OX-P-C032, OX-P-C033, OX-P-C057. Evidence:
+P-R05, P-R06, P-R07, P-R08 in handoff/evidence.
+Verified cause: A whitelist of even tags is substituted for ord field consumption;
+duplicate/unused/incomplete fields classified as RUNESTONE. verifyRuneBurnSafety checks only
+cenotaph and cannot detect valid runestones burning assets via OP_RETURN.
+Required behavior: Rune parser parity and complete allocation/burn protection. Governing refs: P-S02
+(Ord0.29.0 commit7e37a3bd3391044b39f5f11f20dfdb8b3764cd0e; runestone
+blob98022fb2a25d587a59a4a2ac40cd9de9bc5a6d0b); P-S03 (Ord0.29.0;
+blobbce2ae16336368bba3f7d70eed2a1493a67f45c9); complete URLs in reports/protocol.md.
+Prerequisites/order: none; establish strict contracts first. Related files: verifier/runes.js,
+sdk/src/runes.ts; Core/backend or site consumer named by the work package.
+1. Port ord0.29.0 Runestone::decipher field-consumption rules: Tag::take arity/range validation and
+removal only after successful decode; consume Etching/Terms/Turbo flags conditionally, detect
+remaining even fields/flags and supply overflow.
+2. Preserve script parser/varint/edict rules while adding exact mint arity, duplicate pointer/flags
+and context vectors against pinned ord reference; do not equate recognized tag number with consumed
+valid field.
+3. Add rune allocation verifier with exact per-rune input balances; process edicts/pointer/default
+destination/all-output split and cenotaph, count burns including explicit OP_RETURN and no spendable
+destination; reject incomplete index observations for signing safety.
+4. Keep decipher/limited format verdict distinguishable from full asset safety; mirror SDK/spec and
+integrate builders/Shield/purchase/swap preflight with authoritative allocation results.
+Validation (PROPOSED NEW tests, commands unverified until implemented):
+verifier/runes.ord-parity.test.js, sdk/test/runes.ord-parity.test.js. node --test
+verifier/runes.test.js verifier/runes.ord-parity.test.js; npm --prefix sdk run build; node --test
+sdk/test/runes.test.js sdk/test/runes.ord-parity.test.js.
+Assertions/evidence: 6a5d0416011601,6a5d020601,6a5d021401 are CENOTAPH; 6a5d021600 with rune-bearing
+input refuses explicit burn; Property/differential vectors match pinned ord0.29 including MAX_U128
+overflow/duplicate mint, varint limits and malformed pushes; Confirmed Signet rune balances match
+expected destinations after each affected flow. Offline probes are not end-to-end PASS; require
+actual Signet transaction and indexed/consumer readback where applicable.
+Rollback: Fail closed affected actionability; preserve raw artifacts and revalidate old unsigned
+quotes against corrected parser. Do not mutate published signed artifacts/digests.
+-->
+
 ## What makes it a cenotaph
 
 | Flaw | Condition |

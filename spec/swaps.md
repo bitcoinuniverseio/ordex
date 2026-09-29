@@ -32,6 +32,47 @@ The builder revalidates every maker outpoint, resolves the taker's selection, or
 5. Fee conservation holds, the maker and taker contributions sum to it, and the maker share stays inside the intent budget (`FEE_CHANGED`, `FEE_SPLIT_INVALID`, `FEE_BUDGET_EXCEEDED`).
 6. Every given asset and every taker asset is delivered through an explicit transition to the output that receives the input's first sat, so no asset lands in the fee region, in unrelated change, or at the wrong party (`MAKER_ASSET_UNASSIGNED`, `TAKER_ASSET_UNASSIGNED`, `TRANSITION_SAT_FLOW_MISMATCH`).
 
+<!--
+IMPLEMENTATION-HANDOFF [OX-P02] Preparation only; functional status FAIL, repair NOT IMPLEMENTED.
+Coverage: OX-P-C024, OX-P-C025, OX-P-C026, OX-P-C027, OX-P-C028, OX-P-C029, OX-P-C030, OX-P-C031,
+OX-P-C032, OX-P-C033, OX-P-C034. Evidence: P-R09, P-R10 in handoff/evidence.
+Verified cause: verifySwapAcceptance satisfies every requires item with a BTC output value, ignores
+required asset identity/quantity, and accepts give transitions back to maker script. Shared
+first-sat shortcut is wrong for nonzero inscription offsets, Runes, and Counterparty.
+Required behavior: Verify bilateral swap consideration and actual destination ownership. Governing
+refs: P-S01 (Ord0.29.0 applicability; handbook accessed2026-09-29); P-S02 (Ord0.29.0
+commit7e37a3bd3391044b39f5f11f20dfdb8b3764cd0e; runestone
+blob98022fb2a25d587a59a4a2ac40cd9de9bc5a6d0b); P-S03 (Ord0.29.0;
+blobbce2ae16336368bba3f7d70eed2a1493a67f45c9); P-S06 (BIP341;
+blob0764e6cb762b6c17d3b3430af5532e0c63365993); complete URLs in reports/protocol.md.
+Prerequisites/order: OX-P01, OX-P03, OX-P04, OX-P10. Related files: verifier/swaps.js,
+sdk/src/swaps.ts; Core backend/src/ordex-v12 corresponding service and caller adapters.
+1. Resolve complete authoritative input inventories and both parties' controlled receive/change
+scripts before construction; enforce maker/taker ownership proof and optional taker binding.
+2. Evaluate each consideration by family+asset identity+atomic quantity delivered to
+makerReceiveScriptHex using actual protocol allocation, aggregate obligations without double
+counting one output; use BTC value only for BTC.
+3. Require every maker give reaches authenticated taker receive script with committed quantity and
+every unrelated asset is preserved to its owner; require both distinct party input sets and
+reconcile actual fee contribution from party value flow, not caller labels.
+4. Extend acceptance contract and intent binding where necessary; compare parsed full transaction,
+approved sighash, signatures and complete inventories; fail unknown capabilities closed. Correct
+spec/swaps.md and mirror SDK; wire Core planner to same verification.
+Validation (PROPOSED NEW tests, commands unverified until implemented):
+verifier/swaps.consideration.test.js, sdk/test/swaps.consideration.test.js. node --test
+verifier/swaps.test.js verifier/swaps.consideration.test.js; npm --prefix sdk run build; node --test
+sdk/test/swaps.test.js sdk/test/swaps.consideration.test.js.
+Assertions/evidence: Required Rune absent/wrong ID/wrong quantity refuses; Maker give returned to
+maker refuses even with taker role label; Distinct parties, no extra outputs/fee theft; every
+settlement cohort both directions settles one actual Signet tx; Taker
+refusal/expired/withdrawn/private tamper/replay/network mismatch/reorg leaves recoverable truthful
+state. Offline probes are not end-to-end PASS; require actual Signet transaction, authoritative
+indexed outcome and consumer readback where applicable.
+Rollback: Invalidate unbroadcast affected sessions and request fresh participant approval for new
+digest; retain private ciphertext, historical intents, signatures and chain outcomes. Stop matching
+if corrected adapters unavailable.
+-->
+
 ## Lifecycle
 
 DRAFT, LIVE, PRIVATE, MATCHING, AWAITING_MAKER_SIGNATURE, AWAITING_TAKER_SIGNATURE, READY_FOR_PREFLIGHT, READY_FOR_BROADCAST, MEMPOOL, CONFIRMED, EXPIRED, WITHDRAWN, CONFLICTED, INVALIDATED, REORGED. A swap becomes unavailable immediately when a committed outpoint is spent, ownership changes, an authority goes stale, or the intent expires. Every transition appends an event; a reorg appends an explicit reverted event.

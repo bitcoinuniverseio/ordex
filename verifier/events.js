@@ -139,6 +139,41 @@ export function eventSortKey(event) {
  *
  * Returns the exact value for the X-Ordex-Signature header.
  */
+/*
+ * IMPLEMENTATION-HANDOFF [OX-P11] Preparation only; functional status FAIL, repair NOT IMPLEMENTED.
+ * Coverage: OX-P-C038, OX-P-C039. Evidence: spec/events.md Signed webhooks: hash-only storage
+ * conflicts with later encrypted-secret requirement in handoff/evidence.
+ * Verified cause: Spec requires hash-only stored secret then delivery HMAC under original secret and
+ * encrypted-at-rest secrets. Hash-only storage cannot reproduce prescribed HMAC; no executable
+ * key-management contract is chosen.
+ * Required behavior: Resolve webhook signing-key storage contradiction. Governing refs: P-S20 (RFC2104
+ * February1997); P-S21 (Ordex1.2 ordex-event/v1); complete URLs in reports/protocol.md.
+ * Prerequisites/order: none; establish strict contracts first. Related files: sdk/src/events.ts,
+ * spec/events.md; Core backend/src/ordex-v12/ordex-v12.module.ts and corresponding
+ * registry/heritage/webhook service.
+ * 1. Resolve contract to generate a random subscription HMAC key, return it once, persist
+ * envelope-encrypted recoverable key accessible only to delivery worker, and expose only key id/hint
+ * via ordinary reads.
+ * 2. Keep authentication verifier hashes separate from delivery signing keys. Store keyVersion and
+ * encryption metadata; use KMS/authorized secret provider, least privilege, audited decrypt, redacted
+ * logs, and bounded current/previous rotation overlap.
+ * 3. Sign exact outgoing body bytes with original key per signWebhookDelivery; retain delivery id/body
+ * digest/attempt history and implement retry/replay without changing signed payload semantics.
+ * 4. Update spec/events.md and owning Core subscription/delivery worker together; SDK signer remains
+ * pure caller-provided-key utility and must never imply database hash is usable HMAC secret.
+ * Validation (PROPOSED NEW tests, commands unverified until implemented):
+ * tests/integration/webhook-key-lifecycle.test.js. node --test verifier/events.test.js; node --test
+ * tests/integration/webhook-key-lifecycle.test.js.
+ * Assertions/evidence: Restarted worker decrypts and signs exact body; receiver verifies after
+ * creation and rotation; Ordinary reads/logs reveal no secret/ciphertext capability; unauthorized
+ * worker cannot decrypt; Hash substituted as HMAC key fails; historical attempts/replays maintain
+ * idempotency; Actual isolated HTTPS webhook delivery/retry/deadletter/replay works. Offline probes
+ * are not end-to-end PASS; require actual Signet transaction and indexed/consumer readback where
+ * applicable.
+ * Rollback: Preserve encryption keys until dependent deliveries/rotation windows complete; never drop
+ * old encrypted key before accepted migration. Roll back worker/schema compatibly and leave delivery
+ * states resumable.
+ */
 export function signWebhookDelivery({ secret, timestamp, deliveryId, body }) {
   if (typeof secret !== 'string' || secret.length === 0) {
     throw new TypeError('secret must be a nonempty string');

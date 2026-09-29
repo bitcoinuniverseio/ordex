@@ -209,6 +209,47 @@ export function verifyCounterpartyUtxoAsset(record: unknown): CounterpartyRecord
  * output whose accumulated value passes the sat range start of the attached
  * outpoint. Returns { ok: true, carriedToIndex } or a refusal.
  */
+/*
+ * IMPLEMENTATION-HANDOFF [OX-P10] Preparation only; functional status FAIL, repair NOT IMPLEMENTED.
+ * Coverage: OX-P-C034, OX-P-C046, OX-P-C047, OX-P-C048, OX-P-C049. Evidence: P-R18 in
+ * handoff/evidence.
+ * Verified cause: Ordex spec/verifier treats attachment as ordinal first-sat transfer. Pinned
+ * Counterparty Corev11.4.0 get_utxos_info selects one first non-OP_RETURN output for all attached
+ * inputs; move_assets credits complete balances there, independent of input sat positions.
+ * Required behavior: Correct Counterparty move semantics across heritage, SafeOps and swaps. Governing
+ * refs: P-S17 (v11.4.0 e4d1315654b79bb7207cd9f45a8d7b6d5255a290;
+ * blob3867149258f2fc417d676a0e54bf15dc0b6bfd9b); P-S18 (v11.4.0;
+ * blob77fc9b6354a59feba810bce7c4a8ba8957fd0f28); P-S19 (guide accessed2026-09-29; v11.4.0
+ * release2026-09-18); complete URLs in reports/protocol.md.
+ * Prerequisites/order: none; establish strict contracts first. Related files:
+ * verifier/counterparty-asset.js, spec/counterparty-utxo-asset.md; Core
+ * backend/src/ordex-v12/ordex-v12.module.ts and corresponding registry/heritage/webhook service.
+ * 1. Replace sat-flow destination arithmetic in verifyAttachmentFollows with pinned Counterparty
+ * ordinary-move destination selection from raw script bytes; first non-OP_RETURN output receives every
+ * attached input balance, independent of BTC values.
+ * 2. Model attach,detach,and automatic move as distinct protocol operations with activation/network
+ * context. No-destination behavior and detach/attach suppression must follow installed Counterparty
+ * parser and active gates, not generic ordinal loss assumptions.
+ * 3. Verify complete co-traveling inventories across every spent input and independently confirm
+ * Counterparty UTXO_MOVE/ATTACH_TO_UTXO/DETACH_FROM_UTXO ledger events, quantities, destination and
+ * accepted hashes after confirmation/reorg.
+ * 4. Correct spec/counterparty-utxo-asset.md and SDK; wire Core heritage/SafeOps/swap/listing builders
+ * to force intended first spendable destination and reject mixed-owner attachments that would all
+ * co-move unexpectedly. Gate availability on pinned authority readiness/version.
+ * Validation (PROPOSED NEW tests, commands unverified until implemented):
+ * verifier/counterparty-move-parity.test.js, sdk/test/counterparty-move-parity.test.js. node --test
+ * verifier/counterparty-asset.test.js verifier/counterparty-move-parity.test.js; npm --prefix sdk run
+ * build; node --test sdk/test/counterparty.test.js sdk/test/counterparty-move-parity.test.js.
+ * Assertions/evidence: Input1 sat-range maps output1 but Counterparty sends output0; correct expected0
+ * accepts,1 refuses; Leading OP_RETURN skipped; all attached assets from all sources same destination;
+ * no-destination gates exact; Real supported Signet attach/move/detach and heritage buy/swap confirm
+ * balances/events; justified testnet only if authority lacks Signet; Reorg and stale authority stop
+ * unsafe actionability. Offline probes are not end-to-end PASS; require actual Signet transaction and
+ * indexed/consumer readback where applicable.
+ * Rollback: Never mutate Counterparty consensus or old signed artifacts. Invalidate unsafe unbroadcast
+ * plans; roll back public actionability until authority/adapter parity passes. Treat already broadcast
+ * settlements by actual ledger outcome.
+ */
 export function verifyAttachmentFollows(
   record: unknown,
   spendTx: unknown,

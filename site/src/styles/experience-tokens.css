@@ -6,6 +6,26 @@
  * evidence classes, and responsive layout primitives.
  */
 
+/* IMPLEMENTATION-HANDOFF [OX-S10]
+ * Defect OX-S-D10; coverage OX-S-C1300..OX-S-C1313 plus each tool's browser rows. White small text on
+ * --ox-bitcoin-orange #f7931a has contrast about2.3:1, below WCAG2.2 AA4.5:1; MissionWorkspace,
+ * LaunchpadEntry, Lens and AgentBridge use that pair.
+ * 1. Add semantic action foreground/background tokens with measured AA contrast in both themes; update
+ * affected inline styles to use them. Preserve Bitcoin orange as brand/accent where it meets the applicable
+ * criterion, not blanket text/button color.
+ * 2. Replace fixed two-column/min-width grids in Playground, AgentBridge, Lab and workspace stage content with
+ * responsive existing design-system rules. Verify 320/375/768/1440 widths, 200% zoom, long hashes/URLs, no
+ * document-level horizontal overflow or clipped controls.
+ * 3. OX-S10 TourGuide/CommandCenter/dialogs/tablists need proper names, roles, focus management, visible
+ * focus, keyboard operation, touch target spacing and reduced-motion handling. Await clipboard/download
+ * outcomes with aria-live status; no false Copied state.
+ * 4. Run actual Playwright+axe against every offered route and relevant open/empty/loading/error/success state
+ * in light/dark. Existing tests/accessibility/accessibility.test.js only searches static HTML and is
+ * insufficient. Keep screenshots and exact violations before/after; targets are WCAG2.2
+ * AA1.4.3,1.4.10,2.1.1,2.4.7,2.4.11,2.5.8,4.1.2.
+ * Dependencies: functional tool packages first; preserve established layout/branding. Rollback token and
+ * component changes together and recheck contrast, not just CSS presence.
+ */
 :root {
   /* Surface colors (Light Mode Primary) */
   --ox-surface-bg: #f8f9fa;

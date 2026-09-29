@@ -238,6 +238,44 @@ function toBase64(text: string): string {
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/*
+ * IMPLEMENTATION-HANDOFF [OX-P06] Preparation only; functional status FAIL, repair NOT IMPLEMENTED.
+ * Coverage: OX-P-C058, OX-P-C059, OX-P-C060. Evidence: evidence/sdk-operation-coverage.json,
+ * evidence/sdk-worker-observations.json in handoff/evidence.
+ * Verified cause: SDK ships 18 HTTP methods against79 contract operations; additional1.1/1.2 typed
+ * wrappers are unimplemented integration scope, not inverse proof of README wording. Retry loop
+ * recognizes only Error.name AbortError, retries a caller custom abort reason and sleeps through
+ * cancellation.
+ * Required behavior: Complete deliberate SDK API integration and abort-safe bounded reads. Governing
+ * refs: P-S09 (Ordex prepared base bde7d3d; OpenAPI3.1 79operations); P-S10 (Node v24 runtime;
+ * installed24.19.0); complete URLs in reports/protocol.md.
+ * Prerequisites/order: none; establish strict contracts first. Related files: spec/openapi.json and
+ * sdk/test/client.test.js; Core/backend or site consumer named by the work package.
+ * 1. Use bundled exact method/path inventory to reconcile each OpenAPI operation with intended SDK
+ * responsibility; implement typed missing1.1/1.2 read/plan/explicit-user-action operations after
+ * backend exists. Preserve no autonomous sign/fund/broadcast promise and document any explicit relay
+ * method honestly.
+ * 2. Extend InternalRequest method union for required DELETE/PATCH verbs and response decoding by
+ * OpenAPI media/status (JSON,204,streams/exports); forward all path/query/body/request headers with
+ * exact generated types.
+ * 3. Check request.signal.aborted before every attempt, after fetch errors and during retry waits;
+ * abort without retry for any reason value. Use bounded cancellable backoff and total deadline;
+ * validate retries/timeout/delay config finite nonnegative safe bounds.
+ * 4. Define iterator progress protections (cursor repeat/invalid envelope) and keep writes single
+ * attempt unless backend provides verified idempotency semantics. Add operation-table parity and real
+ * integration tests; generated schema edits belong to spec generator.
+ * Validation (PROPOSED NEW tests, commands unverified until implemented):
+ * sdk/test/client-abort.test.js, sdk/test/operation-coverage.test.js. npm --prefix sdk run check; npm
+ * --prefix sdk test; node --test sdk/test/client-abort.test.js sdk/test/operation-coverage.test.js.
+ * Assertions/evidence: Custom Error abort invokes no later retry; abort during backoff settles
+ * promptly without second request; Every included operation has exact method/path/query/media/status
+ * tests; intentional SDK exclusions documented against consumer path; No write retries or automatic
+ * signing/broadcast; Actual supported client/API journeys verified through Signet gate where
+ * transaction effects apply. Offline probes are not end-to-end PASS; require actual Signet transaction
+ * and indexed/consumer readback where applicable.
+ * Rollback: Public SDK additions require semver and generated-schema compatibility review; retain
+ * existing1.0 methods and wire amounts. Roll back package version without altering stored artifacts.
+ */
 export class OrdexClient {
   readonly #baseUrl: string;
   readonly #fetch: typeof fetch;
@@ -280,6 +318,18 @@ export class OrdexClient {
     return (await response.json()) as T;
   }
 
+/*
+ * IMPLEMENTATION-HANDOFF [OX-P06] Local integration steps; ANNOTATED is not implemented.
+ * Coverage: OX-P-C058, OX-P-C059, OX-P-C060.
+ * Synthetic custom-reason abort retries4 times; abort during backoff performs another fetch. 1. Check
+ * request.signal.aborted before first/each attempt and after rejection, preserving signal.reason
+ * regardless of its type. 2. Make backoff signal-aware and bound total retries/delay/deadline;
+ * distinguish timeout from explicit abort. 3. Add PROPOSED NEW sdk/test/client-abort.test.js and run
+ * node --test sdk/test/client-abort.test.js (unverified); assert no post-abort request and writes
+ * remain single-attempt. Evidence evidence/sdk-worker-observations.json; source P-S10 Node24
+ * AbortController. Related #once, sleep, SDK iterator consumers. No API wire migration; rollback only
+ * SDK release version.
+ */
   async #request<T>(request: InternalRequest): Promise<T> {
     const attempts = request.method === 'GET' ? this.#retries + 1 : 1;
     let lastError: unknown;

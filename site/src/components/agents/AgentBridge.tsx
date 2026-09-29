@@ -19,6 +19,26 @@ export function AgentBridge({ basePath = '/ordex' }: AgentProps): JSX.Element {
   const [testResult, setTestResult] = useState<string | null>(null);
   const [copiedConfig, setCopiedConfig] = useState(false);
 
+  /* IMPLEMENTATION-HANDOFF [OX-S04]
+   * Defect OX-S-D04; coverage OX-S-C960..OX-S-C969. Config assumes repo-relative node entry and the explorer
+   * executes only an in-browser function, while the remote endpoint is shown without a verified
+   * discovery/capability handshake.
+   * 1. Generate client-specific install/config instructions using the OX-S04 built stdio binary and actual
+   * pinned release. Include prerequisites and a deterministic setup validation command; use current official
+   * client documentation for supported config fields.
+   * 2. Give local deterministic tool execution and remote transport diagnostics explicit separate controls and
+   * evidence labels. Use a configured owned endpoint with verified MCP discovery and list/call test; never infer
+   * remote success from executeMcpTool.
+   * 3. Derive HTTP header/body examples from the accepted MCP 2026-07-28 transport contract
+   * (Mcp-Protocol-Version, Mcp-Method, applicable Mcp-Name, per-request _meta). Show availability and errors
+   * without fabricated version/build.
+   * 4. Await clipboard write and announce success/failure accessibly. OX-S10 handles responsive tool columns and
+   * keyboard navigation.
+   * Acceptance: clean client install starts from copied config, all ten tool schemas match actual results,
+   * unknown/invalid calls refuse, and actual HTTP requests are evidenced. Tests: npm run test:mcp plus
+   * installed-client smoke cases. Dependencies: shared dispatcher/stdin and protocol worker package. Rollback
+   * copied-config version with deployed binary.
+   */
   const stdioConfig = JSON.stringify(
     {
       mcpServers: {

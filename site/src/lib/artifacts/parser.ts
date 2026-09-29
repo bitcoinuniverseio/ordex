@@ -136,6 +136,30 @@ export function payloadToBytes(input: string): Uint8Array {
 /**
  * Strict bounded PSBT Parser
  */
+/* IMPLEMENTATION-HANDOFF [OX-S01]
+ * Defect OX-S-D01; coverage OX-S-C101..OX-S-C114. Current parser mistakes global keys, never reads the v0
+ * unsigned transaction, accepts missing/duplicate/unterminated maps, and advertises raw transactions without a
+ * decoder. Repro: evidence/site-source-reproductions.json OX-S01-*.
+ * 1. Implement BIP174 v1.4.4 and BIP370 (sources https://bips.dev/174/ and https://bips.dev/370/, accessed
+ * 2026-09-29): version key 0xfb; v2 transaction version 0x02, locktime 0x03, input count 0x04, output count
+ * 0x05. Require/exclude fields by exact version; reject unsupported versions.
+ * 2. Decode the v0 global unsigned transaction to obtain exact input/output map counts. For v2, decode
+ * required counts and required input/output fields, then require exactly those maps, separators, and EOF.
+ * Decode CompactSize key types as well as lengths, reject duplicates/minimality/length errors, and preserve
+ * unknown keys as raw bytes.
+ * 3. Add PROPOSED NEW parseRawTransaction entry point in this module, sharing a bounded cursor for
+ * legacy/SegWit serialization, amounts as bigint, scripts, witness, sequences and locktime. Bound encoded size
+ * before allocation in payloadToBytes. Surface malformed input as errors, never a verified artifact.
+ * 4. Coordinate comparison.ts and ArtifactLens.tsx in OX-S01; use decoded transaction values for fees only
+ * when prevouts exist. Do not infer network from PSBT bytes.
+ * 5. Extend tests/unit/artifact-parser.test.js with official valid/invalid BIP174/BIP370 vectors, v0/v2 map
+ * counts, extra/truncated maps, unknown fields, key types above 0xfc, two-MiB bounds and raw transaction round
+ * trips. Command: npm run test:unit after a clean build supplies required dist artifacts; browser /inspect acceptance
+ * must exercise these same inputs.
+ * Acceptance: fixture with one input and one output reports 1/1, v2 is v2, missing global unsigned tx and
+ * duplicate keys fail. Preserve byte snapshots and hashes. No signing/broadcast/network is introduced.
+ * Rollback restores parser plus comparison/UI together; never restore an unsafe positive verification label.
+ */
 export function parsePsbtBytes(bytes: Uint8Array): ParsedArtifactResult {
   if (bytes.length > MAX_PAYLOAD_BYTES) {
     throw new Error(`Decoded payload size ${bytes.length} bytes exceeds maximum allowed bound of ${MAX_PAYLOAD_BYTES} bytes`);

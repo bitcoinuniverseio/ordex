@@ -6,6 +6,30 @@
  * checked-in reference verifiers.
  */
 
+/* IMPLEMENTATION-HANDOFF [OX-S08]
+ * Defect OX-S-D08; coverage OX-S-C200..OX-S-C244. Registry imports nonexistent hashOfferTerms,
+ * verifySignedResult, verifyAttachmentRecord/verifyHeritageSpend and
+ * verifyOfflineSigningManifest/verifySignedManifestResult; native module linking fails. Several
+ * verifierCheck.run callbacks return hardcoded verdicts.
+ * 1. Use actual exported symbols with reviewed contracts: offerTermsHash; verifySafeOpsSignedResult;
+ * verifyCounterpartyUtxoAsset/verifyAttachmentFollows;
+ * verifyExpectedTransactionManifest/compareSignedResultToManifest. Do not create aliases concealing mismatched
+ * arguments.
+ * 2. Replace hardcoded verification callbacks with complete valid deterministic source cases and actual
+ * verifier calls. Preserve all 15 offered scenarios and their real success/refusal semantics; fake
+ * PSBT/signature strings are illustrations only and cannot be labeled verified bytes.
+ * 3. Give each failure injection a concrete bounded input mutation that triggers the actual verifier, linked
+ * to the relevant spec/refusal vector. Keep simulation/network fixture identity explicit and never classify a
+ * story step as chain proof without external evidence.
+ * 4. Reuse OX-S07 family registry and source vectors; expose parameter and artifact IDs for OX-S03 transfers.
+ * Add tests/unit/scenario-engine.test.js assertions for every step's actual inputs/outputs and every
+ * injection's code.
+ * 5. Run npm run test:unit, then browser /sandbox: all scenarios, play/pause/prev/next/jump/reset, each
+ * injection, artifact transfer, and reload. Native import failure is current evidence; a passing reducer test
+ * with hardcoded verdicts is not protocol E2E.
+ * Dependencies: protocol verifier contracts, OX-S07 browser execution, OX-S03 state. Rollback registry and
+ * executor versions together, preserving scenario IDs.
+ */
 import { verifyPublicAskCompletion } from '../../../../verifier/purchase.js';
 import { verifyOfferAcceptance, verifyOfferRecovery, hashOfferTerms } from '../../../../verifier/offers.js';
 import { verifySafeOpsPlan, verifySignedResult } from '../../../../verifier/safeops.js';

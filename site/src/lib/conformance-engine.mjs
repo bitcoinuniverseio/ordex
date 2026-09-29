@@ -171,6 +171,29 @@ export function executeVector(family, vectorCase) {
   };
 }
 
+/* IMPLEMENTATION-HANDOFF [OX-S07]
+ * Defect OX-S-D07; coverage OX-S-C900..OX-S-C918. This shared browser module imports node:fs/path/url and
+ * evaluates fileURLToPath at module load; deployed /verify throws u.fileURLToPath is not a function. Verifiers
+ * also import node:crypto.
+ * 1. Split a pure browser-safe executor from a PROPOSED NEW scripts/docs/vector-loader.mjs containing
+ * filesystem access. Browser imports must have no Node built-ins or file paths; CLI imports loader plus the
+ * same executor.
+ * 2. With the protocol verifier owner, provide pinned browser-compatible crypto implementations or explicit
+ * WebCrypto adapters preserving exact hash/signature/byte semantics. Run verification in a bounded dedicated
+ * Worker with timeout/cancel, not an unresponsive UI thread, as the site already promises.
+ * 3. Export one typed family registry for generator, CLI, Lab, MCP and Studio. Map file names to actual
+ * executor names (offer->offers, event->events, swap->swaps, rune-burn->runes) and retain complete raw vector
+ * parameters. Never report success for an empty selected suite.
+ * 4. Preserve every family-specific expected field, including rune safe result and signed/acceptance/recovery
+ * variants. Distinguish a matched expected refusal test from a valid candidate transaction and from chain
+ * acceptance.
+ * 5. Tests/unit/conformance-engine.test.js and tests/parity/parity.test.js must compare CLI and actual browser
+ * results case-by-case. Run npm run conformance then browser /verify and /lab using the same data/build;
+ * require no import/hydration errors, a nonzero exact vector count and complete actual results.
+ * Dependencies: verifier browser contract in protocol packages; OX-S08 import corrections. OX-S07
+ * generator/ProtocolLab must change together. Rollback bundler/worker/executor/data as one version; retain
+ * exact byte vectors and no browser polyfill that silently weakens crypto.
+ */
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';

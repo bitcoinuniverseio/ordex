@@ -120,6 +120,47 @@ function trackedAssets(inventory) {
  *
  * Answers { ok: true, digest } or { ok: false, code, reason }.
  */
+/*
+ * IMPLEMENTATION-HANDOFF [OX-P01] Preparation only; functional status FAIL, repair NOT IMPLEMENTED.
+ * Coverage: OX-P-C015, OX-P-C016, OX-P-C017, OX-P-C018, OX-P-C019, OX-P-C020, OX-P-C021, OX-P-C022,
+ * OX-P-C023. Evidence: P-R01, P-R02, P-R03, P-R04 in handoff/evidence.
+ * Verified cause: SafeOps assumes every tracked asset follows input first sat; ignores inscription
+ * offsets/ranges and rune allocation. Every output is subject to 546-sat dust, including runestones.
+ * Duplicate outpoints and null signing also bypass refusal contract.
+ * Required behavior: Protocol-specific SafeOps asset allocation and valid output policy. Governing
+ * refs: P-S01 (Ord0.29.0 applicability; handbook accessed2026-09-29); P-S02 (Ord0.29.0
+ * commit7e37a3bd3391044b39f5f11f20dfdb8b3764cd0e; runestone
+ * blob98022fb2a25d587a59a4a2ac40cd9de9bc5a6d0b); P-S03 (Ord0.29.0;
+ * blobbce2ae16336368bba3f7d70eed2a1493a67f45c9); P-S04 (v29.0 policy reference;
+ * blobed3369282351766bcba38cf71c491b5916718971; installed node policy must be read); complete URLs in
+ * reports/protocol.md.
+ * Prerequisites/order: OX-P04, OX-P10. Related files: sdk/src/safeops.ts, spec/safeops.md; Core
+ * backend/src/ordex-v12 corresponding service and caller adapters.
+ * 1. Replace firstSatOutputIndex asset dispatch with adapters keyed by actual asset family. Resolve
+ * inscription offsets as sum(prior input sats)+offset, track every rare-sat interval, decipher and
+ * allocate Runes from authoritative balances, and use corrected Counterparty move semantics.
+ * 2. Expand inventory and transition schemas to bind outpoint, asset id, exact quantity,
+ * satpoint/ranges, target script/party and checkpoint; reject unknown or incomplete inventories before
+ * planning; compare complete transition multisets and forbid duplicate inputs.
+ * 3. Add explicit data output role, allow zero-value OP_RETURN only for required validated protocol
+ * messages, and distinguish product postage policy from Bitcoin Core dust threshold; forbid unplanned
+ * burns. Validate non-null signing object, exact permitted sighash and required index uniqueness.
+ * 4. Mirror JS reference and TypeScript SDK, correct spec/safeops.md, regenerate schema from
+ * spec/openapi.json through its generator, wire Core SafeOps inventory/builder/shield to same
+ * adapters. Never treat labels/signaturePresent booleans as authoritative proof.
+ * Validation (PROPOSED NEW tests, commands unverified until implemented):
+ * verifier/safeops.protocol-safety.test.js, sdk/test/safeops.protocol-safety.test.js. node --test
+ * verifier/safeops.test.js verifier/safeops.protocol-safety.test.js; npm --prefix sdk run build; node
+ * --test sdk/test/safeops.test.js sdk/test/safeops.protocol-safety.test.js.
+ * Assertions/evidence: P-R01 wrong destination refuses; offset0 and1500 correct destinations match
+ * ord0.29; Duplicate inputs/null inventory/signing return stable refusals; Real zero-sat rune message
+ * accepted only when exact allocation proved; Signet actual BTC/Ordinal/Runes/SafeOps split/RBF/CPFP
+ * confirm and match node/indexer outputs. Offline probes are not end-to-end PASS; require actual
+ * Signet transaction, authoritative indexed outcome and consumer readback where applicable.
+ * Rollback: Version changed binding schema; invalidate old unsafe unsigned plans and replan. Retain
+ * signed/broadcast evidence and monitor; never reinterpret old digests as new version. Roll back
+ * public actionability if adapters fail.
+ */
 export function verifySafeOpsPlan(plan) {
   if (!plan || typeof plan !== 'object' || Array.isArray(plan)) {
     return refuse('MALFORMED_PLAN', 'Expected a plan object.');

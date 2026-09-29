@@ -56,6 +56,22 @@ export function WizardEngine({ initialWizardId = null }) {
     setCurrentStepIndex(0);
   };
 
+  /* IMPLEMENTATION-HANDOFF [OX-S11]
+   * Defect OX-S-D11; coverage OX-S-C1430..OX-S-C1441. Guided choices are not persisted or transferred; generated
+   * outcomes link nonexistent nested recipe/learn paths and choose a fixed starter independent of answers.
+   * 1. Validate each wizard's required answers and branch logic using its existing source registry, then derive
+   * the matching offered recipe, operation and kit runtime/capabilities. Resolve links against actual route
+   * manifest and do not invent new products to satisfy old paths.
+   * 2. Persist answers/progress in an OX-S03 typed journey reference and consume them in the linked tool;
+   * refresh/back/reset must preserve or deliberately clear the correct wizard only.
+   * 3. Export a complete sanitized checklist with chosen parameters, protocol/network/build, real route links
+   * and remaining evidence requirements. Completion is learning progress until actual tool evidence exists.
+   * 4. Test all12 wizards through their existing choices, branch outcomes, next/back/reset, download/reopen and
+   * invalid/missing answers. PROPOSED NEW tests/e2e/wizards.test.js; enforce no broken generated link and verify
+   * selected runtime reaches OX-S06.
+   * Dependencies: OX-S03 state, OX-S05/06 selected tool adapters, OX-S11 snippet/routes. Rollback
+   * registry/outcomes with consumer schema and preserve saved progress.
+   */
   const downloadChecklist = () => {
     const text = `# Ordex Integration Checklist: ${wizard.title}\n\n` +
       `Summary: ${wizard.summary}\n` +

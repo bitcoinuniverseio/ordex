@@ -87,6 +87,25 @@ if (await readFile(resolve(root, 'worker', 'migrations', '0001_initial.sql')).ca
   await cp(resolve(root, 'worker', 'migrations'), resolve(dist, 'server', 'migrations'), { recursive: true });
 }
 
+/* IMPLEMENTATION-HANDOFF [OX-S10]
+ * Defect OX-S-D10; coverage all OX-S browser rows and OX-S-C1313. Build verifies file presence/link syntax,
+ * not hydrated behavior; npm coverage:check references missing scripts/docs/coverage-check.mjs. A clean build
+ * and npm test pass while deployed ConformanceStudio hydration fails.
+ * 1. Preserve verified build-once behavior, then add PROPOSED NEW scripts/docs/coverage-check.mjs validating
+ * the full operation/source/test matrix against current manifests. Wire the existing package script without
+ * weakening tests or declaring source presence an E2E pass.
+ * 2. Separate generated static assets, actual browser capture and Node-only server packaging. Browser checks
+ * must assert island hydration and controls, no node built-ins in client chunks, exact source/vector/operation
+ * counts and reproducible build metadata.
+ * 3. Run capture only against the coordinated accepted artifact/application after it exists; never start a
+ * duplicate frontend to satisfy the build. Avoid copying stale orphan assets from older docs builds into new
+ * release output.
+ * 4. Acceptance: npm run build, npm test, npm --prefix sdk test and npm run coverage:check all run from a
+ * clean installed tree; actual browser suite covers all routes/states before public deployment. Existing
+ * passing component results stay valid but do not substitute for browser or chain evidence.
+ * Dependencies: OX-S07 generator/runtime, OX-S10 capture/accessibility, root integration and release work
+ * package. Rollback one coherent verified static/server release and its versioned manifests.
+ */
 console.log('--- Step 8: Validate Build Deliverables ---');
 const requiredFiles = [
   'dist/client/index.html',

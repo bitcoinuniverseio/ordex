@@ -4,6 +4,21 @@ import { useState } from 'preact/hooks';
 export function InternalInsights() {
   const [timeRange, setTimeRange] = useState('7d');
 
+  /* IMPLEMENTATION-HANDOFF [OX-S11]
+   * Defect OX-S-D11; coverage OX-S-C1420..OX-S-C1423. The dashboard presents fixed mockInsights as first-party
+   * metrics and timeRange changes only selected styling.
+   * 1. Wire this existing dashboard to an authorized OX-P08 aggregate metrics endpoint backed by persisted
+   * sanitized events/feedback; query actual time ranges with documented UTC boundaries.
+   * 2. Keep privacy promises: no cookies/IP/user tracking, no raw comments/secrets in aggregate responses,
+   * enforce any internal operator authorization before serving data. Do not add unrelated analytics products.
+   * 3. Display loading/empty/unavailable and actual observation window/build; remove fabricated numbers from
+   * live mode while keeping explicitly labeled deterministic examples if already offered.
+   * 4. Test24h/7d/30d against seeded isolated legitimate events and independently queried aggregates, denied
+   * access, delayed ingestion and refresh. PROPOSED NEW tests/e2e/docs-insights.test.js requires real
+   * worker/storage; source-only mock counts are never acceptance.
+   * Dependencies: OX-P08 ingest/aggregate service, OX-S10 UI. Rollback dashboard and endpoint contract together;
+   * no destructive data migration.
+   */
   // Aggregated first-party documentation intelligence metrics
   const mockInsights = {
     totalViews: 42850,

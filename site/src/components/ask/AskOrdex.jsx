@@ -18,6 +18,24 @@ export function AskOrdex({ pageContext = '' }) {
     'What headers are required for HMAC webhook signature verification?'
   ];
 
+  /* IMPLEMENTATION-HANDOFF [OX-S11]
+   * Defect OX-S-D11; coverage OX-S-C1400..OX-S-C1407. Relative /api/docs/ask is unavailable on static Pages;
+   * fallback silently ignores protocolVersion. Worker citations use a different URL property, so consumer links
+   * fall back incorrectly.
+   * 1. Share the OX-P08/worker response schema with this UI using a single docUrl field, exact source
+   * pointer/build/version and explicit retrieval mode. Validate response and safely resolve public citation URLs
+   * against BASE_URL; missing citations cannot be labeled verified.
+   * 2. Configure the owned docs API origin explicitly and constrain cross-origin requests/CORS to that contract.
+   * If static/offline local retrieval is used, expose it honestly and apply version/page-context filters without
+   * inventing an answer.
+   * 3. Check bounded input and redact/reject private data before sending; avoid racing queries by request
+   * ID/cancellation and show unavailable/refused/empty/stale states distinctly.
+   * 4. Await clipboard and handle missing/malformed citations. Extend PROPOSED NEW
+   * tests/e2e/docs-assistant.test.js for actual API answer+citation navigation, version filters, static
+   * fallback, absent endpoint, timeout, invalid envelope and empty results.
+   * Dependencies: OX-P08 docs worker, OX-S03 configuration, OX-S10 accessibility. Acceptance uses real
+   * reader-to-API-to-corpus response path; no wallet or transaction needed. Rollback UI/API schema together.
+   */
   const handleAsk = async (userQuery) => {
     const q = (userQuery || query).trim();
     if (!q) return;

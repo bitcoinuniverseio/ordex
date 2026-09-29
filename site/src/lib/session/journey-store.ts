@@ -237,6 +237,29 @@ class JourneyStore {
     }
   }
 
+  /* IMPLEMENTATION-HANDOFF [OX-S03]
+   * Defect OX-S-D03; coverage OX-S-C082..OX-S-C089. Persistence currently resolves on request success before
+   * transaction commit, swallows persistence failure, has no storage-event fallback, and consumers never
+   * subscribe. imports validate only id/missionId/schemaVersion.
+   * 1. Introduce a versioned journey schema with network, origin, protocol/build and evidence digests. Validate
+   * all imported stages, IDs, timestamp shapes, bounded arrays and sanitized artifact references; reject
+   * unknown/unsupported schema instead of trusting persisted PASS.
+   * 2. Wait for IndexedDB transaction completion and reject/report abort/error. Serialize updates with a session
+   * revision or compare-and-update transaction so stale tabs cannot overwrite completed evidence. Initialize one
+   * DB-open promise, close on versionchange and expose blocked/quota/ephemeral state.
+   * 3. Add per-mission resume lookup and live subscriptions for sessions AND settings. Broadcast only after
+   * commit; implement a safe storage-event notification fallback. Deduplicate/prune durable run history rather
+   * than retaining an unbounded store.
+   * 4. Wire MissionWorkspace, LaunchpadEntry, OrdexExperienceShell and tool adapters; a changed network/origin
+   * invalidates stale observations while retaining their provenance. Keep secrets out of persisted data, logs
+   * and broadcasts.
+   * 5. PROPOSED NEW tests/unit/journey-store.test.js plus browser missions tests must cover transaction
+   * abort/quota denial, imported malicious shape, duplicate IDs, concurrency, cross-tab sync, reload and network
+   * separation. Actual IndexedDB/browser tests are required; in-memory tests are component evidence only.
+   * Dependencies: OX-S03 mission adapter schema; OX-S05 gateway context. Migrate additively with old sessions
+   * preserved for review, backup/export only sanitized content. Rollback must handle the new schema without
+   * losing saved progress.
+   */
   public async saveSession(session: OrdexJourneySession): Promise<void> {
     // Assert no raw private secrets exist before saving
     const serialized = JSON.stringify(session);
