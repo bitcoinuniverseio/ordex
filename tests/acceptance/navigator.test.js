@@ -83,8 +83,9 @@ test('every Failure Navigator row: lookup and reproducers', { timeout: 1800000 }
         await cell.waitFor({ timeout: 20000 });
         const result = (await cell.innerText()).trim();
         expect(/Reproduced$/.test(result), `${r.family}: ${result}`);
-        const file = `reproduce-${code}${rule.reproducers.length > 1 ? `-${r.family}` : ''}.mjs`;
-        const [download] = await Promise.all([page.waitForEvent('download'), card.getByRole('button', { name: `Download ${file}` }).click()]);
+        const sameFamily = rule.reproducers.filter((x) => x.family === r.family).length > 1;
+        const file = rule.reproducers.length === 1 ? `reproduce-${code}.mjs` : `reproduce-${code}-${r.family}${sameFamily && r.covers ? `-via-${r.covers}` : ''}.mjs`;
+        const [download] = await Promise.all([page.waitForEvent('download'), card.getByRole('button', { name: `Download ${file}`, exact: true }).click()]);
         const script = await readFile(await download.path(), 'utf8');
         const target = join(ROOT, `.acceptance-${file}`);
         await writeFile(target, script);

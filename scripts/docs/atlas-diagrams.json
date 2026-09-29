@@ -1,0 +1,1770 @@
+{
+  "note": "Visual Protocol Atlas diagrams. Every step names the specification section, contract operation or event channel it follows (ref), and the reference verifier that checks it when one does (verifier). scripts/docs/generate-all-data.mjs validates every reference.",
+  "diagrams": [
+    {
+      "id": "system-trust-boundary",
+      "title": "Ordex System and Trust-Boundary Architecture",
+      "summary": "Where each fact comes from: Bitcoin Core decides whether an output is unspent, the ord index decides where an asset is, the gateway composes and verifies but never signs or broadcasts, a client can rerun the same reference verifier, and only the user's wallet signs.",
+      "actors": [
+        "Bitcoin Node",
+        "Ordex Gateway",
+        "Ord Indexer",
+        "Browser Web Worker",
+        "User Wallet"
+      ],
+      "sources": [
+        {
+          "path": "spec/lifecycle.md",
+          "heading": "States"
+        },
+        {
+          "path": "spec/interoperability.md",
+          "heading": "Import: `POST /api/ordex/orders/import`"
+        },
+        {
+          "path": "spec/interoperability.md",
+          "heading": "Export: the envelope and the artifact"
+        },
+        {
+          "path": "spec/runes.md",
+          "heading": "Conformance"
+        },
+        {
+          "path": "spec/cold-signing.md",
+          "heading": "Blind signing is prohibited"
+        },
+        {
+          "path": "spec/api.md",
+          "heading": "`POST /orders/:id/preflight`"
+        },
+        {
+          "path": "spec/purchase.md",
+          "heading": "What Ordex never does"
+        }
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "from": "Ordex Gateway",
+          "to": "Bitcoin Node",
+          "label": "Confirm the offered output exists and is unspent",
+          "safety": "Until Core confirms it, the order stays PENDING_NODE",
+          "ref": {
+            "path": "spec/lifecycle.md",
+            "heading": "States"
+          }
+        },
+        {
+          "step": 2,
+          "from": "Ordex Gateway",
+          "to": "Ord Indexer",
+          "label": "Confirm the asset is where the order claims",
+          "safety": "A claim can make an order easier to find, never more verified; until ord agrees the order stays PENDING_ORD",
+          "ref": {
+            "path": "spec/interoperability.md",
+            "heading": "Import: `POST /api/ordex/orders/import`"
+          }
+        },
+        {
+          "step": 3,
+          "from": "Ordex Gateway",
+          "to": "Browser Web Worker",
+          "label": "GET /api/ordex/orders/{id}/artifact releases the signed artifact",
+          "safety": "Its own rate limited request, answered only while the order is live",
+          "ref": {
+            "operationId": "getOrderArtifact"
+          }
+        },
+        {
+          "step": 4,
+          "from": "Browser Web Worker",
+          "to": "Browser Web Worker",
+          "label": "Rerun the reference verifier on the composed transaction",
+          "safety": "The verifier reads no chain state and holds no keys; the SDK runs the same checks against the same vectors",
+          "ref": {
+            "path": "spec/runes.md",
+            "heading": "Conformance"
+          },
+          "verifier": "purchase"
+        },
+        {
+          "step": 5,
+          "from": "Browser Web Worker",
+          "to": "User Wallet",
+          "label": "Show the transaction for signature; the wallet signs only the user's own inputs",
+          "safety": "A signer is never asked to sign what was not shown and verifiable",
+          "ref": {
+            "path": "spec/cold-signing.md",
+            "heading": "Blind signing is prohibited"
+          }
+        },
+        {
+          "step": 6,
+          "from": "Ordex Gateway",
+          "to": "Bitcoin Node",
+          "label": "Preflight: ask the node whether it would accept the signed bytes",
+          "safety": "Answers with the exact bytes it checked; the gateway does not broadcast",
+          "ref": {
+            "path": "spec/api.md",
+            "heading": "`POST /orders/:id/preflight`"
+          }
+        },
+        {
+          "step": 7,
+          "from": "User Wallet",
+          "to": "Bitcoin Node",
+          "label": "Broadcast the exact preflighted bytes",
+          "safety": "Broadcast is the user's own deliberate step, never the gateway's",
+          "ref": {
+            "path": "spec/purchase.md",
+            "heading": "What Ordex never does"
+          }
+        }
+      ]
+    },
+    {
+      "id": "public-ask-creation",
+      "title": "Public-Ask Creation and Publication",
+      "summary": "A seller builds and signs a one input, one output PSBT with SIGHASH_SINGLE | ANYONECANPAY, publishes it to a gateway, and can announce it on Nostr as a kind 802 event signed by their own NIP-07 signer.",
+      "actors": [
+        "Seller Wallet",
+        "Seller Client",
+        "Ordex Gateway",
+        "Orderbook / Nostr"
+      ],
+      "sources": [
+        {
+          "path": "spec/purchase.md",
+          "heading": "The seller half"
+        },
+        {
+          "path": "spec/purchase.md",
+          "heading": "Rule one: the indexes must match"
+        },
+        {
+          "path": "spec/api.md",
+          "heading": "Writes"
+        },
+        {
+          "path": "spec/api.md",
+          "heading": "Lost replies are recovered, never repeated"
+        },
+        {
+          "path": "spec/lifecycle.md",
+          "heading": "States"
+        },
+        {
+          "path": "spec/interoperability.md",
+          "heading": "Export: the envelope and the artifact"
+        }
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "from": "Seller Client",
+          "to": "Ordex Gateway",
+          "label": "POST /api/ordex/orders/build (protocolId, token, quotedPriceSats, sellerPaymentAddress, asset or outpoint)",
+          "safety": "No key material is sent; the asset and outpoint are checked against the node and the ord index before anything is composed",
+          "ref": {
+            "operationId": "buildAsk"
+          }
+        },
+        {
+          "step": 2,
+          "from": "Ordex Gateway",
+          "to": "Seller Client",
+          "label": "Returns the unsigned one input, one output PSBT (psbt, inspection, outpoint, nodeTip)",
+          "safety": "In this half the seller input and the seller payment output share index 0",
+          "ref": {
+            "path": "spec/purchase.md",
+            "heading": "The seller half"
+          }
+        },
+        {
+          "step": 3,
+          "from": "Seller Client",
+          "to": "Seller Wallet",
+          "label": "Request a SIGHASH_SINGLE | SIGHASH_ANYONECANPAY signature on the one input",
+          "safety": "The signature commits to that input and to the output at the same index, nothing else",
+          "ref": {
+            "path": "spec/purchase.md",
+            "heading": "Rule one: the indexes must match"
+          }
+        },
+        {
+          "step": 4,
+          "from": "Seller Client",
+          "to": "Ordex Gateway",
+          "label": "POST /api/ordex/orders/publish with the signed psbt and an idempotency-key",
+          "safety": "A lost reply is recovered through the operation receipt, never repeated",
+          "ref": {
+            "operationId": "publishAsk"
+          }
+        },
+        {
+          "step": 5,
+          "from": "Ordex Gateway",
+          "to": "Ordex Gateway",
+          "label": "The order goes LIVE only when Bitcoin Core and the ord index both agree",
+          "safety": "PENDING_NODE and PENDING_ORD until then",
+          "ref": {
+            "path": "spec/lifecycle.md",
+            "heading": "States"
+          }
+        },
+        {
+          "step": 6,
+          "from": "Seller Client",
+          "to": "Ordex Gateway",
+          "label": "GET /api/ordex/orders/{id}/nostr-envelope returns the unsigned kind 802 event",
+          "safety": "The gateway holds no Nostr keys; a withdrawn order is refused an envelope",
+          "ref": {
+            "operationId": "getNostrEnvelope"
+          }
+        },
+        {
+          "step": 7,
+          "from": "Seller Client",
+          "to": "Orderbook / Nostr",
+          "label": "The seller's NIP-07 signer signs the event and the browser publishes it to relays the seller chooses",
+          "safety": "The gateway never publishes to or subscribes to a relay",
+          "ref": {
+            "path": "spec/interoperability.md",
+            "heading": "Export: the envelope and the artifact"
+          }
+        }
+      ]
+    },
+    {
+      "id": "public-ask-purchase",
+      "title": "Public-Ask Purchase Flow",
+      "summary": "A buyer asks the gateway to compose the buyer half, checks the arrangement, signs their own inputs, preflights the signed bytes, and broadcasts them. There is no intermediary custody, and a public ask can be raced.",
+      "actors": [
+        "Buyer Client",
+        "Ordex Gateway",
+        "Verifier Worker",
+        "Buyer Wallet",
+        "Bitcoin Network"
+      ],
+      "sources": [
+        {
+          "path": "spec/api.md",
+          "heading": "`POST /orders/:id/quote`"
+        },
+        {
+          "path": "spec/api.md",
+          "heading": "`POST /orders/:id/preflight`"
+        },
+        {
+          "path": "spec/api.md",
+          "heading": "Fees are proved, not trusted"
+        },
+        {
+          "path": "spec/purchase.md",
+          "heading": "The arrangement Ordex builds"
+        },
+        {
+          "path": "spec/purchase.md",
+          "heading": "What Ordex refuses"
+        },
+        {
+          "path": "spec/purchase.md",
+          "heading": "A public ask can be raced"
+        }
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "from": "Buyer Client",
+          "to": "Ordex Gateway",
+          "label": "GET /api/ordex/orders/{id}/artifact",
+          "safety": "Released only while the order is live",
+          "ref": {
+            "operationId": "getOrderArtifact"
+          }
+        },
+        {
+          "step": 2,
+          "from": "Buyer Client",
+          "to": "Ordex Gateway",
+          "label": "POST /api/ordex/orders/{id}/quote (assetReceiveAddress, paymentAddress, paddingUtxos, fundingUtxos, feeRateSatsPerVb)",
+          "safety": "Values and scripts are read from Bitcoin Core, never from the request; named outputs holding an asset or unexamined by ord are refused",
+          "ref": {
+            "operationId": "quoteOrder"
+          }
+        },
+        {
+          "step": 3,
+          "from": "Ordex Gateway",
+          "to": "Buyer Client",
+          "label": "Returns the unsigned buyer half, sellerIndex, exact economics, feePolicy and feeOutputs",
+          "safety": "Two padding inputs place the seller input and payment at index 2; a zero fee or royalty is stated, never omitted",
+          "ref": {
+            "path": "spec/purchase.md",
+            "heading": "The arrangement Ordex builds"
+          }
+        },
+        {
+          "step": 4,
+          "from": "Buyer Client",
+          "to": "Verifier Worker",
+          "label": "Check rule one (shared index, exact seller script and price) and rule two (sat flow), and recompute every fee output against the policy",
+          "safety": "Refuses OFFERED_OUTPOINT_MISSING, OFFERED_OUTPOINT_DUPLICATED, SELLER_SCRIPT_MISMATCH, SELLER_VALUE_MISMATCH, SAT_FLOW_SHORTFALL",
+          "ref": {
+            "path": "spec/purchase.md",
+            "heading": "What Ordex refuses"
+          },
+          "verifier": "purchase"
+        },
+        {
+          "step": 5,
+          "from": "Buyer Client",
+          "to": "Buyer Wallet",
+          "label": "Present the transaction; the wallet signs the buyer's own inputs",
+          "safety": "The seller half arrives already signed and is never touched",
+          "ref": {
+            "path": "spec/purchase.md",
+            "heading": "What Ordex never does"
+          }
+        },
+        {
+          "step": 6,
+          "from": "Buyer Client",
+          "to": "Ordex Gateway",
+          "label": "POST /api/ordex/orders/{id}/preflight with signedPsbt or finalTxHex",
+          "safety": "Rechecks the order, proves the sat flow, deciphers the runestone, asks the node, and answers the exact bytes checked",
+          "ref": {
+            "operationId": "preflightOrder"
+          },
+          "verifier": "purchase"
+        },
+        {
+          "step": 7,
+          "from": "Buyer Wallet",
+          "to": "Bitcoin Network",
+          "label": "Broadcast the exact preflighted bytes",
+          "safety": "Ordex does not broadcast; two buyers can build valid transactions from one ask and only one can confirm",
+          "ref": {
+            "path": "spec/purchase.md",
+            "heading": "A public ask can be raced"
+          }
+        }
+      ]
+    },
+    {
+      "id": "batch-purchase",
+      "title": "Batch Purchase Execution",
+      "summary": "Up to eight live asks composed into one transaction, only when every seller half can coexist with every invariant intact. There is no partial result.",
+      "actors": [
+        "Buyer Client",
+        "Ordex Gateway",
+        "Verifier Worker",
+        "Buyer Wallet",
+        "Bitcoin Network"
+      ],
+      "sources": [
+        {
+          "path": "spec/batch-purchase.md",
+          "heading": "The arrangement"
+        },
+        {
+          "path": "spec/batch-purchase.md",
+          "heading": "What Ordex refuses before composing"
+        },
+        {
+          "path": "spec/batch-purchase.md",
+          "heading": "What Ordex refuses before handing the result over"
+        },
+        {
+          "path": "spec/batch-purchase.md",
+          "heading": "No partial result"
+        },
+        {
+          "path": "spec/api.md",
+          "heading": "Writes"
+        }
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "from": "Buyer Client",
+          "to": "Ordex Gateway",
+          "label": "POST /api/ordex/orders/batch-purchase (orderIds, assetReceiveAddress, paymentAddress, paddingUtxos, fundingUtxos, feeRateSatsPerVb)",
+          "safety": "Refuses zero asks, more than eight, duplicates, and any ask that is not live, fresh, or actionable",
+          "ref": {
+            "operationId": "composeBatchPurchase"
+          }
+        },
+        {
+          "step": 2,
+          "from": "Ordex Gateway",
+          "to": "Buyer Client",
+          "label": "Returns one PSBT: per ask, one seller input with its payment at the same index and one buyer asset output ahead of that payment",
+          "safety": "No partial composition; a failure names every refused order with its refusal code",
+          "ref": {
+            "path": "spec/batch-purchase.md",
+            "heading": "The arrangement"
+          }
+        },
+        {
+          "step": 3,
+          "from": "Buyer Client",
+          "to": "Verifier Worker",
+          "label": "Check every ask with the single-purchase rules: outpoint once, exact payment at the shared index, sat flow",
+          "safety": "The proof is per ask; the batch adds no trust to any of them",
+          "ref": {
+            "path": "spec/batch-purchase.md",
+            "heading": "What Ordex refuses before handing the result over"
+          },
+          "verifier": "purchase"
+        },
+        {
+          "step": 4,
+          "from": "Buyer Client",
+          "to": "Buyer Wallet",
+          "label": "Sign the buyer's padding and funding inputs",
+          "safety": "The buyer approves one set of movements, never a subset",
+          "ref": {
+            "path": "spec/batch-purchase.md",
+            "heading": "No partial result"
+          }
+        },
+        {
+          "step": 5,
+          "from": "Buyer Client",
+          "to": "Ordex Gateway",
+          "label": "POST /api/ordex/orders/batch-preflight with the signed batch",
+          "safety": "Rechecks every placement, proves the sat flow for every ask, asks the node, and answers the exact bytes checked",
+          "ref": {
+            "operationId": "preflightBatchPurchase"
+          },
+          "verifier": "purchase"
+        },
+        {
+          "step": 6,
+          "from": "Buyer Wallet",
+          "to": "Bitcoin Network",
+          "label": "Broadcast the exact preflighted bytes",
+          "safety": "One transaction settles every ask in the batch or none of them",
+          "ref": {
+            "path": "spec/purchase.md",
+            "heading": "What Ordex never does"
+          }
+        }
+      ]
+    },
+    {
+      "id": "offers-lifecycle",
+      "title": "Offer Creation, Acceptance, and Recovery",
+      "summary": "A buyer funds a two-leaf Taproot output. A seller accepts with an eligible Feline, which needs both independent policy signatures. After expiryHeight the buyer can recover alone. Before expiry the two policy signers together could spend the output, so an offer is not trustless.",
+      "actors": [
+        "Buyer",
+        "Seller",
+        "Policy Signers",
+        "Taproot Script",
+        "Gateway",
+        "Bitcoin Consensus"
+      ],
+      "sources": [
+        {
+          "path": "spec/offers.md",
+          "heading": "Offers v1"
+        },
+        {
+          "path": "spec/offers.md",
+          "heading": "The funded offer output"
+        },
+        {
+          "path": "spec/offers.md",
+          "heading": "Acceptance leaf"
+        },
+        {
+          "path": "spec/offers.md",
+          "heading": "The policy signers"
+        },
+        {
+          "path": "spec/offers.md",
+          "heading": "Acceptance"
+        },
+        {
+          "path": "spec/offers.md",
+          "heading": "Recovery"
+        },
+        {
+          "path": "spec/offers.md",
+          "heading": "Offer lifecycle"
+        }
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "from": "Buyer",
+          "to": "Taproot Script",
+          "label": "Fund one Taproot output: unspendable internal key H, an acceptance leaf needing both policy keys, and a recovery leaf for the buyer key after expiryHeight",
+          "safety": "No key path exists; the acceptance leaf embeds offerTermsHash, so changing one term changes the address",
+          "ref": {
+            "path": "spec/offers.md",
+            "heading": "The funded offer output"
+          }
+        },
+        {
+          "step": 2,
+          "from": "Buyer",
+          "to": "Gateway",
+          "label": "POST /api/ordex/offers with the exact terms and funded-output evidence",
+          "safety": "The gateway recomputes the terms hash and the Taproot tree and asks Core whether the output is unspent; the offer goes LIVE once funding confirms",
+          "ref": {
+            "operationId": "publishOffer"
+          },
+          "verifier": "offers"
+        },
+        {
+          "step": 3,
+          "from": "Seller",
+          "to": "Gateway",
+          "label": "POST /api/ordex/offers/{id}/acceptance-plan (sellerFelineOutpoint, sellerPaymentScriptHex)",
+          "safety": "Refuses when the Feline is elsewhere, the root or trait set does not prove it, or expiry is reached; no buyer input is ever planned",
+          "ref": {
+            "operationId": "planOfferAcceptance"
+          }
+        },
+        {
+          "step": 4,
+          "from": "Seller",
+          "to": "Seller",
+          "label": "Sign every seller input with SIGHASH_ALL or the Taproot default",
+          "safety": "The buyer signs nothing at acceptance time",
+          "ref": {
+            "path": "spec/offers.md",
+            "heading": "Acceptance"
+          }
+        },
+        {
+          "step": 5,
+          "from": "Policy Signers",
+          "to": "Taproot Script",
+          "label": "Each of the two independent signers signs the funded input under the acceptance leaf with SIGHASH_DEFAULT",
+          "safety": "Each signs only after proving from its own authorities that the output is unspent, the Feline is eligible, the height is below expiryHeight, and the node would accept",
+          "ref": {
+            "path": "spec/offers.md",
+            "heading": "The policy signers"
+          }
+        },
+        {
+          "step": 6,
+          "from": "Seller",
+          "to": "Gateway",
+          "label": "POST /api/ordex/offers/{id}/preflight with the built acceptance",
+          "safety": "Checks every acceptance rule, both policy signatures and every seller signature, then asks the node",
+          "ref": {
+            "operationId": "preflightOfferAcceptance"
+          },
+          "verifier": "offers"
+        },
+        {
+          "step": 7,
+          "from": "Seller",
+          "to": "Bitcoin Consensus",
+          "label": "Broadcast the acceptance: the seller receives exactly priceSats, the buyer receives the Feline",
+          "safety": "Checked below expiryHeight; once confirmed the offer is ACCEPTED",
+          "ref": {
+            "path": "spec/offers.md",
+            "heading": "Acceptance"
+          }
+        },
+        {
+          "step": 8,
+          "from": "Buyer",
+          "to": "Bitcoin Consensus",
+          "label": "Or, when no seller accepts: broadcast the recovery spend, nLockTime at or after expiryHeight",
+          "safety": "Valid by consensus only from block expiryHeight + 1; only the buyer recovery key can sign it; once confirmed the offer is RECOVERED",
+          "ref": {
+            "path": "spec/offers.md",
+            "heading": "Recovery"
+          },
+          "verifier": "offers"
+        }
+      ]
+    },
+    {
+      "id": "ask-replacement",
+      "title": "Ask Replacement and Repricing",
+      "summary": "The owner of the offered output replaces a live ask with a freshly signed one for the same output: the old order leaves the book as REPLACED and the new one goes live in one step. The old signed artifact stays usable until the output is spent.",
+      "actors": [
+        "Seller",
+        "Gateway",
+        "Orderbook",
+        "Old Ask",
+        "New Ask"
+      ],
+      "sources": [
+        {
+          "path": "spec/api.md",
+          "heading": "Writes"
+        },
+        {
+          "path": "spec/api.md",
+          "heading": "Lost replies are recovered, never repeated"
+        },
+        {
+          "path": "spec/lifecycle.md",
+          "heading": "States"
+        },
+        {
+          "path": "spec/lifecycle.md",
+          "heading": "Withdrawal is discovery, not cancellation"
+        },
+        {
+          "path": "spec/lifecycle.md",
+          "heading": "The activity log"
+        },
+        {
+          "path": "spec/events.md",
+          "heading": "Event families"
+        }
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "from": "Seller",
+          "to": "Gateway",
+          "label": "GET /api/ordex/orders/{id}/ownership-challenge",
+          "safety": "The message the listing owner signs before managing it",
+          "ref": {
+            "operationId": "getOwnershipChallenge"
+          }
+        },
+        {
+          "step": 2,
+          "from": "Seller",
+          "to": "Gateway",
+          "label": "POST /api/ordex/orders/{id}/replace (artifact, ownership) with an idempotency-key",
+          "safety": "The old order must be live, the owner proof must match the offered output, and the new artifact must spend the same outpoint",
+          "ref": {
+            "operationId": "replaceOrder"
+          }
+        },
+        {
+          "step": 3,
+          "from": "Gateway",
+          "to": "Old Ask",
+          "label": "The old order leaves the book as REPLACED",
+          "safety": "Discovery only: the old signed artifact stays usable until the output is spent",
+          "ref": {
+            "path": "spec/lifecycle.md",
+            "heading": "States"
+          }
+        },
+        {
+          "step": 4,
+          "from": "Gateway",
+          "to": "New Ask",
+          "label": "The new order goes live in the same step; the answer names replacedOrderId",
+          "safety": "Two live asks for one output and seller cannot exist",
+          "ref": {
+            "operationId": "replaceOrder"
+          }
+        },
+        {
+          "step": 5,
+          "from": "Gateway",
+          "to": "Orderbook",
+          "label": "Append the transition to the activity log and emit order events (replaced, published)",
+          "safety": "Each entry is something that happened, with its reason and cause",
+          "ref": {
+            "path": "spec/events.md",
+            "heading": "Event families"
+          }
+        }
+      ]
+    },
+    {
+      "id": "order-state-machine",
+      "title": "Order Lifecycle State Machine",
+      "summary": "The states an order can actually enter: PENDING_NODE, PENDING_ORD, LIVE, MEMPOOL_CONFLICTED, SPENT, SETTLED, REJECTED, WITHDRAWN, REPLACED. There is no reserved state, because a public ask can be raced.",
+      "actors": [
+        "PENDING_NODE",
+        "PENDING_ORD",
+        "LIVE",
+        "MEMPOOL_CONFLICTED",
+        "SETTLED",
+        "SPENT",
+        "WITHDRAWN",
+        "REPLACED"
+      ],
+      "sources": [
+        {
+          "path": "spec/lifecycle.md",
+          "heading": "States"
+        },
+        {
+          "path": "spec/lifecycle.md",
+          "heading": "Actionability"
+        },
+        {
+          "path": "spec/lifecycle.md",
+          "heading": "Withdrawal is discovery, not cancellation"
+        },
+        {
+          "path": "spec/purchase.md",
+          "heading": "A public ask can be raced"
+        }
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "from": "PENDING_NODE",
+          "to": "PENDING_ORD",
+          "label": "Bitcoin Core confirms the offered output is unspent",
+          "safety": "Until then the artifact has only parsed",
+          "ref": {
+            "path": "spec/lifecycle.md",
+            "heading": "States"
+          }
+        },
+        {
+          "step": 2,
+          "from": "PENDING_ORD",
+          "to": "LIVE",
+          "label": "The ord index confirms the asset is where the order claims",
+          "safety": "LIVE means both authorities agreed, recently enough to act on; an aged LIVE order is REVIEW_ONLY",
+          "ref": {
+            "path": "spec/lifecycle.md",
+            "heading": "Actionability"
+          }
+        },
+        {
+          "step": 3,
+          "from": "LIVE",
+          "to": "MEMPOOL_CONFLICTED",
+          "label": "An unconfirmed transaction spends the offered output",
+          "safety": "It can still be replaced or dropped",
+          "ref": {
+            "path": "spec/lifecycle.md",
+            "heading": "States"
+          }
+        },
+        {
+          "step": 4,
+          "from": "MEMPOOL_CONFLICTED",
+          "to": "LIVE",
+          "label": "The conflicting spend is replaced or dropped",
+          "safety": "The order returns to the book",
+          "ref": {
+            "path": "spec/lifecycle.md",
+            "heading": "States"
+          }
+        },
+        {
+          "step": 5,
+          "from": "MEMPOOL_CONFLICTED",
+          "to": "SETTLED",
+          "label": "The spend confirms and carries this order's exact payout",
+          "safety": "Ordex remembers the transaction its own preflight accepted to tell settlement from any other spend",
+          "ref": {
+            "path": "spec/lifecycle.md",
+            "heading": "States"
+          }
+        },
+        {
+          "step": 6,
+          "from": "MEMPOOL_CONFLICTED",
+          "to": "SPENT",
+          "label": "The spend confirms without this order's payout",
+          "safety": "A confirmed spend does not come back short of a reorg",
+          "ref": {
+            "path": "spec/lifecycle.md",
+            "heading": "States"
+          }
+        },
+        {
+          "step": 7,
+          "from": "LIVE",
+          "to": "WITHDRAWN",
+          "label": "The owner of the offered output, or an operator, removes it from discovery",
+          "safety": "Withdrawal is not cancellation; only spending the output makes a distributed artifact unusable",
+          "ref": {
+            "path": "spec/lifecycle.md",
+            "heading": "Withdrawal is discovery, not cancellation"
+          }
+        },
+        {
+          "step": 8,
+          "from": "LIVE",
+          "to": "REPLACED",
+          "label": "The owner publishes a fresh ask for the same output",
+          "safety": "Terminal in the same sense as WITHDRAWN: funds move only when the output is spent",
+          "ref": {
+            "path": "spec/lifecycle.md",
+            "heading": "States"
+          }
+        }
+      ]
+    },
+    {
+      "id": "runes-burn-safety",
+      "title": "Rune Burn and Cenotaph Safety Path",
+      "summary": "Before a wallet is asked to sign, and again before the final transaction is released, the client deciphers the runestone the way ord 0.29.0 does and refuses any transaction that would burn a rune balance.",
+      "actors": [
+        "Composer",
+        "Runestone Parser",
+        "Rune Index",
+        "Runes Verifier",
+        "Outputs"
+      ],
+      "sources": [
+        {
+          "path": "spec/runes.md",
+          "heading": "Reading the runestone"
+        },
+        {
+          "path": "spec/runes.md",
+          "heading": "What makes it a cenotaph"
+        },
+        {
+          "path": "spec/runes.md",
+          "heading": "Where a readable runestone sends each balance"
+        },
+        {
+          "path": "spec/runes.md",
+          "heading": "The rule a client must apply"
+        }
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "from": "Composer",
+          "to": "Runestone Parser",
+          "label": "Decipher the runestone: the first output whose script begins OP_RETURN OP_13, read by walking the script directly",
+          "safety": "Flags malformed pushes, opcodes, bad varints, truncated fields, and unconsumed even tags as a cenotaph",
+          "ref": {
+            "path": "spec/runes.md",
+            "heading": "What makes it a cenotaph"
+          },
+          "verifier": "runes"
+        },
+        {
+          "step": 2,
+          "from": "Composer",
+          "to": "Rune Index",
+          "label": "Ask what each spent input carries, as exact balances",
+          "safety": "A failed lookup counts as unexamined, never as empty",
+          "ref": {
+            "path": "spec/runes.md",
+            "heading": "The rule a client must apply"
+          }
+        },
+        {
+          "step": 3,
+          "from": "Runestone Parser",
+          "to": "Runes Verifier",
+          "label": "Refuse a cenotaph when any input holds a rune balance or was never examined",
+          "safety": "CENOTAPH_BURNS_BALANCE, CENOTAPH_WITH_UNPROVEN_INPUT",
+          "ref": {
+            "path": "spec/runes.md",
+            "heading": "The rule a client must apply"
+          },
+          "verifier": "runes"
+        },
+        {
+          "step": 4,
+          "from": "Runes Verifier",
+          "to": "Composer",
+          "label": "Otherwise find every burn path and allocate the exact balances; refuse when anything burns",
+          "safety": "ALLOCATION_BURNS_BALANCE, BURN_PATH_WITH_UNPROVEN_INPUT, RUNE_BALANCES_REQUIRED, RUNE_MINT_UNRESOLVED",
+          "ref": {
+            "path": "spec/runes.md",
+            "heading": "The rule a client must apply"
+          },
+          "verifier": "runes"
+        },
+        {
+          "step": 5,
+          "from": "Runes Verifier",
+          "to": "Outputs",
+          "label": "Prove every balance lands where the plan says, as the complete multiset of { output, runeId, amount }",
+          "safety": "Burn safety is necessary, never sufficient; RUNE_ALLOCATION_MISMATCH, RUNE_INPUT_UNPROVEN",
+          "ref": {
+            "path": "spec/runes.md",
+            "heading": "The rule a client must apply"
+          },
+          "verifier": "runes"
+        }
+      ]
+    },
+    {
+      "id": "interop-portable-orders",
+      "title": "Interoperability and Portable-Order Distribution",
+      "summary": "A signed PSBT is the whole order. The gateway hands out an unsigned kind 802 envelope, the seller's own NIP-07 signer signs it and publishes it to relays, and any venue can repeat it. Signed OpenOrdex events can be imported back, where the node and the ord index decide what is true.",
+      "actors": [
+        "Publisher",
+        "Ordex Gateway",
+        "Nostr Relay Mesh",
+        "External Aggregator"
+      ],
+      "sources": [
+        {
+          "path": "spec/interoperability.md",
+          "heading": "Identity is the artifact, not the venue"
+        },
+        {
+          "path": "spec/interoperability.md",
+          "heading": "OpenOrdex events: `POST /api/ordex/orders/openordex-event`"
+        },
+        {
+          "path": "spec/interoperability.md",
+          "heading": "Export: the envelope and the artifact"
+        },
+        {
+          "path": "spec/interoperability.md",
+          "heading": "What a source may never do"
+        }
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "from": "Publisher",
+          "to": "Ordex Gateway",
+          "label": "GET /api/ordex/orders/{id}/nostr-envelope returns the unsigned kind 802 event (tags i, u, s, protocol, token, t, n, d, status)",
+          "safety": "The gateway holds no Nostr keys; a withdrawn order is refused an envelope",
+          "ref": {
+            "operationId": "getNostrEnvelope"
+          }
+        },
+        {
+          "step": 2,
+          "from": "Publisher",
+          "to": "Nostr Relay Mesh",
+          "label": "The publisher's NIP-07 signer adds pubkey, id and sig, and the browser publishes to relays the publisher chooses",
+          "safety": "The gateway never subscribes to a relay",
+          "ref": {
+            "path": "spec/interoperability.md",
+            "heading": "Export: the envelope and the artifact"
+          }
+        },
+        {
+          "step": 3,
+          "from": "Nostr Relay Mesh",
+          "to": "External Aggregator",
+          "label": "Any venue can read and repeat the listing",
+          "safety": "A source never overrides ownership, UTXO, protocol, or chain state",
+          "ref": {
+            "path": "spec/interoperability.md",
+            "heading": "What a source may never do"
+          }
+        },
+        {
+          "step": 4,
+          "from": "Publisher",
+          "to": "Ordex Gateway",
+          "label": "POST /api/ordex/orders/openordex-event with the signed kind 802 event",
+          "safety": "id must equal the SHA-256 of the NIP-01 serialization and sig must be a valid Schnorr signature by pubkey; recorded as openordex-nostr802 evidence",
+          "ref": {
+            "operationId": "importOpenOrdexEvent"
+          }
+        },
+        {
+          "step": 5,
+          "from": "Ordex Gateway",
+          "to": "Ordex Gateway",
+          "label": "Verify the artifact against Bitcoin Core and the ord index; identity is the artifact digest",
+          "safety": "A duplicate import merges evidence and cannot change terms; a withdrawn order stays withdrawn",
+          "ref": {
+            "path": "spec/interoperability.md",
+            "heading": "Identity is the artifact, not the venue"
+          }
+        }
+      ]
+    },
+    {
+      "id": "safeops-shield",
+      "title": "SafeOps Planning and Execution Shield",
+      "summary": "The gateway resolves every input's inventory, builds one plan with a SHA-256 digest, refreshes it immediately before every signature and again before broadcast, and relays a signed result only after verifying it against the plan and on an explicit user broadcast action.",
+      "actors": [
+        "Treasury",
+        "SafeOps Engine",
+        "Execution Shield",
+        "Signer"
+      ],
+      "sources": [
+        {
+          "path": "spec/safeops.md",
+          "heading": "Who does what"
+        },
+        {
+          "path": "spec/safeops.md",
+          "heading": "Inventory resolution"
+        },
+        {
+          "path": "spec/safeops.md",
+          "heading": "The plan"
+        },
+        {
+          "path": "spec/safeops.md",
+          "heading": "Asset safety rules"
+        },
+        {
+          "path": "spec/safeops.md",
+          "heading": "The execution shield"
+        },
+        {
+          "path": "spec/safeops.md",
+          "heading": "Signed results"
+        },
+        {
+          "path": "spec/safeops.md",
+          "heading": "Monitoring"
+        }
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "from": "Treasury",
+          "to": "SafeOps Engine",
+          "label": "POST /api/ordex/safeops/plans (operationKind, inputs, recipients, feeRateSatsPerVb)",
+          "safety": "The user names the operation and its inputs; the gateway composes",
+          "ref": {
+            "operationId": "createSafeOpsPlan"
+          }
+        },
+        {
+          "step": 2,
+          "from": "SafeOps Engine",
+          "to": "SafeOps Engine",
+          "label": "Resolve every input at one checkpoint: amount, script, inscriptions, rare sats, runes, Counterparty attachments",
+          "safety": "Unexamined inputs and unrecognized claims fail closed (INVENTORY_UNEXAMINED, UNKNOWN_CLAIM_FAILS_CLOSED)",
+          "ref": {
+            "path": "spec/safeops.md",
+            "heading": "Inventory resolution"
+          }
+        },
+        {
+          "step": 3,
+          "from": "SafeOps Engine",
+          "to": "Treasury",
+          "label": "Return the plan with its digest: SHA-256 over sorted-key JSON of everything except findings and digest",
+          "safety": "Value conservation, per-protocol asset movement, postage, dust, and sighash rules are checked before any wallet opens",
+          "ref": {
+            "path": "spec/safeops.md",
+            "heading": "Asset safety rules"
+          },
+          "verifier": "safeops"
+        },
+        {
+          "step": 4,
+          "from": "Treasury",
+          "to": "Execution Shield",
+          "label": "POST /api/ordex/safeops/plans/{planId}/shield immediately before signing",
+          "safety": "Re-reads inputs, ownership, mempool spends, and fees; any change invalidates the session and rebuilds the plan with a new digest",
+          "ref": {
+            "operationId": "refreshExecutionShield"
+          }
+        },
+        {
+          "step": 5,
+          "from": "Treasury",
+          "to": "Signer",
+          "label": "Sign every selected input exactly once with DEFAULT or ALL",
+          "safety": "The gateway never signs; SIGHASH_NOT_PERMITTED for any other sighash",
+          "ref": {
+            "path": "spec/safeops.md",
+            "heading": "Asset safety rules"
+          }
+        },
+        {
+          "step": 6,
+          "from": "Signer",
+          "to": "Treasury",
+          "label": "Return the signed transaction bytes (signedTxHex)",
+          "safety": "A caller's statement that an input is signed proves nothing; the bytes are read",
+          "ref": {
+            "path": "spec/safeops.md",
+            "heading": "Signed results"
+          }
+        },
+        {
+          "step": 7,
+          "from": "Treasury",
+          "to": "Execution Shield",
+          "label": "Refresh the shield again before broadcast",
+          "safety": "Nothing is silently adapted",
+          "ref": {
+            "path": "spec/safeops.md",
+            "heading": "The execution shield"
+          }
+        },
+        {
+          "step": 8,
+          "from": "Treasury",
+          "to": "SafeOps Engine",
+          "label": "POST /api/ordex/safeops/broadcast with signedTx on the user's explicit broadcast action",
+          "safety": "Verifies the signed result against the plan (PLAN_DIGEST_MISMATCH, INPUT_SET_CHANGED, SCRIPT_CHANGED, VALUE_CHANGED, SIGHASH_CHANGED), runs Core preflight, then relays",
+          "ref": {
+            "operationId": "broadcastSafeOpsTransaction"
+          },
+          "verifier": "safeops"
+        },
+        {
+          "step": 9,
+          "from": "Treasury",
+          "to": "SafeOps Engine",
+          "label": "GET /api/ordex/safeops/operations/{txid} to monitor the broadcast",
+          "safety": "Mempool admission, conflict, replacement, confirmation, drop, and reorg each append an event",
+          "ref": {
+            "operationId": "getSafeOpsOperation"
+          }
+        }
+      ]
+    },
+    {
+      "id": "atomic-swap-settlement",
+      "title": "Atomic Swap Settlement Sequence",
+      "summary": "An asset-for-asset exchange settled in exactly one Bitcoin transaction: a maker-signed intent, one deterministic acceptance plan, each party signing only its own inputs with SIGHASH_ALL, node preflight, and a relay only on the user's explicit broadcast action.",
+      "actors": [
+        "Maker",
+        "Gateway",
+        "Taker",
+        "Verifier",
+        "Bitcoin Network"
+      ],
+      "sources": [
+        {
+          "path": "spec/swaps.md",
+          "heading": "The two stage model"
+        },
+        {
+          "path": "spec/swaps.md",
+          "heading": "The intent"
+        },
+        {
+          "path": "spec/swaps.md",
+          "heading": "The acceptance plan"
+        },
+        {
+          "path": "spec/swaps.md",
+          "heading": "Lifecycle"
+        }
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "from": "Maker",
+          "to": "Gateway",
+          "label": "POST /api/ordex/swaps/intents with the signed intent: exact gives, exact requires, receive script, fee budget, expiry",
+          "safety": "The gateway verifies the BIP-322 maker proof, the intent digest, and every committed outpoint before the intent goes live",
+          "ref": {
+            "operationId": "publishSwapIntent"
+          },
+          "verifier": "swaps"
+        },
+        {
+          "step": 2,
+          "from": "Taker",
+          "to": "Gateway",
+          "label": "POST /api/ordex/swaps/intents/{intentId}/acceptance-plan with takerInputs",
+          "safety": "The gateway revalidates the maker outpoints and builds one deterministic plan, ordex.swap-acceptance-plan/v2",
+          "ref": {
+            "operationId": "buildSwapAcceptancePlan"
+          }
+        },
+        {
+          "step": 3,
+          "from": "Gateway",
+          "to": "Verifier",
+          "label": "Verify the plan: both sides contribute and receive, every input is closed with SIGHASH_ALL, consideration and fee split derived from value flow",
+          "safety": "ATOMICITY_IMPOSSIBLE, UNCLOSED_SIGHASH, CONSIDERATION_SHORTFALL, FEE_SPLIT_INVALID",
+          "ref": {
+            "path": "spec/swaps.md",
+            "heading": "The acceptance plan"
+          },
+          "verifier": "swaps"
+        },
+        {
+          "step": 4,
+          "from": "Maker",
+          "to": "Gateway",
+          "label": "POST /api/ordex/swaps/sessions/{sessionId}/signatures with the maker's signed PSBT",
+          "safety": "The maker signs only its own inputs, and never before the taker's inputs exist",
+          "ref": {
+            "operationId": "submitSwapSignature"
+          }
+        },
+        {
+          "step": 5,
+          "from": "Taker",
+          "to": "Gateway",
+          "label": "POST /api/ordex/swaps/sessions/{sessionId}/signatures with the taker's signed PSBT",
+          "safety": "An input added, removed, reordered, or signed outside the policy refuses the submission",
+          "ref": {
+            "operationId": "submitSwapSignature"
+          }
+        },
+        {
+          "step": 6,
+          "from": "Gateway",
+          "to": "Verifier",
+          "label": "Prove the fully signed settlement is exactly the planned transaction and every input signature verifies",
+          "safety": "TRANSACTION_CHANGED, SIGNATURE_MISSING, SIGNATURE_INVALID, UNCLOSED_SIGHASH",
+          "ref": {
+            "path": "spec/swaps.md",
+            "heading": "The acceptance plan"
+          },
+          "verifier": "swaps"
+        },
+        {
+          "step": 7,
+          "from": "Taker",
+          "to": "Gateway",
+          "label": "POST /api/ordex/swaps/sessions/{sessionId}/preflight",
+          "safety": "Only a transaction carrying every required signature reaches it; Bitcoin Core testmempoolaccept decides",
+          "ref": {
+            "operationId": "preflightSwapSession"
+          }
+        },
+        {
+          "step": 8,
+          "from": "Gateway",
+          "to": "Bitcoin Network",
+          "label": "On the user's explicit POST /api/ordex/swaps/sessions/{sessionId}/broadcast, relay the one settlement transaction",
+          "safety": "Both parties' assets move in one transaction or not at all",
+          "ref": {
+            "operationId": "broadcastSwapSession"
+          }
+        }
+      ]
+    },
+    {
+      "id": "event-stream-replay",
+      "title": "Event Stream, Cursor, and Webhook Delivery",
+      "summary": "Every public state change becomes one immutable envelope written by the transactional outbox. SSE resumes with Last-Event-ID, WebSocket subscribes with a cursor, and webhooks carry an HMAC-SHA256 X-Ordex-Signature that receivers verify in constant time.",
+      "actors": [
+        "Gateway Commit",
+        "Transactional Outbox",
+        "SSE / WebSocket Stream",
+        "Subscriber",
+        "Webhook Delivery Worker",
+        "Webhook Receiver"
+      ],
+      "sources": [
+        {
+          "path": "spec/events.md",
+          "heading": "Realtime events and signed webhooks v1"
+        },
+        {
+          "path": "spec/events.md",
+          "heading": "The envelope"
+        },
+        {
+          "path": "spec/events.md",
+          "heading": "Streaming"
+        },
+        {
+          "path": "spec/events.md",
+          "heading": "The signature"
+        },
+        {
+          "path": "spec/events.md",
+          "heading": "Delivery"
+        },
+        {
+          "path": "spec/asyncapi.json",
+          "channel": "eventsStream"
+        },
+        {
+          "path": "spec/asyncapi.json",
+          "channel": "eventsSocket"
+        },
+        {
+          "path": "spec/asyncapi.json",
+          "channel": "webhookDelivery"
+        }
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "from": "Gateway Commit",
+          "to": "Transactional Outbox",
+          "label": "Write one envelope at the commit that changed the aggregate: uuid id, monotonic per-network sequence, chain checkpoint",
+          "safety": "Nothing reconstructs history from websocket or in-memory activity",
+          "ref": {
+            "path": "spec/events.md",
+            "heading": "The envelope"
+          },
+          "verifier": "events"
+        },
+        {
+          "step": 2,
+          "from": "Transactional Outbox",
+          "to": "SSE / WebSocket Stream",
+          "label": "Streaming workers consume the outbox",
+          "safety": "p95 publication latency target under two seconds; no event loss during worker restart",
+          "ref": {
+            "path": "spec/events.md",
+            "heading": "Streaming"
+          }
+        },
+        {
+          "step": 3,
+          "from": "Subscriber",
+          "to": "SSE / WebSocket Stream",
+          "label": "SSE: GET /api/ordex/events/stream with the Last-Event-ID header",
+          "safety": "Resumes exactly after that event; heartbeat at least every 15 seconds",
+          "ref": {
+            "operationId": "streamOrdexEvents"
+          }
+        },
+        {
+          "step": 4,
+          "from": "Subscriber",
+          "to": "SSE / WebSocket Stream",
+          "label": "WebSocket: send { op: \"subscribe\", filters, cursor } on /events/ws",
+          "safety": "One connection, many filters; the cursor names the event sequence and id to resume from",
+          "ref": {
+            "path": "spec/asyncapi.json",
+            "channel": "eventsSocket"
+          }
+        },
+        {
+          "step": 5,
+          "from": "SSE / WebSocket Stream",
+          "to": "Subscriber",
+          "label": "Replay from the acknowledged cursor in network:sequence:id order, then live events",
+          "safety": "At-least-once delivery; the subscriber deduplicates by event id; seven-day minimum retention",
+          "ref": {
+            "path": "spec/events.md",
+            "heading": "Streaming"
+          }
+        },
+        {
+          "step": 6,
+          "from": "Webhook Delivery Worker",
+          "to": "Webhook Receiver",
+          "label": "POST one envelope with X-Ordex-Signature: t=<unix>,d=<deliveryId>,v1=<hex>",
+          "safety": "v1 is HMAC-SHA256 over <timestamp>.<deliveryId>.<sha256(body)>; each retry keeps the id and body bytes and is signed again",
+          "ref": {
+            "path": "spec/asyncapi.json",
+            "channel": "webhookDelivery"
+          }
+        },
+        {
+          "step": 7,
+          "from": "Webhook Receiver",
+          "to": "Webhook Receiver",
+          "label": "Verify any v1 against any subscription secret it holds, in constant time, within a five-minute tolerance",
+          "safety": "Deduplicate by delivery id; during a rotation overlap the header carries up to four v1 values",
+          "ref": {
+            "path": "spec/events.md",
+            "heading": "The signature"
+          },
+          "verifier": "events"
+        }
+      ]
+    },
+    {
+      "id": "collection-provenance-flow",
+      "title": "Collection Manifest and Membership Proof",
+      "summary": "A creator-signed manifest commits to a sorted member list through a domain-separated SHA-256 Merkle root. Anyone can verify a membership proof offline with only the manifest, the member identity, and the proof.",
+      "actors": [
+        "Collection Creator",
+        "Manifest Compiler",
+        "Ordex Registry",
+        "Client Verifier"
+      ],
+      "sources": [
+        {
+          "path": "spec/collection-manifest.md",
+          "heading": "The manifest"
+        },
+        {
+          "path": "spec/collection-manifest.md",
+          "heading": "Membership proofs"
+        },
+        {
+          "path": "spec/collection-manifest.md",
+          "heading": "Publication, versioning, revocation"
+        }
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "from": "Collection Creator",
+          "to": "Manifest Compiler",
+          "label": "Supply the member list, typed as inscriptionId, output, assetId, or satpoint",
+          "safety": "Stored sorted with no duplicates (MEMBERS_UNSORTED, MEMBERS_DUPLICATED)",
+          "ref": {
+            "path": "spec/collection-manifest.md",
+            "heading": "The manifest"
+          }
+        },
+        {
+          "step": 2,
+          "from": "Manifest Compiler",
+          "to": "Manifest Compiler",
+          "label": "Compute the membership root from domain-separated leaves and nodes, and the digest over everything except signature and digest",
+          "safety": "Editing anything after signing breaks the digest",
+          "ref": {
+            "path": "spec/collection-manifest.md",
+            "heading": "Membership proofs"
+          }
+        },
+        {
+          "step": 3,
+          "from": "Collection Creator",
+          "to": "Ordex Registry",
+          "label": "POST /api/ordex/collections/manifests with the BIP-322 creator signature",
+          "safety": "The root is recomputed and the signature address bound to the creator before publication; the gateway proves the BIP-322 signature; publication is immutable",
+          "ref": {
+            "operationId": "publishCollectionManifest"
+          },
+          "verifier": "collection-manifest"
+        },
+        {
+          "step": 4,
+          "from": "Client Verifier",
+          "to": "Ordex Registry",
+          "label": "GET /api/ordex/collections/manifests/{manifestId}/proofs/{memberIdentity}",
+          "safety": "Returns the sibling path for one member",
+          "ref": {
+            "operationId": "getCollectionMembershipProof"
+          }
+        },
+        {
+          "step": 5,
+          "from": "Client Verifier",
+          "to": "Client Verifier",
+          "label": "Verify the member proof against the manifest's root",
+          "safety": "No network call, no gateway; a stranger, a tampered sibling, or a removed member refuses with MEMBER_NOT_PROVEN",
+          "ref": {
+            "path": "spec/collection-manifest.md",
+            "heading": "Membership proofs"
+          },
+          "verifier": "collection-manifest"
+        }
+      ]
+    },
+    {
+      "id": "counterparty-heritage-flow",
+      "title": "Counterparty Heritage Attachment Model",
+      "summary": "Counterparty assets attached to UTXOs, under one self-hosted Counterparty Core authority. An attachment is a ledger balance on an outpoint, not a sat, so it follows the Counterparty move rule, not ordinal sat flow.",
+      "actors": [
+        "Asset Holder",
+        "Heritage Coordinator",
+        "UTXO State",
+        "Verifier"
+      ],
+      "sources": [
+        {
+          "path": "spec/counterparty-utxo-asset.md",
+          "heading": "Identity"
+        },
+        {
+          "path": "spec/counterparty-utxo-asset.md",
+          "heading": "The authority"
+        },
+        {
+          "path": "spec/counterparty-utxo-asset.md",
+          "heading": "Attachment follows the spend"
+        },
+        {
+          "path": "spec/counterparty-utxo-asset.md",
+          "heading": "Attach and detach"
+        },
+        {
+          "path": "spec/counterparty-utxo-asset.md",
+          "heading": "Trading path"
+        },
+        {
+          "path": "spec/counterparty-utxo-asset.md",
+          "heading": "Readiness gates"
+        }
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "from": "Asset Holder",
+          "to": "Heritage Coordinator",
+          "label": "GET /api/ordex/heritage/readiness",
+          "safety": "Fails closed unless the self-hosted Counterparty Core is ready, fresh, and on the intended network; no public API fallback",
+          "ref": {
+            "operationId": "getHeritageReadiness"
+          }
+        },
+        {
+          "step": 2,
+          "from": "Asset Holder",
+          "to": "Heritage Coordinator",
+          "label": "POST /api/ordex/heritage/attach (address, assetName, quantitySats, destination)",
+          "safety": "Composed for the user, never for the service",
+          "ref": {
+            "operationId": "buildHeritageAttach"
+          }
+        },
+        {
+          "step": 3,
+          "from": "Heritage Coordinator",
+          "to": "Asset Holder",
+          "label": "Returns the unsigned PSBT, the exact XCP gas and miner fee, and any unrelated assets that would also move",
+          "safety": "Passes Bitcoin Core preflight before signature; the user signs with their own wallet; the server never holds XCP, BTC, or the asset",
+          "ref": {
+            "path": "spec/counterparty-utxo-asset.md",
+            "heading": "Attach and detach"
+          }
+        },
+        {
+          "step": 4,
+          "from": "Asset Holder",
+          "to": "Heritage Coordinator",
+          "label": "POST /api/ordex/heritage/operations/{operationId}/relay with the signed transaction",
+          "safety": "Checks readiness, the signed bytes against the stored manifest, unspent inputs, and testmempoolaccept before sendrawtransaction",
+          "ref": {
+            "operationId": "relayHeritageOperation"
+          }
+        },
+        {
+          "step": 5,
+          "from": "Verifier",
+          "to": "UTXO State",
+          "label": "After confirmation, reconcile the ledger's ATTACH_TO_UTXO event against the expected one at a stated block height, block hash, and ledger hash",
+          "safety": "LEDGER_EVENT_MISSING, LEDGER_EVENT_UNEXPECTED, LEDGER_EVENT_INVALID; a reorg reverses marketplace state through explicit events",
+          "ref": {
+            "path": "spec/counterparty-utxo-asset.md",
+            "heading": "Attachment follows the spend"
+          },
+          "verifier": "counterparty-asset"
+        },
+        {
+          "step": 6,
+          "from": "Verifier",
+          "to": "Asset Holder",
+          "label": "Before any trade of the attached outpoint is signed, accept only a spend whose receive output is the first output Counterparty does not pass over",
+          "safety": "Refuses co-moving attachments, detaches, strands, and mismatched destinations (OTHER_ATTACHMENTS_COMOVE, DESTINATION_MISMATCH)",
+          "ref": {
+            "path": "spec/counterparty-utxo-asset.md",
+            "heading": "Trading path"
+          },
+          "verifier": "counterparty-asset"
+        }
+      ]
+    },
+    {
+      "id": "cold-signing-roundtrip",
+      "title": "Cold-Signing Air-Gapped Round Trip",
+      "summary": "The coordinator builds an expected transaction manifest, exports the PSBT with the manifest digest, the offline signer signs only what was shown, and the import compares the signed bytes against the manifest before anything else happens.",
+      "actors": [
+        "Online Coordinator",
+        "Air-Gapped Workstation",
+        "Protocol Lab (Offline)",
+        "Hardware Signer"
+      ],
+      "sources": [
+        {
+          "path": "spec/cold-signing.md",
+          "heading": "Cold signing and watch-only mode v2"
+        },
+        {
+          "path": "spec/cold-signing.md",
+          "heading": "The expected transaction manifest"
+        },
+        {
+          "path": "spec/cold-signing.md",
+          "heading": "The refusals"
+        },
+        {
+          "path": "spec/cold-signing.md",
+          "heading": "The stepper"
+        },
+        {
+          "path": "spec/cold-signing.md",
+          "heading": "Blind signing is prohibited"
+        }
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "from": "Online Coordinator",
+          "to": "Online Coordinator",
+          "label": "Build and verify the expected transaction manifest; POST /api/ordex/signing/sessions opens a session",
+          "safety": "The digest covers the exact unsigned transaction and the protection policy",
+          "ref": {
+            "operationId": "openSigningSession"
+          },
+          "verifier": "offline-signing"
+        },
+        {
+          "step": 2,
+          "from": "Online Coordinator",
+          "to": "Air-Gapped Workstation",
+          "label": "Export the PSBT carrying the manifest digest as a PSBT file, base64 text, animated QR (crypto-psbt UR), or static QR",
+          "safety": "Keys and recovery material never pass through the gateway, browser storage, or SDK",
+          "ref": {
+            "path": "spec/cold-signing.md",
+            "heading": "Cold signing and watch-only mode v2"
+          }
+        },
+        {
+          "step": 3,
+          "from": "Air-Gapped Workstation",
+          "to": "Protocol Lab (Offline)",
+          "label": "Show the manifest: every input, output, expected asset, and the fee bound",
+          "safety": "A signer is never asked to sign a transaction whose manifest was not shown and verifiable",
+          "ref": {
+            "path": "spec/cold-signing.md",
+            "heading": "The expected transaction manifest"
+          }
+        },
+        {
+          "step": 4,
+          "from": "Protocol Lab (Offline)",
+          "to": "Hardware Signer",
+          "label": "Sign offline; the hardware wallet's own display must agree with the manifest on network, recipients, and amounts",
+          "safety": "A disagreement blocks the signing session and is displayed",
+          "ref": {
+            "path": "spec/cold-signing.md",
+            "heading": "Blind signing is prohibited"
+          }
+        },
+        {
+          "step": 5,
+          "from": "Hardware Signer",
+          "to": "Online Coordinator",
+          "label": "Import the signed PSBT or raw transaction: POST /api/ordex/signing/sessions/{sessionId}/signed-result",
+          "safety": "Parsed from its bytes and compared against the manifest; any difference refuses with a stable code (MANIFEST_DIGEST_MISMATCH, OUTPUT_SET_CHANGED, SIGHASH_UNEXPECTED, FEE_OUT_OF_BOUNDS)",
+          "ref": {
+            "operationId": "submitSignedResult"
+          },
+          "verifier": "offline-signing"
+        },
+        {
+          "step": 6,
+          "from": "Online Coordinator",
+          "to": "Online Coordinator",
+          "label": "Refresh chain state, run node preflight, then request the explicit broadcast",
+          "safety": "Each step is resumable; nothing broadcasts without the user's action",
+          "ref": {
+            "path": "spec/cold-signing.md",
+            "heading": "The stepper"
+          }
+        }
+      ]
+    },
+    {
+      "id": "evidence-authority-hierarchy",
+      "title": "Evidence and Authority Hierarchy",
+      "summary": "The five evidence classes the docs site labels: Deterministic example, Publisher claim, Gateway observation, Protocol verification, and Chain proof. Claims travel as evidence and never outrank what the chain, the node, and the index prove.",
+      "actors": [
+        "Deterministic Example",
+        "Publisher Claim",
+        "Gateway Observation",
+        "Protocol Verification",
+        "Chain Proof"
+      ],
+      "sources": [
+        {
+          "path": "site/src/components/shell/TruthLabel.jsx",
+          "lines": "4-30"
+        },
+        {
+          "path": "site/src/lib/experience/mission-registry.ts",
+          "lines": "44"
+        },
+        {
+          "path": "spec/interoperability.md",
+          "heading": "Portable orders: import, export, and OpenOrdex"
+        },
+        {
+          "path": "spec/interoperability.md",
+          "heading": "Import: `POST /api/ordex/orders/import`"
+        },
+        {
+          "path": "spec/interoperability.md",
+          "heading": "What a source may never do"
+        },
+        {
+          "path": "spec/api.md",
+          "heading": "Reads"
+        },
+        {
+          "path": "spec/collection-manifest.md",
+          "heading": "Gates"
+        }
+      ],
+      "steps": [
+        {
+          "step": 1,
+          "from": "Deterministic Example",
+          "to": "Deterministic Example",
+          "label": "Deterministic example: generated from checked-in test fixtures and protocol contracts",
+          "safety": "Illustrates the contract; proves nothing about live chain state",
+          "ref": {
+            "path": "spec/runes.md",
+            "heading": "Conformance"
+          },
+          "definedIn": {
+            "path": "site/src/components/shell/TruthLabel.jsx",
+            "lines": "25-29"
+          }
+        },
+        {
+          "step": 2,
+          "from": "Publisher Claim",
+          "to": "Gateway Observation",
+          "label": "Publisher claim: asserted by an order or artifact author, subject to verification",
+          "safety": "A claim can make an order easier to find; it cannot make an order more verified",
+          "ref": {
+            "path": "spec/interoperability.md",
+            "heading": "Import: `POST /api/ordex/orders/import`"
+          },
+          "definedIn": {
+            "path": "site/src/components/shell/TruthLabel.jsx",
+            "lines": "20-24"
+          }
+        },
+        {
+          "step": 3,
+          "from": "Gateway Observation",
+          "to": "Protocol Verification",
+          "label": "Gateway observation: observed and reported by an Ordex gateway, such as GET /health's observed verification verdict",
+          "safety": "A consumer keys cached answers to the implementation revision and re-verifies a redeployed gateway",
+          "ref": {
+            "path": "spec/api.md",
+            "heading": "Reads"
+          },
+          "definedIn": {
+            "path": "site/src/components/shell/TruthLabel.jsx",
+            "lines": "15-19"
+          }
+        },
+        {
+          "step": 4,
+          "from": "Protocol Verification",
+          "to": "Protocol Verification",
+          "label": "Protocol verification: validated deterministically by the Ordex reference verifier rules",
+          "safety": "Every displayed proof badge must be reproducible by the SDK and the reference verifier",
+          "ref": {
+            "path": "spec/collection-manifest.md",
+            "heading": "Gates"
+          },
+          "definedIn": {
+            "path": "site/src/components/shell/TruthLabel.jsx",
+            "lines": "10-14"
+          }
+        },
+        {
+          "step": 5,
+          "from": "Chain Proof",
+          "to": "Chain Proof",
+          "label": "Chain proof: established by Bitcoin consensus",
+          "safety": "Only the chain can say whether a listing is still real",
+          "ref": {
+            "path": "spec/interoperability.md",
+            "heading": "What a source may never do"
+          },
+          "definedIn": {
+            "path": "site/src/components/shell/TruthLabel.jsx",
+            "lines": "5-9"
+          }
+        }
+      ]
+    }
+  ]
+}

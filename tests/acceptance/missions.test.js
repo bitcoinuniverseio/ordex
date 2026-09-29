@@ -184,8 +184,11 @@ test('Launchpad rows', { timeout: 300000 }, async () => {
       await page.waitForURL(new RegExp(`/workspace/\\?mission=${id}$`));
       await page.getByRole('heading', { name: mission.title }).waitFor();
       await waitForHydration(page);
-      const store = await evidence(page);
-      const sessions = store.sessions.filter((s) => s.missionId === id);
+      let sessions = [];
+      for (let k = 0; k < 40 && sessions.length === 0; k++) {
+        sessions = (await evidence(page)).sessions.filter((s) => s.missionId === id);
+        if (!sessions.length) await page.waitForTimeout(250);
+      }
       expect(sessions.length === 1, `${sessions.length} sessions for ${id}`);
       await goto(page, '/');
       await page.getByText(`Mission: ${id} (Stage: ${sessions[0].activeStageId})`).waitFor();

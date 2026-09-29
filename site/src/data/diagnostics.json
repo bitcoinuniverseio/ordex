@@ -778,8 +778,8 @@
     "nextTools": [
       {
         "tool": "lab",
-        "label": "Open the SafeOps reproducer in Protocol Lab",
-        "href": "/lab/?reproduce=ALLOCATION_BURNS_BALANCE&family=safeops"
+        "label": "Open the SafeOps reproducer (through asset-flow) in Protocol Lab",
+        "href": "/lab/?reproduce=ALLOCATION_BURNS_BALANCE&family=safeops&covers=asset-flow"
       },
       {
         "tool": "lab",
@@ -1881,8 +1881,8 @@
     "nextTools": [
       {
         "tool": "lab",
-        "label": "Open the SafeOps reproducer in Protocol Lab",
-        "href": "/lab/?reproduce=ASSET_TO_FEE&family=safeops"
+        "label": "Open the SafeOps reproducer (through asset-flow) in Protocol Lab",
+        "href": "/lab/?reproduce=ASSET_TO_FEE&family=safeops&covers=asset-flow"
       }
     ],
     "sourceRefs": [
@@ -2829,8 +2829,8 @@
     "nextTools": [
       {
         "tool": "lab",
-        "label": "Open the SafeOps reproducer in Protocol Lab",
-        "href": "/lab/?reproduce=CENOTAPH_BURNS_BALANCE&family=safeops"
+        "label": "Open the SafeOps reproducer (through asset-flow) in Protocol Lab",
+        "href": "/lab/?reproduce=CENOTAPH_BURNS_BALANCE&family=safeops&covers=asset-flow"
       },
       {
         "tool": "lab",
@@ -4165,8 +4165,8 @@
     "nextTools": [
       {
         "tool": "lab",
-        "label": "Open the SafeOps reproducer in Protocol Lab",
-        "href": "/lab/?reproduce=COUNTERPARTY_NOT_MOVED&family=safeops"
+        "label": "Open the SafeOps reproducer (through asset-flow) in Protocol Lab",
+        "href": "/lab/?reproduce=COUNTERPARTY_NOT_MOVED&family=safeops&covers=asset-flow"
       }
     ],
     "sourceRefs": [
@@ -10960,8 +10960,8 @@
     "nextTools": [
       {
         "tool": "lab",
-        "label": "Open the SafeOps reproducer in Protocol Lab",
-        "href": "/lab/?reproduce=INVENTORY_INVALID&family=safeops"
+        "label": "Open the SafeOps reproducer (through asset-flow) in Protocol Lab",
+        "href": "/lab/?reproduce=INVENTORY_INVALID&family=safeops&covers=asset-flow"
       },
       {
         "tool": "lab",
@@ -11071,8 +11071,8 @@
     "nextTools": [
       {
         "tool": "lab",
-        "label": "Open the SafeOps reproducer in Protocol Lab",
-        "href": "/lab/?reproduce=INVENTORY_UNEXAMINED&family=safeops"
+        "label": "Open the SafeOps reproducer (through asset-flow) in Protocol Lab",
+        "href": "/lab/?reproduce=INVENTORY_UNEXAMINED&family=safeops&covers=asset-flow"
       }
     ],
     "sourceRefs": [
@@ -15547,8 +15547,8 @@
       },
       {
         "tool": "lab",
-        "label": "Open the Swaps reproducer in Protocol Lab",
-        "href": "/lab/?reproduce=NETWORK_UNKNOWN&family=swaps"
+        "label": "Open the Swaps reproducer (through counterparty-asset) in Protocol Lab",
+        "href": "/lab/?reproduce=NETWORK_UNKNOWN&family=swaps&covers=counterparty-asset"
       },
       {
         "tool": "lab",
@@ -17573,8 +17573,8 @@
     "nextTools": [
       {
         "tool": "lab",
-        "label": "Open the SafeOps reproducer in Protocol Lab",
-        "href": "/lab/?reproduce=OUTPUT_SCRIPT_INVALID&family=safeops"
+        "label": "Open the SafeOps reproducer (through counterparty-asset) in Protocol Lab",
+        "href": "/lab/?reproduce=OUTPUT_SCRIPT_INVALID&family=safeops&covers=counterparty-asset"
       },
       {
         "tool": "lab",
@@ -20376,8 +20376,8 @@
     "nextTools": [
       {
         "tool": "lab",
-        "label": "Open the SafeOps reproducer in Protocol Lab",
-        "href": "/lab/?reproduce=RARE_SAT_RANGE_SPLIT&family=safeops"
+        "label": "Open the SafeOps reproducer (through asset-flow) in Protocol Lab",
+        "href": "/lab/?reproduce=RARE_SAT_RANGE_SPLIT&family=safeops&covers=asset-flow"
       }
     ],
     "sourceRefs": [
@@ -21562,8 +21562,8 @@
     "nextTools": [
       {
         "tool": "lab",
-        "label": "Open the SafeOps reproducer in Protocol Lab",
-        "href": "/lab/?reproduce=RUNE_ALLOCATION_MISMATCH&family=safeops"
+        "label": "Open the SafeOps reproducer (through asset-flow) in Protocol Lab",
+        "href": "/lab/?reproduce=RUNE_ALLOCATION_MISMATCH&family=safeops&covers=asset-flow"
       },
       {
         "tool": "lab",
@@ -22058,8 +22058,8 @@
     "nextTools": [
       {
         "tool": "lab",
-        "label": "Open the SafeOps reproducer in Protocol Lab",
-        "href": "/lab/?reproduce=RUNE_MINT_UNRESOLVED&family=safeops"
+        "label": "Open the SafeOps reproducer (through asset-flow) in Protocol Lab",
+        "href": "/lab/?reproduce=RUNE_MINT_UNRESOLVED&family=safeops&covers=asset-flow"
       },
       {
         "tool": "lab",
@@ -22599,13 +22599,13 @@
     "nextTools": [
       {
         "tool": "lab",
-        "label": "Open the Offers reproducer in Protocol Lab",
-        "href": "/lab/?reproduce=SCHEMA_UNSUPPORTED&family=offers"
+        "label": "Open the Offers reproducer (through collection-manifest) in Protocol Lab",
+        "href": "/lab/?reproduce=SCHEMA_UNSUPPORTED&family=offers&covers=collection-manifest"
       },
       {
         "tool": "lab",
-        "label": "Open the Offers reproducer in Protocol Lab",
-        "href": "/lab/?reproduce=SCHEMA_UNSUPPORTED&family=offers"
+        "label": "Open the Offers reproducer (through counterparty-asset) in Protocol Lab",
+        "href": "/lab/?reproduce=SCHEMA_UNSUPPORTED&family=offers&covers=counterparty-asset"
       },
       {
         "tool": "lab",
@@ -27796,8 +27796,8 @@
     "nextTools": [
       {
         "tool": "lab",
-        "label": "Open the SafeOps reproducer in Protocol Lab",
-        "href": "/lab/?reproduce=TRACKED_ASSET_UNASSIGNED&family=safeops"
+        "label": "Open the SafeOps reproducer (through asset-flow) in Protocol Lab",
+        "href": "/lab/?reproduce=TRACKED_ASSET_UNASSIGNED&family=safeops&covers=asset-flow"
       }
     ],
     "sourceRefs": [
@@ -28516,8 +28516,8 @@
     "nextTools": [
       {
         "tool": "lab",
-        "label": "Open the Swaps reproducer in Protocol Lab",
-        "href": "/lab/?reproduce=TRANSITION_INVALID&family=swaps"
+        "label": "Open the Swaps reproducer (through asset-flow) in Protocol Lab",
+        "href": "/lab/?reproduce=TRANSITION_INVALID&family=swaps&covers=asset-flow"
       }
     ],
     "sourceRefs": [
@@ -28616,8 +28616,8 @@
     "nextTools": [
       {
         "tool": "lab",
-        "label": "Open the SafeOps reproducer in Protocol Lab",
-        "href": "/lab/?reproduce=TRANSITION_MISMATCH&family=safeops"
+        "label": "Open the SafeOps reproducer (through asset-flow) in Protocol Lab",
+        "href": "/lab/?reproduce=TRANSITION_MISMATCH&family=safeops&covers=asset-flow"
       }
     ],
     "sourceRefs": [
@@ -28710,8 +28710,8 @@
     "nextTools": [
       {
         "tool": "lab",
-        "label": "Open the SafeOps reproducer in Protocol Lab",
-        "href": "/lab/?reproduce=TRANSITION_OUTPUT_MISSING&family=safeops"
+        "label": "Open the SafeOps reproducer (through asset-flow) in Protocol Lab",
+        "href": "/lab/?reproduce=TRANSITION_OUTPUT_MISSING&family=safeops&covers=asset-flow"
       }
     ],
     "sourceRefs": [
@@ -28819,8 +28819,8 @@
     "nextTools": [
       {
         "tool": "lab",
-        "label": "Open the SafeOps reproducer in Protocol Lab",
-        "href": "/lab/?reproduce=TRANSITION_UNEXPECTED&family=safeops"
+        "label": "Open the SafeOps reproducer (through asset-flow) in Protocol Lab",
+        "href": "/lab/?reproduce=TRANSITION_UNEXPECTED&family=safeops&covers=asset-flow"
       }
     ],
     "sourceRefs": [
@@ -29206,8 +29206,8 @@
     "nextTools": [
       {
         "tool": "lab",
-        "label": "Open the SafeOps reproducer in Protocol Lab",
-        "href": "/lab/?reproduce=UNKNOWN_CLAIM_FAILS_CLOSED&family=safeops"
+        "label": "Open the SafeOps reproducer (through asset-flow) in Protocol Lab",
+        "href": "/lab/?reproduce=UNKNOWN_CLAIM_FAILS_CLOSED&family=safeops&covers=asset-flow"
       }
     ],
     "sourceRefs": [

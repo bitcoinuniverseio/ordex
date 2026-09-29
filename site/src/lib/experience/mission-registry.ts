@@ -188,7 +188,7 @@ export const MISSIONS: MissionDefinition[] = [
     }),
     completionCriteria: [
       { id: 'crit-psbt-valid', description: 'PSBT passes structural binary parsing', evidenceClass: 'Deterministic example' },
-      { id: 'crit-verifier-pass', description: 'Purchase reference verifier passes invariants 1 & 2', evidenceClass: 'Protocol verification', verifierRef: 'purchase' },
+      { id: 'crit-verifier-pass', description: 'The purchase reference verifier accepts the arrangement: matching indexes, a nonzero index and exact sat flow (spec/purchase.md)', evidenceClass: 'Protocol verification', verifierRef: 'purchase' },
       { id: 'crit-order-published', description: 'Order registered in gateway catalog', evidenceClass: 'Gateway observation' }
     ],
     sourceRefs: [

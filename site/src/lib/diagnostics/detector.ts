@@ -36,6 +36,8 @@ export interface PatchOp {
 
 export interface DiagnosticReproducer {
   family: string;
+  /** The helper module branch this reproducer reaches through its family, when it is not the family's own. */
+  covers?: string;
   variant: string;
   base: string;
   baseName: string;
