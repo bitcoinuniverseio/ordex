@@ -31,6 +31,21 @@
       },
       {
         "level": 2,
+        "title": "The protocol contract is checkable",
+        "anchor": "the-protocol-contract-is-checkable"
+      },
+      {
+        "level": 2,
+        "title": "Fees are proved, not trusted",
+        "anchor": "fees-are-proved-not-trusted"
+      },
+      {
+        "level": 2,
+        "title": "Lost replies are recovered, never repeated",
+        "anchor": "lost-replies-are-recovered-never-repeated"
+      },
+      {
+        "level": 2,
         "title": "`POST /orders/:id/quote`",
         "anchor": "-post-orders-id-quote-"
       },
@@ -40,7 +55,7 @@
         "anchor": "-post-orders-id-preflight-"
       }
     ],
-    "rawLength": 7083
+    "rawLength": 9567
   },
   {
     "file": "batch-purchase.md",
@@ -78,12 +93,12 @@
   {
     "file": "cold-signing.md",
     "id": "cold-signing",
-    "title": "Cold signing and watch-only mode v1",
+    "title": "Cold signing and watch-only mode v2",
     "headings": [
       {
         "level": 1,
-        "title": "Cold signing and watch-only mode v1",
-        "anchor": "cold-signing-and-watch-only-mode-v1"
+        "title": "Cold signing and watch-only mode v2",
+        "anchor": "cold-signing-and-watch-only-mode-v2"
       },
       {
         "level": 2,
@@ -97,8 +112,8 @@
       },
       {
         "level": 2,
-        "title": "The nine refusals",
-        "anchor": "the-nine-refusals"
+        "title": "The refusals",
+        "anchor": "the-refusals"
       },
       {
         "level": 2,
@@ -116,7 +131,7 @@
         "anchor": "blind-signing-is-prohibited"
       }
     ],
-    "rawLength": 4568
+    "rawLength": 6549
   },
   {
     "file": "collection-manifest.md",
@@ -159,7 +174,7 @@
         "anchor": "gates"
       }
     ],
-    "rawLength": 4635
+    "rawLength": 6180
   },
   {
     "file": "counterparty-utxo-asset.md",
@@ -212,7 +227,7 @@
         "anchor": "readiness-gates"
       }
     ],
-    "rawLength": 4327
+    "rawLength": 7745
   },
   {
     "file": "events.md",
@@ -245,12 +260,27 @@
         "anchor": "signed-webhooks"
       },
       {
+        "level": 3,
+        "title": "The delivery signing key",
+        "anchor": "the-delivery-signing-key"
+      },
+      {
+        "level": 3,
+        "title": "The signature",
+        "anchor": "the-signature"
+      },
+      {
+        "level": 3,
+        "title": "Delivery",
+        "anchor": "delivery"
+      },
+      {
         "level": 2,
         "title": "Historical APIs",
         "anchor": "historical-apis"
       }
     ],
-    "rawLength": 4617
+    "rawLength": 7299
   },
   {
     "file": "interoperability.md",
@@ -384,7 +414,7 @@
         "anchor": "what-ordex-never-does"
       }
     ],
-    "rawLength": 12840
+    "rawLength": 17353
   },
   {
     "file": "purchase.md",
@@ -466,6 +496,11 @@
       },
       {
         "level": 2,
+        "title": "Where a readable runestone sends each balance",
+        "anchor": "where-a-readable-runestone-sends-each-balance"
+      },
+      {
+        "level": 2,
         "title": "The rule a client must apply",
         "anchor": "the-rule-a-client-must-apply"
       },
@@ -475,17 +510,17 @@
         "anchor": "conformance"
       }
     ],
-    "rawLength": 4899
+    "rawLength": 8900
   },
   {
     "file": "safeops.md",
     "id": "safeops",
-    "title": "SafeOps v1",
+    "title": "SafeOps v2",
     "headings": [
       {
         "level": 1,
-        "title": "SafeOps v1",
-        "anchor": "safeops-v1"
+        "title": "SafeOps v2",
+        "anchor": "safeops-v2"
       },
       {
         "level": 2,
@@ -533,17 +568,17 @@
         "anchor": "monitoring"
       }
     ],
-    "rawLength": 6462
+    "rawLength": 9580
   },
   {
     "file": "swaps.md",
     "id": "swaps",
-    "title": "Atomic swap links and the OTC desk v1",
+    "title": "Atomic swap links and the OTC desk",
     "headings": [
       {
         "level": 1,
-        "title": "Atomic swap links and the OTC desk v1",
-        "anchor": "atomic-swap-links-and-the-otc-desk-v1"
+        "title": "Atomic swap links and the OTC desk",
+        "anchor": "atomic-swap-links-and-the-otc-desk"
       },
       {
         "level": 2,
@@ -581,6 +616,6 @@
         "anchor": "adversarial-coverage"
       }
     ],
-    "rawLength": 5683
+    "rawLength": 7875
   }
 ]

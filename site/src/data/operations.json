@@ -90,6 +90,42 @@
       "nostr": {
         "ingestion": {},
         "note": "example-string"
+      },
+      "protocolVersion": "example-string",
+      "version": "example-string",
+      "network": "mainnet",
+      "capabilities": {
+        "browse": true,
+        "createListing": true,
+        "withdraw": true,
+        "replace": true,
+        "purchase": true,
+        "batchPurchase": true,
+        "fundedOffers": true,
+        "offerAcceptance": true,
+        "operationReceipts": true
+      },
+      "prerequisites": {},
+      "feePolicy": {
+        "destinations": [
+          {
+            "role": "MARKETPLACE_FEE",
+            "scriptHex": "example-string"
+          }
+        ],
+        "basis": "ADDED_TO_BUYER_COST",
+        "note": "example-string"
+      },
+      "implementation": {
+        "name": "example-string",
+        "revision": {}
+      },
+      "operationReceipts": {
+        "header": {},
+        "route": {},
+        "operations": [
+          "PUBLISH_ASK"
+        ]
       }
     },
     "responses": {
@@ -1141,7 +1177,18 @@
     "tag": "selling",
     "isWrite": true,
     "authorityLevel": "Deterministic example",
-    "parameters": [],
+    "parameters": [
+      {
+        "name": "idempotency-key",
+        "in": "header",
+        "required": false,
+        "description": "The caller's operation id for this mutation. The gateway commits the order change and a receipt under this id in one transaction; the same id with the same request replays the receipt, the same id with a different request is a 409, and the receipt is readable at `GET /operations/{operationId}`.",
+        "schema": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._:-]{1,128}$"
+        }
+      }
+    ],
     "requestBodySchema": {
       "$ref": "#/components/schemas/PublishAskRequest"
     },
@@ -1256,6 +1303,9 @@
       "400": {
         "$ref": "#/components/responses/BadRequest"
       },
+      "409": {
+        "description": "The operation id was already used for a different request, or the replacement conflicts with the book."
+      },
       "429": {
         "$ref": "#/components/responses/RateLimited"
       },
@@ -1331,6 +1381,16 @@
         "description": "The order id.",
         "schema": {
           "type": "string"
+        }
+      },
+      {
+        "name": "idempotency-key",
+        "in": "header",
+        "required": false,
+        "description": "The caller's operation id for this mutation. The gateway commits the order change and a receipt under this id in one transaction; the same id with the same request replays the receipt, the same id with a different request is a 409, and the receipt is readable at `GET /operations/{operationId}`.",
+        "schema": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._:-]{1,128}$"
         }
       }
     ],
@@ -1452,6 +1512,9 @@
       },
       "404": {
         "$ref": "#/components/responses/NotFound"
+      },
+      "409": {
+        "description": "The operation id was already used for a different request, or the replacement conflicts with the book."
       },
       "429": {
         "$ref": "#/components/responses/RateLimited"
@@ -1885,7 +1948,21 @@
         "blockHash": "example-string"
       },
       "observedAt": "2026-09-02T16:00:00Z",
-      "expiresAt": "2026-09-02T16:00:00Z"
+      "expiresAt": "2026-09-02T16:00:00Z",
+      "feePolicy": {
+        "version": "example-string",
+        "marketplaceFeeBps": "example-string",
+        "creatorRoyaltyBps": "example-string"
+      },
+      "feeOutputs": [
+        {
+          "role": "MARKETPLACE_FEE",
+          "outputIndex": 10000,
+          "scriptHex": "example-string",
+          "valueSats": "example-string",
+          "policyVersion": "example-string"
+        }
+      ]
     },
     "responses": {
       "201": {
@@ -1993,6 +2070,16 @@
         "description": "The order id.",
         "schema": {
           "type": "string"
+        }
+      },
+      {
+        "name": "idempotency-key",
+        "in": "header",
+        "required": false,
+        "description": "The caller's operation id for this mutation. The gateway commits the order change and a receipt under this id in one transaction; the same id with the same request replays the receipt, the same id with a different request is a 409, and the receipt is readable at `GET /operations/{operationId}`.",
+        "schema": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._:-]{1,128}$"
         }
       }
     ],
@@ -2123,6 +2210,9 @@
       "404": {
         "$ref": "#/components/responses/NotFound"
       },
+      "409": {
+        "description": "The operation id was already used for a different request, or the replacement conflicts with the book."
+      },
       "429": {
         "$ref": "#/components/responses/RateLimited"
       },
@@ -2173,14 +2263,57 @@
           "sellerInputIndex": 10000,
           "sellerPaymentOutputIndex": 10000,
           "buyerAssetOutputIndex": 10000,
-          "priceSats": {}
+          "priceSats": {},
+          "paddingMergeOutputIndex": 10000,
+          "assetValueSats": {},
+          "sellerPaymentScriptHex": "example-string",
+          "assetOutpoint": {
+            "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+            "vout": 10000
+          }
         }
       ],
       "totals": {
         "totalBuyerCostSats": {},
-        "networkFeeSats": "example-string"
+        "networkFeeSats": "example-string",
+        "totalPriceSats": "example-string",
+        "paddingSats": "example-string",
+        "changeSats": "example-string"
       },
-      "expiresAt": "2026-09-02T16:00:00Z"
+      "expiresAt": "2026-09-02T16:00:00Z",
+      "batchId": "example-string",
+      "network": "mainnet",
+      "feePolicy": {
+        "version": "example-string",
+        "marketplaceFeeBps": "example-string",
+        "creatorRoyaltyBps": "example-string"
+      },
+      "feeOutputs": [
+        {
+          "role": "MARKETPLACE_FEE",
+          "outputIndex": 10000,
+          "scriptHex": "example-string",
+          "valueSats": "example-string",
+          "policyVersion": "example-string"
+        }
+      ],
+      "inputOutpoints": [
+        {
+          "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+          "vout": 10000
+        }
+      ],
+      "outputScriptsHex": [
+        "example-string"
+      ],
+      "outputValuesSats": [
+        "example-string"
+      ],
+      "checkpoint": {
+        "heightAtomic": "example-string",
+        "blockHash": "example-string"
+      },
+      "observedAt": "2026-09-02T16:00:00Z"
     },
     "responses": {
       "201": {
@@ -2231,7 +2364,10 @@
     "requestExample": {
       "batchId": "example-string",
       "signedPsbt": "example-string",
-      "finalTxHex": "example-string"
+      "finalTxHex": "example-string",
+      "orderIds": [
+        "example-string"
+      ]
     },
     "responseExample": {
       "allowed": true,
@@ -2247,7 +2383,8 @@
         }
       ],
       "nodeAcceptance": {},
-      "checkedAt": "2026-09-02T16:00:00Z"
+      "checkedAt": "2026-09-02T16:00:00Z",
+      "batchId": {}
     },
     "responses": {
       "201": {
@@ -2825,7 +2962,7 @@
     "method": "POST",
     "path": "/api/ordex/offers/{id}/acceptance-plan",
     "summary": "State the exact acceptance arrangement for one live offer",
-    "description": "Given the seller outpoint, reads every value from the node and the ord index, lays out padding, buyer asset, every preserve in sat order, the seller payment at the seller input index, and change, and refuses when the Feline is elsewhere, the root no longer holds, or expiry has passed.",
+    "description": "Given the seller outpoint, reads every value from the node and the ord index and lays out the seller inputs, the funded output last, the asset outputs that absorb exactly the seller sats (the Feline to the buyer, every other seller asset preserved in sat order), the seller payment, and buyer change. Refuses when the Feline is elsewhere, the root or trait set does not prove it, or expiry has been reached. No buyer input is ever planned.",
     "tag": "offers",
     "isWrite": true,
     "authorityLevel": "Deterministic example",
@@ -2845,7 +2982,8 @@
     },
     "requestExample": {
       "sellerFelineOutpoint": {},
-      "sellerPaymentScriptHex": "example-string"
+      "sellerPaymentScriptHex": "example-string",
+      "sellerReturnScriptHex": "example-string"
     },
     "responseExample": {
       "offerId": "example-string",
@@ -2858,14 +2996,14 @@
           "txid": "example-string",
           "vout": 10000,
           "valueSats": "example-string",
-          "role": "PADDING"
+          "role": "SELLER_FELINE"
         }
       ],
       "outputs": [
         {
           "scriptHex": "example-string",
           "valueSats": "example-string",
-          "role": "PADDING_MERGE"
+          "role": "BUYER_ASSET"
         }
       ],
       "estimatedFeeSats": {},
@@ -2913,7 +3051,7 @@
     "method": "POST",
     "path": "/api/ordex/offers/{id}/preflight",
     "summary": "Verify a built acceptance and ask the node",
-    "description": "Parses the complete acceptance, checks every rule in spec/offers.md including both policy signatures against the committed terms tree, then asks the node whether it would accept the bytes. The answer carries the exact bytes checked.",
+    "description": "Parses the complete acceptance, checks every rule in spec/offers.md including both policy signatures under the exact acceptance leaf and control block and a closing seller signature on every seller input, then asks the node whether it would accept the bytes. The answer carries the exact bytes checked.",
     "tag": "offers",
     "isWrite": true,
     "authorityLevel": "Protocol verification",
@@ -2982,8 +3120,29 @@
     "isWrite": true,
     "authorityLevel": "Deterministic example",
     "parameters": [],
-    "requestBodySchema": null,
-    "requestExample": null,
+    "requestBodySchema": {
+      "$ref": "#/components/schemas/SafeOpsPlanRequest"
+    },
+    "requestExample": {
+      "operationKind": "BTC_BATCH_SEND",
+      "network": "mainnet",
+      "recipients": [
+        {
+          "address": "example-string",
+          "valueSats": "example-string",
+          "assetType": "example-string",
+          "assetId": "example-string"
+        }
+      ],
+      "inputs": [
+        {
+          "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+          "vout": 10000
+        }
+      ],
+      "feeRateSatsPerVb": "example-string",
+      "expiryBlocks": 10000
+    },
     "responseExample": {
       "plan": {
         "schema": "example-string",
@@ -3003,20 +3162,37 @@
               "vout": 10000
             },
             "valueSats": "example-string",
+            "scriptPubKeyHex": "example-string",
+            "sequence": 10000,
             "inventory": {
               "examined": true,
               "confirmed": true,
               "inscriptions": [
-                {}
+                {
+                  "inscriptionId": "example-string",
+                  "offset": "example-string",
+                  "satpoint": "example-string"
+                }
               ],
               "runeAllocations": [
-                {}
+                {
+                  "runeId": "example-string",
+                  "amount": "example-string"
+                }
               ],
               "counterpartyAssets": [
-                {}
+                {
+                  "name": "example-string",
+                  "assetId": "example-string",
+                  "quantitySats": "example-string"
+                }
               ],
               "rareSatRanges": [
-                {}
+                {
+                  "rangeId": "example-string",
+                  "offset": "example-string",
+                  "count": "example-string"
+                }
               ],
               "unknownClaims": [
                 "example-string"
@@ -3037,7 +3213,8 @@
             "assetType": "ORDINAL",
             "assetId": "example-string",
             "fromInput": 10000,
-            "toOutput": 10000
+            "toOutput": 10000,
+            "quantity": "example-string"
           }
         ],
         "fee": {
@@ -3049,12 +3226,16 @@
           "requiredIndexes": [
             10000
           ],
-          "sighashType": "example-string"
+          "sighashType": "DEFAULT"
         },
         "findings": [
           {}
         ],
-        "digest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
+        "digest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+        "transaction": {
+          "version": 10000,
+          "lockTime": 10000
+        }
       },
       "verification": {
         "checkedAt": "2026-09-02T16:00:00Z",
@@ -3128,20 +3309,37 @@
               "vout": 10000
             },
             "valueSats": "example-string",
+            "scriptPubKeyHex": "example-string",
+            "sequence": 10000,
             "inventory": {
               "examined": true,
               "confirmed": true,
               "inscriptions": [
-                {}
+                {
+                  "inscriptionId": "example-string",
+                  "offset": "example-string",
+                  "satpoint": "example-string"
+                }
               ],
               "runeAllocations": [
-                {}
+                {
+                  "runeId": "example-string",
+                  "amount": "example-string"
+                }
               ],
               "counterpartyAssets": [
-                {}
+                {
+                  "name": "example-string",
+                  "assetId": "example-string",
+                  "quantitySats": "example-string"
+                }
               ],
               "rareSatRanges": [
-                {}
+                {
+                  "rangeId": "example-string",
+                  "offset": "example-string",
+                  "count": "example-string"
+                }
               ],
               "unknownClaims": [
                 "example-string"
@@ -3162,7 +3360,8 @@
             "assetType": "ORDINAL",
             "assetId": "example-string",
             "fromInput": 10000,
-            "toOutput": 10000
+            "toOutput": 10000,
+            "quantity": "example-string"
           }
         ],
         "fee": {
@@ -3174,12 +3373,16 @@
           "requiredIndexes": [
             10000
           ],
-          "sighashType": "example-string"
+          "sighashType": "DEFAULT"
         },
         "findings": [
           {}
         ],
-        "digest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
+        "digest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+        "transaction": {
+          "version": 10000,
+          "lockTime": 10000
+        }
       },
       "verification": {
         "checkedAt": "2026-09-02T16:00:00Z",
@@ -3232,8 +3435,17 @@
         }
       }
     ],
-    "requestBodySchema": null,
-    "requestExample": null,
+    "requestBodySchema": {
+      "$ref": "#/components/schemas/ShieldRequest"
+    },
+    "requestExample": {
+      "planDigest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+      "signedResult": {
+        "schema": "example-string",
+        "planDigest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+        "signedTxHex": "example-string"
+      }
+    },
     "responseExample": {
       "fresh": true,
       "verdict": {
@@ -3280,8 +3492,14 @@
     "isWrite": true,
     "authorityLevel": "Deterministic example",
     "parameters": [],
-    "requestBodySchema": null,
-    "requestExample": null,
+    "requestBodySchema": {
+      "$ref": "#/components/schemas/BroadcastRequest"
+    },
+    "requestExample": {
+      "signedTx": "example-string",
+      "artifactDigest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+      "context": "safeops"
+    },
     "responseExample": {
       "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
       "accepted": true,
@@ -3399,8 +3617,13 @@
     "isWrite": true,
     "authorityLevel": "Deterministic example",
     "parameters": [],
-    "requestBodySchema": null,
-    "requestExample": null,
+    "requestBodySchema": {
+      "$ref": "#/components/schemas/SafeOpsRbfRequest"
+    },
+    "requestExample": {
+      "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+      "newFeeRateSatsPerVb": "example-string"
+    },
     "responseExample": {
       "plan": {
         "schema": "example-string",
@@ -3420,20 +3643,37 @@
               "vout": 10000
             },
             "valueSats": "example-string",
+            "scriptPubKeyHex": "example-string",
+            "sequence": 10000,
             "inventory": {
               "examined": true,
               "confirmed": true,
               "inscriptions": [
-                {}
+                {
+                  "inscriptionId": "example-string",
+                  "offset": "example-string",
+                  "satpoint": "example-string"
+                }
               ],
               "runeAllocations": [
-                {}
+                {
+                  "runeId": "example-string",
+                  "amount": "example-string"
+                }
               ],
               "counterpartyAssets": [
-                {}
+                {
+                  "name": "example-string",
+                  "assetId": "example-string",
+                  "quantitySats": "example-string"
+                }
               ],
               "rareSatRanges": [
-                {}
+                {
+                  "rangeId": "example-string",
+                  "offset": "example-string",
+                  "count": "example-string"
+                }
               ],
               "unknownClaims": [
                 "example-string"
@@ -3454,7 +3694,8 @@
             "assetType": "ORDINAL",
             "assetId": "example-string",
             "fromInput": 10000,
-            "toOutput": 10000
+            "toOutput": 10000,
+            "quantity": "example-string"
           }
         ],
         "fee": {
@@ -3466,12 +3707,16 @@
           "requiredIndexes": [
             10000
           ],
-          "sighashType": "example-string"
+          "sighashType": "DEFAULT"
         },
         "findings": [
           {}
         ],
-        "digest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
+        "digest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+        "transaction": {
+          "version": 10000,
+          "lockTime": 10000
+        }
       },
       "oldFeeSats": "example-string",
       "newFeeSats": "example-string",
@@ -3506,8 +3751,13 @@
     "isWrite": true,
     "authorityLevel": "Deterministic example",
     "parameters": [],
-    "requestBodySchema": null,
-    "requestExample": null,
+    "requestBodySchema": {
+      "$ref": "#/components/schemas/SafeOpsCpfpRequest"
+    },
+    "requestExample": {
+      "parentTxid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+      "targetFeeRateSatsPerVb": "example-string"
+    },
     "responseExample": {
       "plan": {
         "schema": "example-string",
@@ -3527,20 +3777,37 @@
               "vout": 10000
             },
             "valueSats": "example-string",
+            "scriptPubKeyHex": "example-string",
+            "sequence": 10000,
             "inventory": {
               "examined": true,
               "confirmed": true,
               "inscriptions": [
-                {}
+                {
+                  "inscriptionId": "example-string",
+                  "offset": "example-string",
+                  "satpoint": "example-string"
+                }
               ],
               "runeAllocations": [
-                {}
+                {
+                  "runeId": "example-string",
+                  "amount": "example-string"
+                }
               ],
               "counterpartyAssets": [
-                {}
+                {
+                  "name": "example-string",
+                  "assetId": "example-string",
+                  "quantitySats": "example-string"
+                }
               ],
               "rareSatRanges": [
-                {}
+                {
+                  "rangeId": "example-string",
+                  "offset": "example-string",
+                  "count": "example-string"
+                }
               ],
               "unknownClaims": [
                 "example-string"
@@ -3561,7 +3828,8 @@
             "assetType": "ORDINAL",
             "assetId": "example-string",
             "fromInput": 10000,
-            "toOutput": 10000
+            "toOutput": 10000,
+            "quantity": "example-string"
           }
         ],
         "fee": {
@@ -3573,12 +3841,16 @@
           "requiredIndexes": [
             10000
           ],
-          "sighashType": "example-string"
+          "sighashType": "DEFAULT"
         },
         "findings": [
           {}
         ],
-        "digest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
+        "digest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+        "transaction": {
+          "version": 10000,
+          "lockTime": 10000
+        }
       },
       "packageFeeRateSatsPerVb": "example-string",
       "allowed": true,
@@ -3611,8 +3883,57 @@
     "isWrite": true,
     "authorityLevel": "Deterministic example",
     "parameters": [],
-    "requestBodySchema": null,
-    "requestExample": null,
+    "requestBodySchema": {
+      "$ref": "#/components/schemas/SwapIntentPublishRequest"
+    },
+    "requestExample": {
+      "intent": {
+        "schema": "example-string",
+        "protocolVersion": "example-string",
+        "network": "mainnet",
+        "visibility": "PUBLIC",
+        "makerReceiveScriptHex": "example-string",
+        "gives": [
+          {
+            "assetType": "example-string",
+            "outpoint": {
+              "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+              "vout": 10000
+            },
+            "quantitySats": "example-string",
+            "assetId": "example-string"
+          }
+        ],
+        "requires": [
+          {
+            "assetType": "example-string",
+            "assetId": "example-string",
+            "inscriptionId": "example-string",
+            "minQuantitySats": "example-string"
+          }
+        ],
+        "maxMakerFeeSats": "example-string",
+        "expiryHeight": 10000,
+        "nonce": "example-string",
+        "createdAtHeight": 10000,
+        "checkpoint": {
+          "height": 10000,
+          "blockHash": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
+        },
+        "takerBinding": {
+          "address": "example-string"
+        },
+        "adapterVersions": [
+          {}
+        ],
+        "makerIdentityProof": {
+          "kind": "example-string",
+          "address": "example-string",
+          "signature": "example-string"
+        },
+        "digest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
+      }
+    },
     "responseExample": {
       "intent": {
         "schema": "example-string",
@@ -3697,7 +4018,54 @@
     "tag": "swaps",
     "isWrite": false,
     "authorityLevel": "Deterministic example",
-    "parameters": [],
+    "parameters": [
+      {
+        "name": "network",
+        "in": "query",
+        "required": false,
+        "description": "Only this network.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "mainnet",
+            "testnet",
+            "signet",
+            "regtest"
+          ]
+        }
+      },
+      {
+        "name": "cursor",
+        "in": "query",
+        "required": false,
+        "description": "The opaque cursor a previous page returned. A malformed cursor is a 400, never a silent first page.",
+        "schema": {
+          "type": "string",
+          "maxLength": 256
+        }
+      },
+      {
+        "name": "limit",
+        "in": "query",
+        "required": false,
+        "description": "Page size.",
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 50
+        }
+      },
+      {
+        "name": "assetType",
+        "in": "query",
+        "required": false,
+        "description": "Only intents that give or require this asset type.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    ],
     "requestBodySchema": null,
     "requestExample": null,
     "responseExample": {
@@ -3901,8 +4269,13 @@
         }
       }
     ],
-    "requestBodySchema": null,
-    "requestExample": null,
+    "requestBodySchema": {
+      "$ref": "#/components/schemas/SwapIntentWithdrawRequest"
+    },
+    "requestExample": {
+      "makerAddress": "example-string",
+      "signature": "example-string"
+    },
     "responseExample": {
       "intent": {
         "schema": "example-string",
@@ -4000,8 +4373,19 @@
         }
       }
     ],
-    "requestBodySchema": null,
-    "requestExample": null,
+    "requestBodySchema": {
+      "$ref": "#/components/schemas/SwapAcceptancePlanRequest"
+    },
+    "requestExample": {
+      "takerInputs": [
+        {
+          "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+          "vout": 10000
+        }
+      ],
+      "takerReceiveScriptHex": "example-string",
+      "maxTakerFeeSats": "example-string"
+    },
     "responseExample": {
       "sessionId": "example-string",
       "intent": {
@@ -4054,6 +4438,23 @@
         "schema": "example-string",
         "intentDigest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
         "network": "mainnet",
+        "checkpoint": {
+          "height": 10000,
+          "blockHash": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
+        },
+        "taker": {
+          "receiveScriptHex": "example-string",
+          "changeScriptHex": "example-string",
+          "identityProof": {
+            "kind": "example-string",
+            "address": "example-string",
+            "signature": "example-string"
+          }
+        },
+        "transaction": {
+          "version": 10000,
+          "lockTime": 10000
+        },
         "tx": {
           "inputs": [
             {
@@ -4063,26 +4464,59 @@
               },
               "party": "maker",
               "valueSats": "example-string",
-              "assets": [
-                {
-                  "assetType": "BTC",
-                  "assetId": "example-string",
-                  "inscriptionId": "example-string",
-                  "quantitySats": "example-string"
-                }
-              ]
+              "scriptPubKeyHex": "example-string",
+              "sequence": 10000,
+              "inventory": {
+                "examined": true,
+                "confirmed": true,
+                "inscriptions": [
+                  {
+                    "inscriptionId": "example-string",
+                    "offset": "example-string",
+                    "satpoint": "example-string"
+                  }
+                ],
+                "runeAllocations": [
+                  {
+                    "runeId": "example-string",
+                    "amount": "example-string"
+                  }
+                ],
+                "counterpartyAssets": [
+                  {
+                    "name": "example-string",
+                    "assetId": "example-string",
+                    "quantitySats": "example-string"
+                  }
+                ],
+                "rareSatRanges": [
+                  {
+                    "rangeId": "example-string",
+                    "offset": "example-string",
+                    "count": "example-string"
+                  }
+                ],
+                "unknownClaims": [
+                  "example-string"
+                ]
+              }
             }
           ],
           "outputs": [
             {
               "scriptHex": "example-string",
-              "valueSats": "example-string",
-              "role": "makerConsideration"
+              "valueSats": "example-string"
             }
           ]
         },
         "assetTransitions": [
-          {}
+          {
+            "assetType": "ORDINAL",
+            "assetId": "example-string",
+            "fromInput": 10000,
+            "toOutput": 10000,
+            "quantity": "example-string"
+          }
         ],
         "fee": {
           "feeSats": "example-string",
@@ -4091,7 +4525,8 @@
         },
         "signing": {
           "sighashPolicy": "example-string"
-        }
+        },
+        "digest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
       },
       "state": "DRAFT",
       "makerSigned": true,
@@ -4198,6 +4633,23 @@
         "schema": "example-string",
         "intentDigest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
         "network": "mainnet",
+        "checkpoint": {
+          "height": 10000,
+          "blockHash": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
+        },
+        "taker": {
+          "receiveScriptHex": "example-string",
+          "changeScriptHex": "example-string",
+          "identityProof": {
+            "kind": "example-string",
+            "address": "example-string",
+            "signature": "example-string"
+          }
+        },
+        "transaction": {
+          "version": 10000,
+          "lockTime": 10000
+        },
         "tx": {
           "inputs": [
             {
@@ -4207,26 +4659,59 @@
               },
               "party": "maker",
               "valueSats": "example-string",
-              "assets": [
-                {
-                  "assetType": "BTC",
-                  "assetId": "example-string",
-                  "inscriptionId": "example-string",
-                  "quantitySats": "example-string"
-                }
-              ]
+              "scriptPubKeyHex": "example-string",
+              "sequence": 10000,
+              "inventory": {
+                "examined": true,
+                "confirmed": true,
+                "inscriptions": [
+                  {
+                    "inscriptionId": "example-string",
+                    "offset": "example-string",
+                    "satpoint": "example-string"
+                  }
+                ],
+                "runeAllocations": [
+                  {
+                    "runeId": "example-string",
+                    "amount": "example-string"
+                  }
+                ],
+                "counterpartyAssets": [
+                  {
+                    "name": "example-string",
+                    "assetId": "example-string",
+                    "quantitySats": "example-string"
+                  }
+                ],
+                "rareSatRanges": [
+                  {
+                    "rangeId": "example-string",
+                    "offset": "example-string",
+                    "count": "example-string"
+                  }
+                ],
+                "unknownClaims": [
+                  "example-string"
+                ]
+              }
             }
           ],
           "outputs": [
             {
               "scriptHex": "example-string",
-              "valueSats": "example-string",
-              "role": "makerConsideration"
+              "valueSats": "example-string"
             }
           ]
         },
         "assetTransitions": [
-          {}
+          {
+            "assetType": "ORDINAL",
+            "assetId": "example-string",
+            "fromInput": 10000,
+            "toOutput": 10000,
+            "quantity": "example-string"
+          }
         ],
         "fee": {
           "feeSats": "example-string",
@@ -4235,7 +4720,8 @@
         },
         "signing": {
           "sighashPolicy": "example-string"
-        }
+        },
+        "digest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
       },
       "state": "DRAFT",
       "makerSigned": true,
@@ -4288,8 +4774,13 @@
         }
       }
     ],
-    "requestBodySchema": null,
-    "requestExample": null,
+    "requestBodySchema": {
+      "$ref": "#/components/schemas/SwapSignatureSubmission"
+    },
+    "requestExample": {
+      "psbt": "example-string",
+      "party": "maker"
+    },
     "responseExample": {
       "sessionId": "example-string",
       "intent": {
@@ -4342,6 +4833,23 @@
         "schema": "example-string",
         "intentDigest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
         "network": "mainnet",
+        "checkpoint": {
+          "height": 10000,
+          "blockHash": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
+        },
+        "taker": {
+          "receiveScriptHex": "example-string",
+          "changeScriptHex": "example-string",
+          "identityProof": {
+            "kind": "example-string",
+            "address": "example-string",
+            "signature": "example-string"
+          }
+        },
+        "transaction": {
+          "version": 10000,
+          "lockTime": 10000
+        },
         "tx": {
           "inputs": [
             {
@@ -4351,26 +4859,59 @@
               },
               "party": "maker",
               "valueSats": "example-string",
-              "assets": [
-                {
-                  "assetType": "BTC",
-                  "assetId": "example-string",
-                  "inscriptionId": "example-string",
-                  "quantitySats": "example-string"
-                }
-              ]
+              "scriptPubKeyHex": "example-string",
+              "sequence": 10000,
+              "inventory": {
+                "examined": true,
+                "confirmed": true,
+                "inscriptions": [
+                  {
+                    "inscriptionId": "example-string",
+                    "offset": "example-string",
+                    "satpoint": "example-string"
+                  }
+                ],
+                "runeAllocations": [
+                  {
+                    "runeId": "example-string",
+                    "amount": "example-string"
+                  }
+                ],
+                "counterpartyAssets": [
+                  {
+                    "name": "example-string",
+                    "assetId": "example-string",
+                    "quantitySats": "example-string"
+                  }
+                ],
+                "rareSatRanges": [
+                  {
+                    "rangeId": "example-string",
+                    "offset": "example-string",
+                    "count": "example-string"
+                  }
+                ],
+                "unknownClaims": [
+                  "example-string"
+                ]
+              }
             }
           ],
           "outputs": [
             {
               "scriptHex": "example-string",
-              "valueSats": "example-string",
-              "role": "makerConsideration"
+              "valueSats": "example-string"
             }
           ]
         },
         "assetTransitions": [
-          {}
+          {
+            "assetType": "ORDINAL",
+            "assetId": "example-string",
+            "fromInput": 10000,
+            "toOutput": 10000,
+            "quantity": "example-string"
+          }
         ],
         "fee": {
           "feeSats": "example-string",
@@ -4379,7 +4920,8 @@
         },
         "signing": {
           "sighashPolicy": "example-string"
-        }
+        },
+        "digest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
       },
       "state": "DRAFT",
       "makerSigned": true,
@@ -4518,8 +5060,14 @@
     "isWrite": true,
     "authorityLevel": "Deterministic example",
     "parameters": [],
-    "requestBodySchema": null,
-    "requestExample": null,
+    "requestBodySchema": {
+      "$ref": "#/components/schemas/PrivateSwapStoreRequest"
+    },
+    "requestExample": {
+      "ciphertext": "example-string",
+      "contentVersion": "example-string",
+      "expiresAt": "2026-09-02T16:00:00Z"
+    },
     "responseExample": {
       "privateId": "example-string",
       "ciphertext": "example-string",
@@ -4652,8 +5200,12 @@
         }
       }
     ],
-    "requestBodySchema": null,
-    "requestExample": null,
+    "requestBodySchema": {
+      "$ref": "#/components/schemas/PrivateSwapDestroyRequest"
+    },
+    "requestExample": {
+      "deleteCapability": "example-string"
+    },
     "responseExample": {
       "destroyed": true
     },
@@ -4691,7 +5243,90 @@
     "tag": "events",
     "isWrite": false,
     "authorityLevel": "Deterministic example",
-    "parameters": [],
+    "parameters": [
+      {
+        "name": "network",
+        "in": "query",
+        "required": false,
+        "description": "Only this network.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "mainnet",
+            "testnet",
+            "signet",
+            "regtest"
+          ]
+        }
+      },
+      {
+        "name": "type",
+        "in": "query",
+        "required": false,
+        "description": "Only this event type.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      {
+        "name": "aggregateType",
+        "in": "query",
+        "required": false,
+        "description": "Only events of this aggregate type.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      {
+        "name": "aggregateId",
+        "in": "query",
+        "required": false,
+        "description": "Only events of this aggregate.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      {
+        "name": "protocol",
+        "in": "query",
+        "required": false,
+        "description": "Only events of this protocol.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      {
+        "name": "collectionId",
+        "in": "query",
+        "required": false,
+        "description": "Only events of this collection.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      {
+        "name": "limit",
+        "in": "query",
+        "required": false,
+        "description": "Page size.",
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 50
+        }
+      },
+      {
+        "name": "cursor",
+        "in": "query",
+        "required": false,
+        "description": "The opaque cursor a previous page returned. A malformed cursor is a 400, never a silent first page.",
+        "schema": {
+          "type": "string",
+          "maxLength": 256
+        }
+      }
+    ],
     "requestBodySchema": null,
     "requestExample": null,
     "responseExample": {
@@ -4749,7 +5384,87 @@
     "tag": "events",
     "isWrite": false,
     "authorityLevel": "Deterministic example",
-    "parameters": [],
+    "parameters": [
+      {
+        "name": "network",
+        "in": "query",
+        "required": false,
+        "description": "Only this network.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "mainnet",
+            "testnet",
+            "signet",
+            "regtest"
+          ]
+        }
+      },
+      {
+        "name": "type",
+        "in": "query",
+        "required": false,
+        "description": "Only this event type.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      {
+        "name": "aggregateType",
+        "in": "query",
+        "required": false,
+        "description": "Only events of this aggregate type.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      {
+        "name": "aggregateId",
+        "in": "query",
+        "required": false,
+        "description": "Only events of this aggregate.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      {
+        "name": "protocol",
+        "in": "query",
+        "required": false,
+        "description": "Only events of this protocol.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      {
+        "name": "collectionId",
+        "in": "query",
+        "required": false,
+        "description": "Only events of this collection.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      {
+        "name": "cursor",
+        "in": "query",
+        "required": false,
+        "description": "The opaque cursor a previous page returned. A malformed cursor is a 400, never a silent first page.",
+        "schema": {
+          "type": "string",
+          "maxLength": 256
+        }
+      },
+      {
+        "name": "last-event-id",
+        "in": "header",
+        "required": false,
+        "description": "Resume after this event id, as an EventSource reconnect sends it.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    ],
     "requestBodySchema": null,
     "requestExample": null,
     "responseExample": {
@@ -4782,7 +5497,23 @@
     "tag": "events",
     "isWrite": false,
     "authorityLevel": "Chain proof",
-    "parameters": [],
+    "parameters": [
+      {
+        "name": "network",
+        "in": "query",
+        "required": false,
+        "description": "Only this network.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "mainnet",
+            "testnet",
+            "signet",
+            "regtest"
+          ]
+        }
+      }
+    ],
     "requestBodySchema": null,
     "requestExample": null,
     "responseExample": {
@@ -4818,8 +5549,16 @@
     "isWrite": true,
     "authorityLevel": "Deterministic example",
     "parameters": [],
-    "requestBodySchema": null,
-    "requestExample": null,
+    "requestBodySchema": {
+      "$ref": "#/components/schemas/WebhookSubscriptionCreateRequest"
+    },
+    "requestExample": {
+      "url": "example-string",
+      "eventTypes": [
+        "example-string"
+      ],
+      "network": "mainnet"
+    },
     "responseExample": {},
     "responses": {
       "201": {
@@ -4875,6 +5614,7 @@
         "network": "mainnet",
         "status": "PENDING_VERIFICATION",
         "secretHint": "example-string",
+        "secretVersion": 10000,
         "createdAt": "2026-09-02T16:00:00Z"
       }
     ],
@@ -4931,6 +5671,7 @@
       "network": "mainnet",
       "status": "PENDING_VERIFICATION",
       "secretHint": "example-string",
+      "secretVersion": 10000,
       "createdAt": "2026-09-02T16:00:00Z"
     },
     "responses": {
@@ -4972,8 +5713,16 @@
         }
       }
     ],
-    "requestBodySchema": null,
-    "requestExample": null,
+    "requestBodySchema": {
+      "$ref": "#/components/schemas/WebhookSubscriptionUpdateRequest"
+    },
+    "requestExample": {
+      "url": "example-string",
+      "eventTypes": [
+        "example-string"
+      ],
+      "paused": true
+    },
     "responseExample": {
       "subscriptionId": "example-string",
       "url": "example-string",
@@ -4983,6 +5732,7 @@
       "network": "mainnet",
       "status": "PENDING_VERIFICATION",
       "secretHint": "example-string",
+      "secretVersion": 10000,
       "createdAt": "2026-09-02T16:00:00Z"
     },
     "responses": {
@@ -5059,7 +5809,7 @@
     "method": "POST",
     "path": "/api/ordex/webhooks/subscriptions/{subscriptionId}/rotate-secret",
     "summary": "Rotate the signing secret",
-    "description": "The old secret keeps verifying during a bounded overlap window so rotation never drops a delivery.",
+    "description": "Returns the next signing secret exactly once. The previous secret keeps verifying during a bounded overlap: each delivery carries one v1 per unexpired secret, so rotation never drops a delivery.",
     "tag": "webhooks",
     "isWrite": true,
     "authorityLevel": "Deterministic example",
@@ -5080,7 +5830,8 @@
     "requestExample": null,
     "responseExample": {
       "subscriptionId": "example-string",
-      "secret": "example-string"
+      "secret": "example-string",
+      "secretVersion": 10000
     },
     "responses": {
       "201": {
@@ -5121,8 +5872,12 @@
         }
       }
     ],
-    "requestBodySchema": null,
-    "requestExample": null,
+    "requestBodySchema": {
+      "$ref": "#/components/schemas/WebhookVerifyRequest"
+    },
+    "requestExample": {
+      "challenge": "example-string"
+    },
     "responseExample": {
       "subscriptionId": "example-string",
       "url": "example-string",
@@ -5132,6 +5887,7 @@
       "network": "mainnet",
       "status": "PENDING_VERIFICATION",
       "secretHint": "example-string",
+      "secretVersion": 10000,
       "createdAt": "2026-09-02T16:00:00Z"
     },
     "responses": {
@@ -5212,7 +5968,48 @@
     "tag": "webhooks",
     "isWrite": false,
     "authorityLevel": "Deterministic example",
-    "parameters": [],
+    "parameters": [
+      {
+        "name": "subscriptionId",
+        "in": "query",
+        "required": false,
+        "description": "Only deliveries of this subscription.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      {
+        "name": "state",
+        "in": "query",
+        "required": false,
+        "description": "Only deliveries in this state.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      {
+        "name": "limit",
+        "in": "query",
+        "required": false,
+        "description": "Page size.",
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 50
+        }
+      },
+      {
+        "name": "cursor",
+        "in": "query",
+        "required": false,
+        "description": "The opaque cursor a previous page returned. A malformed cursor is a 400, never a silent first page.",
+        "schema": {
+          "type": "string",
+          "maxLength": 256
+        }
+      }
+    ],
     "requestBodySchema": null,
     "requestExample": null,
     "responseExample": {
@@ -5310,8 +6107,51 @@
     "isWrite": true,
     "authorityLevel": "Deterministic example",
     "parameters": [],
-    "requestBodySchema": null,
-    "requestExample": null,
+    "requestBodySchema": {
+      "$ref": "#/components/schemas/CollectionManifestDocument"
+    },
+    "requestExample": {
+      "schema": "example-string",
+      "protocolVersion": "example-string",
+      "network": "mainnet",
+      "protocol": "ordinals",
+      "collectionId": "example-string",
+      "displayName": "example-string",
+      "description": "example-string",
+      "creatorAddress": "example-string",
+      "memberIdentityType": "inscriptionId",
+      "members": [
+        "example-string"
+      ],
+      "membershipRoot": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+      "metadataSchemaHash": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+      "traitSchemaHash": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+      "mediaDigests": [
+        "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
+      ],
+      "supplyStatement": {
+        "kind": "FIXED",
+        "declared": "example-string"
+      },
+      "parentCollectionId": "example-string",
+      "rightsDeclaration": "example-string",
+      "royaltyDeclaration": {},
+      "createdAtHeight": 10000,
+      "version": 10000,
+      "previousManifestDigest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+      "supersededManifestDigest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+      "anchor": {
+        "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+        "inscriptionId": "example-string"
+      },
+      "status": "DRAFT",
+      "creatorSignature": {
+        "kind": "example-string",
+        "address": "example-string",
+        "signature": "example-string"
+      },
+      "digest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
+    },
     "responseExample": {
       "schema": "example-string",
       "protocolVersion": "example-string",
@@ -5380,7 +6220,69 @@
     "tag": "provenance",
     "isWrite": false,
     "authorityLevel": "Deterministic example",
-    "parameters": [],
+    "parameters": [
+      {
+        "name": "collectionId",
+        "in": "query",
+        "required": false,
+        "description": "Only manifests of this collection.",
+        "schema": {
+          "type": "string",
+          "maxLength": 200
+        }
+      },
+      {
+        "name": "network",
+        "in": "query",
+        "required": false,
+        "description": "Only this network.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "mainnet",
+            "testnet",
+            "signet",
+            "regtest"
+          ]
+        }
+      },
+      {
+        "name": "status",
+        "in": "query",
+        "required": false,
+        "description": "Only manifests in this status.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "CREATOR_SIGNED",
+            "SUPERSEDED",
+            "REVOKED"
+          ]
+        }
+      },
+      {
+        "name": "cursor",
+        "in": "query",
+        "required": false,
+        "description": "The opaque cursor a previous page returned. A malformed cursor is a 400, never a silent first page.",
+        "schema": {
+          "type": "string",
+          "maxLength": 256
+        }
+      },
+      {
+        "name": "limit",
+        "in": "query",
+        "required": false,
+        "description": "Page size.",
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 50
+        }
+      }
+    ],
     "requestBodySchema": null,
     "requestExample": null,
     "responseExample": {
@@ -5656,8 +6558,13 @@
         }
       }
     ],
-    "requestBodySchema": null,
-    "requestExample": null,
+    "requestBodySchema": {
+      "$ref": "#/components/schemas/CollectionRevisionRequest"
+    },
+    "requestExample": {
+      "kind": "SUPERSEDE",
+      "document": {}
+    },
     "responseExample": {
       "manifest": {
         "schema": "example-string",
@@ -5752,6 +6659,21 @@
           "type": "string",
           "minLength": 1,
           "maxLength": 200
+        }
+      },
+      {
+        "name": "network",
+        "in": "query",
+        "required": false,
+        "description": "Only this network.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "mainnet",
+            "testnet",
+            "signet",
+            "regtest"
+          ]
         }
       }
     ],
@@ -5889,6 +6811,16 @@
           "minLength": 1,
           "maxLength": 200
         }
+      },
+      {
+        "name": "cursor",
+        "in": "query",
+        "required": false,
+        "description": "The opaque cursor a previous page returned. A malformed cursor is a 400, never a silent first page.",
+        "schema": {
+          "type": "string",
+          "maxLength": 256
+        }
       }
     ],
     "requestBodySchema": null,
@@ -5981,6 +6913,16 @@
           "type": "string",
           "minLength": 1,
           "maxLength": 200
+        }
+      },
+      {
+        "name": "cursor",
+        "in": "query",
+        "required": false,
+        "description": "The opaque cursor a previous page returned. A malformed cursor is a 400, never a silent first page.",
+        "schema": {
+          "type": "string",
+          "maxLength": 256
         }
       }
     ],
@@ -6096,8 +7038,16 @@
     "isWrite": true,
     "authorityLevel": "Deterministic example",
     "parameters": [],
-    "requestBodySchema": null,
-    "requestExample": null,
+    "requestBodySchema": {
+      "$ref": "#/components/schemas/HeritageComposeRequest"
+    },
+    "requestExample": {
+      "address": "example-string",
+      "assetName": "example-string",
+      "quantitySats": "example-string",
+      "destination": "example-string",
+      "feeRateSatsPerVb": "example-string"
+    },
     "responseExample": {
       "psbt": "example-string",
       "explanation": {},
@@ -6131,8 +7081,14 @@
     "isWrite": true,
     "authorityLevel": "Deterministic example",
     "parameters": [],
-    "requestBodySchema": null,
-    "requestExample": null,
+    "requestBodySchema": {
+      "$ref": "#/components/schemas/HeritageDetachRequest"
+    },
+    "requestExample": {
+      "utxo": "example-string",
+      "destination": "example-string",
+      "feeRateSatsPerVb": {}
+    },
     "responseExample": {
       "psbt": "example-string",
       "explanation": {},
@@ -6166,8 +7122,62 @@
     "isWrite": true,
     "authorityLevel": "Deterministic example",
     "parameters": [],
-    "requestBodySchema": null,
-    "requestExample": null,
+    "requestBodySchema": {
+      "$ref": "#/components/schemas/SigningSessionOpenRequest"
+    },
+    "requestExample": {
+      "manifest": {
+        "schema": "example-string",
+        "network": "mainnet",
+        "purpose": "example-string",
+        "watchOnly": true,
+        "account": {
+          "descriptor": "example-string"
+        },
+        "unsignedTx": {
+          "inputs": [
+            {
+              "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+              "vout": 10000,
+              "valueSats": "example-string",
+              "scriptPubKeyHex": "example-string",
+              "controlledByUser": true,
+              "sighashType": "DEFAULT",
+              "explanation": "example-string",
+              "sequence": 10000,
+              "preservedSignature": {
+                "scriptSigHex": "example-string",
+                "witness": [
+                  "example-string"
+                ]
+              }
+            }
+          ],
+          "outputs": [
+            {
+              "scriptHex": "example-string",
+              "valueSats": "example-string",
+              "role": "example-string",
+              "explanation": "example-string",
+              "expectedAssets": [
+                {
+                  "assetType": "example-string",
+                  "assetId": "example-string",
+                  "quantity": "example-string"
+                }
+              ]
+            }
+          ],
+          "version": 10000,
+          "lockTime": 10000
+        },
+        "fee": {
+          "feeSats": "example-string",
+          "maxFeeSats": "example-string"
+        },
+        "digest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
+      }
+    },
     "responseExample": {
       "sessionId": "example-string",
       "manifest": {
@@ -6186,8 +7196,15 @@
               "valueSats": "example-string",
               "scriptPubKeyHex": "example-string",
               "controlledByUser": true,
-              "sighashType": "example-string",
-              "explanation": "example-string"
+              "sighashType": "DEFAULT",
+              "explanation": "example-string",
+              "sequence": 10000,
+              "preservedSignature": {
+                "scriptSigHex": "example-string",
+                "witness": [
+                  "example-string"
+                ]
+              }
             }
           ],
           "outputs": [
@@ -6197,10 +7214,16 @@
               "role": "example-string",
               "explanation": "example-string",
               "expectedAssets": [
-                {}
+                {
+                  "assetType": "example-string",
+                  "assetId": "example-string",
+                  "quantity": "example-string"
+                }
               ]
             }
-          ]
+          ],
+          "version": 10000,
+          "lockTime": 10000
         },
         "fee": {
           "feeSats": "example-string",
@@ -6238,7 +7261,63 @@
     "tag": "signing",
     "isWrite": false,
     "authorityLevel": "Deterministic example",
-    "parameters": [],
+    "parameters": [
+      {
+        "name": "network",
+        "in": "query",
+        "required": false,
+        "description": "Only this network.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "mainnet",
+            "testnet",
+            "signet",
+            "regtest"
+          ]
+        }
+      },
+      {
+        "name": "state",
+        "in": "query",
+        "required": false,
+        "description": "Only sessions in this state.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      {
+        "name": "cursor",
+        "in": "query",
+        "required": false,
+        "description": "The opaque cursor a previous page returned. A malformed cursor is a 400, never a silent first page.",
+        "schema": {
+          "type": "string",
+          "maxLength": 256
+        }
+      },
+      {
+        "name": "limit",
+        "in": "query",
+        "required": false,
+        "description": "Page size.",
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 50
+        }
+      },
+      {
+        "name": "x-ordex-signing-capability",
+        "in": "header",
+        "required": false,
+        "description": "A signing session capability returned once when the session was opened: the read capability shows a session, the import capability also submits its signed result. Listing accepts up to 25, comma separated.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    ],
     "requestBodySchema": null,
     "requestExample": null,
     "responseExample": [
@@ -6260,8 +7339,15 @@
                 "valueSats": "example-string",
                 "scriptPubKeyHex": "example-string",
                 "controlledByUser": true,
-                "sighashType": "example-string",
-                "explanation": "example-string"
+                "sighashType": "DEFAULT",
+                "explanation": "example-string",
+                "sequence": 10000,
+                "preservedSignature": {
+                  "scriptSigHex": "example-string",
+                  "witness": [
+                    "example-string"
+                  ]
+                }
               }
             ],
             "outputs": [
@@ -6271,10 +7357,16 @@
                 "role": "example-string",
                 "explanation": "example-string",
                 "expectedAssets": [
-                  {}
+                  {
+                    "assetType": "example-string",
+                    "assetId": "example-string",
+                    "quantity": "example-string"
+                  }
                 ]
               }
-            ]
+            ],
+            "version": 10000,
+            "lockTime": 10000
           },
           "fee": {
             "feeSats": "example-string",
@@ -6327,6 +7419,15 @@
           "minLength": 1,
           "maxLength": 200
         }
+      },
+      {
+        "name": "x-ordex-signing-capability",
+        "in": "header",
+        "required": false,
+        "description": "A signing session capability returned once when the session was opened: the read capability shows a session, the import capability also submits its signed result. Listing accepts up to 25, comma separated.",
+        "schema": {
+          "type": "string"
+        }
       }
     ],
     "requestBodySchema": null,
@@ -6349,8 +7450,15 @@
               "valueSats": "example-string",
               "scriptPubKeyHex": "example-string",
               "controlledByUser": true,
-              "sighashType": "example-string",
-              "explanation": "example-string"
+              "sighashType": "DEFAULT",
+              "explanation": "example-string",
+              "sequence": 10000,
+              "preservedSignature": {
+                "scriptSigHex": "example-string",
+                "witness": [
+                  "example-string"
+                ]
+              }
             }
           ],
           "outputs": [
@@ -6360,10 +7468,16 @@
               "role": "example-string",
               "explanation": "example-string",
               "expectedAssets": [
-                {}
+                {
+                  "assetType": "example-string",
+                  "assetId": "example-string",
+                  "quantity": "example-string"
+                }
               ]
             }
-          ]
+          ],
+          "version": 10000,
+          "lockTime": 10000
         },
         "fee": {
           "feeSats": "example-string",
@@ -6412,10 +7526,39 @@
           "minLength": 1,
           "maxLength": 200
         }
+      },
+      {
+        "name": "x-ordex-signing-capability",
+        "in": "header",
+        "required": false,
+        "description": "A signing session capability returned once when the session was opened: the read capability shows a session, the import capability also submits its signed result. Listing accepts up to 25, comma separated.",
+        "schema": {
+          "type": "string"
+        }
       }
     ],
-    "requestBodySchema": null,
-    "requestExample": null,
+    "requestBodySchema": {
+      "$ref": "#/components/schemas/SigningSignedResultRequest"
+    },
+    "requestExample": {
+      "signedResult": {
+        "schema": "example-string",
+        "manifestDigest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+        "psbt": "example-string",
+        "signedTxHex": "example-string",
+        "observedAssets": [
+          {
+            "assetType": "example-string",
+            "assetId": "example-string",
+            "quantity": "example-string",
+            "outputIndex": 10000
+          }
+        ],
+        "unknownCriticalFields": [
+          "example-string"
+        ]
+      }
+    },
     "responseExample": {
       "ok": true,
       "code": "example-string",
@@ -6449,8 +7592,79 @@
     "isWrite": true,
     "authorityLevel": "Protocol verification",
     "parameters": [],
-    "requestBodySchema": null,
-    "requestExample": null,
+    "requestBodySchema": {
+      "$ref": "#/components/schemas/SigningVerifyRequest"
+    },
+    "requestExample": {
+      "manifest": {
+        "schema": "example-string",
+        "network": "mainnet",
+        "purpose": "example-string",
+        "watchOnly": true,
+        "account": {
+          "descriptor": "example-string"
+        },
+        "unsignedTx": {
+          "inputs": [
+            {
+              "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+              "vout": 10000,
+              "valueSats": "example-string",
+              "scriptPubKeyHex": "example-string",
+              "controlledByUser": true,
+              "sighashType": "DEFAULT",
+              "explanation": "example-string",
+              "sequence": 10000,
+              "preservedSignature": {
+                "scriptSigHex": "example-string",
+                "witness": [
+                  "example-string"
+                ]
+              }
+            }
+          ],
+          "outputs": [
+            {
+              "scriptHex": "example-string",
+              "valueSats": "example-string",
+              "role": "example-string",
+              "explanation": "example-string",
+              "expectedAssets": [
+                {
+                  "assetType": "example-string",
+                  "assetId": "example-string",
+                  "quantity": "example-string"
+                }
+              ]
+            }
+          ],
+          "version": 10000,
+          "lockTime": 10000
+        },
+        "fee": {
+          "feeSats": "example-string",
+          "maxFeeSats": "example-string"
+        },
+        "digest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
+      },
+      "signed": {
+        "schema": "example-string",
+        "manifestDigest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+        "psbt": "example-string",
+        "signedTxHex": "example-string",
+        "observedAssets": [
+          {
+            "assetType": "example-string",
+            "assetId": "example-string",
+            "quantity": "example-string",
+            "outputIndex": 10000
+          }
+        ],
+        "unknownCriticalFields": [
+          "example-string"
+        ]
+      }
+    },
     "responseExample": {
       "ok": true,
       "code": "example-string",
@@ -6473,5 +7687,66 @@
       }
     },
     "jsonPointer": "/paths~1api~1ordex~1signing~1verify/post"
+  },
+  {
+    "operationId": "getOperation",
+    "method": "GET",
+    "path": "/api/ordex/operations/{operationId}",
+    "summary": "The receipt a mutation committed under an idempotency key",
+    "description": "Lets a caller that lost a reply learn what the gateway committed under the operation id it sent, instead of repeating the mutation. Unknown ids answer 404 so a lost request is distinguishable from a lost reply.",
+    "tag": "status",
+    "isWrite": false,
+    "authorityLevel": "Deterministic example",
+    "parameters": [
+      {
+        "name": "operationId",
+        "in": "path",
+        "required": true,
+        "description": "",
+        "schema": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._:-]{1,128}$"
+        }
+      }
+    ],
+    "requestBodySchema": null,
+    "requestExample": null,
+    "responseExample": {
+      "operationId": "example-string",
+      "operation": "PUBLISH_ASK",
+      "network": "mainnet",
+      "requestFingerprint": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+      "status": "COMMITTED",
+      "resourceId": {},
+      "receipt": {},
+      "rejection": {
+        "status": 10000,
+        "code": "example-string",
+        "message": "example-string"
+      },
+      "createdAt": "2026-09-02T16:00:00Z"
+    },
+    "responses": {
+      "200": {
+        "description": "The committed or rejected receipt.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/OperationReceipt"
+            }
+          }
+        }
+      },
+      "404": {
+        "$ref": "#/components/responses/NotFound"
+      },
+      "429": {
+        "$ref": "#/components/responses/RateLimited"
+      },
+      "default": {
+        "$ref": "#/components/responses/Error"
+      }
+    },
+    "jsonPointer": "/paths~1api~1ordex~1operations~1{operationId}/get"
   }
 ]

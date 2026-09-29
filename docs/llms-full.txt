@@ -300,17 +300,17 @@ one at a time through the ordinary routes.
 
 ---
 
-## Cold signing and watch-only mode v1 - Cold signing and watch-only mode v1 (heading:Cold signing and watch-only mode v1)
+## Cold signing and watch-only mode v2 - Cold signing and watch-only mode v2 (heading:Cold signing and watch-only mode v2)
 - Source: spec/cold-signing.md
 - URL: /reference/specifications/cold-signing
 
-Status: active at protocol 1.2. Artifacts: `ordex.expected-transaction-manifest/v1`, `ordex.offline-signing-session/v1`. Reference verifier: `verifier/offline-signing.js`. Vectors: `conformance/offline-signing-vectors.json`.
+Status: active at protocol 1.2. Artifacts: `ordex.expected-transaction-manifest/v2`, `ordex.offline-signing-session/v2`. Reference verifier: `verifier/offline-signing.js`. Vectors: `conformance/offline-signing-vectors.json`.
 
 Cold signing is a signing mode, not a product silo: every transaction surface in Ordex, buys, listings, withdrawals, replacements, batch purchases, SafeOps, swaps, and heritage, can be completed through a connected wallet, a hardware wallet through its existing provider API, a PSBT file, base64 copy and paste, animated QR (crypto-psbt UR), or a static QR when the payload fits safely. Watch-only profiles can browse, plan, and export, and never imply they can sign.
 
 ---
 
-## Cold signing and watch-only mode v1 - The SignerAdapter contract (heading:The SignerAdapter contract)
+## Cold signing and watch-only mode v2 - The SignerAdapter contract (heading:The SignerAdapter contract)
 - Source: spec/cold-signing.md
 - URL: /reference/specifications/cold-signing
 
@@ -318,37 +318,39 @@ One adapter interface with capability detection covers: connected-wallet signing
 
 PSBT v0 and v2 are supported where wallets require them. Conversion preserves the unsigned transaction, UTXO data, scripts, sighash policy, derivation metadata, and proprietary asset-protection fields, and refuses lossy conversions.
 
----
-
-## Cold signing and watch-only mode v1 - The expected transaction manifest (heading:The expected transaction manifest)
-- Source: spec/cold-signing.md
-- URL: /reference/specifications/cold-signing
-
-Before any signing request, the flow builds a manifest: the network, one line stating the purpose, whether a watch-only profile prepared it, every input with its exact value and script, whether the user controls it, its sighash type, and one line on why it is spent, every output with its exact script, value, role, recipient, expected assets, and one line on who receives it, the fee and its permitted maximum, and the digest. The digest is SHA-256 over the sorted-key JSON of the network, the inputs (outpoint, value, script), the outputs (script, value), and the sighash policy. Presentation fields deliberately sit outside the digest; the unsigned transaction is the identity.
+<!-- OX-P03: v2 commits to the exact unsigned transaction and the protection
+policy, and judges a signed result from its bytes with real signature checks.
+A v1 manifest or session is refused and presented again, never reinterpreted. -->
 
 ---
 
-## Cold signing and watch-only mode v1 - The nine refusals (heading:The nine refusals)
+## Cold signing and watch-only mode v2 - The expected transaction manifest (heading:The expected transaction manifest)
 - Source: spec/cold-signing.md
 - URL: /reference/specifications/cold-signing
 
-After a signed PSBT comes back, from any signer, the normalized result is compared against the manifest. The comparison refuses with a stable code when:
+Before any signing request, the flow builds a manifest: the network, one line stating the purpose, whether a watch-only profile prepared it, the transaction version and locktime, every input with its outpoint, sequence, exact value and script, whether the user controls it, the one sighash the user may sign it with, and one line on why it is spent, every output with its exact script, value, role, the assets expected there with their exact quantities, and one line on who receives it, the fee and its permitted maximum, and the digest.
 
-1. The signed result was not produced from this manifest (`MANIFEST_DIGEST_MISMATCH`).
+An input the user does not control may record the signature it already carries, such as a seller's `SINGLE|ANYONECANPAY` signature on a public ask (`preservedSignature`). That signature must come back unchanged.
+
+The digest is SHA-256 over the sorted-key JSON of the schema, the network, the exact unsigned transaction bytes (version, locktime, every sequence, and the input and output order), the prevout value and script of every input, and the protection policy: which inputs the user signs and with which sighash, which foreign signatures are preserved, every expected asset with its quantity and output, the fee and its maximum. The purpose, the explanatio
+
+---
+
+## Cold signing and watch-only mode v2 - The refusals (heading:The refusals)
+- Source: spec/cold-signing.md
+- URL: /reference/specifications/cold-signing
+
+After a signed PSBT (v0 or v2, base64 or hex) or a signed raw transaction comes back, from any signer, it is parsed from its bytes and compared against the manifest. A caller's statement that an input is signed proves nothing. The comparison refuses with a stable code when:
+
+1. The signed result was not produced from this manifest (`MANIFEST_DIGEST_MISMATCH`), the bytes do not parse (`MALFORMED_SIGNED_RESULT`), or a v2 PSBT's inputs require both a time and a height locktime (`LOCKTIME_UNDETERMINED`).
 2. The fee left its approved bound (`FEE_OUT_OF_BOUNDS`).
-3. An input was added, removed, or reordered (`INPUT_SET_CHANGED`, `INPUT_REORDERED`).
+3. The version or locktime changed (`TRANSACTION_CHANGED`), an input was added, removed, reordered or given another sequence (`INPUT_SET_CHANGED`, `INPUT_REORDERED`, `SEQUENCE_CHANGED`), or a PSBT names another spent output than the manifest (`PREVOUT_MISMATCH`).
 4. An output was added, removed, or changed in script or value (`OUTPUT_SET_CHANGED`, `SCRIPT_CHANGED`, `VALUE_CHANGED`).
-5. A protected asset moved somewhere other than its expected output, or moves at all when none were expected (`PROTECTED_ASSET_MISPLACED`).
-6. A required user input is still unsigned (`REQUIRED_SIGNATURE_MISSING`).
-7. A signature appeared with a sighash the manifest did not approve (`SIGHASH_UNEXPECTED`).
-8. A signature covers an input the user does not control (`SIGNATURE_ON_FOREIGN_INPUT`).
-9. An unknown critical field appeared (`UNKNOWN_CRITICAL_FIELDS`).
-
-Any difference between what was presented and what came back is a refusal, never an adaptation. The signing stepper surfaces the exact field and the human explanation, and preserves the stable code in the technical d
+5. A required user input is unsigned (`REQUIRED_SIGNATURE_MISSING`), its signature does not verify under the BIP143 or BIP341 signature hash of the presented transaction (`SIGNATURE_INVALID`), or it spends a script the verifier cannot check (`SIGNATU
 
 ---
 
-## Cold signing and watch-only mode v1 - The stepper (heading:The stepper)
+## Cold signing and watch-only mode v2 - The stepper (heading:The stepper)
 - Source: spec/cold-signing.md
 - URL: /reference/specifications/cold-signing
 
@@ -356,7 +358,7 @@ Build, verify, export or connect signer, sign offline, import, verify the signed
 
 ---
 
-## Cold signing and watch-only mode v1 - Watch-only profiles (heading:Watch-only profiles)
+## Cold signing and watch-only mode v2 - Watch-only profiles (heading:Watch-only profiles)
 - Source: spec/cold-signing.md
 - URL: /reference/specifications/cold-signing
 
@@ -364,7 +366,7 @@ A watch-only profile is a standard output descriptor or xpub, stored locally by 
 
 ---
 
-## Cold signing and watch-only mode v1 - Blind signing is prohibited (heading:Blind signing is prohibited)
+## Cold signing and watch-only mode v2 - Blind signing is prohibited (heading:Blind signing is prohibited)
 - Source: spec/cold-signing.md
 - URL: /reference/specifications/cold-signing
 
@@ -407,15 +409,20 @@ Leaves are `SHA-256(sorted-key JSON of { domain: "ordex.collection-member/v1", c
 
 `buildMembershipProof` walks the sorted tree and returns the sibling path. `verifyMembershipProof` needs only the manifest, the member identity, and the proof: no network call, no gateway. A stranger's identity, a tampered sibling, and a member removed in a newer version all refuse with `MEMBER_NOT_PROVEN`.
 
+<!-- OX-P09: P-R17 accepted a revocation replayed onto another network and
+collection because only the digest and signer were compared. The context is
+now part of the target check, and a check without the target is labelled as
+proving no target. -->
+
 ---
 
 ## Collection provenance registry v1 - Publication, versioning, revocation (heading:Publication, versioning, revocation)
 - Source: spec/collection-manifest.md
 - URL: /reference/specifications/collection-manifest
 
-A manifest is drafted, validated locally, signed by the creator, and then published. Publication is immutable. Corrections are a new version whose digest names the previous one. Supersession and revocation are creator-signed documents; a revocation (`ordex.collection-manifest-revocation/v1`) binds the exact manifest digest, states a reason, and is refused when signed by any address other than the creator. History is never deleted: superseded and revoked versions remain visible with their statuses.
+A manifest is drafted, validated locally, signed by the creator, and then published. Publication is immutable. Corrections are a new version whose digest names the previous one. Supersession and revocation are creator-signed documents. A revocation (`ordex.collection-manifest-revocation/v1`, which revokes `ordex.collection-manifest/v1` documents) names the network, the collection id and the exact manifest digest, states a reason, and carries a `bip322` creator signature: the signer address and a base64 signature (`CREATOR_SIGNATURE_INVALID`).
 
-Optional anchoring writes the manifest digest into an inscription or transaction through the existing Universe infrastructure. Anchor state is separate from signature state: `ANCHOR_PENDING`, `ANCHORED`, `ANCHOR_CONFLICTED`, and `REORGED` never change the fact that the creator signed.
+`verifyManifestRevocation(revocation, manifest)` checks the revocation against the manifest it revokes. The network and collection id must equal the manifest's, before the digest and the signer are considered (`REVOCATION_CONTEXT_MISMATCH`); the manifest digest must be that manifest's (`MANIFEST_DIGEST_MISMATCH`); the signer must be its creator (`SIGNER_IDENTITY_MISMATCH`); and the revocation digest recomputes over everything except the signature and the digest (`DIGEST_MISMATCH`). The verdict then carries `scope: "TARGET_BOUND"`. Without the manifest the verdict carries `scope: "STRUCTURE_ONLY"`: the document is well formed, and nothing ab
 
 ---
 
@@ -443,7 +450,7 @@ Every displayed proof badge must be reproducible by the SDK and the reference ve
 
 ---
 
-## Counterparty heritage assets v1 - Counterparty heritage assets v1 (heading:Counterparty heritage assets v1)
+## Counterparty heritage assets v1 - Counterparty heritage assets v1 (heading:Counterparty heritage assets v1)
 - Source: spec/counterparty-utxo-asset.md
 - URL: /reference/specifications/counterparty-utxo-asset
 
@@ -453,7 +460,7 @@ The heritage market brings legacy and current Counterparty assets, including nam
 
 ---
 
-## Counterparty heritage assets v1 - Identity (heading:Identity)
+## Counterparty heritage assets v1 - Identity (heading:Identity)
 - Source: spec/counterparty-utxo-asset.md
 - URL: /reference/specifications/counterparty-utxo-asset
 
@@ -461,7 +468,7 @@ Asset identity is the authoritative numeric Counterparty asset id plus current l
 
 ---
 
-## Counterparty heritage assets v1 - The authority (heading:The authority)
+## Counterparty heritage assets v1 - The authority (heading:The authority)
 - Source: spec/counterparty-utxo-asset.md
 - URL: /reference/specifications/counterparty-utxo-asset
 
@@ -469,29 +476,47 @@ One self-hosted Counterparty Core deployment is the only production authority. A
 
 ---
 
-## Counterparty heritage assets v1 - The attachment record (heading:The attachment record)
+## Counterparty heritage assets v1 - The attachment record (heading:The attachment record)
 - Source: spec/counterparty-utxo-asset.md
 - URL: /reference/specifications/counterparty-utxo-asset
 
 A record states that an exact quantity of one asset is attached to one outpoint right now, controlled by one address, with the co-traveling assets on the same outpoint declared. An undeclared co-traveling asset is how unrelated assets get burned, so the declaration is part of the record and part of every verification that moves the outpoint.
 
+<!-- OX-P10: the move rules below restate Counterparty Core v11.4.0 (commit
+e4d1315654b79bb7207cd9f45a8d7b6d5255a290): gettxinfo.py select_utxo_destination,
+move.py move_assets, blocks.py parse_tx and protocol_changes.json. An attachment
+is a ledger balance on an outpoint, not a sat, so ordinal sat flow never applies. -->
+
 ---
 
-## Counterparty heritage assets v1 - Attachment follows the spend (heading:Attachment follows the spend)
+## Counterparty heritage assets v1 - Attachment follows the spend (heading:Attachment follows the spend)
 - Source: spec/counterparty-utxo-asset.md
 - URL: /reference/specifications/counterparty-utxo-asset
 
-When a UTXO carrying an attachment is spent, the asset follows the input range. The destination is the first output whose accumulated value passes the sat range start of the attached outpoint: the same first-sat rule that decides inscription delivery. `verifyAttachmentFollows` re-derives the destination from the spending transaction alone and refuses when:
+An attached balance lives in the Counterparty ledger on an outpoint. It does not ride a sat range. When a transaction spends one or more attached outpoints, Counterparty picks **one destination for all of them**: the first output whose script it does not pass over as `OP_RETURN`. Every positive balance of every attached input is credited to that output, whatever the BTC values and input positions are.
 
-1. No input spends the recorded outpoint (`OUTPOINT_NOT_SPENT`) or it appears twice (`OUTPOINT_DUPLICATED`).
-2. The spent value differs from the record, so the range cannot be traced (`SOURCE_VALUE_MISMATCH`).
-3. A readable value is missing anywhere the trace needs one (`INPUT_VALUE_UNKNOWN`, `OUTPUT_VALUE_UNKNOWN`).
-4. No output absorbs the range start, meaning the attachment fell into the fee region (`SAT_FLOW_SHORTFALL`).
-5. The trace lands on a different output than the plan promised (`DESTINATION_MISMATCH`).
+The destination is read from raw script bytes exactly as `select_utxo_destination` reads them:
+
+| Output script | Passed over? |
+| --- | --- |
+| begins with `OP_RETURN` and decodes cleanly | yes |
+| a single push of the byte `0x6a`, which renders like `OP_RETURN` | yes |
+| any script that fails to decode, including `OP_RETURN` followed by a truncated push | no, it is a destination |
+| an empty script | no, it is a destination |
+| any script ending in `OP_CHECKMULTISIG` | no, it is a destination |
+| anything else | no, it is a destination |
+
+When there is no destination at all, what happens depends on the network's activation heights:
+
+| Network | UTXO support from | Detach on spend from |
+| --- | --- | --- |
+| mainnet | 866000 | 871900 |
+| testnet (testnet3) | 2925800 | 3195137 |
+| t
 
 ---
 
-## Counterparty heritage assets v1 - Attach and detach (heading:Attach and detach)
+## Counterparty heritage assets v1 - Attach and detach (heading:Attach and detach)
 - Source: spec/counterparty-utxo-asset.md
 - URL: /reference/specifications/counterparty-utxo-asset
 
@@ -499,7 +524,7 @@ Attachment and detachment are composed for the user, never for the service: the 
 
 ---
 
-## Counterparty heritage assets v1 - Protection everywhere (heading:Protection everywhere)
+## Counterparty heritage assets v1 - Protection everywhere (heading:Protection everywhere)
 - Source: spec/counterparty-utxo-asset.md
 - URL: /reference/specifications/counterparty-utxo-asset
 
@@ -507,15 +532,15 @@ Counterparty-attached outputs are never cardinal. SafeOps inventories, wallet se
 
 ---
 
-## Counterparty heritage assets v1 - Trading path (heading:Trading path)
+## Counterparty heritage assets v1 - Trading path (heading:Trading path)
 - Source: spec/counterparty-utxo-asset.md
 - URL: /reference/specifications/counterparty-utxo-asset
 
-Listings are Ordex asks over the attached outpoint: the seller's signed input commits the outpoint, the buyer's payment output sits at the same index, and the sat-flow invariant guarantees the attachment lands in the buyer's output. Legacy dispensers and order history may be displayed read-only with clear labeling. Nothing in the product sends BTC to a legacy dispenser address or encourages it.
+Listings are Ordex asks over the attached outpoint, but the sat-flow invariant that places an inscription does not place an attachment. A heritage settlement is built so that the buyer's receive output is the first output Counterparty does not pass over, with no other attached input in the transaction, and `verifyAttachmentFollows` must accept that exact output before anyone signs. Legacy dispensers and order history may be displayed read-only with clear labeling. Nothing in the product sends BTC to a legacy dispenser address or encourages it.
 
 ---
 
-## Counterparty heritage assets v1 - Readiness gates (heading:Readiness gates)
+## Counterparty heritage assets v1 - Readiness gates (heading:Readiness gates)
 - Source: spec/counterparty-utxo-asset.md
 - URL: /reference/specifications/counterparty-utxo-asset
 
@@ -573,17 +598,24 @@ Required behavior, both transports: filter by network, protocol, collection, eve
 
 Publication latency target: p95 under two seconds from the authoritative database commit. No event loss during worker restart: an at-least-once consumer that deduplicates by id observes exactly-once effect.
 
+<!-- OX-P11: the earlier text kept only a hash of the signing secret yet signed
+every delivery with the secret itself, which a hash cannot do. The delivery key
+is now stored encrypted and recoverable for the delivery worker alone, and a
+hash is never a signing key. -->
+
 ---
 
 ## Realtime events and signed webhooks v1 - Signed webhooks (heading:Signed webhooks)
 - Source: spec/events.md
 - URL: /reference/specifications/events
 
-A subscription registers an HTTPS endpoint and the event families it wants. Creation returns the signing secret exactly once; storage keeps only a hash, and later reads show a hint. The endpoint answers a challenge before activation.
+A subscription registers an HTTPS endpoint and the event families it wants. The endpoint answers a challenge before activation.
 
-Each delivery POSTs one envelope with the header `X-Ordex-Signature: t=<unix>,d=<deliveryId>,v1=<hex>`, where `v1` is HMAC-SHA256 over `<timestamp>.<deliveryId>.<sha256(body)>` under the subscription secret. Verification is constant time and enforces a timestamp tolerance of five minutes by default. `verifier/events.js` and the SDK expose the same signer and verifier.
+### The delivery signing key
 
-Delivery is at least once with exponential backoff, bounded retries, dead-letter state, per-attempt history, manual replay, idempotency ids, endpoint health, and secret rotation with a bounded verification overlap. The delivery worker is isolated from internal infrastructure and protected against SSRF, DNS rebinding, private-address destinations, unbounded redirects, oversized responses, and endpoint-induced resource exhaustion. Secrets are encrypted at rest.
+- Creation generates a random signing secret: `whsec_` followed by 32 random bytes in base64url (43 characters). The creation response returns it exactly once; rotation returns the new one exactly once. No later response, event, log line or error carries it.
+- The gateway must sign every future delivery with that secret, so it keeps the secret recoverable but protected. It is stored only as authenticated ciphertext (AES-256-GCM or an equivalent AEAD) under a key encryption key held by an authorized secret provider, and only the delivery worker may use that key. The associated data binds each ciphertext to its subscription id and secret version (`ordex.webhook-secret/v2|<subscriptionId>|<version>`), so a ciphertext copied to another subscription or version does not open. Every decrypt is an audited operation, the key encryption key is least privilege, and neither the secret nor its ciphertext appears in logs.
+- Ordinary reads show the secret version and a hint of the last four characters, never the secret, its ciphertext
 
 ---
 
@@ -817,15 +849,22 @@ they may sign and what every verifier can recheck for itself.
 
 | Kind | Scope | An eligible Feline is one that |
 | --- | --- | --- |
-| `ITEM` | one exact inscription | has exactly the named inscription ID. |
-| `COLLECTION` | a whole collection | is included in the manifest the named collection root commits to. |
-| `TRAIT` | one trait value | is included in that root and carries exactly the named trait name and value. |
+| `ITEM` | one exact inscription | has exactly the named inscription ID and is a member of the named collection root. |
+| `COLLECTION` | a whole collection | is a member of the collection the named root commits to. |
+| `TRAIT` | one trait value | is a member of that root and one of the members the buyer accepted as carrying exactly the named trait name and value. |
 
-A collection or trait offer binds to one confirmed collection root. The root is
-part of the terms, so acceptance is provable against a fixed manifest instead
-of against "whatever the collection is this week". When the collection
-publishes a new root, existing offers keep binding the root they were posted
-with, and a buyer who wants the new root posts new offers.
+Every offer binds to one confirmed collection root. The root is part of the
+terms, so acceptance is provable against a fixed member set instead of against
+"whatever the collection is this week". When the collection publishes a new
+root, existing offers keep binding the root they were posted with, and a buyer
+who wants the new root posts new offers. Offers bind collections whose member
+identity is the inscription ID.
+
+<!-- OX-P05: P-R14 (buyer script placement passed for delivery), P-R15 (missing
+locktime passed) and P-R16 (timestamp expiry passed) are closed by proving
+delivery from the Feline satpoint and every leaf, tree, locktime and signature
+from the transaction bytes. Buyer padding was removed: the buyer signs nothing
+at accepta
 
 ---
 
@@ -842,13 +881,13 @@ The terms are an object with schema `ordex.offer-terms/v1`:
 | `network` | string | always | `mainnet`, `testnet`, `signet`, or `regtest`. |
 | `offerKind` | string | always | `ITEM`, `COLLECTION`, or `TRAIT`. |
 | `collectionId` | string | always | The collection the scope names. |
-| `collectionRoot` | string | always | Lowercase hex SHA-256 collection Merkle root the scope binds to. |
+| `collectionRoot` | string | always | Lowercase hex membership root of that collection (the manifest `membershipRoot`). |
 | `itemInscriptionId` | string | `ITEM` only | The exact inscription the offer buys. |
 | `traitName` | string | `TRAIT` only | The exact trait name. |
 | `traitValue` | string | `TRAIT` only | The exact trait value. |
-| `criteriaHash` | string | always | SHA-256 over the exact serialized scope criteria the buyer accepted, so a verifier can recheck scope membership without trusting a description of it. |
-| `buyerReceiveScript` | string | always | Lowercase hex script the bought Feline must land in. |
-| `priceSats` | string | always | Exact price 
+| `criteriaHash` | string | always | Lowercase hex commitment to the scope the buyer accepted; see below. |
+| `buyerReceiveScriptHex` | string | always | Lowercase hex of a spendable script (not `OP_RETURN`). The Feline, buyer change, and a recovery all pay it. |
+| `priceSats` | string | always | Exact price paid t
 
 ---
 
@@ -856,9 +895,12 @@ The terms are an object with schema `ordex.offer-terms/v1`:
 - Source: spec/offers.md
 - URL: /reference/specifications/offers
 
-A posted offer is one Taproot output the buyer funded and signed. Its address
-commits to exactly two script leaves, so the output cannot be spent in a way
-its address does not describe.
+A posted offer is one Taproot output the buyer funded and signed. Its internal
+key is BIP341's unspendable point
+`H = 50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0`, so no
+key path exists, and its tree is exactly two leaves at depth one, so the output
+cannot be spent in a way its address does not describe. `offerOutputTree`
+returns every byte below from the terms and the two policy keys.
 
 ### Acceptance leaf
 
@@ -869,13 +911,12 @@ its address does not describe.
 OP_2 OP_EQUAL
 ```
 
+In bytes: `20 <offerTermsHash> 75 20 <policyKeyA> ac 20 <policyKeyB> ba 52 87`.
 Both policy signatures are required. `CHECKSIGADD` accumulates, so the leaf
-evaluates to true only when each independent key signed this exact script, and
-the script embeds the terms hash, so the leaf itself, the tree, the Merkle
-root, the tweak, and the output address all change if one term changes. No
-single policy key can spend the output. The two signatures commit to the
-acceptance transaction through the tapscript sighash, so a signer approves one
-transaction, not a policy.
+evaluates to true only when each independent key signed, and the witness is
+`<sigB> <sigA> <leaf> <control block>`. The leaf embeds the terms hash, so the
+leaf, the tree, the tweak, and the address all change if one term changes. No
+single policy key can spend the output.
 
 ### Recovery leaf
 
@@ -884,13 +925,8 @@ transaction, not a policy.
 <buyerRecoveryKey> OP_CHECKSIG
 ```
 
-After the expiry height has been reached, the buyer signs this leaf alone and
-takes the whole output back. Before expiry the leaf is unusable, which is what
-makes the commitment real for the seller during the window they can accept.
-
-### The policy signers
-
-
+In bytes: `<minimal push of expiryHeight> b1 75 20 <buyerRecoveryKey> ac`. The
+height is pus
 
 ---
 
@@ -898,27 +934,27 @@ makes the commitment real for the seller during the window they can accept.
 - Source: spec/offers.md
 - URL: /reference/specifications/offers
 
-Acceptance is one transaction. The arrangement below is the exact one a
-compatible client must build, and every rule after it exists because getting
-it wrong produces a valid transaction that pays the wrong party rather than
-an invalid one a node rejects:
+Acceptance is one transaction, `ordex.offer-acceptance/v2`:
 
 ```
 inputs                                outputs
-0..k-1  buyer padding inputs          0        merged padding, buyer payment script
-k       seller's Feline input         1        buyer asset script, = Feline postage
-k+1     the offer output              2..k-1   seller preserves, one per other
-                                               asset in the Feline output's sat
-                                               range, in sat order
-                                      k        seller payment script, = priceSats
-                                      last     buyer change, when above dust
+0..s-1  seller inputs (the Feline     0..a-1  asset outputs: exactly the seller
+        input among them)                     input sats, one of them the buyer
+s       the funded offer output               asset output, the rest seller
+                                              returns
+                                      a       seller payment, = priceSats
+                                      a+1     buyer change, when above dust
 ```
 
-The seller's input sits at index `k` and signs
-`SIGHASH_SINGLE | SIGHASH_ANYONECANPAY` against the seller payment output,
-which sits at the same index `k`. That is the same half a public ask uses, so
-an ask and an offer acceptance are one arrangement a wallet already
-understands. The offer output is spent by the a
+The seller builds the transaction and signs every seller input with
+`SIGHASH_ALL` (or the Taproot default), committing to the whole arrangement.
+The two policy signers spend the funded output under the acceptance leaf. The
+buyer signs nothing at acceptance time; the buyer's only commitment is the
+funded output, signed when funding. There are no buyer padding inputs: a seller
+output ahead of the buyer asset output takes the sats that precede the Feline,
+so no input of the buyer's could ever be spent without a buyer signature, and
+no verifier ever has to assume one. An input described as the buyer's is
+refused (`BUYER_
 
 ---
 
@@ -926,12 +962,16 @@ understands. The offer output is spent by the a
 - Source: spec/offers.md
 - URL: /reference/specifications/offers
 
-Recovery is one transaction: the offer output spent by the recovery leaf, with
-`nLockTime` at or after `expiryHeight`, paying the entire output value minus
-the fee to `buyerReceiveScript`. Anyone may broadcast it; only the buyer's key
-can sign it. A recovery attempt before expiry is invalid by consensus, because
-`CHECKLOCKTIMEVERIFY` refuses to evaluate before its height, so no one has to
-trust a gateway to enforce the calendar.
+Recovery is one transaction, `ordex.offer-recovery/v2`: the funded output
+alone, spent by the exact recovery leaf and control block with a
+`SIGHASH_DEFAULT` or `SIGHASH_ALL` signature by the buyer recovery key, paying
+one output to `buyerReceiveScriptHex` of at least its dust threshold. Its
+`nLockTime` is a height at or after `expiryHeight` and below 500000000, and its
+input sequence is not final (`0xffffffff` disables the locktime), so
+`CHECKLOCKTIMEVERIFY` passes. Consensus lets it confirm from block
+`expiryHeight + 1`; a recovery attempt any earlier is invalid by consensus, so
+no one has to trust a gateway to enforce the calendar. Anyone may broadcast it;
+only the buyer's key can sign it.
 
 After a recovery confirms, the offer is `RECOVERED`, and every surface reads
 it as closed. After an acceptance confirms, the offer is `ACCEPTED`, and the
@@ -951,12 +991,9 @@ orderbook records which order the acceptance settled.
 | `RECOVERED` | A transaction spending the output by the recovery leaf confirmed. |
 | `MEMPOOL_CONFLICTED` | An unconfirmed transaction spends the funded output. It can still be replaced or dropped. |
 | `SPENT` | The funded output was spent on chain by a transaction that was neither its acceptance nor its recovery. |
-| `EXPIRED` | The current height passed `expiryHeight` with the output unspent. Recovery is now the only path. |
+| `EXPIRED` | The current height reached `expiryHeight` with the output unspent. Acceptance is refused; recovery confirms from the next block. |
 | `WITHDRAWN` | The buyer proved ownership of the recovery key before expiry and removed the offer from discovery. Withdrawal is discovery, not cancellation; only a spend settles the funds. |
-| `REJECTED` | The posted evidence was unusable: malformed terms, wrong network, or a root that does not exist. |
-
-An offer that ages past its freshness bound is presented as stale and cannot
-be accepted thr
+| `REJECTED` | The posted evidence was unusable: malformed terms, wrong network, a root that does not exist, or a funded output that is not the tree the terms and policy keys pro
 
 ---
 
@@ -967,7 +1004,7 @@ be accepted thr
 Ordex composes, verifies, and records. It does not hold a policy key, does not
 sign, does not custody the funded output, and does not broadcast on its own
 initiative. The buyer funds and posts, two independent signers approve one
-acceptance each, the seller signs one input, and every broadcast is a
+acceptance each, the seller signs its own inputs, and every broadcast is a
 deliberate act by the party who owns the money that moves.
 
 ---
@@ -1131,7 +1168,7 @@ at the point of decision rather than describing an ask as reserved.
 
 ---
 
-## Not burning the runes a purchase spends - Not burning the runes a purchase spends (heading:Not burning the runes a purchase spends)
+## Not burning the runes a purchase spends - Not burning the runes a purchase spends (heading:Not burning the runes a purchase spends)
 - Source: spec/runes.md
 - URL: /reference/specifications/runes
 
@@ -1142,7 +1179,7 @@ destroys every rune it spent.
 
 ---
 
-## Not burning the runes a purchase spends - Where a rune balance lives (heading:Where a rune balance lives)
+## Not burning the runes a purchase spends - Where a rune balance lives (heading:Where a rune balance lives)
 - Source: spec/runes.md
 - URL: /reference/specifications/runes
 
@@ -1150,13 +1187,13 @@ A rune balance is not held by an address. It is held by an output, and it is
 moved by the **runestone**: the first output in the transaction whose script
 begins `OP_RETURN OP_13`.
 
-A transaction with no runestone does not destroy anything. Runes that no edict
-assigns go to the first non-`OP_RETURN` output. That is a transfer, and it is
-safe.
+A transaction with no runestone sends every balance it spends to its first
+non-`OP_RETURN` output. That is a transfer. It destroys the balances only when
+there is no such output.
 
 ---
 
-## Not burning the runes a purchase spends - The cenotaph (heading:The cenotaph)
+## Not burning the runes a purchase spends - The cenotaph (heading:The cenotaph)
 - Source: spec/runes.md
 - URL: /reference/specifications/runes
 
@@ -1176,7 +1213,7 @@ it before asking anyone to sign.
 
 ---
 
-## Not burning the runes a purchase spends - Reading the runestone (heading:Reading the runestone)
+## Not burning the runes a purchase spends - Reading the runestone (heading:Reading the runestone)
 - Source: spec/runes.md
 - URL: /reference/specifications/runes
 
@@ -1192,11 +1229,22 @@ is not.
 
 `OP_0` is an empty push, not an opcode.
 
+<!-- OX-P04: this document and verifier/runes.js follow ord 0.29.0 (commit
+7e37a3bd3391044b39f5f11f20dfdb8b3764cd0e) field by field. A recognized tag number is
+not a consumed field, and a readable runestone is not burn safety; the differential
+oracle in conformance/ord-differential keeps both claims checked against ord itself. -->
+
 ---
 
-## Not burning the runes a purchase spends - What makes it a cenotaph (heading:What makes it a cenotaph)
+## Not burning the runes a purchase spends - What makes it a cenotaph (heading:What makes it a cenotaph)
 - Source: spec/runes.md
 - URL: /reference/specifications/runes
+
+Reading a field is not the same as seeing its tag. ord consumes each field
+with `Tag::take`: the field is removed only when it carries the right number of
+values and every value is in range. A rejected value stays behind, and so does
+a second copy of a field read once. After every known field has had its chance
+to be consumed, whatever is left decides the verdict.
 
 | Flaw | Condition |
 | --- | --- |
@@ -1207,21 +1255,38 @@ is not.
 | `TRAILING_INTEGERS` | the body ends with fewer than four integers left |
 | `EDICT_RUNE_ID` | a delta carries the rune id past a u64 block or u32 tx, or names block 0 with a nonzero tx |
 | `EDICT_OUTPUT` | an edict addresses an output beyond the output count |
-| `UNRECOGNIZED_FLAG` | tag 2 carries a bit outside Etching, Terms and Turbo, or Terms or Turbo without Etching |
-| `UNRECOGNIZED_EVEN_TAG` | an unrecognized **even** tag remains after the known tags are consumed |
-
-An unrecognized **odd** tag is ignorable. That asymmetry is what lets the
-format grow without turning every future field into a burn for older readers.
-
-Two details are easy to miss and both destroy balances:
-
-- An edict may address the output **count** itself, one past the last index.
-  That means split across every non-`OP_RETURN` output, and it is valid.
-- A pointer, tag 22, that addresses no
+| `SUPPLY_OVERFLOW` | an etching's premine plus cap times amount overflows a u128 |
+| `UNRECOGNIZED_FLAG` | a flag bit is left after Etching is taken, and Terms and Turbo are taken only inside an etching |
+| `UNRECOGNIZED_EVEN_TAG` | any **even** field is left unco
 
 ---
 
-## Not burning the runes a purchase spends - The rule a client must apply (heading:The rule a client must apply)
+## Not burning the runes a purchase spends - Where a readable runestone sends each balance (heading:Where a readable runestone sends each balance)
+- Source: spec/runes.md
+- URL: /reference/specifications/runes
+
+A runestone that is not a cenotaph can still destroy balances. The allocation
+follows ord 0.29.0's rune updater:
+
+1. Sum every input's balance per rune. A mint adds its minted amount.
+2. Apply the edicts in order. Each takes from the running balance of its rune:
+   amount 0 means all that is left, a larger amount is capped at what is left.
+   An edict for a rune no input carries does nothing, and rune `0:0` names
+   the transaction's own etching.
+3. An edict addressed to the output count splits across every
+   non-`OP_RETURN` output: amount 0 divides the balance evenly with the
+   remainder going to the first outputs, any other amount is given to each
+   output in turn until the balance runs out.
+4. Whatever is left goes to the pointer, or to the first non-`OP_RETURN`
+   output when there is no pointer.
+
+A balance burns when it is allocated to an `OP_RETURN` output, including a
+pointer or edict that names the runestone output itself, and when it is left
+with no non-`OP_RETURN` output to fall to. A cenotaph burns everything.
+
+---
+
+## Not burning the runes a purchase spends - The rule a client must apply (heading:The rule a client must apply)
 - Source: spec/runes.md
 - URL: /reference/specifications/runes
 
@@ -1229,25 +1294,30 @@ Before a wallet is asked to sign, and again before the final transaction is
 released:
 
 1. Decipher the runestone of the exact final transaction.
-2. If it is not a cenotaph, the purchase is safe with respect to runes.
-3. If it is a cenotaph, ask the rune index what each input being spent carries.
-4. Refuse if any input holds a rune balance. Confirming would destroy it.
-5. Refuse if the index has not examined any input. Not having looked is not the
-   same fact as having found nothing, and an unreachable index proves nothing
-   either, so a failed lookup counts as unexamined.
-6. A cenotaph whose every input is examined and rune free destroys nothing and
-   may proceed.
+2. Ask the rune index what each input being spent carries, as exact balances.
+3. Refuse a cenotaph when any input holds a rune balance, or when any input was
+   never examined.
+4. Otherwise find every burn path: an edict or pointer that names an
+   `OP_RETURN` output, or no non-`OP_RETURN` output for the leftover. Without
+   one, nothing burns.
+5. With a burn path, refuse when any input was never examined, and allocate the
+   exact balances. Refuse when anything burns. When the index reported only
+   counts, refuse unless the loss is certain anyway, which it is when the
+   runestone has no edicts.
+6. A mint of a rune the inputs also carry needs the minted amount from the
+   index before the allocation is exact.
 
-Step 5 is the one clients get wrong. An unproven output treated as empty is how
-a balance gets spent as change.
+Not having looked is not the same fact as having found nothing, and an
+unreachable index proves nothing either, so a failed lookup counts as
+unexamined. An unproven output treated as empty is how a balance gets spent as
+change.
 
-Deciphering is pure computation over output scripts, so it costs nothing and
-belongs on every purchase. The index only needs to be asked once the answer is
-already a cenotaph, which keeps a rare safety case off the normal path.
+That is burn safety. It is necessary for signing and never sufficient: a
+builder, a preflight or a swap 
 
 ---
 
-## Not burning the runes a purchase spends - Conformance (heading:Conformance)
+## Not burning the runes a purchase spends - Conformance (heading:Conformance)
 - Source: spec/runes.md
 - URL: /reference/specifications/runes
 
@@ -1256,23 +1326,28 @@ already a cenotaph, which keeps a rare safety case off the normal path.
 against `conformance/rune-burn-vectors.json`, so neither can drift from this
 document or from the other without a test failing.
 
-The vector file carries 25 cases: 8 that must be accepted and 17 that must be
-refused, covering every flaw above, both refusal codes, and the adversarial
-varint encodings.
+The vector file carries 88 cases: 32 that must be accepted and 56 that must be
+refused, covering every flaw above, every burn safety refusal, the ord field
+consumption rules, u128 supply overflow, varint limits and malformed pushes.
+
+`conformance/ord-differential` holds a small Rust program that runs the pinned
+ord 0.29.0 `ordinals` crate on every vector and on 1500 seeded random
+transactions, and records its answers. Both implementations must match those
+answers field by field, deciphered runestone and allocation alike.
 
 ---
 
-## SafeOps v1 - SafeOps v1 (heading:SafeOps v1)
+## SafeOps v2 - SafeOps v2 (heading:SafeOps v2)
 - Source: spec/safeops.md
 - URL: /reference/specifications/safeops
 
-Status: active at protocol 1.2. Artifacts: `ordex.safeops-plan/v1`, `ordex.safeops-signed-result/v1`. Reference verifier: `verifier/safeops.js`. Vectors: `conformance/safeops-vectors.json`.
+Status: active at protocol 1.2. Artifacts: `ordex.safeops-plan/v2`, `ordex.safeops-signed-result/v2`. A v1 plan or result is refused (`SCHEMA_UNSUPPORTED`) and replanned; its digest is never reinterpreted under v2 rules. Reference verifier: `verifier/safeops.js`. Vectors: `conformance/safeops-vectors.json`.
 
 SafeOps turns planning into one executable, protocol aware operations desk: cardinal batch sends, ordinal and rune batch transfers, cardinal consolidations, split and postage preparation, recovery of unused padding, RBF replacement, CPFP children, inspection, and post broadcast monitoring. One plan describes one logical operation. One signature flow covers it.
 
 ---
 
-## SafeOps v1 - Who does what (heading:Who does what)
+## SafeOps v2 - Who does what (heading:Who does what)
 - Source: spec/safeops.md
 - URL: /reference/specifications/safeops
 
@@ -1280,43 +1355,50 @@ The gateway composes plans and verifies signed results. The user signs every inp
 
 ---
 
-## SafeOps v1 - Inventory resolution (heading:Inventory resolution)
+## SafeOps v2 - Inventory resolution (heading:Inventory resolution)
 - Source: spec/safeops.md
 - URL: /reference/specifications/safeops
 
-Before a plan exists, every candidate outpoint is resolved against the authorities into one inventory: Bitcoin Core amount and script, confirmation state, inscription ids and satpoints, rare sat ranges, rune allocations, Counterparty attachments, and any claim the desk does not recognize. The rules:
+Before a plan exists, every candidate outpoint is resolved against the authorities, at one checkpoint, into one inventory: Bitcoin Core amount and script, confirmation state, every inscription with its offset inside the input, every rare sat range with its offset and length, every rune balance with its exact amount, every Counterparty attachment with its numeric asset id and exact quantity, and any claim the desk does not recognize. The rules:
 
 1. An outpoint whose inventory was never examined is refused (`INVENTORY_UNEXAMINED`). It is never assumed cardinal.
-2. An unrecognized claim fails the plan closed (`UNKNOWN_CLAIM_FAILS_CLOSED`). Resolve the claim first.
-3. Cardinal only operations refuse inputs that carry any tracked asset (`ASSET_IN_CARDINAL_OPERATION`).
-4. A rune transfer refuses inputs without a rune allocation (`RUNE_INPUT_MISSING_ALLOCATION`).
-5. Authorities that disagree, stale data, or an indexer behind its accepted checkpoint fail the resolution closed.
+2. An inventory that lists an asset without its exact position or quantity, places it outside the input, or lists the same inscription or range on two inputs is refused (`INVENTORY_INVALID`).
+3. An unrecognized claim fails the plan closed (`UNKNOWN_CLAIM_FAILS_CLOSED`). Resolve the claim first.
+4. Cardinal only operations refuse inputs that carry any tracked asset (`ASSET_IN_CARDINAL_OPERATION`).
+5. A rune transfer refuses inputs without a rune allocation (`RUNE_INPUT_MISSING_ALLOCATION`).
+6. Authorities that disagree, stale data, or an indexer behind its accepted checkpoint fail the resolution closed.
 
 ---
 
-## SafeOps v1 - The plan (heading:The plan)
+## SafeOps v2 - The plan (heading:The plan)
 - Source: spec/safeops.md
 - URL: /reference/specifications/safeops
 
-A plan carries: schema and protocol version, network, operation kind, the chain checkpoint it was built against, an expiry height after that checkpoint, every selected input with its complete resolved inventory, the deterministic output map with recipient, change, and preserve roles, one asset transition per tracked asset naming its exact destination output, the fee with a permitted maximum, the signing policy with required indexes and the sighash type, human readable findings, and the digest.
+A plan carries: schema and protocol version, network, operation kind, the chain checkpoint it was built against, an expiry height after that checkpoint, the transaction version and locktime, every selected input with its outpoint, value, the script it spends, its sequence and its complete resolved inventory, the deterministic output map with recipient, change, preserve, and data roles, one transition per derived asset movement with its exact quantity, the fee with a permitted maximum, the signing policy, human readable findings, and the digest. Together the transaction fields, inputs and outputs fix the unsigned transaction byte for byte.
+
+A selected outpoint appears once (`INPUT_DUPLICATED`). Each input names the script it spends (`INPUT_SCRIPT_INVALID`) and its sequence (`INPUT_SEQUENCE_INVALID`), and the plan names the version and locktime (`TRANSACTION_INVALID`).
 
 The digest is SHA-256 over the sorted-key JSON of everything except the findings and the digest itself. A consumer can recompute it and must.
 
+<!-- OX-P01: v2 derives every asset movement from the protocol that owns it instead
+of one first-sat shortcut, binds the complete unsigned transaction, and proves
+signatures fr
+
 ---
 
-## SafeOps v1 - Asset safety rules (heading:Asset safety rules)
+## SafeOps v2 - Asset safety rules (heading:Asset safety rules)
 - Source: spec/safeops.md
 - URL: /reference/specifications/safeops
 
 1. Value conservation: inputs equal outputs plus the declared fee, exactly, in BigInt. No other total is accepted (`VALUE_NOT_CONSERVED`).
-2. Every tracked asset has exactly one transition to an existing output (`TRACKED_ASSET_UNASSIGNED`, `TRANSITION_OUTPUT_MISSING`).
-3. The transition destination must be the output that receives the input's first sat: the first output whose accumulated value passes the input range start (`TRANSITION_SAT_FLOW_MISMATCH`). This is the same rule that decides inscription delivery everywhere else in Ordex, so no plan can send an asset to the fee region, to unrelated change, or to the wrong recipient.
-4. Outputs respect the 546 sat dust floor (`DUST_OUTPUT`).
-5. Nothing outside the selected inputs can move. A plan names its inputs exactly; a signed result spending anything else is refused.
+2. Every asset moves by the rule of the protocol that owns it, and the plan's transitions must equal the derived movements as a complete multiset: nothing missing (`TRACKED_ASSET_UNASSIGNED`), nothing different (`TRANSITION_MISMATCH`), nothing extra (`TRANSITION_UNEXPECTED`), and never an output that does not exist (`TRANSITION_OUTPUT_MISSING`).
+   - **Inscriptions** sit on one sat: the sum of the values of the inputs before theirs plus their offset. They land in the output whose range holds that sat. An inscription 1,500 sats into a 2,000 sat input, spent into outputs of 1,000 and 900, lands in output 1.
+   - **Rare sat ranges** land whole in one output or the plan is refused (`RARE_SAT_RANGE_SPLIT`).
+   - **Runes** are allocated exactly as ord 0.29.0 does it (see `spec/runes.md`) from the exact input balances, and each output must receive exactly the amount the transitions state (`RUNE_ALLOCATION_MISMATCH`). Any burn, from a cenotaph, an edict or pointer naming an OP_RETURN, or no spendable output, is refused (`CENOTAPH_BURNS_BALANCE`, `ALLOCA
 
 ---
 
-## SafeOps v1 - Partitioning at scale (heading:Partitioning at scale)
+## SafeOps v2 - Partitioning at scale (heading:Partitioning at scale)
 - Source: spec/safeops.md
 - URL: /reference/specifications/safeops
 
@@ -1324,7 +1406,7 @@ One logical operation may carry up to 500 asset transfers or 1,000 cardinal reci
 
 ---
 
-## SafeOps v1 - The execution shield (heading:The execution shield)
+## SafeOps v2 - The execution shield (heading:The execution shield)
 - Source: spec/safeops.md
 - URL: /reference/specifications/safeops
 
@@ -1332,22 +1414,22 @@ Immediately before every signature and again before broadcast, the desk refreshe
 
 ---
 
-## SafeOps v1 - Signed results (heading:Signed results)
+## SafeOps v2 - Signed results (heading:Signed results)
 - Source: spec/safeops.md
 - URL: /reference/specifications/safeops
 
-A signed result carries the plan digest and the normalized transaction: inputs with signature presence and sighash type, outputs with script and value. The verifier refuses when:
+A signed result carries the plan digest and the complete signed transaction as hex (`signedTxHex`). The verifier reads the transaction from those bytes; a caller's statement that an input is signed proves nothing. It refuses when:
 
-1. The plan digest does not match (`PLAN_DIGEST_MISMATCH`).
-2. The inputs or outputs differ from the plan in identity, order, script, or value (`INPUT_SET_CHANGED`, `INPUT_ORDER_CHANGED`, `INPUT_VALUE_CHANGED`, `OUTPUT_SET_CHANGED`, `SCRIPT_CHANGED`, `VALUE_CHANGED`).
-3. The recomputed fee differs from the plan (`FEE_CHANGED`).
-4. A required index is unsigned (`SIGNATURE_MISSING`), an index outside the policy carries a signature (`UNEXPECTED_SIGNATURE`), or a sighash differs from the approved type (`SIGHASH_CHANGED`).
+1. The plan digest does not match (`PLAN_DIGEST_MISMATCH`), or the bytes do not parse (`MALFORMED_SIGNED_RESULT`).
+2. The version or locktime changed (`TRANSACTION_CHANGED`), or the inputs or outputs differ from the plan in identity, order, sequence, script, or value (`INPUT_SET_CHANGED`, `INPUT_ORDER_CHANGED`, `SEQUENCE_CHANGED`, `OUTPUT_SET_CHANGED`, `SCRIPT_CHANGED`, `VALUE_CHANGED`). With all of these equal the fee is the plan's fee.
+3. An input is unsigned (`SIGNATURE_MISSING`), its signature does not verify against the plan's prevout scripts and values under the BIP143 or BIP341 signature hash (`SIGNATURE_INVALID`), or it spends a script the verifier cannot check (`SIGNATURE_UNVERIFIABLE`).
+4. A signature uses another sighash than the plan approved (`SIGHASH_CHANGED`).
 
 Every signed PSBT is reverified after the wallet returns. Verification disagreement between browser, backend, SDK, and reference implementation is a release blocker.
 
 ---
 
-## SafeOps v1 - RBF and CPFP (heading:RBF and CPFP)
+## SafeOps v2 - RBF and CPFP (heading:RBF and CPFP)
 - Source: spec/safeops.md
 - URL: /reference/specifications/safeops
 
@@ -1357,7 +1439,7 @@ CPFP is offered only when the user controls a spendable output whose spending mo
 
 ---
 
-## SafeOps v1 - Monitoring (heading:Monitoring)
+## SafeOps v2 - Monitoring (heading:Monitoring)
 - Source: spec/safeops.md
 - URL: /reference/specifications/safeops
 
@@ -1365,17 +1447,17 @@ After the explicit broadcast, the operation is monitored for mempool admission, 
 
 ---
 
-## Atomic swap links and the OTC desk v1 - Atomic swap links and the OTC desk v1 (heading:Atomic swap links and the OTC desk v1)
+## Atomic swap links and the OTC desk - Atomic swap links and the OTC desk (heading:Atomic swap links and the OTC desk)
 - Source: spec/swaps.md
 - URL: /reference/specifications/swaps
 
-Status: active at protocol 1.2. Artifacts: `ordex.swap-intent/v1`, `ordex.swap-acceptance-plan/v1`. Reference verifier: `verifier/swaps.js`. Vectors: `conformance/swap-vectors.json`.
+Status: active at protocol 1.2. Artifacts: `ordex.swap-intent/v1`, `ordex.swap-acceptance-plan/v2`, `ordex.swap-signed-transaction/v1`. Reference verifier: `verifier/swaps.js`. Vectors: `conformance/swap-vectors.json`.
 
 A swap is a non-custodial, asset-for-asset exchange settled in exactly one Bitcoin transaction: either both sides move exactly as agreed or nothing moves. There is no prefunded output, no escrow, no policy signer, no server signature, and no counterparty risk beyond the usual mempool economics. This is not the 1.1 funded offer system and does not share its runtime.
 
 ---
 
-## Atomic swap links and the OTC desk v1 - The two stage model (heading:The two stage model)
+## Atomic swap links and the OTC desk - The two stage model (heading:The two stage model)
 - Source: spec/swaps.md
 - URL: /reference/specifications/swaps
 
@@ -1386,7 +1468,7 @@ The maker never pre-signs a transaction before the taker's inputs exist. Non-int
 
 ---
 
-## Atomic swap links and the OTC desk v1 - The intent (heading:The intent)
+## Atomic swap links and the OTC desk - The intent (heading:The intent)
 - Source: spec/swaps.md
 - URL: /reference/specifications/swaps
 
@@ -1396,7 +1478,7 @@ Public intents may be indexed and streamed. Private intents are never listed, ne
 
 ---
 
-## Atomic swap links and the OTC desk v1 - Private encrypted links (heading:Private encrypted links)
+## Atomic swap links and the OTC desk - Private encrypted links (heading:Private encrypted links)
 - Source: spec/swaps.md
 - URL: /reference/specifications/swaps
 
@@ -1404,22 +1486,21 @@ A private link is created client side: a random 256-bit key encrypts the intent 
 
 ---
 
-## Atomic swap links and the OTC desk v1 - The acceptance plan (heading:The acceptance plan)
+## Atomic swap links and the OTC desk - The acceptance plan (heading:The acceptance plan)
 - Source: spec/swaps.md
 - URL: /reference/specifications/swaps
 
-The builder revalidates every maker outpoint, resolves the taker's selection, orders inputs for sat-flow safety, and produces one immutable unsigned-transaction digest. The verifier proves:
+The builder revalidates every maker outpoint at a checkpoint, resolves the taker's selection and its receive and change scripts, reads the authorities' inventory of every input, and produces one immutable plan, `ordex.swap-acceptance-plan/v2`, with its digest. The plan fixes the transaction version and locktime, every input's outpoint, party, value, script, sequence and inventory, every output, the asset transitions, and the fee split. A v1 plan is refused (`SCHEMA_UNSUPPORTED`) and built again.
 
-1. Both parties contribute inputs and outputs; a one-sided transaction cannot settle (`ATOMICITY_IMPOSSIBLE`).
+Every asset movement is derived, not declared: inscriptions and rare sat ranges follow their absolute sat position, runes the ord 0.29.0 allocation, and Counterparty attachments the Counterparty Core move rule. The stated transitions must equal the derived movements exactly. The verifier proves:
+
+1. Both parties contribute inputs and receive outputs; a one-sided transaction cannot settle (`ATOMICITY_IMPOSSIBLE`).
 2. Every input commits to every output with SIGHASH_ALL (`UNCLOSED_SIGHASH`). With that closure, a transaction carrying only one party's signatures cannot confirm, so refusing the final signature can stall a swap but can never take the other party's asset.
-3. Every maker-committed outpoint is spent exactly once, by the maker side (`MAKER_OUTPOINT_MISSING`, `MAKER_OUTPOINT_REASSIGNED`, `INPUT_DUPLICATED`), and no uncommitted maker input appears (`UNEXPECTED_MAKER_INPUT`).
-4. Every required criterion is paid to the maker receive script at no less than its minimum (`CONSIDERATION_SHORTFALL`).
-5. Fee conservation holds, the maker and taker contributions sum to it, and the maker share stays inside the intent budget (`FEE_CHANGED`, `FEE_SPLIT_INVALID`, `FEE_BUDGET_EXCEEDED`).
-6. Every given asset and every taker asset is delivered through an explicit transition to the output that rece
+3. The plan was built fr
 
 ---
 
-## Atomic swap links and the OTC desk v1 - Lifecycle (heading:Lifecycle)
+## Atomic swap links and the OTC desk - Lifecycle (heading:Lifecycle)
 - Source: spec/swaps.md
 - URL: /reference/specifications/swaps
 
@@ -1427,7 +1508,7 @@ DRAFT, LIVE, PRIVATE, MATCHING, AWAITING_MAKER_SIGNATURE, AWAITING_TAKER_SIGNATU
 
 ---
 
-## Atomic swap links and the OTC desk v1 - Settlement cohort (heading:Settlement cohort)
+## Atomic swap links and the OTC desk - Settlement cohort (heading:Settlement cohort)
 - Source: spec/swaps.md
 - URL: /reference/specifications/swaps
 
@@ -1435,7 +1516,7 @@ Production settlement ships for BTC to Ordinal, Ordinal to BTC, Ordinal to Ordin
 
 ---
 
-## Atomic swap links and the OTC desk v1 - Adversarial coverage (heading:Adversarial coverage)
+## Atomic swap links and the OTC desk - Adversarial coverage (heading:Adversarial coverage)
 - Source: spec/swaps.md
 - URL: /reference/specifications/swaps
 
@@ -1655,7 +1736,7 @@ POST /api/ordex/offers/{id}/withdraw (withdrawOffer): Remove an offer from disco
 - Source: spec/openapi.json
 - URL: /reference/api/#planOfferAcceptance
 
-POST /api/ordex/offers/{id}/acceptance-plan (planOfferAcceptance): State the exact acceptance arrangement for one live offer. Given the seller outpoint, reads every value from the node and the ord index, lays out padding, buyer asset, every preserve in sat order, the seller payment at the seller input index, and change, and refuses when the Feline is elsewhere, the root no longer holds, or expiry has passed.. Evidence level: Deterministic example. Tag: offers.
+POST /api/ordex/offers/{id}/acceptance-plan (planOfferAcceptance): State the exact acceptance arrangement for one live offer. Given the seller outpoint, reads every value from the node and the ord index and lays out the seller inputs, the funded output last, the asset outputs that absorb exactly the seller sats (the Feline to the buyer, every other seller asset preserved in sat order), the seller payment, and buyer change. Refuses when the Feline is elsewhere, the root or trait set does not prove it, or expiry has been reached. No buyer input is ever planned.. Evidence level: Deterministic example. Tag: offers.
 
 ---
 
@@ -1663,7 +1744,7 @@ POST /api/ordex/offers/{id}/acceptance-plan (planOfferAcceptance): State the exa
 - Source: spec/openapi.json
 - URL: /reference/api/#preflightOfferAcceptance
 
-POST /api/ordex/offers/{id}/preflight (preflightOfferAcceptance): Verify a built acceptance and ask the node. Parses the complete acceptance, checks every rule in spec/offers.md including both policy signatures against the committed terms tree, then asks the node whether it would accept the bytes. The answer carries the exact bytes checked.. Evidence level: Protocol verification. Tag: offers.
+POST /api/ordex/offers/{id}/preflight (preflightOfferAcceptance): Verify a built acceptance and ask the node. Parses the complete acceptance, checks every rule in spec/offers.md including both policy signatures under the exact acceptance leaf and control block and a closing seller signature on every seller input, then asks the node whether it would accept the bytes. The answer carries the exact bytes checked.. Evidence level: Protocol verification. Tag: offers.
 
 ---
 
@@ -1895,7 +1976,7 @@ DELETE /api/ordex/webhooks/subscriptions/{subscriptionId} (deleteWebhookSubscrip
 - Source: spec/openapi.json
 - URL: /reference/api/#rotateWebhookSecret
 
-POST /api/ordex/webhooks/subscriptions/{subscriptionId}/rotate-secret (rotateWebhookSecret): Rotate the signing secret. The old secret keeps verifying during a bounded overlap window so rotation never drops a delivery.. Evidence level: Deterministic example. Tag: webhooks.
+POST /api/ordex/webhooks/subscriptions/{subscriptionId}/rotate-secret (rotateWebhookSecret): Rotate the signing secret. Returns the next signing secret exactly once. The previous secret keeps verifying during a bounded overlap: each delivery carries one v1 per unexpired secret, so rotation never drops a delivery.. Evidence level: Deterministic example. Tag: webhooks.
 
 ---
 
@@ -2075,11 +2156,35 @@ GET /api/ordex/operations/{operationId} (getOperation): The receipt a mutation c
 
 ---
 
+## Refusal: ACCEPTANCE_DIGEST_MISMATCH (refusal:ACCEPTANCE_DIGEST_MISMATCH)
+- Source: verifier/swaps.js
+- URL: /reference/refusal-codes/#ACCEPTANCE_DIGEST_MISMATCH
+
+The signed settlement was not produced from this acceptance plan. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with ACCEPTANCE_DIGEST_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: ACCEPTANCE_LEAF_MISMATCH (refusal:ACCEPTANCE_LEAF_MISMATCH)
+- Source: verifier/offers.js
+- URL: /reference/refusal-codes/#ACCEPTANCE_LEAF_MISMATCH
+
+The revealed leaf is not the exact acceptance leaf for these terms and policy keys. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with ACCEPTANCE_LEAF_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
 ## Refusal: ACCOUNT_INVALID (refusal:ACCOUNT_INVALID)
 - Source: verifier/offline-signing.js
 - URL: /reference/refusal-codes/#ACCOUNT_INVALID
 
 The account may carry only an output descriptor string. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with ACCOUNT_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: ADAPTER_UNSUPPORTED (refusal:ADAPTER_UNSUPPORTED)
+- Source: verifier/swaps.js
+- URL: /reference/refusal-codes/#ADAPTER_UNSUPPORTED
+
+The intent relies on ${adapter} adapter ${pinned ? pinned.version : 'none'}, which this verifier does not run. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with ADAPTER_UNSUPPORTED. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
@@ -2107,6 +2212,14 @@ The event must name an aggregate type, id, and version. Category: structural. Re
 
 ---
 
+## Refusal: ALLOCATION_BURNS_BALANCE (refusal:ALLOCATION_BURNS_BALANCE)
+- Source: verifier/runes.js
+- URL: /reference/refusal-codes/#ALLOCATION_BURNS_BALANCE
+
+This transaction allocates rune balances to an OP_RETURN output or leaves them with no output to receive them. Confirming it would destroy them. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with ALLOCATION_BURNS_BALANCE. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
 ## Refusal: ANCHOR_INVALID (refusal:ANCHOR_INVALID)
 - Source: verifier/collection-manifest.js
 - URL: /reference/refusal-codes/#ANCHOR_INVALID
@@ -2127,7 +2240,7 @@ Every artifact digest must be 64 lowercase hex characters. Category: structural.
 - Source: verifier/offline-signing.js
 - URL: /reference/refusal-codes/#ASSET_EXPECTATION_INVALID
 
-Output ${i} carries a malformed asset expectation. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with ASSET_EXPECTATION_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+Output ${i} carries an asset expectation without a type, an id and an exact quantity. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with ASSET_EXPECTATION_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
@@ -2151,15 +2264,39 @@ The record must describe the attached asset. Category: structural. Remediation: 
 - Source: verifier/safeops.js
 - URL: /reference/refusal-codes/#ASSET_IN_CARDINAL_OPERATION
 
-Input ${i} carries ${assets[0].assetType} ${assets[0].assetId}; this operation moves cardinal value only. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with ASSET_IN_CARDINAL_OPERATION. Verify outpoints, scriptPubKeys, and value conservation.
+Input ${i} carries ${read.assets[0].assetType} ${read.assets[0].assetId}; this operation moves cardinal value only. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with ASSET_IN_CARDINAL_OPERATION. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
-## Refusal: ASSET_TRANSITION_DUPLICATED (refusal:ASSET_TRANSITION_DUPLICATED)
-- Source: verifier/safeops.js
-- URL: /reference/refusal-codes/#ASSET_TRANSITION_DUPLICATED
+## Refusal: ASSET_MISDIRECTED (refusal:ASSET_MISDIRECTED)
+- Source: verifier/offers.js
+- URL: /reference/refusal-codes/#ASSET_MISDIRECTED
 
-Asset ${key} is assigned to more than one transition. Category: spent. Remediation: Inspect the transaction parameters and ensure compliance with ASSET_TRANSITION_DUPLICATED. Verify outpoints, scriptPubKeys, and value conservation.
+${m.assetType} ${m.assetId} belongs to the ${from} and would land with the ${owners[m.toOutput]}. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with ASSET_MISDIRECTED. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: ASSET_OUTPUT_MIXED (refusal:ASSET_OUTPUT_MIXED)
+- Source: verifier/swaps.js
+- URL: /reference/refusal-codes/#ASSET_OUTPUT_MIXED
+
+Output ${output} carries a traded sat-bound asset together with its owner's own. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with ASSET_OUTPUT_MIXED. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: ASSET_OUTPUTS_UNBALANCED (refusal:ASSET_OUTPUTS_UNBALANCED)
+- Source: verifier/offers.js
+- URL: /reference/refusal-codes/#ASSET_OUTPUTS_UNBALANCED
+
+The outputs ahead of the seller payment must absorb exactly the sats of the seller inputs. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with ASSET_OUTPUTS_UNBALANCED. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: ASSET_TO_FEE (refusal:ASSET_TO_FEE)
+- Source: verifier/asset-flow.js
+- URL: /reference/refusal-codes/#ASSET_TO_FEE
+
+${m.assetType} ${m.assetId} would land in the fee and be lost to the miner. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with ASSET_TO_FEE. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
@@ -2168,6 +2305,14 @@ Asset ${key} is assigned to more than one transition. Category: spent. Remediati
 - URL: /reference/refusal-codes/#ATOMICITY_IMPOSSIBLE
 
 A swap settles both sides in one transaction with inputs and outputs from both parties. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with ATOMICITY_IMPOSSIBLE. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: ATTACHMENT_INVENTORY_MISMATCH (refusal:ATTACHMENT_INVENTORY_MISMATCH)
+- Source: verifier/counterparty-asset.js
+- URL: /reference/refusal-codes/#ATTACHMENT_INVENTORY_MISMATCH
+
+The ledger lists different assets on the recorded outpoint than the record declares. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with ATTACHMENT_INVENTORY_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
@@ -2195,11 +2340,27 @@ The body must be the exact string that was received. Category: structural. Remed
 
 ---
 
+## Refusal: BURN_PATH_WITH_UNPROVEN_INPUT (refusal:BURN_PATH_WITH_UNPROVEN_INPUT)
+- Source: verifier/runes.js
+- URL: /reference/refusal-codes/#BURN_PATH_WITH_UNPROVEN_INPUT
+
+This transaction can send rune balances to an OP_RETURN or to no output at all, and it spends an output the rune index has not examined. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with BURN_PATH_WITH_UNPROVEN_INPUT. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
 ## Refusal: BUYER_ASSET_OUTPUT_MISSING (refusal:BUYER_ASSET_OUTPUT_MISSING)
 - Source: verifier/offers.js
 - URL: /reference/refusal-codes/#BUYER_ASSET_OUTPUT_MISSING
 
-The buyer receive script must appear exactly once ahead of the seller payment. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with BUYER_ASSET_OUTPUT_MISSING. Verify outpoints, scriptPubKeys, and value conservation.
+No output ahead of the seller payment pays the buyer receive script. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with BUYER_ASSET_OUTPUT_MISSING. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: BUYER_INPUT_UNAUTHORIZED (refusal:BUYER_INPUT_UNAUTHORIZED)
+- Source: verifier/offers.js
+- URL: /reference/refusal-codes/#BUYER_INPUT_UNAUTHORIZED
+
+Input ${i} is a buyer input. The buyer signs nothing at acceptance; only the funded output is spent for the buyer. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with BUYER_INPUT_UNAUTHORIZED. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
@@ -2207,7 +2368,7 @@ The buyer receive script must appear exactly once ahead of the seller payment. C
 - Source: verifier/runes.js
 - URL: /reference/refusal-codes/#CENOTAPH_BURNS_BALANCE
 
-Refusal condition triggered for cenotaph burns balance. Category: rune. Remediation: Inspect the transaction parameters and ensure compliance with CENOTAPH_BURNS_BALANCE. Verify outpoints, scriptPubKeys, and value conservation.
+This transaction carries a malformed runestone. Confirming it would destroy every rune balance it spends. Category: rune. Remediation: Inspect the transaction parameters and ensure compliance with CENOTAPH_BURNS_BALANCE. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
@@ -2215,7 +2376,7 @@ Refusal condition triggered for cenotaph burns balance. Category: rune. Remediat
 - Source: verifier/runes.js
 - URL: /reference/refusal-codes/#CENOTAPH_WITH_UNPROVEN_INPUT
 
-Refusal condition triggered for cenotaph with unproven input. Category: rune. Remediation: Inspect the transaction parameters and ensure compliance with CENOTAPH_WITH_UNPROVEN_INPUT. Verify outpoints, scriptPubKeys, and value conservation.
+This transaction carries a malformed runestone and spends an output the rune index has not examined, so it cannot be proven to hold no runes. Category: rune. Remediation: Inspect the transaction parameters and ensure compliance with CENOTAPH_WITH_UNPROVEN_INPUT. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
@@ -2235,11 +2396,35 @@ The manifest must name a collection id of at most 200 characters. Category: stru
 
 ---
 
+## Refusal: COLLECTION_MEMBERSHIP_NOT_PROVEN (refusal:COLLECTION_MEMBERSHIP_NOT_PROVEN)
+- Source: verifier/offers.js
+- URL: /reference/refusal-codes/#COLLECTION_MEMBERSHIP_NOT_PROVEN
+
+The membership proof does not resolve to the collection root the terms commit to. Category: provenance. Remediation: Inspect the transaction parameters and ensure compliance with COLLECTION_MEMBERSHIP_NOT_PROVEN. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
 ## Refusal: CONSIDERATION_SHORTFALL (refusal:CONSIDERATION_SHORTFALL)
 - Source: verifier/swaps.js
 - URL: /reference/refusal-codes/#CONSIDERATION_SHORTFALL
 
-No output pays the maker receive script at least ${criterion.minQuantitySats} for ${criterion.assetType}. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with CONSIDERATION_SHORTFALL. Verify outpoints, scriptPubKeys, and value conservation.
+${m.assetType} ${m.assetId} the maker requires would not reach the maker. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with CONSIDERATION_SHORTFALL. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: CONTEXT_INVALID (refusal:CONTEXT_INVALID)
+- Source: verifier/counterparty-asset.js
+- URL: /reference/refusal-codes/#CONTEXT_INVALID
+
+The spend needs a known network and a block height to apply Counterparty rules. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with CONTEXT_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: CONTROL_BLOCK_MISMATCH (refusal:CONTROL_BLOCK_MISMATCH)
+- Source: verifier/offers.js
+- URL: /reference/refusal-codes/#CONTROL_BLOCK_MISMATCH
+
+The control block does not commit the acceptance leaf to the funded output. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with CONTROL_BLOCK_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
@@ -2248,6 +2433,22 @@ No output pays the maker receive script at least ${criterion.minQuantitySats} fo
 - URL: /reference/refusal-codes/#COTRAVELING_INVALID
 
 coTravelingAssets must be an array. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with COTRAVELING_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: COUNTERPARTY_MESSAGE_UNKNOWN (refusal:COUNTERPARTY_MESSAGE_UNKNOWN)
+- Source: verifier/counterparty-asset.js
+- URL: /reference/refusal-codes/#COUNTERPARTY_MESSAGE_UNKNOWN
+
+counterpartyMessage must be none, attach, detach or other. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with COUNTERPARTY_MESSAGE_UNKNOWN. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: COUNTERPARTY_NOT_MOVED (refusal:COUNTERPARTY_NOT_MOVED)
+- Source: verifier/asset-flow.js
+- URL: /reference/refusal-codes/#COUNTERPARTY_NOT_MOVED
+
+Counterparty would ${outcome.operation === 'STRANDED' ? 'strand' : 'detach'} the attached assets instead of moving them. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with COUNTERPARTY_NOT_MOVED. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
@@ -2275,11 +2476,51 @@ The manifest must carry a bip322 creator signature. Category: structural. Remedi
 
 ---
 
+## Refusal: CURRENT_HEIGHT_INVALID (refusal:CURRENT_HEIGHT_INVALID)
+- Source: verifier/offers.js
+- URL: /reference/refusal-codes/#CURRENT_HEIGHT_INVALID
+
+An acceptance is checked at a known block height. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with CURRENT_HEIGHT_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: DATA_OUTPUT_BURNS_VALUE (refusal:DATA_OUTPUT_BURNS_VALUE)
+- Source: verifier/safeops.js
+- URL: /reference/refusal-codes/#DATA_OUTPUT_BURNS_VALUE
+
+Output ${i} would burn ${output.valueSats} sats in an OP_RETURN. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with DATA_OUTPUT_BURNS_VALUE. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: DATA_OUTPUT_NONSTANDARD (refusal:DATA_OUTPUT_NONSTANDARD)
+- Source: verifier/safeops.js
+- URL: /reference/refusal-codes/#DATA_OUTPUT_NONSTANDARD
+
+The runestone exceeds the ${MAX_OP_RETURN_RELAY_BYTES} byte relay limit. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with DATA_OUTPUT_NONSTANDARD. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: DATA_OUTPUT_NOT_PERMITTED (refusal:DATA_OUTPUT_NOT_PERMITTED)
+- Source: verifier/safeops.js
+- URL: /reference/refusal-codes/#DATA_OUTPUT_NOT_PERMITTED
+
+The only data output a plan may carry is one readable runestone for the runes it moves. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with DATA_OUTPUT_NOT_PERMITTED. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: DATA_OUTPUT_ROLE_MISMATCH (refusal:DATA_OUTPUT_ROLE_MISMATCH)
+- Source: verifier/safeops.js
+- URL: /reference/refusal-codes/#DATA_OUTPUT_ROLE_MISMATCH
+
+Output ${i}: an OP_RETURN output is a data output and a data output is an OP_RETURN. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with DATA_OUTPUT_ROLE_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
 ## Refusal: DESTINATION_MISMATCH (refusal:DESTINATION_MISMATCH)
 - Source: verifier/counterparty-asset.js
 - URL: /reference/refusal-codes/#DESTINATION_MISMATCH
 
-The sat range lands on output ${carriedToIndex}, not the planned output ${expectedOutputIndex}. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with DESTINATION_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation.
+Counterparty credits output ${outcome.destinationIndex}, not the planned output ${expectedOutputIndex}. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with DESTINATION_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
@@ -2288,6 +2529,22 @@ The sat range lands on output ${carriedToIndex}, not the planned output ${expect
 - URL: /reference/refusal-codes/#DESTINATION_MISSING
 
 The plan names an output that does not exist. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with DESTINATION_MISSING. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: DESTINATION_UNSPENDABLE (refusal:DESTINATION_UNSPENDABLE)
+- Source: verifier/counterparty-asset.js
+- URL: /reference/refusal-codes/#DESTINATION_UNSPENDABLE
+
+Counterparty would credit an output whose script begins OP_RETURN, which nobody can spend. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with DESTINATION_UNSPENDABLE. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: DETACH_NOT_A_MOVE (refusal:DETACH_NOT_A_MOVE)
+- Source: verifier/counterparty-asset.js
+- URL: /reference/refusal-codes/#DETACH_NOT_A_MOVE
+
+A detach message sends the assets to an address, not to an output. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with DETACH_NOT_A_MOVE. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
@@ -2308,10 +2565,18 @@ The manifest must name a display name of at most 200 characters. Category: struc
 ---
 
 ## Refusal: DUST_OUTPUT (refusal:DUST_OUTPUT)
-- Source: verifier/offline-signing.js
+- Source: verifier/offers.js
 - URL: /reference/refusal-codes/#DUST_OUTPUT
 
-Output ${i} is below the 546 sat dust floor. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with DUST_OUTPUT. Verify outpoints, scriptPubKeys, and value conservation.
+Output ${j} is below the ${dust} sat dust threshold for its script. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with DUST_OUTPUT. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: ELIGIBILITY_PROOF_MALFORMED (refusal:ELIGIBILITY_PROOF_MALFORMED)
+- Source: verifier/offers.js
+- URL: /reference/refusal-codes/#ELIGIBILITY_PROOF_MALFORMED
+
+The acceptance must carry the membership proof of the delivered Feline. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with ELIGIBILITY_PROOF_MALFORMED. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
@@ -2331,6 +2596,14 @@ The event type must look like ordex.<family>.<name>. Category: structural. Remed
 
 ---
 
+## Refusal: EVENTS_MALFORMED (refusal:EVENTS_MALFORMED)
+- Source: verifier/counterparty-asset.js
+- URL: /reference/refusal-codes/#EVENTS_MALFORMED
+
+The expectation must name a txid and a list of events. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with EVENTS_MALFORMED. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
 ## Refusal: EXPIRY_INVALID (refusal:EXPIRY_INVALID)
 - Source: verifier/safeops.js
 - URL: /reference/refusal-codes/#EXPIRY_INVALID
@@ -2343,7 +2616,7 @@ The expiry height must be a block after the checkpoint height. Category: structu
 - Source: verifier/swaps.js
 - URL: /reference/refusal-codes/#FEE_BUDGET_EXCEEDED
 
-The maker contribution exceeds the budget the intent approved. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with FEE_BUDGET_EXCEEDED. Verify outpoints, scriptPubKeys, and value conservation.
+The maker would contribute ${makerFeeActual} sats, above the budget the intent approved. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with FEE_BUDGET_EXCEEDED. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
@@ -2356,10 +2629,10 @@ maxMakerFeeSats must be an exact non-negative decimal string. Category: structur
 ---
 
 ## Refusal: FEE_CHANGED (refusal:FEE_CHANGED)
-- Source: verifier/safeops.js
+- Source: verifier/swaps.js
 - URL: /reference/refusal-codes/#FEE_CHANGED
 
-The signed transaction fee no longer matches the planned fee. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with FEE_CHANGED. Verify outpoints, scriptPubKeys, and value conservation.
+The declared fee does not match the transaction. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with FEE_CHANGED. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
@@ -2391,15 +2664,23 @@ The fee exceeds the maximum the terms committed to. Category: structural. Remedi
 - Source: verifier/swaps.js
 - URL: /reference/refusal-codes/#FEE_SPLIT_INVALID
 
-The maker and taker contributions must equal the declared fee. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with FEE_SPLIT_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+From the value flow the maker contributes ${makerFeeActual} and the taker ${takerFeeActual}, not the ${feeSpec.makerFeeSats} and ${feeSpec.takerFeeSats} declared. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with FEE_SPLIT_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
-## Refusal: FELINE_OUTPOINT_DUPLICATED (refusal:FELINE_OUTPOINT_DUPLICATED)
+## Refusal: FELINE_NOT_DELIVERED (refusal:FELINE_NOT_DELIVERED)
 - Source: verifier/offers.js
-- URL: /reference/refusal-codes/#FELINE_OUTPOINT_DUPLICATED
+- URL: /reference/refusal-codes/#FELINE_NOT_DELIVERED
 
-The Feline outpoint appears at more than one index. Category: spent. Remediation: Inspect the transaction parameters and ensure compliance with FELINE_OUTPOINT_DUPLICATED. Verify outpoints, scriptPubKeys, and value conservation.
+The Feline would land in output ${m.toOutput}, not the buyer asset output ${buyerAssetIndex}. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with FELINE_NOT_DELIVERED. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: FELINE_NOT_HELD (refusal:FELINE_NOT_HELD)
+- Source: verifier/offers.js
+- URL: /reference/refusal-codes/#FELINE_NOT_HELD
+
+The authorities do not report the Feline on the outpoint the acceptance names. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with FELINE_NOT_HELD. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
@@ -2407,7 +2688,39 @@ The Feline outpoint appears at more than one index. Category: spent. Remediation
 - Source: verifier/offers.js
 - URL: /reference/refusal-codes/#FELINE_OUTPOINT_MISSING
 
-No input spends the seller Feline output. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with FELINE_OUTPOINT_MISSING. Verify outpoints, scriptPubKeys, and value conservation.
+No seller input spends the outpoint holding the Feline. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with FELINE_OUTPOINT_MISSING. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: FOREIGN_SIGNATURE_CHANGED (refusal:FOREIGN_SIGNATURE_CHANGED)
+- Source: verifier/offline-signing.js
+- URL: /reference/refusal-codes/#FOREIGN_SIGNATURE_CHANGED
+
+Input ${i} no longer carries the other party's signature exactly as it was presented. Category: signature. Remediation: Inspect the transaction parameters and ensure compliance with FOREIGN_SIGNATURE_CHANGED. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: FOREIGN_SIGNATURE_INVALID (refusal:FOREIGN_SIGNATURE_INVALID)
+- Source: verifier/offline-signing.js
+- URL: /reference/refusal-codes/#FOREIGN_SIGNATURE_INVALID
+
+The other party's signature on input ${i} does not verify against this transaction. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with FOREIGN_SIGNATURE_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: GIVE_NOT_HELD (refusal:GIVE_NOT_HELD)
+- Source: verifier/swaps.js
+- URL: /reference/refusal-codes/#GIVE_NOT_HELD
+
+The committed outpoint ${key} does not carry the ${give.assetType} the intent gives. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with GIVE_NOT_HELD. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: GIVE_QUANTITY_MISMATCH (refusal:GIVE_QUANTITY_MISMATCH)
+- Source: verifier/swaps.js
+- URL: /reference/refusal-codes/#GIVE_QUANTITY_MISMATCH
+
+Counterparty moves all ${m.quantity} of ${m.assetId}, not the ${gives.get(key).quantitySats} the intent gives. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with GIVE_QUANTITY_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
@@ -2443,16 +2756,32 @@ The member identity type is not one this registry names. Category: structural. R
 
 ---
 
+## Refusal: INPUT_ATTACHMENTS_UNKNOWN (refusal:INPUT_ATTACHMENTS_UNKNOWN)
+- Source: verifier/counterparty-asset.js
+- URL: /reference/refusal-codes/#INPUT_ATTACHMENTS_UNKNOWN
+
+Input ${i} does not carry the Counterparty attachments read for it, so what it moves is unknown. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with INPUT_ATTACHMENTS_UNKNOWN. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
 ## Refusal: INPUT_DESCRIPTION_INVALID (refusal:INPUT_DESCRIPTION_INVALID)
 - Source: verifier/offline-signing.js
 - URL: /reference/refusal-codes/#INPUT_DESCRIPTION_INVALID
 
-Input ${i} needs an outpoint, an exact value and script, whether the user controls it, and why it is spent. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with INPUT_DESCRIPTION_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+Input ${i} needs an outpoint, a sequence, an exact value and script, whether the user controls it, and why it is spent. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with INPUT_DESCRIPTION_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: INPUT_DESCRIPTION_MISMATCH (refusal:INPUT_DESCRIPTION_MISMATCH)
+- Source: verifier/offers.js
+- URL: /reference/refusal-codes/#INPUT_DESCRIPTION_MISMATCH
+
+Every transaction input needs exactly one description, in order. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with INPUT_DESCRIPTION_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
 ## Refusal: INPUT_DUPLICATED (refusal:INPUT_DUPLICATED)
-- Source: verifier/swaps.js
+- Source: verifier/offers.js
 - URL: /reference/refusal-codes/#INPUT_DUPLICATED
 
 Input ${key} appears more than once. Category: spent. Remediation: Inspect the transaction parameters and ensure compliance with INPUT_DUPLICATED. Verify outpoints, scriptPubKeys, and value conservation.
@@ -2476,10 +2805,10 @@ Input ${i} does not carry a lowercase txid and vout. Category: structural. Remed
 ---
 
 ## Refusal: INPUT_PARTY_INVALID (refusal:INPUT_PARTY_INVALID)
-- Source: verifier/swaps.js
+- Source: verifier/offers.js
 - URL: /reference/refusal-codes/#INPUT_PARTY_INVALID
 
-Input ${i} must name the maker or the taker. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with INPUT_PARTY_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+Input ${i} must be a seller input or the funded offer output. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with INPUT_PARTY_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
@@ -2491,6 +2820,22 @@ Input ${i} was reordered or substituted. Category: structural. Remediation: Insp
 
 ---
 
+## Refusal: INPUT_SCRIPT_INVALID (refusal:INPUT_SCRIPT_INVALID)
+- Source: verifier/offers.js
+- URL: /reference/refusal-codes/#INPUT_SCRIPT_INVALID
+
+Input ${i} does not carry the script of the output it spends. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with INPUT_SCRIPT_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: INPUT_SEQUENCE_INVALID (refusal:INPUT_SEQUENCE_INVALID)
+- Source: verifier/safeops.js
+- URL: /reference/refusal-codes/#INPUT_SEQUENCE_INVALID
+
+Input ${i} does not fix its sequence number. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with INPUT_SEQUENCE_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
 ## Refusal: INPUT_SET_CHANGED (refusal:INPUT_SET_CHANGED)
 - Source: verifier/offline-signing.js
 - URL: /reference/refusal-codes/#INPUT_SET_CHANGED
@@ -2499,16 +2844,8 @@ The signed transaction spends a different set of inputs than the manifest presen
 
 ---
 
-## Refusal: INPUT_VALUE_CHANGED (refusal:INPUT_VALUE_CHANGED)
-- Source: verifier/safeops.js
-- URL: /reference/refusal-codes/#INPUT_VALUE_CHANGED
-
-Input ${i} no longer carries its planned value. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with INPUT_VALUE_CHANGED. Verify outpoints, scriptPubKeys, and value conservation.
-
----
-
 ## Refusal: INPUT_VALUE_INVALID (refusal:INPUT_VALUE_INVALID)
-- Source: verifier/safeops.js
+- Source: verifier/offers.js
 - URL: /reference/refusal-codes/#INPUT_VALUE_INVALID
 
 Input ${i} does not carry an exact decimal value. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with INPUT_VALUE_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
@@ -2516,10 +2853,10 @@ Input ${i} does not carry an exact decimal value. Category: structural. Remediat
 ---
 
 ## Refusal: INPUT_VALUE_UNKNOWN (refusal:INPUT_VALUE_UNKNOWN)
-- Source: verifier/counterparty-asset.js
+- Source: verifier/purchase.js
 - URL: /reference/refusal-codes/#INPUT_VALUE_UNKNOWN
 
-Input ${i} has no readable value, so the sat range cannot be traced. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with INPUT_VALUE_UNKNOWN. Verify outpoints, scriptPubKeys, and value conservation.
+The value of input ${i} could not be read, so the sat flow invariant cannot be evaluated. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with INPUT_VALUE_UNKNOWN. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
@@ -2539,11 +2876,75 @@ The acceptance plan was not built from this intent. Category: structural. Remedi
 
 ---
 
+## Refusal: INTENT_EXPIRED (refusal:INTENT_EXPIRED)
+- Source: verifier/swaps.js
+- URL: /reference/refusal-codes/#INTENT_EXPIRED
+
+The intent expires before this plan could confirm. Category: stale. Remediation: Inspect the transaction parameters and ensure compliance with INTENT_EXPIRED. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: INVENTORY_INVALID (refusal:INVENTORY_INVALID)
+- Source: verifier/asset-flow.js
+- URL: /reference/refusal-codes/#INVENTORY_INVALID
+
+Input ${index} ${what}. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with INVENTORY_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
 ## Refusal: INVENTORY_UNEXAMINED (refusal:INVENTORY_UNEXAMINED)
-- Source: verifier/safeops.js
+- Source: verifier/asset-flow.js
 - URL: /reference/refusal-codes/#INVENTORY_UNEXAMINED
 
-Input ${i} was never examined against the protocol authorities. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with INVENTORY_UNEXAMINED. Verify outpoints, scriptPubKeys, and value conservation.
+Input ${index} was never examined against the protocol authorities. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with INVENTORY_UNEXAMINED. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: LEDGER_EVENT_INVALID (refusal:LEDGER_EVENT_INVALID)
+- Source: verifier/counterparty-asset.js
+- URL: /reference/refusal-codes/#LEDGER_EVENT_INVALID
+
+The ledger recorded a ${e.event} event that is not valid. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with LEDGER_EVENT_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: LEDGER_EVENT_MISSING (refusal:LEDGER_EVENT_MISSING)
+- Source: verifier/counterparty-asset.js
+- URL: /reference/refusal-codes/#LEDGER_EVENT_MISSING
+
+The ledger holds no ${slot.split('|')[0]} event for ${slot}. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with LEDGER_EVENT_MISSING. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: LEDGER_EVENT_UNEXPECTED (refusal:LEDGER_EVENT_UNEXPECTED)
+- Source: verifier/counterparty-asset.js
+- URL: /reference/refusal-codes/#LEDGER_EVENT_UNEXPECTED
+
+The ledger moved ${e.quantity} ${e.asset} from ${e.source} to ${e.destination}, which the plan did not expect. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with LEDGER_EVENT_UNEXPECTED. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: LOCKTIME_INVALID (refusal:LOCKTIME_INVALID)
+- Source: verifier/offers.js
+- URL: /reference/refusal-codes/#LOCKTIME_INVALID
+
+The acceptance locktime must be a block height no later than the current one, so it can confirm before expiry. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with LOCKTIME_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: LOCKTIME_UNDETERMINED (refusal:LOCKTIME_UNDETERMINED)
+- Source: verifier/offline-signing.js
+- URL: /reference/refusal-codes/#LOCKTIME_UNDETERMINED
+
+The PSBT inputs require both a time and a height locktime, so no transaction can be signed. Category: stale. Remediation: Inspect the transaction parameters and ensure compliance with LOCKTIME_UNDETERMINED. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: MAKER_ASSET_NOT_DELIVERED (refusal:MAKER_ASSET_NOT_DELIVERED)
+- Source: verifier/swaps.js
+- URL: /reference/refusal-codes/#MAKER_ASSET_NOT_DELIVERED
+
+${m.assetType} ${m.assetId} would not reach the taker receive script. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with MAKER_ASSET_NOT_DELIVERED. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
@@ -2575,7 +2976,7 @@ The intent must carry a bip322 maker identity proof with an address. Category: s
 - Source: verifier/offers.js
 - URL: /reference/refusal-codes/#MALFORMED_ACCEPTANCE
 
-Expected inputs, outputs, and a policy signature count. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with MALFORMED_ACCEPTANCE. Verify outpoints, scriptPubKeys, and value conservation.
+Expected an acceptance object. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with MALFORMED_ACCEPTANCE. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
@@ -2607,7 +3008,7 @@ Expected a manifest object. Category: structural. Remediation: Inspect the trans
 - Source: verifier/offers.js
 - URL: /reference/refusal-codes/#MALFORMED_OFFER
 
-Expected both outpoints and the terms hash. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with MALFORMED_OFFER. Verify outpoints, scriptPubKeys, and value conservation.
+Expected the offer terms, the two policy keys and the funded output. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with MALFORMED_OFFER. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
@@ -2616,6 +3017,14 @@ Expected both outpoints and the terms hash. Category: structural. Remediation: I
 - URL: /reference/refusal-codes/#MALFORMED_ORDER
 
 Expected an offered outpoint with txid and vout. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with MALFORMED_ORDER. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: MALFORMED_OUTPUT_SCRIPT (refusal:MALFORMED_OUTPUT_SCRIPT)
+- Source: verifier/runes.js
+- URL: /reference/refusal-codes/#MALFORMED_OUTPUT_SCRIPT
+
+Refusal condition triggered for malformed output script. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with MALFORMED_OUTPUT_SCRIPT. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
@@ -2639,7 +3048,7 @@ Expected an attachment record object. Category: structural. Remediation: Inspect
 - Source: verifier/offers.js
 - URL: /reference/refusal-codes/#MALFORMED_RECOVERY
 
-Expected inputs and outputs arrays. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with MALFORMED_RECOVERY. Verify outpoints, scriptPubKeys, and value conservation.
+Expected a recovery object. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with MALFORMED_RECOVERY. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
@@ -2648,6 +3057,22 @@ Expected inputs and outputs arrays. Category: structural. Remediation: Inspect t
 - URL: /reference/refusal-codes/#MALFORMED_REVOCATION
 
 Expected a revocation object. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with MALFORMED_REVOCATION. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: MALFORMED_RUNE_BALANCE (refusal:MALFORMED_RUNE_BALANCE)
+- Source: verifier/runes.js
+- URL: /reference/refusal-codes/#MALFORMED_RUNE_BALANCE
+
+An input reports a rune count that contradicts the balances it lists. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with MALFORMED_RUNE_BALANCE. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: MALFORMED_RUNE_EXPECTATION (refusal:MALFORMED_RUNE_EXPECTATION)
+- Source: verifier/runes.js
+- URL: /reference/refusal-codes/#MALFORMED_RUNE_EXPECTATION
+
+The expected allocation must be an array. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with MALFORMED_RUNE_EXPECTATION. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
@@ -2740,10 +3165,10 @@ The membership root does not match the member list. Category: provenance. Remedi
 ---
 
 ## Refusal: NETWORK_MISMATCH (refusal:NETWORK_MISMATCH)
-- Source: verifier/swaps.js
+- Source: verifier/offers.js
 - URL: /reference/refusal-codes/#NETWORK_MISMATCH
 
-The acceptance plan was built for a different network. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with NETWORK_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation.
+The acceptance was built for a different network than the terms. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with NETWORK_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
@@ -2752,6 +3177,22 @@ The acceptance plan was built for a different network. Category: structural. Rem
 - URL: /reference/refusal-codes/#NETWORK_UNKNOWN
 
 The network is not one this protocol names. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with NETWORK_UNKNOWN. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: NO_DESTINATION_DETACHES (refusal:NO_DESTINATION_DETACHES)
+- Source: verifier/counterparty-asset.js
+- URL: /reference/refusal-codes/#NO_DESTINATION_DETACHES
+
+No output can receive the attachment, so spending detaches it to its owner. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with NO_DESTINATION_DETACHES. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: NO_DESTINATION_STRANDS (refusal:NO_DESTINATION_STRANDS)
+- Source: verifier/counterparty-asset.js
+- URL: /reference/refusal-codes/#NO_DESTINATION_STRANDS
+
+No output can receive the attachment and detach on spend is not active yet. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with NO_DESTINATION_STRANDS. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
@@ -2775,15 +3216,23 @@ observedAt must be an ISO-8601 timestamp ending in Z. Category: structural. Reme
 - Source: verifier/offers.js
 - URL: /reference/refusal-codes/#OFFER_EXPIRED
 
-The expiry height has passed; recovery is the only remaining path. Category: stale. Remediation: Inspect the transaction parameters and ensure compliance with OFFER_EXPIRED. Verify outpoints, scriptPubKeys, and value conservation.
+The expiry height has been reached; recovery is the only remaining path. Category: stale. Remediation: Inspect the transaction parameters and ensure compliance with OFFER_EXPIRED. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
-## Refusal: OFFER_OUTPOINT_DUPLICATED (refusal:OFFER_OUTPOINT_DUPLICATED)
+## Refusal: OFFER_INPUT_MISMATCH (refusal:OFFER_INPUT_MISMATCH)
 - Source: verifier/offers.js
-- URL: /reference/refusal-codes/#OFFER_OUTPOINT_DUPLICATED
+- URL: /reference/refusal-codes/#OFFER_INPUT_MISMATCH
 
-The funded output appears at more than one index. Category: spent. Remediation: Inspect the transaction parameters and ensure compliance with OFFER_OUTPOINT_DUPLICATED. Verify outpoints, scriptPubKeys, and value conservation.
+Input ${i} is described as ${d.party === 'OFFER' ? 'the offer but spends another output' : 'a seller input but spends the funded offer output'}. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with OFFER_INPUT_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: OFFER_INPUT_POSITION (refusal:OFFER_INPUT_POSITION)
+- Source: verifier/offers.js
+- URL: /reference/refusal-codes/#OFFER_INPUT_POSITION
+
+The funded offer output must be the last input, so its sats never reach the Feline range. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with OFFER_INPUT_POSITION. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
@@ -2792,6 +3241,14 @@ The funded output appears at more than one index. Category: spent. Remediation: 
 - URL: /reference/refusal-codes/#OFFER_OUTPOINT_MISSING
 
 No input spends the funded offer output. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with OFFER_OUTPOINT_MISSING. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: OFFER_OUTPUT_MISMATCH (refusal:OFFER_OUTPUT_MISMATCH)
+- Source: verifier/offers.js
+- URL: /reference/refusal-codes/#OFFER_OUTPUT_MISMATCH
+
+The funded output does not commit to the tree these terms and policy keys produce. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with OFFER_OUTPUT_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
@@ -2819,11 +3276,19 @@ The operation kind is not one this protocol names. Category: structural. Remedia
 
 ---
 
+## Refusal: OTHER_ATTACHMENTS_COMOVE (refusal:OTHER_ATTACHMENTS_COMOVE)
+- Source: verifier/counterparty-asset.js
+- URL: /reference/refusal-codes/#OTHER_ATTACHMENTS_COMOVE
+
+Input ${others} also carries Counterparty assets, and every attached input moves to the same output. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with OTHER_ATTACHMENTS_COMOVE. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
 ## Refusal: OUTPOINT_DUPLICATED (refusal:OUTPOINT_DUPLICATED)
 - Source: verifier/counterparty-asset.js
 - URL: /reference/refusal-codes/#OUTPOINT_DUPLICATED
 
-The attached outpoint appears at more than one index. Category: spent. Remediation: Inspect the transaction parameters and ensure compliance with OUTPOINT_DUPLICATED. Verify outpoints, scriptPubKeys, and value conservation.
+Input ${i} spends ${key} a second time. Category: spent. Remediation: Inspect the transaction parameters and ensure compliance with OUTPOINT_DUPLICATED. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
@@ -2855,15 +3320,15 @@ Output ${i} needs an exact script and value, a role, and who receives it. Catego
 - Source: verifier/safeops.js
 - URL: /reference/refusal-codes/#OUTPUT_ROLE_UNKNOWN
 
-Output ${i} does not name a recipient, change, or preserve role. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with OUTPUT_ROLE_UNKNOWN. Verify outpoints, scriptPubKeys, and value conservation.
+Output ${i} does not name a recipient, change, preserve, or data role. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with OUTPUT_ROLE_UNKNOWN. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
 ## Refusal: OUTPUT_SCRIPT_INVALID (refusal:OUTPUT_SCRIPT_INVALID)
-- Source: verifier/safeops.js
+- Source: verifier/counterparty-asset.js
 - URL: /reference/refusal-codes/#OUTPUT_SCRIPT_INVALID
 
-Output ${i} does not carry lowercase hex script bytes. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with OUTPUT_SCRIPT_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+Every output needs its script as lowercase hex. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with OUTPUT_SCRIPT_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
@@ -2875,6 +3340,22 @@ The signed transaction carries a different set of outputs than the manifest pres
 
 ---
 
+## Refusal: OUTPUT_UNDESCRIBED (refusal:OUTPUT_UNDESCRIBED)
+- Source: verifier/offers.js
+- URL: /reference/refusal-codes/#OUTPUT_UNDESCRIBED
+
+Output ${j} is a data output; an acceptance carries none. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with OUTPUT_UNDESCRIBED. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: OUTPUT_UNOWNED (refusal:OUTPUT_UNOWNED)
+- Source: verifier/swaps.js
+- URL: /reference/refusal-codes/#OUTPUT_UNOWNED
+
+Output ${i} pays a script that belongs to neither party. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with OUTPUT_UNOWNED. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
 ## Refusal: OUTPUT_VALUE_INVALID (refusal:OUTPUT_VALUE_INVALID)
 - Source: verifier/safeops.js
 - URL: /reference/refusal-codes/#OUTPUT_VALUE_INVALID
@@ -2883,11 +3364,11 @@ Output ${i} does not carry an exact decimal value. Category: structural. Remedia
 
 ---
 
-## Refusal: OUTPUT_VALUE_UNKNOWN (refusal:OUTPUT_VALUE_UNKNOWN)
-- Source: verifier/counterparty-asset.js
-- URL: /reference/refusal-codes/#OUTPUT_VALUE_UNKNOWN
+## Refusal: PARTY_SCRIPTS_OVERLAP (refusal:PARTY_SCRIPTS_OVERLAP)
+- Source: verifier/offers.js
+- URL: /reference/refusal-codes/#PARTY_SCRIPTS_OVERLAP
 
-Output ${i} has no readable value, so the sat range cannot be traced. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with OUTPUT_VALUE_UNKNOWN. Verify outpoints, scriptPubKeys, and value conservation.
+A seller script equals the buyer receive script, so no output could be attributed. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with PARTY_SCRIPTS_OVERLAP. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
@@ -2907,11 +3388,51 @@ The signed result was not produced from this plan. Refresh the plan and sign aga
 
 ---
 
+## Refusal: POLICY_KEYS_INVALID (refusal:POLICY_KEYS_INVALID)
+- Source: verifier/offers.js
+- URL: /reference/refusal-codes/#POLICY_KEYS_INVALID
+
+An offer names two distinct valid policy signer keys, neither of them the buyer recovery key. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with POLICY_KEYS_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: POLICY_SIGNATURE_INVALID (refusal:POLICY_SIGNATURE_INVALID)
+- Source: verifier/offers.js
+- URL: /reference/refusal-codes/#POLICY_SIGNATURE_INVALID
+
+The signature for policy key ${keyHex} does not verify. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with POLICY_SIGNATURE_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
 ## Refusal: POLICY_SIGNATURES_MISSING (refusal:POLICY_SIGNATURES_MISSING)
 - Source: verifier/offers.js
 - URL: /reference/refusal-codes/#POLICY_SIGNATURES_MISSING
 
-A valid acceptance carries exactly one signature from each independent policy signer. Category: signature. Remediation: Inspect the transaction parameters and ensure compliance with POLICY_SIGNATURES_MISSING. Verify outpoints, scriptPubKeys, and value conservation.
+The offer input carries no policy signatures. Category: signature. Remediation: Inspect the transaction parameters and ensure compliance with POLICY_SIGNATURES_MISSING. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: POLICY_WITNESS_INVALID (refusal:POLICY_WITNESS_INVALID)
+- Source: verifier/offers.js
+- URL: /reference/refusal-codes/#POLICY_WITNESS_INVALID
+
+The offer input carries a scriptSig. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with POLICY_WITNESS_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: POSTAGE_BELOW_FLOOR (refusal:POSTAGE_BELOW_FLOOR)
+- Source: verifier/safeops.js
+- URL: /reference/refusal-codes/#POSTAGE_BELOW_FLOOR
+
+Output ${m.toOutput} carries ${m.assetId} with less than the ${SAFEOPS_POSTAGE_FLOOR_SATS} sat postage floor. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with POSTAGE_BELOW_FLOOR. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: PRESERVED_SIGNATURE_INVALID (refusal:PRESERVED_SIGNATURE_INVALID)
+- Source: verifier/offline-signing.js
+- URL: /reference/refusal-codes/#PRESERVED_SIGNATURE_INVALID
+
+Input ${i} records a foreign signature that is not a scriptSig and witness. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with PRESERVED_SIGNATURE_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
@@ -2931,6 +3452,14 @@ A manifest after version 1 must name the manifest it supersedes. Category: struc
 
 ---
 
+## Refusal: PREVOUT_MISMATCH (refusal:PREVOUT_MISMATCH)
+- Source: verifier/offline-signing.js
+- URL: /reference/refusal-codes/#PREVOUT_MISMATCH
+
+Input ${i} names a different spent output than the manifest presented. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with PREVOUT_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
 ## Refusal: PROOF_MALFORMED (refusal:PROOF_MALFORMED)
 - Source: verifier/collection-manifest.js
 - URL: /reference/refusal-codes/#PROOF_MALFORMED
@@ -2943,7 +3472,15 @@ Every proof step needs a sibling digest and a position. Category: structural. Re
 - Source: verifier/offline-signing.js
 - URL: /reference/refusal-codes/#PROTECTED_ASSET_MISPLACED
 
-Asset ${key} was not part of the presented plan at all. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with PROTECTED_ASSET_MISPLACED. Verify outpoints, scriptPubKeys, and value conservation.
+${a.assetType} ${a.assetId} x${a.quantity} landed on output ${a.outputIndex}, which the manifest did not present. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with PROTECTED_ASSET_MISPLACED. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: PROTECTED_ASSET_OBSERVATION_MISSING (refusal:PROTECTED_ASSET_OBSERVATION_MISSING)
+- Source: verifier/offline-signing.js
+- URL: /reference/refusal-codes/#PROTECTED_ASSET_OBSERVATION_MISSING
+
+The manifest protects assets, and the result carries no independent observation of where they landed. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with PROTECTED_ASSET_OBSERVATION_MISSING. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
@@ -2963,6 +3500,14 @@ The manifest protocol version must be 1.2 or a later 1.x. Category: capability. 
 
 ---
 
+## Refusal: PSBT_MALFORMED (refusal:PSBT_MALFORMED)
+- Source: verifier/bitcoin-tx.js
+- URL: /reference/refusal-codes/#PSBT_MALFORMED
+
+Refusal condition triggered for psbt malformed. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with PSBT_MALFORMED. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
 ## Refusal: PURPOSE_MISSING (refusal:PURPOSE_MISSING)
 - Source: verifier/offline-signing.js
 - URL: /reference/refusal-codes/#PURPOSE_MISSING
@@ -2976,6 +3521,22 @@ The manifest must state in one line what the transaction is for. Category: struc
 - URL: /reference/refusal-codes/#QUANTITY_INVALID
 
 quantitySats must be an exact decimal string of atomic units. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with QUANTITY_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: QUANTITY_UNSUPPORTED (refusal:QUANTITY_UNSUPPORTED)
+- Source: verifier/swaps.js
+- URL: /reference/refusal-codes/#QUANTITY_UNSUPPORTED
+
+An inscription is exchanged whole: its quantity is 1. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with QUANTITY_UNSUPPORTED. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: RARE_SAT_RANGE_SPLIT (refusal:RARE_SAT_RANGE_SPLIT)
+- Source: verifier/asset-flow.js
+- URL: /reference/refusal-codes/#RARE_SAT_RANGE_SPLIT
+
+Rare sat range ${m.assetId} would be split across outputs ${m.first} and ${m.last}. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with RARE_SAT_RANGE_SPLIT. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
@@ -2999,7 +3560,15 @@ The maker receive script must be lowercase hex bytes. Category: structural. Reme
 - Source: verifier/offers.js
 - URL: /reference/refusal-codes/#RECOVERY_BEFORE_EXPIRY
 
-The locktime is below the expiry height. Category: stale. Remediation: Inspect the transaction parameters and ensure compliance with RECOVERY_BEFORE_EXPIRY. Verify outpoints, scriptPubKeys, and value conservation.
+The locktime is below the expiry height, so CHECKLOCKTIMEVERIFY fails. Category: stale. Remediation: Inspect the transaction parameters and ensure compliance with RECOVERY_BEFORE_EXPIRY. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: RECOVERY_INPUTS_INVALID (refusal:RECOVERY_INPUTS_INVALID)
+- Source: verifier/offers.js
+- URL: /reference/refusal-codes/#RECOVERY_INPUTS_INVALID
+
+A recovery spends the funded output and nothing else. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with RECOVERY_INPUTS_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
@@ -3007,7 +3576,7 @@ The locktime is below the expiry height. Category: stale. Remediation: Inspect t
 - Source: verifier/offers.js
 - URL: /reference/refusal-codes/#RECOVERY_LEAF_MISMATCH
 
-The recovery leaf must be lowercase hex bytes. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with RECOVERY_LEAF_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation.
+The revealed leaf is not the exact recovery leaf for these terms. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with RECOVERY_LEAF_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
@@ -3016,6 +3585,14 @@ The recovery leaf must be lowercase hex bytes. Category: structural. Remediation
 - URL: /reference/refusal-codes/#RECOVERY_OUTPUT_WRONG
 
 A recovery pays one output, the buyer receive script. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with RECOVERY_OUTPUT_WRONG. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: RECOVERY_WITNESS_INVALID (refusal:RECOVERY_WITNESS_INVALID)
+- Source: verifier/offers.js
+- URL: /reference/refusal-codes/#RECOVERY_WITNESS_INVALID
+
+The recovery input carries a scriptSig. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with RECOVERY_WITNESS_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
@@ -3043,6 +3620,30 @@ A reverted event must name the event id it reverses. Category: structural. Remed
 
 ---
 
+## Refusal: REVOCATION_CONTEXT_MISMATCH (refusal:REVOCATION_CONTEXT_MISMATCH)
+- Source: verifier/collection-manifest.js
+- URL: /reference/refusal-codes/#REVOCATION_CONTEXT_MISMATCH
+
+The revocation names a different network or collection than the manifest it revokes. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with REVOCATION_CONTEXT_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: RUNE_ALLOCATION_MISMATCH (refusal:RUNE_ALLOCATION_MISMATCH)
+- Source: verifier/asset-flow.js
+- URL: /reference/refusal-codes/#RUNE_ALLOCATION_MISMATCH
+
+Output ${output} would receive ${(actual.get(mismatch) ?? 0n).toString()} of rune ${runeId}, not the ${(planned.get(mismatch) ?? 0n).toString()} stated. Category: rune. Remediation: Inspect the transaction parameters and ensure compliance with RUNE_ALLOCATION_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: RUNE_BALANCES_REQUIRED (refusal:RUNE_BALANCES_REQUIRED)
+- Source: verifier/runes.js
+- URL: /reference/refusal-codes/#RUNE_BALANCES_REQUIRED
+
+Whether this transaction burns runes depends on the exact balances each input carries, and the index reported only counts. Category: rune. Remediation: Inspect the transaction parameters and ensure compliance with RUNE_BALANCES_REQUIRED. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
 ## Refusal: RUNE_INPUT_MISSING_ALLOCATION (refusal:RUNE_INPUT_MISSING_ALLOCATION)
 - Source: verifier/safeops.js
 - URL: /reference/refusal-codes/#RUNE_INPUT_MISSING_ALLOCATION
@@ -3051,11 +3652,35 @@ Input ${i} carries no rune allocation. Category: rune. Remediation: Inspect the 
 
 ---
 
+## Refusal: RUNE_INPUT_UNPROVEN (refusal:RUNE_INPUT_UNPROVEN)
+- Source: verifier/runes.js
+- URL: /reference/refusal-codes/#RUNE_INPUT_UNPROVEN
+
+Refusal condition triggered for rune input unproven. Category: rune. Remediation: Inspect the transaction parameters and ensure compliance with RUNE_INPUT_UNPROVEN. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: RUNE_MINT_UNRESOLVED (refusal:RUNE_MINT_UNRESOLVED)
+- Source: verifier/asset-flow.js
+- URL: /reference/refusal-codes/#RUNE_MINT_UNRESOLVED
+
+This runestone mints a rune whose minted amount was not supplied, so the allocation is not exact. Category: rune. Remediation: Inspect the transaction parameters and ensure compliance with RUNE_MINT_UNRESOLVED. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: RUNE_OUTPUTS_INCOMPLETE (refusal:RUNE_OUTPUTS_INCOMPLETE)
+- Source: verifier/runes.js
+- URL: /reference/refusal-codes/#RUNE_OUTPUTS_INCOMPLETE
+
+Rune allocation depends on every output script, and not every output was supplied. Category: rune. Remediation: Inspect the transaction parameters and ensure compliance with RUNE_OUTPUTS_INCOMPLETE. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
 ## Refusal: SAT_FLOW_SHORTFALL (refusal:SAT_FLOW_SHORTFALL)
-- Source: verifier/counterparty-asset.js
+- Source: verifier/purchase.js
 - URL: /reference/refusal-codes/#SAT_FLOW_SHORTFALL
 
-No output absorbs the start of the attached outpoint range; the attachment would be lost. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with SAT_FLOW_SHORTFALL. Verify outpoints, scriptPubKeys, and value conservation.
+The outputs ahead of the seller payment do not absorb the whole range the offered output occupies, Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with SAT_FLOW_SHORTFALL. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
@@ -3064,6 +3689,14 @@ No output absorbs the start of the attached outpoint range; the attachment would
 - URL: /reference/refusal-codes/#SCHEMA_UNSUPPORTED
 
 The manifest schema is not ordex.collection-manifest/v1. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with SCHEMA_UNSUPPORTED. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: SCOPE_MISMATCH (refusal:SCOPE_MISMATCH)
+- Source: verifier/offers.js
+- URL: /reference/refusal-codes/#SCOPE_MISMATCH
+
+The delivered inscription is not the one this ITEM offer names. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with SCOPE_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
@@ -3079,7 +3712,15 @@ Output ${i} no longer pays its presented script. Category: structural. Remediati
 - Source: verifier/events.js
 - URL: /reference/refusal-codes/#SECRET_INVALID
 
-The subscription secret must be a nonempty string. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with SECRET_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+Pass the subscription secret, or 1 to ${WEBHOOK_MAX_SIGNING_SECRETS} distinct secrets during a rotation. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with SECRET_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: SELLER_INVALID (refusal:SELLER_INVALID)
+- Source: verifier/offers.js
+- URL: /reference/refusal-codes/#SELLER_INVALID
+
+The acceptance must name the seller payment script, and a return script only as spendable hex. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with SELLER_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
@@ -3087,7 +3728,7 @@ The subscription secret must be a nonempty string. Category: structural. Remedia
 - Source: verifier/offers.js
 - URL: /reference/refusal-codes/#SELLER_OUTPUT_MISSING
 
-No output exists at index ${n}, the index the seller signed. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with SELLER_OUTPUT_MISSING. Verify outpoints, scriptPubKeys, and value conservation.
+No seller payment follows the asset outputs. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with SELLER_OUTPUT_MISSING. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
@@ -3095,7 +3736,7 @@ No output exists at index ${n}, the index the seller signed. Category: structura
 - Source: verifier/offers.js
 - URL: /reference/refusal-codes/#SELLER_SCRIPT_MISMATCH
 
-The output at the seller index does not pay the signed script. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with SELLER_SCRIPT_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation.
+The output after the asset outputs does not pay the seller payment script. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with SELLER_SCRIPT_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
@@ -3107,6 +3748,22 @@ The seller payment is not the exact offer price. Category: structural. Remediati
 
 ---
 
+## Refusal: SEQUENCE_CHANGED (refusal:SEQUENCE_CHANGED)
+- Source: verifier/offline-signing.js
+- URL: /reference/refusal-codes/#SEQUENCE_CHANGED
+
+Input ${i} changed its sequence number. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with SEQUENCE_CHANGED. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: SEQUENCE_FINAL (refusal:SEQUENCE_FINAL)
+- Source: verifier/offers.js
+- URL: /reference/refusal-codes/#SEQUENCE_FINAL
+
+A final sequence disables the locktime, so CHECKLOCKTIMEVERIFY fails. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with SEQUENCE_FINAL. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
 ## Refusal: SEQUENCE_INVALID (refusal:SEQUENCE_INVALID)
 - Source: verifier/events.js
 - URL: /reference/refusal-codes/#SEQUENCE_INVALID
@@ -3115,19 +3772,19 @@ The sequence must be a positive integer that never decreases. Category: structur
 
 ---
 
-## Refusal: SEQUENCE_NOT_REPLACEABLE (refusal:SEQUENCE_NOT_REPLACEABLE)
-- Source: verifier/offers.js
-- URL: /reference/refusal-codes/#SEQUENCE_NOT_REPLACEABLE
-
-A final sequence disables the locktime the recovery relies on. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with SEQUENCE_NOT_REPLACEABLE. Verify outpoints, scriptPubKeys, and value conservation.
-
----
-
 ## Refusal: SIGHASH_CHANGED (refusal:SIGHASH_CHANGED)
 - Source: verifier/safeops.js
 - URL: /reference/refusal-codes/#SIGHASH_CHANGED
 
 Input ${i} was signed with a different sighash than the plan approved. Category: signature. Remediation: Inspect the transaction parameters and ensure compliance with SIGHASH_CHANGED. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: SIGHASH_NOT_PERMITTED (refusal:SIGHASH_NOT_PERMITTED)
+- Source: verifier/safeops.js
+- URL: /reference/refusal-codes/#SIGHASH_NOT_PERMITTED
+
+SafeOps signs with SIGHASH_ALL or the Taproot default only, so no input or output can change after signing. Category: signature. Remediation: Inspect the transaction parameters and ensure compliance with SIGHASH_NOT_PERMITTED. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
@@ -3156,10 +3813,10 @@ The signature does not match this secret, delivery id, and body. Category: struc
 ---
 
 ## Refusal: SIGNATURE_MISSING (refusal:SIGNATURE_MISSING)
-- Source: verifier/safeops.js
+- Source: verifier/offers.js
 - URL: /reference/refusal-codes/#SIGNATURE_MISSING
 
-Input ${i} is required to sign and is still unsigned. Category: signature. Remediation: Inspect the transaction parameters and ensure compliance with SIGNATURE_MISSING. Verify outpoints, scriptPubKeys, and value conservation.
+Seller input ${i} is unsigned. Category: signature. Remediation: Inspect the transaction parameters and ensure compliance with SIGNATURE_MISSING. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
@@ -3168,6 +3825,14 @@ Input ${i} is required to sign and is still unsigned. Category: signature. Remed
 - URL: /reference/refusal-codes/#SIGNATURE_ON_FOREIGN_INPUT
 
 Input ${i} belongs to another party and must never be signed here. Category: signature. Remediation: Inspect the transaction parameters and ensure compliance with SIGNATURE_ON_FOREIGN_INPUT. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: SIGNATURE_UNVERIFIABLE (refusal:SIGNATURE_UNVERIFIABLE)
+- Source: verifier/offers.js
+- URL: /reference/refusal-codes/#SIGNATURE_UNVERIFIABLE
+
+Seller input ${i} spends a script this verifier cannot check. Category: signature. Remediation: Inspect the transaction parameters and ensure compliance with SIGNATURE_UNVERIFIABLE. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
@@ -3187,6 +3852,14 @@ The plan must carry a signing object. Category: structural. Remediation: Inspect
 
 ---
 
+## Refusal: SIGNING_POLICY_INVALID (refusal:SIGNING_POLICY_INVALID)
+- Source: verifier/offline-signing.js
+- URL: /reference/refusal-codes/#SIGNING_POLICY_INVALID
+
+Input ${i} is signed by the user and must name the one sighash allowed. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with SIGNING_POLICY_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
 ## Refusal: SOURCE_VALUE_INVALID (refusal:SOURCE_VALUE_INVALID)
 - Source: verifier/counterparty-asset.js
 - URL: /reference/refusal-codes/#SOURCE_VALUE_INVALID
@@ -3199,7 +3872,7 @@ sourceValueSats must be an exact decimal string. Category: structural. Remediati
 - Source: verifier/counterparty-asset.js
 - URL: /reference/refusal-codes/#SOURCE_VALUE_MISMATCH
 
-The spent value does not match the record, so the sat range cannot be traced. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with SOURCE_VALUE_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation.
+The spent value does not match the record, so this is not the recorded outpoint state. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with SOURCE_VALUE_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
@@ -3235,6 +3908,22 @@ A taker binding must name an address. Category: structural. Remediation: Inspect
 
 ---
 
+## Refusal: TAKER_BINDING_MISMATCH (refusal:TAKER_BINDING_MISMATCH)
+- Source: verifier/swaps.js
+- URL: /reference/refusal-codes/#TAKER_BINDING_MISMATCH
+
+This intent is bound to one taker, and the plan does not carry that taker identity proof. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with TAKER_BINDING_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: TAKER_INVALID (refusal:TAKER_INVALID)
+- Source: verifier/swaps.js
+- URL: /reference/refusal-codes/#TAKER_INVALID
+
+The plan must name the taker receive script, and a change script only as hex. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with TAKER_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
 ## Refusal: TERMS_AMOUNT_INVALID (refusal:TERMS_AMOUNT_INVALID)
 - Source: verifier/offers.js
 - URL: /reference/refusal-codes/#TERMS_AMOUNT_INVALID
@@ -3255,15 +3944,7 @@ The criteria hash must be 64 lowercase hex characters. Category: structural. Rem
 - Source: verifier/offers.js
 - URL: /reference/refusal-codes/#TERMS_EXPIRY_INVALID
 
-expiryHeight must be a block height a node can carry. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with TERMS_EXPIRY_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
-
----
-
-## Refusal: TERMS_HASH_NOT_COMMITTED (refusal:TERMS_HASH_NOT_COMMITTED)
-- Source: verifier/offers.js
-- URL: /reference/refusal-codes/#TERMS_HASH_NOT_COMMITTED
-
-The revealed acceptance leaf does not commit to this offer terms hash. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with TERMS_HASH_NOT_COMMITTED. Verify outpoints, scriptPubKeys, and value conservation.
+expiryHeight must be a block height below 500000000, the locktime timestamp threshold. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with TERMS_EXPIRY_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
@@ -3295,7 +3976,7 @@ The terms protocol version must be 1.1 or a later 1.x. Category: capability. Rem
 - Source: verifier/offers.js
 - URL: /reference/refusal-codes/#TERMS_RECOVERY_KEY_INVALID
 
-The buyer recovery key must be 64 lowercase hex characters. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with TERMS_RECOVERY_KEY_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+The buyer recovery key must be a valid x-only public key in 64 lowercase hex characters. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with TERMS_RECOVERY_KEY_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
@@ -3327,7 +4008,7 @@ An ITEM offer must name exactly one inscription id. Category: structural. Remedi
 - Source: verifier/offers.js
 - URL: /reference/refusal-codes/#TERMS_SCRIPT_INVALID
 
-The buyer receive script must be lowercase hex bytes. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with TERMS_SCRIPT_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+The buyer receive script must be lowercase hex bytes of a spendable script. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with TERMS_SCRIPT_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
@@ -3347,43 +4028,67 @@ The event must carry a trace id of at most 128 characters. Category: structural.
 
 ---
 
-## Refusal: TRACKED_ASSET_UNASSIGNED (refusal:TRACKED_ASSET_UNASSIGNED)
-- Source: verifier/safeops.js
-- URL: /reference/refusal-codes/#TRACKED_ASSET_UNASSIGNED
+## Refusal: TRAIT_NOT_PROVEN (refusal:TRAIT_NOT_PROVEN)
+- Source: verifier/offers.js
+- URL: /reference/refusal-codes/#TRAIT_NOT_PROVEN
 
-Asset ${key} has no destination in the asset transitions. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with TRACKED_ASSET_UNASSIGNED. Verify outpoints, scriptPubKeys, and value conservation.
+The trait proof does not resolve to the criteria hash, so this Feline is not one the buyer accepted. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with TRAIT_NOT_PROVEN. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: TRANSACTION_CHANGED (refusal:TRANSACTION_CHANGED)
+- Source: verifier/offline-signing.js
+- URL: /reference/refusal-codes/#TRANSACTION_CHANGED
+
+The signed transaction changed its version or locktime. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with TRANSACTION_CHANGED. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: TRANSACTION_INVALID (refusal:TRANSACTION_INVALID)
+- Source: verifier/offers.js
+- URL: /reference/refusal-codes/#TRANSACTION_INVALID
+
+An acceptance is a version 1 or 2 transaction. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with TRANSACTION_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: TRANSITION_INVALID (refusal:TRANSITION_INVALID)
+- Source: verifier/asset-flow.js
+- URL: /reference/refusal-codes/#TRANSITION_INVALID
+
+Expected an assetTransitions array. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with TRANSITION_INVALID. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
 ## Refusal: TRANSITION_OUTPUT_MISSING (refusal:TRANSITION_OUTPUT_MISSING)
-- Source: verifier/safeops.js
+- Source: verifier/asset-flow.js
 - URL: /reference/refusal-codes/#TRANSITION_OUTPUT_MISSING
 
-Asset ${key} names output ${transition.toOutput}, which does not exist. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with TRANSITION_OUTPUT_MISSING. Verify outpoints, scriptPubKeys, and value conservation.
+Asset ${t.assetType}:${t.assetId} names output ${t.toOutput}, which does not exist. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with TRANSITION_OUTPUT_MISSING. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
-## Refusal: TRANSITION_SAT_FLOW_MISMATCH (refusal:TRANSITION_SAT_FLOW_MISMATCH)
-- Source: verifier/safeops.js
-- URL: /reference/refusal-codes/#TRANSITION_SAT_FLOW_MISMATCH
+## Refusal: TRANSITION_UNEXPECTED (refusal:TRANSITION_UNEXPECTED)
+- Source: verifier/asset-flow.js
+- URL: /reference/refusal-codes/#TRANSITION_UNEXPECTED
 
-Asset ${key} declares output ${transition.toOutput}, but the sat range of input ${i} begins in a different output. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with TRANSITION_SAT_FLOW_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation.
+The transitions move runes no input carries. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with TRANSITION_UNEXPECTED. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
-## Refusal: TRANSITION_SOURCE_MISMATCH (refusal:TRANSITION_SOURCE_MISMATCH)
-- Source: verifier/safeops.js
-- URL: /reference/refusal-codes/#TRANSITION_SOURCE_MISMATCH
+## Refusal: TX_MALFORMED (refusal:TX_MALFORMED)
+- Source: verifier/bitcoin-tx.js
+- URL: /reference/refusal-codes/#TX_MALFORMED
 
-Asset ${key} declares input ${transition.fromInput} but rides on input ${i}. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with TRANSITION_SOURCE_MISMATCH. Verify outpoints, scriptPubKeys, and value conservation.
+Refusal condition triggered for tx malformed. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with TX_MALFORMED. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
 ## Refusal: UNCLOSED_SIGHASH (refusal:UNCLOSED_SIGHASH)
-- Source: verifier/swaps.js
+- Source: verifier/offers.js
 - URL: /reference/refusal-codes/#UNCLOSED_SIGHASH
 
-Every input must commit to every output (SIGHASH_ALL), or one party could move its asset without the other receiving theirs. Category: signature. Remediation: Inspect the transaction parameters and ensure compliance with UNCLOSED_SIGHASH. Verify outpoints, scriptPubKeys, and value conservation.
+A policy signature does not commit to every input and output. Category: signature. Remediation: Inspect the transaction parameters and ensure compliance with UNCLOSED_SIGHASH. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
@@ -3395,19 +4100,11 @@ Input ${key} spends an outpoint the intent never committed. Category: structural
 
 ---
 
-## Refusal: UNEXPECTED_SIGNATURE (refusal:UNEXPECTED_SIGNATURE)
-- Source: verifier/safeops.js
-- URL: /reference/refusal-codes/#UNEXPECTED_SIGNATURE
-
-Input ${i} was not part of the signing policy but carries a signature. Category: signature. Remediation: Inspect the transaction parameters and ensure compliance with UNEXPECTED_SIGNATURE. Verify outpoints, scriptPubKeys, and value conservation.
-
----
-
 ## Refusal: UNKNOWN_CLAIM_FAILS_CLOSED (refusal:UNKNOWN_CLAIM_FAILS_CLOSED)
-- Source: verifier/safeops.js
+- Source: verifier/asset-flow.js
 - URL: /reference/refusal-codes/#UNKNOWN_CLAIM_FAILS_CLOSED
 
-Input ${i} carries an unrecognized claim (${asset.assetId}); resolve it before planning. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with UNKNOWN_CLAIM_FAILS_CLOSED. Verify outpoints, scriptPubKeys, and value conservation.
+Input ${index} carries an unrecognized claim (${String(inventory.unknownClaims[0])}); resolve it before planning. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with UNKNOWN_CLAIM_FAILS_CLOSED. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
@@ -3415,7 +4112,15 @@ Input ${i} carries an unrecognized claim (${asset.assetId}); resolve it before p
 - Source: verifier/offline-signing.js
 - URL: /reference/refusal-codes/#UNKNOWN_CRITICAL_FIELDS
 
-The signed result carries fields this protocol does not define: ${signed.unknownCriticalFields.join(', ')}. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with UNKNOWN_CRITICAL_FIELDS. Verify outpoints, scriptPubKeys, and value conservation.
+The signed result carries fields this protocol does not define: ${[...unknown, ...(signed.unknownCriticalFields || [])].join(', ')}. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with UNKNOWN_CRITICAL_FIELDS. Verify outpoints, scriptPubKeys, and value conservation.
+
+---
+
+## Refusal: UTXO_SUPPORT_INACTIVE (refusal:UTXO_SUPPORT_INACTIVE)
+- Source: verifier/counterparty-asset.js
+- URL: /reference/refusal-codes/#UTXO_SUPPORT_INACTIVE
+
+Counterparty UTXO attachments do not exist at this height on this network. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with UTXO_SUPPORT_INACTIVE. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
@@ -3423,15 +4128,15 @@ The signed result carries fields this protocol does not define: ${signed.unknown
 - Source: verifier/offline-signing.js
 - URL: /reference/refusal-codes/#VALUE_CHANGED
 
-Input ${i} no longer carries its presented value. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with VALUE_CHANGED. Verify outpoints, scriptPubKeys, and value conservation.
+Output ${i} no longer carries its presented value. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with VALUE_CHANGED. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
 ## Refusal: VALUE_NOT_CONSERVED (refusal:VALUE_NOT_CONSERVED)
-- Source: verifier/offline-signing.js
+- Source: verifier/offers.js
 - URL: /reference/refusal-codes/#VALUE_NOT_CONSERVED
 
-The inputs do not equal the outputs plus the declared fee. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with VALUE_NOT_CONSERVED. Verify outpoints, scriptPubKeys, and value conservation.
+The outputs exceed the inputs. Category: structural. Remediation: Inspect the transaction parameters and ensure compliance with VALUE_NOT_CONSERVED. Verify outpoints, scriptPubKeys, and value conservation.
 
 ---
 
