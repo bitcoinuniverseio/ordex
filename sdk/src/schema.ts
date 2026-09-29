@@ -837,7 +837,7 @@ export interface paths {
         };
         /**
          * List the caller stored private swap envelopes
-         * @description Returns ciphertext envelopes only. Decryption happens client side with the key from the URL fragment.
+         * @description Private swap envelopes are not enumerable: the gateway currently answers 404 PRIVATE_SWAP_LIST_UNAVAILABLE. A 200 would carry this shape. Read one envelope by its id.
          */
         get: operations["listPrivateSwaps"];
         put?: never;
@@ -2511,25 +2511,39 @@ export interface components {
             lagEvents?: number;
         };
         WebhookSubscription: {
-            subscriptionId: string;
+            /** @description The subscription id. */
+            id: string;
+            /** @description The developer scope the subscription belongs to: an opaque id derived from the developer key, never the key. */
+            accountId?: string;
             /** Format: uri */
             url: string;
             eventTypes: string[];
-            network?: components["schemas"]["Network"];
+            network: components["schemas"]["V12Network"];
             /** @enum {string} */
             status: "PENDING_VERIFICATION" | "ACTIVE" | "PAUSED" | "FAILED";
             /** @description The last four characters only. The full secret is shown once, at creation or rotation; the gateway keeps it only as ciphertext the delivery worker alone can open. */
-            secretHint?: string;
+            secretHint: string;
             /** @description The version of the current signing secret. Rotation increments it. */
             secretVersion?: number;
             /** Format: date-time */
             createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            /** @description Endpoint challenge progress. The challenge value itself never appears. */
+            verification?: {
+                /** @enum {string} */
+                state: "VERIFIED" | "PENDING" | "SENDING" | "SENT" | "FAILED";
+                /** Format: date-time */
+                expiresAt: string | null;
+                attempts: number;
+                lastError: string | null;
+            };
         };
         WebhookSubscriptionCreateRequest: {
             /** Format: uri */
             url: string;
             eventTypes: string[];
-            network?: components["schemas"]["Network"];
+            network?: components["schemas"]["V12Network"];
         };
         WebhookSubscriptionUpdateRequest: {
             /** Format: uri */
@@ -2895,6 +2909,37 @@ export interface components {
         SigningVerifyRequest: {
             manifest: components["schemas"]["ExpectedTransactionManifest"];
             signed: components["schemas"]["SignedResultSubmission"];
+        };
+        /**
+         * @description The networks the v1.2 webhook and signing session routes accept, testnet included. The shared Network schema is unchanged.
+         * @enum {string}
+         */
+        V12Network: "mainnet" | "testnet" | "signet" | "regtest";
+        /** @description Every subscription of the authenticated developer key. Not paged. */
+        WebhookSubscriptionList: {
+            items: components["schemas"]["WebhookSubscription"][];
+        };
+        SigningSessionSummary: {
+            id: string;
+            network: components["schemas"]["V12Network"];
+            /** @enum {string} */
+            state: "AWAITING_EXPORT" | "AWAITING_SIGNATURE" | "SIGNED_VERIFIED" | "REJECTED" | "BROADCAST";
+            manifestDigest: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: date-time */
+            expiresAt: string | null;
+        };
+        /** @description Summaries of the sessions the presented capabilities unlock; the manifest and signed result are read one session at a time. */
+        SigningSessionPage: {
+            rows: components["schemas"]["SigningSessionSummary"][];
+            /** @description Empty when this page is the last one. Pass it as cursor for the next page, which continues from the last row by updatedAt then id, newest first. */
+            nextCursor: string;
+        };
+        PrivateSwapList: {
+            privateSwaps: components["schemas"]["PrivateSwapEnvelope"][];
         };
     };
     responses: {
@@ -4225,7 +4270,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PrivateSwapEnvelope"][];
+                    "application/json": components["schemas"]["PrivateSwapList"];
                 };
             };
             default: components["responses"]["Error"];
@@ -4426,7 +4471,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["WebhookSubscription"][];
+                    "application/json": components["schemas"]["WebhookSubscriptionList"];
                 };
             };
             default: components["responses"]["Error"];
@@ -5012,7 +5057,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SigningSession"][];
+                    "application/json": components["schemas"]["SigningSessionPage"];
                 };
             };
             default: components["responses"]["Error"];

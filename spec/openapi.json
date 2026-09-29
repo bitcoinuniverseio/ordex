@@ -2109,7 +2109,7 @@
       "get": {
         "operationId": "listPrivateSwaps",
         "summary": "List the caller stored private swap envelopes",
-        "description": "Returns ciphertext envelopes only. Decryption happens client side with the key from the URL fragment.",
+        "description": "Private swap envelopes are not enumerable: the gateway currently answers 404 PRIVATE_SWAP_LIST_UNAVAILABLE. A 200 would carry this shape. Read one envelope by its id.",
         "tags": [
           "swaps"
         ],
@@ -2118,10 +2118,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/PrivateSwapEnvelope"
-                  }
+                  "$ref": "#/components/schemas/PrivateSwapList"
                 }
               }
             },
@@ -2483,10 +2480,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/WebhookSubscription"
-                  }
+                  "$ref": "#/components/schemas/WebhookSubscriptionList"
                 }
               }
             },
@@ -3434,10 +3428,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/SigningSession"
-                  }
+                  "$ref": "#/components/schemas/SigningSessionPage"
                 }
               }
             },
@@ -7672,15 +7663,23 @@
       "WebhookSubscription": {
         "type": "object",
         "required": [
-          "subscriptionId",
+          "id",
           "url",
           "eventTypes",
+          "network",
           "status",
-          "createdAt"
+          "secretHint",
+          "createdAt",
+          "updatedAt"
         ],
         "properties": {
-          "subscriptionId": {
-            "type": "string"
+          "id": {
+            "type": "string",
+            "description": "The subscription id."
+          },
+          "accountId": {
+            "type": "string",
+            "description": "The developer scope the subscription belongs to: an opaque id derived from the developer key, never the key."
           },
           "url": {
             "type": "string",
@@ -7693,7 +7692,7 @@
             }
           },
           "network": {
-            "$ref": "#/components/schemas/Network"
+            "$ref": "#/components/schemas/V12Network"
           },
           "status": {
             "type": "string",
@@ -7716,6 +7715,49 @@
           "createdAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "verification": {
+            "type": "object",
+            "required": [
+              "state",
+              "expiresAt",
+              "attempts",
+              "lastError"
+            ],
+            "description": "Endpoint challenge progress. The challenge value itself never appears.",
+            "properties": {
+              "state": {
+                "type": "string",
+                "enum": [
+                  "VERIFIED",
+                  "PENDING",
+                  "SENDING",
+                  "SENT",
+                  "FAILED"
+                ]
+              },
+              "expiresAt": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              },
+              "attempts": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "lastError": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
           }
         }
       },
@@ -7740,7 +7782,7 @@
             }
           },
           "network": {
-            "$ref": "#/components/schemas/Network"
+            "$ref": "#/components/schemas/V12Network"
           }
         }
       },
@@ -9045,6 +9087,114 @@
           },
           "signed": {
             "$ref": "#/components/schemas/SignedResultSubmission"
+          }
+        }
+      },
+      "V12Network": {
+        "type": "string",
+        "enum": [
+          "mainnet",
+          "testnet",
+          "signet",
+          "regtest"
+        ],
+        "description": "The networks the v1.2 webhook and signing session routes accept, testnet included. The shared Network schema is unchanged."
+      },
+      "WebhookSubscriptionList": {
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WebhookSubscription"
+            }
+          }
+        },
+        "description": "Every subscription of the authenticated developer key. Not paged."
+      },
+      "SigningSessionSummary": {
+        "type": "object",
+        "required": [
+          "id",
+          "network",
+          "state",
+          "manifestDigest",
+          "createdAt",
+          "updatedAt",
+          "expiresAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "network": {
+            "$ref": "#/components/schemas/V12Network"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "AWAITING_EXPORT",
+              "AWAITING_SIGNATURE",
+              "SIGNED_VERIFIED",
+              "REJECTED",
+              "BROADCAST"
+            ]
+          },
+          "manifestDigest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "SigningSessionPage": {
+        "type": "object",
+        "required": [
+          "rows",
+          "nextCursor"
+        ],
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SigningSessionSummary"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "description": "Empty when this page is the last one. Pass it as cursor for the next page, which continues from the last row by updatedAt then id, newest first."
+          }
+        },
+        "description": "Summaries of the sessions the presented capabilities unlock; the manifest and signed result are read one session at a time."
+      },
+      "PrivateSwapList": {
+        "type": "object",
+        "required": [
+          "privateSwaps"
+        ],
+        "properties": {
+          "privateSwaps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PrivateSwapEnvelope"
+            }
           }
         }
       }

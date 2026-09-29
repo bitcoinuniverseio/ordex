@@ -220,3 +220,23 @@ test('no write is retried, whatever the retry budget', async () => {
     assert.equal(calls.length, 1, `${op.id} was sent ${calls.length} times`);
   }
 });
+
+test('the list routes answer the paged envelopes the gateway serves', async () => {
+  const schemaOf = (id) => {
+    const op = operations.find((o) => o.id === id);
+    const item = contract.paths[op.path][op.method.toLowerCase()];
+    return resolve(item.responses['200'].content['application/json'].schema);
+  };
+  assert.deepEqual(schemaOf('listWebhookSubscriptions').required, ['items']);
+  assert.deepEqual(schemaOf('listSigningSessions').required, ['rows', 'nextCursor']);
+  assert.deepEqual(schemaOf('listPrivateSwaps').required, ['privateSwaps']);
+  assert.deepEqual(resolve(contract.components.schemas.WebhookSubscription).required.slice(0, 1), ['id']);
+  assert.ok('secretVersion' in contract.components.schemas.WebhookSubscription.properties);
+  assert.deepEqual(contract.components.schemas.V12Network.enum, ['mainnet', 'testnet', 'signet', 'regtest']);
+
+  const page = { rows: [{ id: 's1', network: 'testnet', state: 'AWAITING_SIGNATURE', manifestDigest: 'a'.repeat(64), createdAt: 'x', updatedAt: 'x', expiresAt: null }], nextCursor: '' };
+  const { calls, stub } = stubFetch(() => new Response(JSON.stringify(page), { status: 200, headers: { 'content-type': 'application/json' } }));
+  const client = new OrdexClient({ baseUrl: 'https://gateway.example', fetch: stub });
+  assert.deepEqual(await client.listSigningSessions(['sgr_a'], { network: 'testnet', cursor: 'c1', limit: 25 }), page);
+  assert.equal(calls[0].url.searchParams.get('cursor'), 'c1');
+});

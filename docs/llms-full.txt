@@ -1888,7 +1888,7 @@ POST /api/ordex/swaps/private (storePrivateSwap): Store an encrypted private swa
 - Source: spec/openapi.json
 - URL: /reference/api/#listPrivateSwaps
 
-GET /api/ordex/swaps/private (listPrivateSwaps): List the caller stored private swap envelopes. Returns ciphertext envelopes only. Decryption happens client side with the key from the URL fragment.. Evidence level: Deterministic example. Tag: swaps.
+GET /api/ordex/swaps/private (listPrivateSwaps): List the caller stored private swap envelopes. Private swap envelopes are not enumerable: the gateway currently answers 404 PRIVATE_SWAP_LIST_UNAVAILABLE. A 200 would carry this shape. Read one envelope by its id.. Evidence level: Deterministic example. Tag: swaps.
 
 ---
 
