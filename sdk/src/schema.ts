@@ -2860,6 +2860,38 @@ export interface components {
             /** Format: date-time */
             createdAt: string;
         };
+        SwapIntentWithdrawRequest: {
+            /** @description The maker address the intent names. */
+            makerAddress: string;
+            /** @description BIP-322 signature by that address over the withdrawal challenge of this intent. */
+            signature: string;
+        };
+        PrivateSwapDestroyRequest: {
+            /** @description The delete capability returned once when the envelope was stored. */
+            deleteCapability: string;
+        };
+        WebhookVerifyRequest: {
+            /** @description The challenge the endpoint received. Without it the gateway issues a new challenge. */
+            challenge?: string;
+        };
+        HeritageDetachRequest: {
+            /** @description The outpoint that carries the attached balance, txid:vout. */
+            utxo: string;
+            /** @description The address the detached balance is credited to. */
+            destination: string;
+            /** @description Fee rate for the composed transaction. */
+            feeRateSatsPerVb?: components["schemas"]["AtomicSats"];
+        };
+        SigningSessionOpenRequest: {
+            manifest: components["schemas"]["ExpectedTransactionManifest"];
+        };
+        SigningSignedResultRequest: {
+            signedResult: components["schemas"]["SignedResultSubmission"];
+        };
+        SigningVerifyRequest: {
+            manifest: components["schemas"]["ExpectedTransactionManifest"];
+            signed: components["schemas"]["SignedResultSubmission"];
+        };
     };
     responses: {
         /** @description The request failed. The envelope states the status, a human readable message, and the request id. */
@@ -2907,6 +2939,16 @@ export interface components {
         /** @description The caller's operation id for this mutation. The gateway commits the order change and a receipt under this id in one transaction; the same id with the same request replays the receipt, the same id with a different request is a 409, and the receipt is readable at `GET /operations/{operationId}`. */
         IdempotencyKey: string;
         OperationId: string;
+        /** @description Page size. */
+        PageLimit: number;
+        /** @description The opaque cursor a previous page returned. A malformed cursor is a 400, never a silent first page. */
+        PageCursor: string;
+        /** @description Only this network. */
+        NetworkFilter: "mainnet" | "testnet" | "signet" | "regtest";
+        /** @description A signing session capability returned once when the session was opened: the read capability shows a session, the import capability also submits its signed result. Listing accepts up to 25, comma separated. */
+        SigningCapability: string;
+        /** @description Resume after this event id, as an EventSource reconnect sends it. */
+        LastEventId: string;
     };
     requestBodies: never;
     headers: never;
@@ -3760,7 +3802,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SafeOpsPlanRequest"];
+            };
+        };
         responses: {
             /** @description The result. */
             201: {
@@ -3808,7 +3854,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ShieldRequest"];
+            };
+        };
         responses: {
             /** @description The result. */
             201: {
@@ -3829,7 +3879,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BroadcastRequest"];
+            };
+        };
         responses: {
             /** @description The result. */
             201: {
@@ -3874,7 +3928,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SafeOpsRbfRequest"];
+            };
+        };
         responses: {
             /** @description The result. */
             201: {
@@ -3895,7 +3953,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SafeOpsCpfpRequest"];
+            };
+        };
         responses: {
             /** @description The result. */
             201: {
@@ -3911,7 +3973,16 @@ export interface operations {
     };
     listSwapIntents: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Only this network. */
+                network?: components["parameters"]["NetworkFilter"];
+                /** @description The opaque cursor a previous page returned. A malformed cursor is a 400, never a silent first page. */
+                cursor?: components["parameters"]["PageCursor"];
+                /** @description Page size. */
+                limit?: components["parameters"]["PageLimit"];
+                /** @description Only intents that give or require this asset type. */
+                assetType?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -3937,7 +4008,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SwapIntentPublishRequest"];
+            };
+        };
         responses: {
             /** @description The result. */
             201: {
@@ -3985,7 +4060,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SwapIntentWithdrawRequest"];
+            };
+        };
         responses: {
             /** @description The result. */
             201: {
@@ -4009,7 +4088,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SwapAcceptancePlanRequest"];
+            };
+        };
         responses: {
             /** @description The result. */
             201: {
@@ -4057,7 +4140,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SwapSignatureSubmission"];
+            };
+        };
         responses: {
             /** @description The result. */
             201: {
@@ -4147,7 +4234,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PrivateSwapStoreRequest"];
+            };
+        };
         responses: {
             /** @description The result. */
             201: {
@@ -4195,7 +4286,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PrivateSwapDestroyRequest"];
+            };
+        };
         responses: {
             /** @description The result. */
             200: {
@@ -4213,7 +4308,24 @@ export interface operations {
     };
     listOrdexEvents: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Only this network. */
+                network?: components["parameters"]["NetworkFilter"];
+                /** @description Only this event type. */
+                type?: string;
+                /** @description Only events of this aggregate type. */
+                aggregateType?: string;
+                /** @description Only events of this aggregate. */
+                aggregateId?: string;
+                /** @description Only events of this protocol. */
+                protocol?: string;
+                /** @description Only events of this collection. */
+                collectionId?: string;
+                /** @description Page size. */
+                limit?: components["parameters"]["PageLimit"];
+                /** @description The opaque cursor a previous page returned. A malformed cursor is a 400, never a silent first page. */
+                cursor?: components["parameters"]["PageCursor"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -4234,8 +4346,26 @@ export interface operations {
     };
     streamOrdexEvents: {
         parameters: {
-            query?: never;
-            header?: never;
+            query?: {
+                /** @description Only this network. */
+                network?: components["parameters"]["NetworkFilter"];
+                /** @description Only this event type. */
+                type?: string;
+                /** @description Only events of this aggregate type. */
+                aggregateType?: string;
+                /** @description Only events of this aggregate. */
+                aggregateId?: string;
+                /** @description Only events of this protocol. */
+                protocol?: string;
+                /** @description Only events of this collection. */
+                collectionId?: string;
+                /** @description The opaque cursor a previous page returned. A malformed cursor is a 400, never a silent first page. */
+                cursor?: components["parameters"]["PageCursor"];
+            };
+            header?: {
+                /** @description Resume after this event id, as an EventSource reconnect sends it. */
+                "last-event-id"?: components["parameters"]["LastEventId"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -4255,7 +4385,10 @@ export interface operations {
     };
     getEventStreamCheckpoint: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Only this network. */
+                network?: components["parameters"]["NetworkFilter"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -4302,7 +4435,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WebhookSubscriptionCreateRequest"];
+            };
+        };
         responses: {
             /** @description The subscription with its one time secret. */
             201: {
@@ -4378,7 +4515,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WebhookSubscriptionUpdateRequest"];
+            };
+        };
         responses: {
             /** @description The result. */
             200: {
@@ -4426,7 +4567,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["WebhookVerifyRequest"];
+            };
+        };
         responses: {
             /** @description The result. */
             201: {
@@ -4466,7 +4611,16 @@ export interface operations {
     };
     listWebhookDeliveries: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Only deliveries of this subscription. */
+                subscriptionId?: string;
+                /** @description Only deliveries in this state. */
+                state?: string;
+                /** @description Page size. */
+                limit?: components["parameters"]["PageLimit"];
+                /** @description The opaque cursor a previous page returned. A malformed cursor is a 400, never a silent first page. */
+                cursor?: components["parameters"]["PageCursor"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -4511,7 +4665,18 @@ export interface operations {
     };
     listCollectionManifests: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Only manifests of this collection. */
+                collectionId?: string;
+                /** @description Only this network. */
+                network?: components["parameters"]["NetworkFilter"];
+                /** @description Only manifests in this status. */
+                status?: "CREATOR_SIGNED" | "SUPERSEDED" | "REVOKED";
+                /** @description The opaque cursor a previous page returned. A malformed cursor is a 400, never a silent first page. */
+                cursor?: components["parameters"]["PageCursor"];
+                /** @description Page size. */
+                limit?: components["parameters"]["PageLimit"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -4537,7 +4702,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CollectionManifestDocument"];
+            };
+        };
         responses: {
             /** @description The result. */
             201: {
@@ -4611,7 +4780,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CollectionRevisionRequest"];
+            };
+        };
         responses: {
             /** @description The result. */
             201: {
@@ -4632,7 +4805,10 @@ export interface operations {
     };
     getCollectionProvenance: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Only this network. */
+                network?: components["parameters"]["NetworkFilter"];
+            };
             header?: never;
             path: {
                 /** @description The stable collection identifier. */
@@ -4677,7 +4853,10 @@ export interface operations {
     };
     getHeritageAsset: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description The opaque cursor a previous page returned. A malformed cursor is a 400, never a silent first page. */
+                cursor?: components["parameters"]["PageCursor"];
+            };
             header?: never;
             path: {
                 /** @description The numeric Counterparty asset id or its exact long name. */
@@ -4701,7 +4880,10 @@ export interface operations {
     };
     listHeritageAssetUtxos: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description The opaque cursor a previous page returned. A malformed cursor is a 400, never a silent first page. */
+                cursor?: components["parameters"]["PageCursor"];
+            };
             header?: never;
             path: {
                 /** @description The numeric Counterparty asset id or its exact long name. */
@@ -4756,7 +4938,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HeritageComposeRequest"];
+            };
+        };
         responses: {
             /** @description The result. */
             201: {
@@ -4777,7 +4963,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HeritageDetachRequest"];
+            };
+        };
         responses: {
             /** @description The result. */
             201: {
@@ -4793,8 +4983,20 @@ export interface operations {
     };
     listSigningSessions: {
         parameters: {
-            query?: never;
-            header?: never;
+            query?: {
+                /** @description Only this network. */
+                network?: components["parameters"]["NetworkFilter"];
+                /** @description Only sessions in this state. */
+                state?: string;
+                /** @description The opaque cursor a previous page returned. A malformed cursor is a 400, never a silent first page. */
+                cursor?: components["parameters"]["PageCursor"];
+                /** @description Page size. */
+                limit?: components["parameters"]["PageLimit"];
+            };
+            header?: {
+                /** @description A signing session capability returned once when the session was opened: the read capability shows a session, the import capability also submits its signed result. Listing accepts up to 25, comma separated. */
+                "x-ordex-signing-capability"?: components["parameters"]["SigningCapability"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -4819,7 +5021,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SigningSessionOpenRequest"];
+            };
+        };
         responses: {
             /** @description The result. */
             201: {
@@ -4836,7 +5042,10 @@ export interface operations {
     getSigningSession: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description A signing session capability returned once when the session was opened: the read capability shows a session, the import capability also submits its signed result. Listing accepts up to 25, comma separated. */
+                "x-ordex-signing-capability"?: components["parameters"]["SigningCapability"];
+            };
             path: {
                 /** @description The session identifier. */
                 sessionId: string;
@@ -4860,14 +5069,21 @@ export interface operations {
     submitSignedResult: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description A signing session capability returned once when the session was opened: the read capability shows a session, the import capability also submits its signed result. Listing accepts up to 25, comma separated. */
+                "x-ordex-signing-capability"?: components["parameters"]["SigningCapability"];
+            };
             path: {
                 /** @description The session identifier. */
                 sessionId: string;
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SigningSignedResultRequest"];
+            };
+        };
         responses: {
             /** @description The result. */
             201: {
@@ -4888,7 +5104,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SigningVerifyRequest"];
+            };
+        };
         responses: {
             /** @description The result. */
             201: {

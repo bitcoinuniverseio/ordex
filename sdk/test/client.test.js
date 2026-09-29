@@ -104,7 +104,7 @@ test('a non-retriable read status is not retried', async () => {
   assert.equal(calls.length, 1);
 });
 
-test('an abort stops a read instead of being retried', async () => {
+test('an abort stops a read before any attempt and is never retried', async () => {
   const abortError = new Error('This operation was aborted');
   abortError.name = 'AbortError';
   const { calls, stub } = recordingFetch([abortError, json({ ok: true })]);
@@ -117,7 +117,8 @@ test('an abort stops a read instead of being retried', async () => {
   const controller = new AbortController();
   controller.abort();
   await assert.rejects(() => client.getHealth({ signal: controller.signal }), { name: 'AbortError' });
-  assert.equal(calls.length, 1);
+  // OX-P06: an already aborted signal sends nothing at all.
+  assert.equal(calls.length, 0);
 });
 
 test('the order iterator follows the keyset cursor to the last page', async () => {
