@@ -5096,30 +5096,29 @@
     "method": "GET",
     "path": "/api/ordex/swaps/private",
     "summary": "List the caller stored private swap envelopes",
-    "description": "Returns ciphertext envelopes only. Decryption happens client side with the key from the URL fragment.",
+    "description": "Private swap envelopes are not enumerable: the gateway currently answers 404 PRIVATE_SWAP_LIST_UNAVAILABLE. A 200 would carry this shape. Read one envelope by its id.",
     "tag": "swaps",
     "isWrite": false,
     "authorityLevel": "Deterministic example",
     "parameters": [],
     "requestBodySchema": null,
     "requestExample": null,
-    "responseExample": [
-      {
-        "privateId": "example-string",
-        "ciphertext": "example-string",
-        "expiresAt": "2026-09-02T16:00:00Z",
-        "destroyed": true
-      }
-    ],
+    "responseExample": {
+      "privateSwaps": [
+        {
+          "privateId": "example-string",
+          "ciphertext": "example-string",
+          "expiresAt": "2026-09-02T16:00:00Z",
+          "destroyed": true
+        }
+      ]
+    },
     "responses": {
       "200": {
         "content": {
           "application/json": {
             "schema": {
-              "type": "array",
-              "items": {
-                "$ref": "#/components/schemas/PrivateSwapEnvelope"
-              }
+              "$ref": "#/components/schemas/PrivateSwapList"
             }
           }
         },
@@ -5604,29 +5603,36 @@
     "parameters": [],
     "requestBodySchema": null,
     "requestExample": null,
-    "responseExample": [
-      {
-        "subscriptionId": "example-string",
-        "url": "example-string",
-        "eventTypes": [
-          "example-string"
-        ],
-        "network": "mainnet",
-        "status": "PENDING_VERIFICATION",
-        "secretHint": "example-string",
-        "secretVersion": 10000,
-        "createdAt": "2026-09-02T16:00:00Z"
-      }
-    ],
+    "responseExample": {
+      "items": [
+        {
+          "id": "example-string",
+          "accountId": "example-string",
+          "url": "example-string",
+          "eventTypes": [
+            "example-string"
+          ],
+          "network": "mainnet",
+          "status": "PENDING_VERIFICATION",
+          "secretHint": "example-string",
+          "secretVersion": 10000,
+          "createdAt": "2026-09-02T16:00:00Z",
+          "updatedAt": "2026-09-02T16:00:00Z",
+          "verification": {
+            "state": "VERIFIED",
+            "expiresAt": {},
+            "attempts": 10000,
+            "lastError": {}
+          }
+        }
+      ]
+    },
     "responses": {
       "200": {
         "content": {
           "application/json": {
             "schema": {
-              "type": "array",
-              "items": {
-                "$ref": "#/components/schemas/WebhookSubscription"
-              }
+              "$ref": "#/components/schemas/WebhookSubscriptionList"
             }
           }
         },
@@ -5663,7 +5669,8 @@
     "requestBodySchema": null,
     "requestExample": null,
     "responseExample": {
-      "subscriptionId": "example-string",
+      "id": "example-string",
+      "accountId": "example-string",
       "url": "example-string",
       "eventTypes": [
         "example-string"
@@ -5672,7 +5679,14 @@
       "status": "PENDING_VERIFICATION",
       "secretHint": "example-string",
       "secretVersion": 10000,
-      "createdAt": "2026-09-02T16:00:00Z"
+      "createdAt": "2026-09-02T16:00:00Z",
+      "updatedAt": "2026-09-02T16:00:00Z",
+      "verification": {
+        "state": "VERIFIED",
+        "expiresAt": {},
+        "attempts": 10000,
+        "lastError": {}
+      }
     },
     "responses": {
       "200": {
@@ -5724,7 +5738,8 @@
       "paused": true
     },
     "responseExample": {
-      "subscriptionId": "example-string",
+      "id": "example-string",
+      "accountId": "example-string",
       "url": "example-string",
       "eventTypes": [
         "example-string"
@@ -5733,7 +5748,14 @@
       "status": "PENDING_VERIFICATION",
       "secretHint": "example-string",
       "secretVersion": 10000,
-      "createdAt": "2026-09-02T16:00:00Z"
+      "createdAt": "2026-09-02T16:00:00Z",
+      "updatedAt": "2026-09-02T16:00:00Z",
+      "verification": {
+        "state": "VERIFIED",
+        "expiresAt": {},
+        "attempts": 10000,
+        "lastError": {}
+      }
     },
     "responses": {
       "200": {
@@ -5879,7 +5901,8 @@
       "challenge": "example-string"
     },
     "responseExample": {
-      "subscriptionId": "example-string",
+      "id": "example-string",
+      "accountId": "example-string",
       "url": "example-string",
       "eventTypes": [
         "example-string"
@@ -5888,7 +5911,14 @@
       "status": "PENDING_VERIFICATION",
       "secretHint": "example-string",
       "secretVersion": 10000,
-      "createdAt": "2026-09-02T16:00:00Z"
+      "createdAt": "2026-09-02T16:00:00Z",
+      "updatedAt": "2026-09-02T16:00:00Z",
+      "verification": {
+        "state": "VERIFIED",
+        "expiresAt": {},
+        "attempts": 10000,
+        "lastError": {}
+      }
     },
     "responses": {
       "201": {
@@ -7320,74 +7350,26 @@
     ],
     "requestBodySchema": null,
     "requestExample": null,
-    "responseExample": [
-      {
-        "sessionId": "example-string",
-        "manifest": {
-          "schema": "example-string",
+    "responseExample": {
+      "rows": [
+        {
+          "id": "example-string",
           "network": "mainnet",
-          "purpose": "example-string",
-          "watchOnly": true,
-          "account": {
-            "descriptor": "example-string"
-          },
-          "unsignedTx": {
-            "inputs": [
-              {
-                "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
-                "vout": 10000,
-                "valueSats": "example-string",
-                "scriptPubKeyHex": "example-string",
-                "controlledByUser": true,
-                "sighashType": "DEFAULT",
-                "explanation": "example-string",
-                "sequence": 10000,
-                "preservedSignature": {
-                  "scriptSigHex": "example-string",
-                  "witness": [
-                    "example-string"
-                  ]
-                }
-              }
-            ],
-            "outputs": [
-              {
-                "scriptHex": "example-string",
-                "valueSats": "example-string",
-                "role": "example-string",
-                "explanation": "example-string",
-                "expectedAssets": [
-                  {
-                    "assetType": "example-string",
-                    "assetId": "example-string",
-                    "quantity": "example-string"
-                  }
-                ]
-              }
-            ],
-            "version": 10000,
-            "lockTime": 10000
-          },
-          "fee": {
-            "feeSats": "example-string",
-            "maxFeeSats": "example-string"
-          },
-          "digest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
-        },
-        "state": "AWAITING_EXPORT",
-        "signedResult": {},
-        "rejection": {}
-      }
-    ],
+          "state": "AWAITING_EXPORT",
+          "manifestDigest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+          "createdAt": "2026-09-02T16:00:00Z",
+          "updatedAt": "2026-09-02T16:00:00Z",
+          "expiresAt": {}
+        }
+      ],
+      "nextCursor": "example-string"
+    },
     "responses": {
       "200": {
         "content": {
           "application/json": {
             "schema": {
-              "type": "array",
-              "items": {
-                "$ref": "#/components/schemas/SigningSession"
-              }
+              "$ref": "#/components/schemas/SigningSessionPage"
             }
           }
         },

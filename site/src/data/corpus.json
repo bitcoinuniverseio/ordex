@@ -1711,8 +1711,8 @@
     "protocolVersion": "1.2",
     "contentType": "api-operation",
     "title": "GET /api/ordex/swaps/private (listPrivateSwaps)",
-    "content": "GET /api/ordex/swaps/private (listPrivateSwaps): List the caller stored private swap envelopes. Returns ciphertext envelopes only. Decryption happens client side with the key from the URL fragment.. Evidence level: Deterministic example. Tag: swaps.",
-    "digest": "00e452279fb5a6b1",
+    "content": "GET /api/ordex/swaps/private (listPrivateSwaps): List the caller stored private swap envelopes. Private swap envelopes are not enumerable: the gateway currently answers 404 PRIVATE_SWAP_LIST_UNAVAILABLE. A 200 would carry this shape. Read one envelope by its id.. Evidence level: Deterministic example. Tag: swaps.",
+    "digest": "100188c1532caa30",
     "docUrl": "/reference/api/#listPrivateSwaps"
   },
   {
