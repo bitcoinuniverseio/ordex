@@ -147,10 +147,11 @@ export function TourOverlay({ basePath = '/ordex' }: OverlayProps): JSX.Element 
   }
 
   const pause = () => {
-    saveProgress({ id: tour.id, step: index, paused: true });
-    updateUrl(null);
     setActive(null);
     returnFocus.current?.focus?.();
+    // The tour leaves the URL once the paused step is stored, so a page that
+    // opens next (Resume the tour) always finds it.
+    void saveProgress({ id: tour.id, step: index, paused: true }).then(() => updateUrl(null));
   };
 
   const onCardKey = (e: KeyboardEvent) => {
