@@ -23,8 +23,8 @@ before(async () => {
         lastEventIds.push(req.headers['last-event-id'] || null);
         res.writeHead(200, { 'content-type': 'text/event-stream', 'cache-control': 'no-store' });
         const start = req.headers['last-event-id'] ? 3 : 1;
-        for (let n = start; n < start + 2; n++) res.write(`id: ${ev(n).id}\ndata: ${JSON.stringify(ev(n))}\n\n`);
-        res.write(`id: ${ev(start).id}\ndata: ${JSON.stringify(ev(start))}\n\n`); // duplicate
+        for (let n = start; n < start + 2; n++) res.write(`id: ${ev(n).sequence}:${ev(n).id}\ndata: ${JSON.stringify(ev(n))}\n\n`);
+        res.write(`id: ${ev(start).sequence}:${ev(start).id}\ndata: ${JSON.stringify(ev(start))}\n\n`); // duplicate
         res.write('data: {"not":"an event"}\n\n');
         res.end();
       }
@@ -58,7 +58,7 @@ test('SSE events are validated, deduplicated and resumed from the processed curs
   await page.getByText(/Accepted 4, duplicates [12]/).waitFor({ timeout: 20000 });
   await page.getByText(/invalid [12]/).first().waitFor();
   assert.equal(lastEventIds[0], null);
-  assert.equal(lastEventIds[1], ev(2).id, 'reconnect resumes after the last processed event');
+  assert.equal(lastEventIds[1], `${ev(2).sequence}:${ev(2).id}`, 'reconnect resumes after the last processed event');
   await page.getByRole('button', { name: 'Disconnect' }).click();
   await context.close();
 });

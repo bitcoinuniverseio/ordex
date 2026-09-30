@@ -1,11 +1,13 @@
 // OX-S05: Event Playground transports. Connected mode reads the gateway's documented
-// streams (spec/asyncapi.json: SSE at /events/stream with Last-Event-ID resumption, and the
-// WebSocket at /events/ws with a subscribe message carrying the cursor). Every envelope is
+// streams (spec/asyncapi.json: SSE at /events/stream whose id <sequence>:<eventId> is the
+// Last-Event-ID resume position, and the WebSocket at /events/ws with a named subscribe
+// message carrying the cursor, answered by events wrapped with their own cursor). Every envelope is
 // validated with the ordex-event/v1 verifier, deduplicated by id and buffered within a
 // bound; the cursor advances only after an event was processed. Reconnects back off, and an
 // expired cursor stops the stream for an explicit resync instead of skipping events.
 
 export const MAX_BUFFER = 200;
+const SUBSCRIPTION_ID = 'playground';
 const MAX_SEEN = 5000;
 
 /** Incremental text/event-stream parser (WHATWG HTML server-sent events). */
@@ -65,8 +67,8 @@ export function ingestEvent(state, rawText, validate, transportId = null) {
   if (!verdict.ok) {
     return { state: { ...state, counts: { ...state.counts, invalid: state.counts.invalid + 1 } }, outcome: 'invalid', detail: `${verdict.code}: ${verdict.reason || ''}` };
   }
-  if (transportId !== null && transportId !== envelope.id) {
-    return { state: { ...state, counts: { ...state.counts, invalid: state.counts.invalid + 1 } }, outcome: 'invalid', detail: 'The transport event id does not match the envelope id.' };
+  if (transportId !== null && transportId !== `${envelope.sequence}:${envelope.id}`) {
+    return { state: { ...state, counts: { ...state.counts, invalid: state.counts.invalid + 1 } }, outcome: 'invalid', detail: 'The SSE id is not <sequence>:<eventId> of the envelope it carries.' };
   }
   if (state.seen.includes(envelope.id)) {
     return { state: { ...state, counts: { ...state.counts, duplicate: state.counts.duplicate + 1 } }, outcome: 'duplicate', detail: envelope.id };
@@ -162,6 +164,7 @@ export function runWebSocket({ url, cursor = null, filters = {}, WebSocketImpl =
     let current = cursor;
     let timer = null;
     let done = false;
+    let expired = false;
     const finish = (stopped) => {
       if (done) return;
       done = true;
@@ -179,23 +182,36 @@ export function runWebSocket({ url, cursor = null, filters = {}, WebSocketImpl =
       }
       socket.onopen = () => {
         onStatus({ state: 'open', cursor: current });
-        socket.send(JSON.stringify({ op: 'subscribe', filters, ...(current ? { cursor: current } : {}) }));
+        socket.send(JSON.stringify({ op: 'subscribe', id: SUBSCRIPTION_ID, filters, ...(current ? { cursor: current } : {}) }));
       };
       socket.onmessage = async (event) => {
-        const text = typeof event.data === 'string' ? event.data : '';
-        const processed = await onMessage({ id: null, event: 'message', data: text });
-        if (processed) {
-          try {
-            current = JSON.parse(text).id || current;
+        let frame;
+        try {
+          frame = JSON.parse(typeof event.data === 'string' ? event.data : '');
+        } catch {
+          frame = null;
+        }
+        if (frame?.op === 'event' && frame.id === SUBSCRIPTION_ID) {
+          // Every event arrives wrapped with its subscription cursor; the cursor moves only after it is processed.
+          const processed = await onMessage({ id: null, event: 'message', data: JSON.stringify(frame.event ?? null) });
+          if (processed && typeof frame.cursor === 'string') {
+            current = frame.cursor;
             attempt = 0;
+          }
+        } else if (frame?.op === 'disconnect' && typeof frame.cursors?.[SUBSCRIPTION_ID] === 'string') {
+          current = frame.cursors[SUBSCRIPTION_ID];
+        } else if (frame?.op === 'error' && frame.code === 'CURSOR_EXPIRED') {
+          expired = true;
+          try {
+            socket.close(1000, 'cursor-expired');
           } catch {
-            // invalid messages never move the cursor
+            // already closed
           }
         }
       };
       socket.onclose = (event) => {
         if (signal?.aborted) return finish('aborted');
-        if (event?.reason === 'cursor-expired') {
+        if (expired || event?.reason === 'cursor-expired') {
           onStatus({ state: 'cursor-expired', cursor: current });
           return finish('cursor-expired');
         }

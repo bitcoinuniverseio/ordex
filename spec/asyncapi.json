@@ -5,7 +5,10 @@
     "version": "1.2.0",
     "summary": "Every state change as one verifiable envelope, over SSE, WebSocket, and signed webhooks.",
     "description": "The streaming contract for ordex-event/v1 envelopes. Envelopes are produced from the transactional outbox at the database commit that changed the aggregate, so replay is deterministic and reversal is explicit. Consumers resume from the last event id or cursor, never from an offset. Retention is at least seven days. There are no silent gaps: a gap is a bug, and reconnection replays from the acknowledged id.",
-    "license": { "name": "MIT", "identifier": "MIT" }
+    "license": {
+      "name": "MIT",
+      "identifier": "MIT"
+    }
   },
   "servers": {
     "production": {
@@ -25,55 +28,125 @@
     "eventsStream": {
       "address": "/events/stream",
       "messages": {
-        "ordexEvent": { "$ref": "#/components/messages/ordexEvent" },
+        "ordexEvent": {
+          "$ref": "#/components/messages/ordexEvent"
+        },
         "heartbeat": {
-          "payload": { "type": "string", "const": ": heartbeat" },
+          "payload": {
+            "type": "string",
+            "const": ": heartbeat"
+          },
           "description": "A comment line at least every 15 seconds so proxies never close an idle stream."
         }
       },
-      "description": "Server sent events. The SSE id field carries the event id; sending Last-Event-ID resumes exactly after it. Filters: network, type, aggregateType, aggregateId, protocol, collectionId."
+      "description": "Server sent events. Each event is sent as `event: ordex-event` with `id: <sequence>:<eventId>`: the envelope sequence and id, so the id both names the event and is its exact resume position without any lookup. Sending that id back as Last-Event-ID (or as the cursor query parameter) resumes exactly after the event. A cursor older than the retained window answers 410 CURSOR_EXPIRED before any event, and the client resyncs instead of skipping events. Filters: network, type, aggregateType, aggregateId, protocol, collectionId."
     },
     "eventsSocket": {
       "address": "/events/ws",
       "messages": {
         "subscribe": {
-          "payload": {
-            "type": "object",
-            "required": ["op"],
-            "properties": {
-              "op": { "type": "string", "const": "subscribe" },
-              "filters": { "type": "object", "additionalProperties": true },
-              "cursor": { "type": "string", "description": "Resume from this event sequence and id." }
-            }
-          },
-          "description": "Multiplex many filters over one connection."
+          "$ref": "#/components/messages/wsSubscribe"
         },
-        "ordexEvent": { "$ref": "#/components/messages/ordexEvent" }
+        "unsubscribe": {
+          "$ref": "#/components/messages/wsUnsubscribe"
+        },
+        "subscribed": {
+          "$ref": "#/components/messages/wsSubscribed"
+        },
+        "unsubscribed": {
+          "$ref": "#/components/messages/wsUnsubscribed"
+        },
+        "ordexEvent": {
+          "$ref": "#/components/messages/wsEvent"
+        },
+        "error": {
+          "$ref": "#/components/messages/wsError"
+        },
+        "disconnect": {
+          "$ref": "#/components/messages/wsDisconnect"
+        }
       },
-      "description": "WebSocket for high volume consumers. One connection, many subscriptions, cursor resumption, bounded buffers, slow consumer disconnect with a resumable cursor."
+      "description": "WebSocket for high volume consumers. One connection carries up to 16 subscriptions, each named by a client chosen id. Every server frame is JSON with an op field; events arrive wrapped as {op: event, id, cursor, event} so each subscription resumes from its own cursor. Buffers are bounded; a slow consumer gets a disconnect frame carrying every subscription's cursor, then the socket closes with code 4008."
     },
     "webhookDelivery": {
       "address": "{subscriberUrl}",
-      "messages": { "ordexEvent": { "$ref": "#/components/messages/ordexEvent" } },
+      "messages": {
+        "ordexEvent": {
+          "$ref": "#/components/messages/ordexEvent"
+        }
+      },
       "description": "HTTP POST of one envelope per delivery, signed with the X-Ordex-Signature header: t=<unix>,d=<deliveryId>,v1=<hmac-sha256 over timestamp.deliveryId.sha256(body)>. Verify with the SDK enforcer or verifier/events.js."
     }
   },
   "operations": {
     "receiveEventsStream": {
       "action": "receive",
-      "channel": { "$ref": "#/channels/eventsStream" },
-      "messages": [{ "$ref": "#/channels/eventsStream/messages/ordexEvent" }],
-      "reply": { "address": { "location": "$message.header#/id" }, "messages": [{ "$ref": "#/components/messages/ordexEvent" }] }
+      "channel": {
+        "$ref": "#/channels/eventsStream"
+      },
+      "messages": [
+        {
+          "$ref": "#/channels/eventsStream/messages/ordexEvent"
+        }
+      ],
+      "reply": {
+        "address": {
+          "location": "$message.header#/id"
+        },
+        "messages": [
+          {
+            "$ref": "#/components/messages/ordexEvent"
+          }
+        ]
+      }
     },
     "receiveEventsSocket": {
       "action": "receive",
-      "channel": { "$ref": "#/channels/eventsSocket" },
-      "messages": [{ "$ref": "#/channels/eventsSocket/messages/ordexEvent" }]
+      "channel": {
+        "$ref": "#/channels/eventsSocket"
+      },
+      "messages": [
+        {
+          "$ref": "#/channels/eventsSocket/messages/ordexEvent"
+        },
+        {
+          "$ref": "#/channels/eventsSocket/messages/subscribed"
+        },
+        {
+          "$ref": "#/channels/eventsSocket/messages/unsubscribed"
+        },
+        {
+          "$ref": "#/channels/eventsSocket/messages/error"
+        },
+        {
+          "$ref": "#/channels/eventsSocket/messages/disconnect"
+        }
+      ]
     },
     "receiveWebhookDelivery": {
       "action": "receive",
-      "channel": { "$ref": "#/channels/webhookDelivery" },
-      "messages": [{ "$ref": "#/channels/webhookDelivery/messages/ordexEvent" }]
+      "channel": {
+        "$ref": "#/channels/webhookDelivery"
+      },
+      "messages": [
+        {
+          "$ref": "#/channels/webhookDelivery/messages/ordexEvent"
+        }
+      ]
+    },
+    "sendEventsSocket": {
+      "action": "send",
+      "channel": {
+        "$ref": "#/channels/eventsSocket"
+      },
+      "messages": [
+        {
+          "$ref": "#/channels/eventsSocket/messages/subscribe"
+        },
+        {
+          "$ref": "#/channels/eventsSocket/messages/unsubscribe"
+        }
+      ]
     }
   },
   "components": {
@@ -84,29 +157,119 @@
         "contentType": "application/json",
         "payload": {
           "type": "object",
-          "required": ["id", "type", "schemaVersion", "network", "sequence", "aggregate", "observedAt", "checkpoint", "status", "payload", "traceId"],
+          "required": [
+            "id",
+            "type",
+            "schemaVersion",
+            "network",
+            "sequence",
+            "aggregate",
+            "observedAt",
+            "checkpoint",
+            "status",
+            "payload",
+            "traceId"
+          ],
           "properties": {
-            "id": { "type": "string", "format": "uuid" },
-            "type": { "type": "string", "examples": ["ordex.order.published", "ordex.swap.settled", "ordex.safeops.confirmed", "ordex.counterparty.attachment", "ordex.collection.manifestPublished", "ordex.chain.checkpoint", "ordex.authority.readiness"] },
-            "schemaVersion": { "type": "string", "const": "1" },
-            "network": { "type": "string", "enum": ["mainnet", "testnet", "signet", "regtest"] },
-            "sequence": { "type": "integer", "minimum": 1, "description": "Monotonic per network. The replay cursor." },
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": {
+              "type": "string",
+              "examples": [
+                "ordex.order.published",
+                "ordex.swap.settled",
+                "ordex.safeops.confirmed",
+                "ordex.counterparty.attachment",
+                "ordex.collection.manifestPublished",
+                "ordex.chain.checkpoint",
+                "ordex.authority.readiness"
+              ]
+            },
+            "schemaVersion": {
+              "type": "string",
+              "const": "1"
+            },
+            "network": {
+              "type": "string",
+              "enum": [
+                "mainnet",
+                "testnet",
+                "signet",
+                "regtest"
+              ]
+            },
+            "sequence": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Monotonic per network. The replay cursor."
+            },
             "aggregate": {
               "type": "object",
-              "required": ["type", "id", "version"],
-              "properties": { "type": { "type": "string" }, "id": { "type": "string" }, "version": { "type": "integer", "minimum": 1 } }
+              "required": [
+                "type",
+                "id",
+                "version"
+              ],
+              "properties": {
+                "type": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "version": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
             },
-            "observedAt": { "type": "string", "format": "date-time" },
+            "observedAt": {
+              "type": "string",
+              "format": "date-time"
+            },
             "checkpoint": {
               "type": "object",
-              "required": ["height", "blockHash"],
-              "properties": { "height": { "type": "integer" }, "blockHash": { "type": "string", "pattern": "^[0-9a-f]{64}$" } }
+              "required": [
+                "height",
+                "blockHash"
+              ],
+              "properties": {
+                "height": {
+                  "type": "integer"
+                },
+                "blockHash": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                }
+              }
             },
-            "status": { "type": "string", "enum": ["current", "reverted"] },
-            "revertedEventId": { "type": "string", "format": "uuid" },
-            "payload": { "type": "object", "additionalProperties": true },
-            "artifactDigests": { "type": "array", "items": { "type": "string", "pattern": "^[0-9a-f]{64}$" } },
-            "traceId": { "type": "string" }
+            "status": {
+              "type": "string",
+              "enum": [
+                "current",
+                "reverted"
+              ]
+            },
+            "revertedEventId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "payload": {
+              "type": "object",
+              "additionalProperties": true
+            },
+            "artifactDigests": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            },
+            "traceId": {
+              "type": "string"
+            }
           }
         },
         "examples": [
@@ -118,12 +281,23 @@
               "schemaVersion": "1",
               "network": "mainnet",
               "sequence": 42001,
-              "aggregate": { "type": "order", "id": "01J8ZQ0V2M3N4P5Q6R7S8T9UVW", "version": 4 },
+              "aggregate": {
+                "type": "order",
+                "id": "01J8ZQ0V2M3N4P5Q6R7S8T9UVW",
+                "version": 4
+              },
               "observedAt": "2026-09-02T12:00:00Z",
-              "checkpoint": { "height": 900001, "blockHash": "0000000000000000000111111111111111111111111111111111111111111112" },
+              "checkpoint": {
+                "height": 900001,
+                "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+              },
               "status": "current",
-              "payload": { "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc" },
-              "artifactDigests": ["0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"],
+              "payload": {
+                "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+              },
+              "artifactDigests": [
+                "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+              ],
               "traceId": "trace-1a2b3c4d"
             }
           },
@@ -135,16 +309,239 @@
               "schemaVersion": "1",
               "network": "mainnet",
               "sequence": 42002,
-              "aggregate": { "type": "order", "id": "01J8ZQ0V2M3N4P5Q6R7S8T9UVW", "version": 5 },
+              "aggregate": {
+                "type": "order",
+                "id": "01J8ZQ0V2M3N4P5Q6R7S8T9UVW",
+                "version": 5
+              },
               "observedAt": "2026-09-02T12:10:00Z",
-              "checkpoint": { "height": 900000, "blockHash": "0000000000000000000111111111111111111111111111111111111111111112" },
+              "checkpoint": {
+                "height": 900000,
+                "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+              },
               "status": "reverted",
               "revertedEventId": "0f1e2d3c-4b5a-4978-8796-a5b4c3d2e1f0",
-              "payload": { "depth": 1 },
+              "payload": {
+                "depth": 1
+              },
               "traceId": "trace-1a2b3c4e"
             }
           }
         ]
+      },
+      "wsSubscribe": {
+        "name": "wsSubscribe",
+        "title": "Client: open a subscription",
+        "contentType": "application/json",
+        "payload": {
+          "type": "object",
+          "required": [
+            "op",
+            "id"
+          ],
+          "properties": {
+            "op": {
+              "type": "string",
+              "const": "subscribe"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,64}$",
+              "description": "Chosen by the client; names the subscription on every frame so one connection demultiplexes many."
+            },
+            "filters": {
+              "type": "object",
+              "additionalProperties": true,
+              "description": "The same filters as the SSE query."
+            },
+            "cursor": {
+              "type": "string",
+              "maxLength": 512,
+              "description": "Resume after this position; omit to start live."
+            }
+          }
+        }
+      },
+      "wsUnsubscribe": {
+        "name": "wsUnsubscribe",
+        "title": "Client: close a subscription",
+        "contentType": "application/json",
+        "payload": {
+          "type": "object",
+          "required": [
+            "op",
+            "id"
+          ],
+          "properties": {
+            "op": {
+              "type": "string",
+              "const": "unsubscribe"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,64}$",
+              "description": "Chosen by the client; names the subscription on every frame so one connection demultiplexes many."
+            }
+          }
+        }
+      },
+      "wsSubscribed": {
+        "name": "wsSubscribed",
+        "title": "Server: the subscription is open",
+        "contentType": "application/json",
+        "payload": {
+          "type": "object",
+          "required": [
+            "op",
+            "id"
+          ],
+          "properties": {
+            "op": {
+              "type": "string",
+              "const": "subscribed"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,64}$",
+              "description": "Chosen by the client; names the subscription on every frame so one connection demultiplexes many."
+            }
+          }
+        }
+      },
+      "wsUnsubscribed": {
+        "name": "wsUnsubscribed",
+        "title": "Server: the subscription is closed",
+        "contentType": "application/json",
+        "payload": {
+          "type": "object",
+          "required": [
+            "op",
+            "id"
+          ],
+          "properties": {
+            "op": {
+              "type": "string",
+              "const": "unsubscribed"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,64}$",
+              "description": "Chosen by the client; names the subscription on every frame so one connection demultiplexes many."
+            }
+          }
+        }
+      },
+      "wsEvent": {
+        "name": "wsEvent",
+        "title": "Server: one event for one subscription",
+        "contentType": "application/json",
+        "description": "Advance the stored cursor for the subscription only after the event is processed.",
+        "payload": {
+          "type": "object",
+          "required": [
+            "op",
+            "id",
+            "cursor",
+            "event"
+          ],
+          "properties": {
+            "op": {
+              "type": "string",
+              "const": "event"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,64}$",
+              "description": "Chosen by the client; names the subscription on every frame so one connection demultiplexes many."
+            },
+            "cursor": {
+              "type": "string",
+              "maxLength": 512,
+              "description": "The resume position just after this event."
+            },
+            "event": {
+              "$ref": "#/components/messages/ordexEvent/payload"
+            }
+          }
+        }
+      },
+      "wsError": {
+        "name": "wsError",
+        "title": "Server: a subscription failed or was refused",
+        "contentType": "application/json",
+        "payload": {
+          "type": "object",
+          "required": [
+            "op",
+            "code",
+            "message"
+          ],
+          "properties": {
+            "op": {
+              "type": "string",
+              "const": "error"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,64}$",
+              "description": "Absent when the frame itself could not be read."
+            },
+            "code": {
+              "type": "string",
+              "examples": [
+                "BAD_REQUEST",
+                "TOO_MANY_SUBSCRIPTIONS",
+                "CURSOR_EXPIRED",
+                "STREAM_FAILED"
+              ]
+            },
+            "message": {
+              "type": "string"
+            },
+            "cursor": {
+              "type": "string",
+              "maxLength": 512,
+              "description": "Where to resume that subscription, when it can be resumed."
+            }
+          }
+        }
+      },
+      "wsDisconnect": {
+        "name": "wsDisconnect",
+        "title": "Server: slow consumer disconnect",
+        "contentType": "application/json",
+        "description": "Sent before the server closes the socket with code 4008. Reconnect and subscribe each id again from its cursor.",
+        "payload": {
+          "type": "object",
+          "required": [
+            "op",
+            "code",
+            "message",
+            "cursors"
+          ],
+          "properties": {
+            "op": {
+              "type": "string",
+              "const": "disconnect"
+            },
+            "code": {
+              "type": "string",
+              "const": "SLOW_CONSUMER"
+            },
+            "message": {
+              "type": "string"
+            },
+            "cursors": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string",
+                "maxLength": 512,
+                "description": "An opaque resume position. Pass it back unchanged; the SSE id form <sequence>:<eventId> is accepted too."
+              },
+              "description": "The resume cursor of every subscription on the connection, by subscription id."
+            }
+          }
+        }
       }
     }
   }

@@ -1498,6 +1498,9 @@
             },
             "description": "The result."
           },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "default": {
             "$ref": "#/components/responses/Error"
           }
@@ -1535,6 +1538,9 @@
               }
             },
             "description": "The result."
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           },
           "default": {
             "$ref": "#/components/responses/Error"
@@ -1618,6 +1624,9 @@
               }
             },
             "description": "The result."
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           },
           "default": {
             "$ref": "#/components/responses/Error"
@@ -1805,6 +1814,9 @@
             },
             "description": "The result."
           },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "default": {
             "$ref": "#/components/responses/Error"
           }
@@ -1842,6 +1854,9 @@
               }
             },
             "description": "The result."
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           },
           "default": {
             "$ref": "#/components/responses/Error"
@@ -1891,6 +1906,9 @@
             },
             "description": "The result."
           },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "default": {
             "$ref": "#/components/responses/Error"
           }
@@ -1939,6 +1957,9 @@
             },
             "description": "The result."
           },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "default": {
             "$ref": "#/components/responses/Error"
           }
@@ -1979,6 +2000,9 @@
               }
             },
             "description": "The result."
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           },
           "default": {
             "$ref": "#/components/responses/Error"
@@ -2025,11 +2049,14 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/VerificationView"
+                  "$ref": "#/components/schemas/SwapPreflightResult"
                 }
               }
             },
             "description": "The result."
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           },
           "default": {
             "$ref": "#/components/responses/Error"
@@ -2072,6 +2099,9 @@
             },
             "description": "The result."
           },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "default": {
             "$ref": "#/components/responses/Error"
           }
@@ -2107,7 +2137,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PrivateSwapEnvelope"
+                  "$ref": "#/components/schemas/PrivateSwapStored"
                 }
               }
             },
@@ -2171,6 +2201,9 @@
             },
             "description": "The result."
           },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "default": {
             "$ref": "#/components/responses/Error"
           }
@@ -2214,6 +2247,9 @@
               }
             },
             "description": "The result."
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           },
           "default": {
             "$ref": "#/components/responses/Error"
@@ -2538,6 +2574,9 @@
             },
             "description": "The result."
           },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "default": {
             "$ref": "#/components/responses/Error"
           }
@@ -2578,6 +2617,9 @@
               }
             },
             "description": "The result."
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           },
           "default": {
             "$ref": "#/components/responses/Error"
@@ -2638,6 +2680,9 @@
             },
             "description": "The result."
           },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "default": {
             "$ref": "#/components/responses/Error"
           }
@@ -2681,6 +2726,9 @@
             },
             "description": "The result."
           },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "default": {
             "$ref": "#/components/responses/Error"
           }
@@ -2723,6 +2771,9 @@
               }
             },
             "description": "The result."
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           },
           "default": {
             "$ref": "#/components/responses/Error"
@@ -2776,6 +2827,9 @@
               }
             },
             "description": "The result."
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           },
           "default": {
             "$ref": "#/components/responses/Error"
@@ -2875,6 +2929,9 @@
               }
             },
             "description": "The result."
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           },
           "default": {
             "$ref": "#/components/responses/Error"
@@ -3012,6 +3069,9 @@
             },
             "description": "The result."
           },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "default": {
             "$ref": "#/components/responses/Error"
           }
@@ -3049,6 +3109,9 @@
               }
             },
             "description": "The result."
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           },
           "default": {
             "$ref": "#/components/responses/Error"
@@ -3112,6 +3175,9 @@
             },
             "description": "The result."
           },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "default": {
             "$ref": "#/components/responses/Error"
           }
@@ -3159,6 +3225,9 @@
               }
             },
             "description": "The result."
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           },
           "default": {
             "$ref": "#/components/responses/Error"
@@ -3226,6 +3295,9 @@
             },
             "description": "The result."
           },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "default": {
             "$ref": "#/components/responses/Error"
           }
@@ -3261,14 +3333,14 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/HeritageAttachmentRecord"
-                  }
+                  "$ref": "#/components/schemas/HeritageAssetUtxoPage"
                 }
               }
             },
             "description": "The result."
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           },
           "default": {
             "$ref": "#/components/responses/Error"
@@ -3305,15 +3377,14 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "additionalProperties": true
-                  }
+                  "$ref": "#/components/schemas/HeritageAddressAssets"
                 }
               }
             },
             "description": "The result."
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           },
           "default": {
             "$ref": "#/components/responses/Error"
@@ -3504,6 +3575,9 @@
             },
             "description": "The result."
           },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "default": {
             "$ref": "#/components/responses/Error"
           }
@@ -3544,6 +3618,9 @@
               }
             },
             "description": "The result."
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           },
           "default": {
             "$ref": "#/components/responses/Error"
@@ -3689,6 +3766,9 @@
               }
             }
           },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "default": {
             "$ref": "#/components/responses/Error"
           }
@@ -3724,6 +3804,9 @@
                 }
               }
             }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           },
           "default": {
             "$ref": "#/components/responses/Error"
@@ -3874,6 +3957,9 @@
               }
             }
           },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "default": {
             "$ref": "#/components/responses/Error"
           }
@@ -4020,7 +4106,7 @@
         }
       },
       "NotFound": {
-        "description": "No order with this id.",
+        "description": "Nothing with this id exists.",
         "content": {
           "application/json": {
             "schema": {
@@ -6464,11 +6550,10 @@
       },
       "BatchPurchaseRefused": {
         "type": "object",
-        "additionalProperties": false,
         "required": [
           "refusals"
         ],
-        "description": "Answered when at least one ask cannot coexist in the batch. There is no partial composition: every refused order is named, and the client falls back to separate purchases.",
+        "description": "Answered when at least one ask cannot coexist in the batch. There is no partial composition: every refused order is named, and the client falls back to separate purchases. It carries the shared error envelope fields too.",
         "properties": {
           "refusals": {
             "type": "array",
@@ -6476,6 +6561,22 @@
             "items": {
               "$ref": "#/components/schemas/BatchRefusal"
             }
+          },
+          "statusCode": {
+            "type": "integer",
+            "const": 409
+          },
+          "error": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
           }
         }
       },
@@ -7045,25 +7146,69 @@
       "SafeOpsPlanResult": {
         "type": "object",
         "required": [
+          "planId",
+          "state",
           "plan",
-          "verification"
+          "verification",
+          "createdAt",
+          "updatedAt"
         ],
         "properties": {
+          "planId": {
+            "type": "string",
+            "description": "The id every later plan route takes."
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "BUILT",
+              "SIGNED",
+              "BROADCAST",
+              "INVALIDATED"
+            ]
+          },
           "plan": {
             "$ref": "#/components/schemas/SafeOpsPlan"
           },
           "verification": {
             "$ref": "#/components/schemas/VerificationView"
           },
+          "psbt": {
+            "type": "string",
+            "description": "The unsigned PSBT, base64, that reproduces the plan transaction exactly."
+          },
+          "manifest": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ExpectedTransactionManifest"
+              }
+            ],
+            "description": "The expected transaction manifest a cold signer signs against."
+          },
+          "invalidatedReason": {
+            "type": "string",
+            "description": "INVALIDATED plans only."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
           "partition": {
             "type": "object",
-            "description": "When one transaction cannot carry the operation, the deterministic standard partitions.",
+            "required": [
+              "transactions"
+            ],
+            "description": "When one transaction cannot carry the operation: every deterministic partition, the first of which is this answer.",
             "properties": {
               "transactions": {
                 "type": "array",
+                "minItems": 2,
                 "items": {
-                  "type": "object",
-                  "additionalProperties": true
+                  "$ref": "#/components/schemas/SafeOpsPlanResult"
                 }
               }
             }
@@ -7117,6 +7262,18 @@
           },
           "cpfpEligible": {
             "type": "boolean"
+          },
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "VALID",
+              "INVALIDATED"
+            ],
+            "description": "INVALIDATED means the plan can no longer be signed; build a new one."
+          },
+          "retryable": {
+            "type": "boolean",
+            "description": "True when every finding is an authority outage: the same shield answers again once the authorities recover."
           }
         }
       },
@@ -7156,7 +7313,8 @@
           },
           "artifactDigest": {
             "type": "string",
-            "pattern": "^[0-9a-f]{64}$"
+            "pattern": "^[0-9a-f]{64}$",
+            "description": "The digest of the artifact the transaction settles; for context safeops, the plan digest. A signed transaction that is not that plan is refused."
           },
           "context": {
             "type": "string",
@@ -7261,11 +7419,20 @@
       "SafeOpsRbfResult": {
         "type": "object",
         "required": [
+          "allowed",
           "plan"
         ],
         "properties": {
           "plan": {
-            "$ref": "#/components/schemas/SafeOpsPlan"
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SafeOpsPlan"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Null when the bump is refused; refusalCode then says why."
           },
           "oldFeeSats": {
             "$ref": "#/components/schemas/AtomicSats"
@@ -7287,26 +7454,71 @@
       "SafeOpsCpfpRequest": {
         "type": "object",
         "required": [
-          "parentTxid"
+          "parentTxid",
+          "changeOutpoint",
+          "targetFeeRateSatsPerVb"
+        ],
+        "anyOf": [
+          {
+            "required": [
+              "childReceiveScriptHex"
+            ]
+          },
+          {
+            "required": [
+              "childAddress"
+            ]
+          }
         ],
         "properties": {
           "parentTxid": {
             "type": "string",
             "pattern": "^[0-9a-f]{64}$"
           },
+          "changeOutpoint": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Outpoint"
+              }
+            ],
+            "description": "The output of parentTxid the child spends; it must belong to the wallet and carry no asset."
+          },
           "targetFeeRateSatsPerVb": {
-            "$ref": "#/components/schemas/AtomicSats"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AtomicSats"
+              }
+            ],
+            "description": "The package fee rate to reach, whole sats per virtual byte."
+          },
+          "childReceiveScriptHex": {
+            "type": "string",
+            "pattern": "^(?:[0-9a-f]{2})+$",
+            "description": "The wallet script the child pays its remainder to. Give this or childAddress."
+          },
+          "childAddress": {
+            "type": "string",
+            "description": "The same destination as an address; used only when childReceiveScriptHex is absent."
           }
         }
       },
       "SafeOpsCpfpResult": {
         "type": "object",
         "required": [
+          "allowed",
           "plan"
         ],
         "properties": {
           "plan": {
-            "$ref": "#/components/schemas/SafeOpsPlan"
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SafeOpsPlan"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Null when the bump is refused; refusalCode then says why."
           },
           "packageFeeRateSatsPerVb": {
             "$ref": "#/components/schemas/AtomicSats"
@@ -7494,12 +7706,17 @@
       "SwapIntentView": {
         "type": "object",
         "required": [
+          "id",
           "intent",
           "state",
           "checkpoint",
           "actionability"
         ],
         "properties": {
+          "id": {
+            "type": "string",
+            "description": "The listed intent id the intent routes take."
+          },
           "intent": {
             "$ref": "#/components/schemas/SwapIntentDocument"
           },
@@ -7906,7 +8123,11 @@
             "type": "string"
           },
           "ciphertext": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Null exactly when destroyed."
           },
           "expiresAt": {
             "type": "string",
@@ -8743,6 +8964,8 @@
         "required": [
           "asset",
           "supply",
+          "attachedUtxos",
+          "completeness",
           "readiness"
         ],
         "properties": {
@@ -8772,6 +8995,9 @@
           },
           "readiness": {
             "$ref": "#/components/schemas/HeritageReadiness"
+          },
+          "completeness": {
+            "$ref": "#/components/schemas/HeritageRecordCompleteness"
           }
         }
       },
@@ -8806,8 +9032,10 @@
       "HeritageComposeResult": {
         "type": "object",
         "required": [
+          "operationId",
           "psbt",
-          "explanation"
+          "explanation",
+          "minerFeeSats"
         ],
         "properties": {
           "psbt": {
@@ -8820,10 +9048,22 @@
             "description": "What moves, what it costs, and what would also travel."
           },
           "xcpGasSats": {
-            "$ref": "#/components/schemas/AtomicSats"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AtomicSats"
+              }
+            ],
+            "description": "The node reported gas; absent when the node reports none."
           },
           "minerFeeSats": {
             "$ref": "#/components/schemas/AtomicSats"
+          },
+          "operationId": {
+            "type": "string",
+            "description": "The heritage operation the relay route takes."
+          },
+          "manifest": {
+            "$ref": "#/components/schemas/ExpectedTransactionManifest"
           }
         }
       },
@@ -9059,6 +9299,22 @@
           "rejection": {
             "type": "object",
             "additionalProperties": true
+          },
+          "capabilities": {
+            "type": "object",
+            "required": [
+              "read",
+              "import"
+            ],
+            "description": "In the open answer only, exactly once; only their hashes are stored.",
+            "properties": {
+              "read": {
+                "type": "string"
+              },
+              "import": {
+                "type": "string"
+              }
+            }
           }
         }
       },
@@ -9507,7 +9763,7 @@
       "SigningSessionSummary": {
         "type": "object",
         "required": [
-          "id",
+          "sessionId",
           "network",
           "state",
           "manifestDigest",
@@ -9516,7 +9772,7 @@
           "expiresAt"
         ],
         "properties": {
-          "id": {
+          "sessionId": {
             "type": "string"
           },
           "network": {
@@ -9993,6 +10249,197 @@
             "type": "string",
             "pattern": "^[0-9a-f]{128}$",
             "description": "A BIP-340 signature by buyerRecoveryKeyHex over the tagged hash (tag ordex/offer-withdrawal) of the message \"Ordex offer withdrawal\\nnetwork: <network>\\noffer: <id>\\nterms: <offerTermsHash>\"."
+          }
+        }
+      },
+      "SwapPreflightResult": {
+        "type": "object",
+        "required": [
+          "sessionId",
+          "state",
+          "allowed",
+          "checkedAt"
+        ],
+        "properties": {
+          "sessionId": {
+            "type": "string"
+          },
+          "state": {
+            "$ref": "#/components/schemas/SwapIntentState"
+          },
+          "allowed": {
+            "type": "boolean"
+          },
+          "txid": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "description": "Allowed settlements only."
+          },
+          "refusalCode": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "checkedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "PrivateSwapStored": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/PrivateSwapEnvelope"
+          },
+          {
+            "type": "object",
+            "required": [
+              "deleteCapability"
+            ],
+            "properties": {
+              "deleteCapability": {
+                "type": "string",
+                "description": "Returned exactly once; only its hash is stored. Destroying the envelope needs it."
+              }
+            }
+          }
+        ]
+      },
+      "HeritageRecordCompleteness": {
+        "type": "object",
+        "required": [
+          "complete",
+          "incomplete",
+          "nextCursor"
+        ],
+        "properties": {
+          "complete": {
+            "type": "boolean"
+          },
+          "incomplete": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "utxo",
+                "reasons"
+              ],
+              "properties": {
+                "utxo": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "reasons": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Pass as cursor for the next page; null on the last page."
+          }
+        }
+      },
+      "HeritageAssetUtxoPage": {
+        "type": "object",
+        "required": [
+          "asset",
+          "attachedUtxos",
+          "completeness",
+          "readiness"
+        ],
+        "properties": {
+          "asset": {
+            "type": "object",
+            "required": [
+              "name",
+              "assetId"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "assetId": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]*)$"
+              }
+            }
+          },
+          "attachedUtxos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HeritageAttachmentRecord"
+            }
+          },
+          "completeness": {
+            "$ref": "#/components/schemas/HeritageRecordCompleteness"
+          },
+          "readiness": {
+            "$ref": "#/components/schemas/HeritageReadiness"
+          }
+        }
+      },
+      "HeritageAddressAssets": {
+        "type": "object",
+        "required": [
+          "address",
+          "balances",
+          "readiness"
+        ],
+        "properties": {
+          "address": {
+            "type": "string"
+          },
+          "balances": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "name",
+                "assetId",
+                "divisible",
+                "quantitySats",
+                "utxo"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "assetId": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "divisible": {
+                  "type": "boolean"
+                },
+                "quantitySats": {
+                  "$ref": "#/components/schemas/AtomicSats"
+                },
+                "quantityNormalized": {
+                  "type": "string"
+                },
+                "utxo": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The carrying outpoint txid:vout, or null for the plain address balance."
+                }
+              }
+            }
+          },
+          "readiness": {
+            "$ref": "#/components/schemas/HeritageReadiness"
           }
         }
       }

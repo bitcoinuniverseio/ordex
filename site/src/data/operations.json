@@ -3389,113 +3389,8 @@
     },
     "requestExampleIssue": null,
     "successStatus": 201,
-    "responseExample": {
-      "plan": {
-        "schema": "ordex.safeops-plan/v2",
-        "protocolVersion": "example",
-        "network": "mainnet",
-        "operationKind": "BTC_BATCH_SEND",
-        "createdAtHeight": 1,
-        "expiryHeight": 1,
-        "checkpoint": {
-          "height": 0,
-          "blockHash": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
-        },
-        "inputs": [
-          {
-            "outpoint": {
-              "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
-              "vout": 0
-            },
-            "valueSats": "10000",
-            "scriptPubKeyHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
-            "sequence": 0,
-            "inventory": {
-              "examined": true,
-              "confirmed": true,
-              "inscriptions": [
-                {
-                  "inscriptionId": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdefi0",
-                  "offset": "10000",
-                  "satpoint": "example"
-                }
-              ],
-              "runeAllocations": [
-                {
-                  "runeId": "840000:1",
-                  "amount": "10000"
-                }
-              ],
-              "counterpartyAssets": [
-                {
-                  "name": "example",
-                  "assetId": "10000",
-                  "quantitySats": "10000"
-                }
-              ],
-              "rareSatRanges": [
-                {
-                  "rangeId": "example",
-                  "offset": "10000",
-                  "count": "10000"
-                }
-              ],
-              "unknownClaims": [
-                "example"
-              ]
-            }
-          }
-        ],
-        "outputs": [
-          {
-            "scriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
-            "valueSats": "10000",
-            "role": "recipient",
-            "explanation": "example"
-          }
-        ],
-        "assetTransitions": [
-          {
-            "assetType": "ORDINAL",
-            "assetId": "example",
-            "fromInput": 0,
-            "toOutput": 0,
-            "quantity": "10000"
-          }
-        ],
-        "fee": {
-          "feeSats": "10000",
-          "maxFeeSats": "10000",
-          "feeRateSatsPerVb": "10000"
-        },
-        "signing": {
-          "requiredIndexes": [
-            0
-          ],
-          "sighashType": "DEFAULT"
-        },
-        "findings": [
-          {}
-        ],
-        "digest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
-        "transaction": {
-          "version": 1,
-          "lockTime": 0
-        }
-      },
-      "verification": {
-        "checkedAt": "2026-09-29T00:00:00Z",
-        "ageSeconds": 1,
-        "maxAgeSeconds": 1,
-        "stale": true
-      },
-      "partition": {
-        "transactions": [
-          {}
-        ]
-      }
-    },
-    "responseExampleIssue": null,
+    "responseExample": null,
+    "responseExampleIssue": "Recursive schema #/components/schemas/SafeOpsPlanResult at $.partition.transactions[0]",
     "responses": {
       "201": {
         "content": {
@@ -3539,113 +3434,8 @@
     "requestExample": null,
     "requestExampleIssue": null,
     "successStatus": 200,
-    "responseExample": {
-      "plan": {
-        "schema": "ordex.safeops-plan/v2",
-        "protocolVersion": "example",
-        "network": "mainnet",
-        "operationKind": "BTC_BATCH_SEND",
-        "createdAtHeight": 1,
-        "expiryHeight": 1,
-        "checkpoint": {
-          "height": 0,
-          "blockHash": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
-        },
-        "inputs": [
-          {
-            "outpoint": {
-              "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
-              "vout": 0
-            },
-            "valueSats": "10000",
-            "scriptPubKeyHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
-            "sequence": 0,
-            "inventory": {
-              "examined": true,
-              "confirmed": true,
-              "inscriptions": [
-                {
-                  "inscriptionId": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdefi0",
-                  "offset": "10000",
-                  "satpoint": "example"
-                }
-              ],
-              "runeAllocations": [
-                {
-                  "runeId": "840000:1",
-                  "amount": "10000"
-                }
-              ],
-              "counterpartyAssets": [
-                {
-                  "name": "example",
-                  "assetId": "10000",
-                  "quantitySats": "10000"
-                }
-              ],
-              "rareSatRanges": [
-                {
-                  "rangeId": "example",
-                  "offset": "10000",
-                  "count": "10000"
-                }
-              ],
-              "unknownClaims": [
-                "example"
-              ]
-            }
-          }
-        ],
-        "outputs": [
-          {
-            "scriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
-            "valueSats": "10000",
-            "role": "recipient",
-            "explanation": "example"
-          }
-        ],
-        "assetTransitions": [
-          {
-            "assetType": "ORDINAL",
-            "assetId": "example",
-            "fromInput": 0,
-            "toOutput": 0,
-            "quantity": "10000"
-          }
-        ],
-        "fee": {
-          "feeSats": "10000",
-          "maxFeeSats": "10000",
-          "feeRateSatsPerVb": "10000"
-        },
-        "signing": {
-          "requiredIndexes": [
-            0
-          ],
-          "sighashType": "DEFAULT"
-        },
-        "findings": [
-          {}
-        ],
-        "digest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
-        "transaction": {
-          "version": 1,
-          "lockTime": 0
-        }
-      },
-      "verification": {
-        "checkedAt": "2026-09-29T00:00:00Z",
-        "ageSeconds": 1,
-        "maxAgeSeconds": 1,
-        "stale": true
-      },
-      "partition": {
-        "transactions": [
-          {}
-        ]
-      }
-    },
-    "responseExampleIssue": null,
+    "responseExample": null,
+    "responseExampleIssue": "Recursive schema #/components/schemas/SafeOpsPlanResult at $.partition.transactions[0]",
     "responses": {
       "200": {
         "content": {
@@ -3656,6 +3446,9 @@
           }
         },
         "description": "The result."
+      },
+      "404": {
+        "$ref": "#/components/responses/NotFound"
       },
       "default": {
         "$ref": "#/components/responses/Error"
@@ -3715,7 +3508,9 @@
         "vout": 0
       },
       "rbfEligible": true,
-      "cpfpEligible": true
+      "cpfpEligible": true,
+      "outcome": "VALID",
+      "retryable": true
     },
     "responseExampleIssue": null,
     "responses": {
@@ -3728,6 +3523,9 @@
           }
         },
         "description": "The result."
+      },
+      "404": {
+        "$ref": "#/components/responses/NotFound"
       },
       "default": {
         "$ref": "#/components/responses/Error"
@@ -3859,6 +3657,9 @@
           }
         },
         "description": "The result."
+      },
+      "404": {
+        "$ref": "#/components/responses/NotFound"
       },
       "default": {
         "$ref": "#/components/responses/Error"
@@ -4018,7 +3819,12 @@
     },
     "requestExample": {
       "parentTxid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
-      "targetFeeRateSatsPerVb": "10000"
+      "changeOutpoint": {
+        "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+        "vout": 0
+      },
+      "targetFeeRateSatsPerVb": "10000",
+      "childReceiveScriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d"
     },
     "requestExampleIssue": null,
     "successStatus": 201,
@@ -4202,6 +4008,7 @@
     "requestExampleIssue": null,
     "successStatus": 201,
     "responseExample": {
+      "id": "example",
       "intent": {
         "schema": "ordex.swap-intent/v1",
         "protocolVersion": "example",
@@ -4341,6 +4148,7 @@
     "responseExample": {
       "items": [
         {
+          "id": "example",
           "intent": {
             "schema": "ordex.swap-intent/v1",
             "protocolVersion": "example",
@@ -4446,6 +4254,7 @@
     "requestExampleIssue": null,
     "successStatus": 200,
     "responseExample": {
+      "id": "example",
       "intent": {
         "schema": "ordex.swap-intent/v1",
         "protocolVersion": "example",
@@ -4515,6 +4324,9 @@
         },
         "description": "The result."
       },
+      "404": {
+        "$ref": "#/components/responses/NotFound"
+      },
       "default": {
         "$ref": "#/components/responses/Error"
       }
@@ -4553,6 +4365,7 @@
     "requestExampleIssue": null,
     "successStatus": 201,
     "responseExample": {
+      "id": "example",
       "intent": {
         "schema": "ordex.swap-intent/v1",
         "protocolVersion": "example",
@@ -4621,6 +4434,9 @@
           }
         },
         "description": "The result."
+      },
+      "404": {
+        "$ref": "#/components/responses/NotFound"
       },
       "default": {
         "$ref": "#/components/responses/Error"
@@ -4884,6 +4700,9 @@
         },
         "description": "The result."
       },
+      "404": {
+        "$ref": "#/components/responses/NotFound"
+      },
       "default": {
         "$ref": "#/components/responses/Error"
       }
@@ -5092,6 +4911,9 @@
           }
         },
         "description": "The result."
+      },
+      "404": {
+        "$ref": "#/components/responses/NotFound"
       },
       "default": {
         "$ref": "#/components/responses/Error"
@@ -5307,6 +5129,9 @@
         },
         "description": "The result."
       },
+      "404": {
+        "$ref": "#/components/responses/NotFound"
+      },
       "default": {
         "$ref": "#/components/responses/Error"
       }
@@ -5350,10 +5175,13 @@
     "requestExampleIssue": null,
     "successStatus": 201,
     "responseExample": {
-      "checkedAt": "2026-09-29T00:00:00Z",
-      "ageSeconds": 1,
-      "maxAgeSeconds": 1,
-      "stale": true
+      "sessionId": "example",
+      "state": "DRAFT",
+      "allowed": true,
+      "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+      "refusalCode": "example",
+      "reason": "example",
+      "checkedAt": "2026-09-29T00:00:00Z"
     },
     "responseExampleIssue": null,
     "responses": {
@@ -5361,11 +5189,14 @@
         "content": {
           "application/json": {
             "schema": {
-              "$ref": "#/components/schemas/VerificationView"
+              "$ref": "#/components/schemas/SwapPreflightResult"
             }
           }
         },
         "description": "The result."
+      },
+      "404": {
+        "$ref": "#/components/responses/NotFound"
       },
       "default": {
         "$ref": "#/components/responses/Error"
@@ -5431,6 +5262,9 @@
         },
         "description": "The result."
       },
+      "404": {
+        "$ref": "#/components/responses/NotFound"
+      },
       "default": {
         "$ref": "#/components/responses/Error"
       }
@@ -5461,7 +5295,8 @@
       "privateId": "example",
       "ciphertext": "example",
       "expiresAt": "2026-09-29T00:00:00Z",
-      "destroyed": true
+      "destroyed": true,
+      "deleteCapability": "example"
     },
     "responseExampleIssue": null,
     "responses": {
@@ -5469,7 +5304,7 @@
         "content": {
           "application/json": {
             "schema": {
-              "$ref": "#/components/schemas/PrivateSwapEnvelope"
+              "$ref": "#/components/schemas/PrivateSwapStored"
             }
           }
         },
@@ -5567,6 +5402,9 @@
         },
         "description": "The result."
       },
+      "404": {
+        "$ref": "#/components/responses/NotFound"
+      },
       "default": {
         "$ref": "#/components/responses/Error"
       }
@@ -5625,6 +5463,9 @@
           }
         },
         "description": "The result."
+      },
+      "404": {
+        "$ref": "#/components/responses/NotFound"
       },
       "default": {
         "$ref": "#/components/responses/Error"
@@ -6133,6 +5974,9 @@
         },
         "description": "The result."
       },
+      "404": {
+        "$ref": "#/components/responses/NotFound"
+      },
       "default": {
         "$ref": "#/components/responses/Error"
       }
@@ -6205,6 +6049,9 @@
         },
         "description": "The result."
       },
+      "404": {
+        "$ref": "#/components/responses/NotFound"
+      },
       "default": {
         "$ref": "#/components/responses/Error"
       }
@@ -6260,6 +6107,9 @@
         },
         "description": "The result."
       },
+      "404": {
+        "$ref": "#/components/responses/NotFound"
+      },
       "default": {
         "$ref": "#/components/responses/Error"
       }
@@ -6308,6 +6158,9 @@
           }
         },
         "description": "The result."
+      },
+      "404": {
+        "$ref": "#/components/responses/NotFound"
       },
       "default": {
         "$ref": "#/components/responses/Error"
@@ -6377,6 +6230,9 @@
         },
         "description": "The result."
       },
+      "404": {
+        "$ref": "#/components/responses/NotFound"
+      },
       "default": {
         "$ref": "#/components/responses/Error"
       }
@@ -6431,6 +6287,9 @@
           }
         },
         "description": "The result."
+      },
+      "404": {
+        "$ref": "#/components/responses/NotFound"
       },
       "default": {
         "$ref": "#/components/responses/Error"
@@ -6575,6 +6434,9 @@
           }
         },
         "description": "The result."
+      },
+      "404": {
+        "$ref": "#/components/responses/NotFound"
       },
       "default": {
         "$ref": "#/components/responses/Error"
@@ -6920,6 +6782,9 @@
         },
         "description": "The result."
       },
+      "404": {
+        "$ref": "#/components/responses/NotFound"
+      },
       "default": {
         "$ref": "#/components/responses/Error"
       }
@@ -7027,6 +6892,9 @@
         },
         "description": "The result."
       },
+      "404": {
+        "$ref": "#/components/responses/NotFound"
+      },
       "default": {
         "$ref": "#/components/responses/Error"
       }
@@ -7133,6 +7001,9 @@
           }
         },
         "description": "The result."
+      },
+      "404": {
+        "$ref": "#/components/responses/NotFound"
       },
       "default": {
         "$ref": "#/components/responses/Error"
@@ -7246,6 +7117,9 @@
           }
         },
         "description": "The result."
+      },
+      "404": {
+        "$ref": "#/components/responses/NotFound"
       },
       "default": {
         "$ref": "#/components/responses/Error"
@@ -7383,6 +7257,18 @@
         "ledgerHash": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
         "lagBlocks": 1,
         "reason": "example"
+      },
+      "completeness": {
+        "complete": true,
+        "incomplete": [
+          {
+            "utxo": "example",
+            "reasons": [
+              "example"
+            ]
+          }
+        ],
+        "nextCursor": "example"
       }
     },
     "responseExampleIssue": null,
@@ -7396,6 +7282,9 @@
           }
         },
         "description": "The result."
+      },
+      "404": {
+        "$ref": "#/components/responses/NotFound"
       },
       "default": {
         "$ref": "#/components/responses/Error"
@@ -7439,52 +7328,82 @@
     "requestExample": null,
     "requestExampleIssue": null,
     "successStatus": 200,
-    "responseExample": [
-      {
-        "schema": "ordex.counterparty-utxo-asset/v1",
-        "network": "mainnet",
-        "asset": {
-          "name": "example",
-          "assetId": "10000",
-          "divisible": true,
-          "quantitySats": "10000",
-          "issuer": "example"
-        },
-        "outpoint": {
-          "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
-          "vout": 0
-        },
-        "address": "example",
-        "sourceValueSats": "10000",
-        "coTravelingAssets": [
-          {}
+    "responseExample": {
+      "asset": {
+        "name": "example",
+        "assetId": "10000"
+      },
+      "attachedUtxos": [
+        {
+          "schema": "ordex.counterparty-utxo-asset/v1",
+          "network": "mainnet",
+          "asset": {
+            "name": "example",
+            "assetId": "10000",
+            "divisible": true,
+            "quantitySats": "10000",
+            "issuer": "example"
+          },
+          "outpoint": {
+            "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+            "vout": 0
+          },
+          "address": "example",
+          "sourceValueSats": "10000",
+          "coTravelingAssets": [
+            {}
+          ],
+          "checkpoint": {
+            "height": 1,
+            "blockHash": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+            "ledgerHash": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
+          },
+          "authority": {
+            "kind": "counterparty-core",
+            "ready": true
+          },
+          "attached": true
+        }
+      ],
+      "completeness": {
+        "complete": true,
+        "incomplete": [
+          {
+            "utxo": "example",
+            "reasons": [
+              "example"
+            ]
+          }
         ],
+        "nextCursor": "example"
+      },
+      "readiness": {
+        "ready": true,
+        "network": "mainnet",
+        "serverReady": true,
         "checkpoint": {
-          "height": 1,
-          "blockHash": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
-          "ledgerHash": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
+          "height": 0,
+          "blockHash": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
         },
-        "authority": {
-          "kind": "counterparty-core",
-          "ready": true
-        },
-        "attached": true
+        "ledgerHash": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+        "lagBlocks": 1,
+        "reason": "example"
       }
-    ],
+    },
     "responseExampleIssue": null,
     "responses": {
       "200": {
         "content": {
           "application/json": {
             "schema": {
-              "type": "array",
-              "items": {
-                "$ref": "#/components/schemas/HeritageAttachmentRecord"
-              }
+              "$ref": "#/components/schemas/HeritageAssetUtxoPage"
             }
           }
         },
         "description": "The result."
+      },
+      "404": {
+        "$ref": "#/components/responses/NotFound"
       },
       "default": {
         "$ref": "#/components/responses/Error"
@@ -7518,24 +7437,45 @@
     "requestExample": null,
     "requestExampleIssue": null,
     "successStatus": 200,
-    "responseExample": [
-      {}
-    ],
+    "responseExample": {
+      "address": "example",
+      "balances": [
+        {
+          "name": "example",
+          "assetId": "10000",
+          "divisible": true,
+          "quantitySats": "10000",
+          "quantityNormalized": "example",
+          "utxo": "example"
+        }
+      ],
+      "readiness": {
+        "ready": true,
+        "network": "mainnet",
+        "serverReady": true,
+        "checkpoint": {
+          "height": 0,
+          "blockHash": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
+        },
+        "ledgerHash": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+        "lagBlocks": 1,
+        "reason": "example"
+      }
+    },
     "responseExampleIssue": null,
     "responses": {
       "200": {
         "content": {
           "application/json": {
             "schema": {
-              "type": "array",
-              "items": {
-                "type": "object",
-                "additionalProperties": true
-              }
+              "$ref": "#/components/schemas/HeritageAddressAssets"
             }
           }
         },
         "description": "The result."
+      },
+      "404": {
+        "$ref": "#/components/responses/NotFound"
       },
       "default": {
         "$ref": "#/components/responses/Error"
@@ -7569,7 +7509,59 @@
       "psbt": "example",
       "explanation": {},
       "xcpGasSats": "10000",
-      "minerFeeSats": "10000"
+      "minerFeeSats": "10000",
+      "operationId": "example",
+      "manifest": {
+        "schema": "ordex.expected-transaction-manifest/v2",
+        "network": "mainnet",
+        "purpose": "example",
+        "watchOnly": true,
+        "account": {
+          "descriptor": "example"
+        },
+        "unsignedTx": {
+          "inputs": [
+            {
+              "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+              "vout": 1,
+              "valueSats": "10000",
+              "scriptPubKeyHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
+              "controlledByUser": true,
+              "sighashType": "DEFAULT",
+              "explanation": "example",
+              "sequence": 0,
+              "preservedSignature": {
+                "scriptSigHex": "",
+                "witness": [
+                  ""
+                ]
+              }
+            }
+          ],
+          "outputs": [
+            {
+              "scriptHex": "example",
+              "valueSats": "10000",
+              "role": "example",
+              "explanation": "example",
+              "expectedAssets": [
+                {
+                  "assetType": "example",
+                  "assetId": "example",
+                  "quantity": "10000"
+                }
+              ]
+            }
+          ],
+          "version": 1,
+          "lockTime": 0
+        },
+        "fee": {
+          "feeSats": "10000",
+          "maxFeeSats": "10000"
+        },
+        "digest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
+      }
     },
     "responseExampleIssue": null,
     "responses": {
@@ -7613,7 +7605,59 @@
       "psbt": "example",
       "explanation": {},
       "xcpGasSats": "10000",
-      "minerFeeSats": "10000"
+      "minerFeeSats": "10000",
+      "operationId": "example",
+      "manifest": {
+        "schema": "ordex.expected-transaction-manifest/v2",
+        "network": "mainnet",
+        "purpose": "example",
+        "watchOnly": true,
+        "account": {
+          "descriptor": "example"
+        },
+        "unsignedTx": {
+          "inputs": [
+            {
+              "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+              "vout": 1,
+              "valueSats": "10000",
+              "scriptPubKeyHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
+              "controlledByUser": true,
+              "sighashType": "DEFAULT",
+              "explanation": "example",
+              "sequence": 0,
+              "preservedSignature": {
+                "scriptSigHex": "",
+                "witness": [
+                  ""
+                ]
+              }
+            }
+          ],
+          "outputs": [
+            {
+              "scriptHex": "example",
+              "valueSats": "10000",
+              "role": "example",
+              "explanation": "example",
+              "expectedAssets": [
+                {
+                  "assetType": "example",
+                  "assetId": "example",
+                  "quantity": "10000"
+                }
+              ]
+            }
+          ],
+          "version": 1,
+          "lockTime": 0
+        },
+        "fee": {
+          "feeSats": "10000",
+          "maxFeeSats": "10000"
+        },
+        "digest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
+      }
     },
     "responseExampleIssue": null,
     "responses": {
@@ -7756,7 +7800,11 @@
       },
       "state": "AWAITING_EXPORT",
       "signedResult": {},
-      "rejection": {}
+      "rejection": {},
+      "capabilities": {
+        "read": "example",
+        "import": "example"
+      }
     },
     "responseExampleIssue": null,
     "responses": {
@@ -7849,7 +7897,7 @@
     "responseExample": {
       "rows": [
         {
-          "id": "example",
+          "sessionId": "example",
           "network": "mainnet",
           "state": "AWAITING_EXPORT",
           "manifestDigest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
@@ -7968,7 +8016,11 @@
       },
       "state": "AWAITING_EXPORT",
       "signedResult": {},
-      "rejection": {}
+      "rejection": {},
+      "capabilities": {
+        "read": "example",
+        "import": "example"
+      }
     },
     "responseExampleIssue": null,
     "responses": {
@@ -7981,6 +8033,9 @@
           }
         },
         "description": "The result."
+      },
+      "404": {
+        "$ref": "#/components/responses/NotFound"
       },
       "default": {
         "$ref": "#/components/responses/Error"
@@ -8060,6 +8115,9 @@
           }
         },
         "description": "The result."
+      },
+      "404": {
+        "$ref": "#/components/responses/NotFound"
       },
       "default": {
         "$ref": "#/components/responses/Error"
@@ -8308,6 +8366,9 @@
           }
         }
       },
+      "404": {
+        "$ref": "#/components/responses/NotFound"
+      },
       "default": {
         "$ref": "#/components/responses/Error"
       }
@@ -8377,6 +8438,9 @@
             }
           }
         }
+      },
+      "404": {
+        "$ref": "#/components/responses/NotFound"
       },
       "default": {
         "$ref": "#/components/responses/Error"
@@ -8559,6 +8623,7 @@
     "requestExampleIssue": null,
     "successStatus": 201,
     "responseExample": {
+      "id": "example",
       "intent": {
         "schema": "ordex.swap-intent/v1",
         "protocolVersion": "example",
@@ -8897,6 +8962,9 @@
             }
           }
         }
+      },
+      "404": {
+        "$ref": "#/components/responses/NotFound"
       },
       "default": {
         "$ref": "#/components/responses/Error"

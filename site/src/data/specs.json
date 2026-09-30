@@ -31,6 +31,16 @@
       },
       {
         "level": 2,
+        "title": "Errors",
+        "anchor": "errors"
+      },
+      {
+        "level": 2,
+        "title": "Agents",
+        "anchor": "agents"
+      },
+      {
+        "level": 2,
         "title": "The protocol contract is checkable",
         "anchor": "the-protocol-contract-is-checkable"
       },
@@ -55,7 +65,7 @@
         "anchor": "-post-orders-id-preflight-"
       }
     ],
-    "rawLength": 9567
+    "rawLength": 10404
   },
   {
     "file": "batch-purchase.md",
@@ -280,7 +290,7 @@
         "anchor": "historical-apis"
       }
     ],
-    "rawLength": 7299
+    "rawLength": 8097
   },
   {
     "file": "interoperability.md",
@@ -568,7 +578,7 @@
         "anchor": "monitoring"
       }
     ],
-    "rawLength": 9835
+    "rawLength": 10209
   },
   {
     "file": "swaps.md",

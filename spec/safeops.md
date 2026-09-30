@@ -68,7 +68,7 @@ Every signed PSBT is reverified after the wallet returns. Verification disagreem
 
 RBF is offered only when node policy accepts the replacement and the user controls every input it requires. The replacement preserves every asset-bearing output, every third-party payment, every seller output, and every amount that may not legally change. The incremental fee comes only from verified user-owned cardinal change or newly added user-owned cardinal inputs. The user sees old fee, new fee, incremental fee, old and new effective fee rate, and every changed input or output.
 
-CPFP is offered only when the user controls a spendable output whose spending moves no tracked asset. The child fee is computed from the combined parent-and-child package fee rate under Bitcoin Core package, ancestor, descendant, dust, and standardness policy. An asset-bearing output may fund a child only when the child provably preserves the complete asset inventory.
+CPFP is offered only when the user controls a spendable output whose spending moves no tracked asset. The child fee is computed from the combined parent-and-child package fee rate under Bitcoin Core package, ancestor, descendant, dust, and standardness policy. An asset-bearing output may fund a child only when the child provably preserves the complete asset inventory. The request names the parent txid, the exact `changeOutpoint` of that parent the child spends, the package `targetFeeRateSatsPerVb`, and the wallet destination for the child (`childReceiveScriptHex` or `childAddress`). A refused bump answers `allowed: false` with a `refusalCode` and a null `plan`.
 
 ## Monitoring
 
