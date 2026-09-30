@@ -2051,6 +2051,8 @@ export interface components {
              */
             postedAt: string;
             checkpoint?: components["schemas"]["ListingReadiness"];
+            /** @description Settled offers only: true once the settling transaction is buried deep enough that the gateway treats the settlement as final. */
+            settlementFinal?: boolean;
         };
         OfferPage: {
             offers: components["schemas"]["OfferSummary"][];
@@ -2348,7 +2350,8 @@ export interface components {
             fee: {
                 feeSats: components["schemas"]["AtomicSats"];
                 maxFeeSats: components["schemas"]["AtomicSats"];
-                feeRateSatsPerVb?: components["schemas"]["AtomicSats"];
+                /** @description The exact fee rate the plan was built at, sats per virtual byte. */
+                feeRateSatsPerVb?: string;
             };
             signing: {
                 /** @description Every input index, once: the user signs every input. */
@@ -2484,7 +2487,8 @@ export interface components {
         SafeOpsCpfpResult: {
             /** @description Null when the bump is refused; refusalCode then says why. */
             plan: components["schemas"]["SafeOpsPlan"] | null;
-            packageFeeRateSatsPerVb?: components["schemas"]["AtomicSats"];
+            /** @description The parent and child package fee rate the child reaches, sats per virtual byte. */
+            packageFeeRateSatsPerVb?: string;
             allowed: boolean;
             refusalCode?: string;
         };
@@ -2971,7 +2975,7 @@ export interface components {
             sessionId: string;
             manifest: components["schemas"]["ExpectedTransactionManifest"];
             /** @enum {string} */
-            state: "AWAITING_EXPORT" | "AWAITING_SIGNATURE" | "SIGNED_VERIFIED" | "REJECTED" | "BROADCAST";
+            state: "AWAITING_EXPORT" | "AWAITING_SIGNATURE" | "PARTIALLY_SIGNED" | "SIGNED_VERIFIED" | "REJECTED" | "BROADCAST";
             signedResult?: {
                 [key: string]: unknown;
             };
@@ -3117,7 +3121,7 @@ export interface components {
             sessionId: string;
             network: components["schemas"]["V12Network"];
             /** @enum {string} */
-            state: "AWAITING_EXPORT" | "AWAITING_SIGNATURE" | "SIGNED_VERIFIED" | "REJECTED" | "BROADCAST";
+            state: "AWAITING_EXPORT" | "AWAITING_SIGNATURE" | "PARTIALLY_SIGNED" | "SIGNED_VERIFIED" | "REJECTED" | "BROADCAST";
             manifestDigest: string;
             /** Format: date-time */
             createdAt: string;
@@ -5234,7 +5238,8 @@ export interface operations {
                 content: {
                     "application/json": {
                         manifest: components["schemas"]["CollectionManifestDocument"];
-                        revocation: {
+                        /** @description The signed revocation; REVOKE revisions only. */
+                        revocation?: {
                             [key: string]: unknown;
                         };
                     };

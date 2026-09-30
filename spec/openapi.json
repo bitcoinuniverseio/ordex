@@ -3158,8 +3158,7 @@
                 "schema": {
                   "type": "object",
                   "required": [
-                    "manifest",
-                    "revocation"
+                    "manifest"
                   ],
                   "properties": {
                     "manifest": {
@@ -3167,7 +3166,8 @@
                     },
                     "revocation": {
                       "type": "object",
-                      "additionalProperties": true
+                      "additionalProperties": true,
+                      "description": "The signed revocation; REVOKE revisions only."
                     }
                   }
                 }
@@ -5928,6 +5928,10 @@
           },
           "checkpoint": {
             "$ref": "#/components/schemas/ListingReadiness"
+          },
+          "settlementFinal": {
+            "type": "boolean",
+            "description": "Settled offers only: true once the settling transaction is buried deep enough that the gateway treats the settlement as final."
           }
         }
       },
@@ -7026,7 +7030,9 @@
                 "$ref": "#/components/schemas/AtomicSats"
               },
               "feeRateSatsPerVb": {
-                "$ref": "#/components/schemas/AtomicSats"
+                "type": "string",
+                "pattern": "^[0-9]{1,6}(\\.[0-9]{1,4})?$",
+                "description": "The exact fee rate the plan was built at, sats per virtual byte."
               }
             }
           },
@@ -7521,7 +7527,9 @@
             "description": "Null when the bump is refused; refusalCode then says why."
           },
           "packageFeeRateSatsPerVb": {
-            "$ref": "#/components/schemas/AtomicSats"
+            "type": "string",
+            "pattern": "^[0-9]{1,6}(\\.[0-9]{1,4})?$",
+            "description": "The parent and child package fee rate the child reaches, sats per virtual byte."
           },
           "allowed": {
             "type": "boolean"
@@ -9287,6 +9295,7 @@
             "enum": [
               "AWAITING_EXPORT",
               "AWAITING_SIGNATURE",
+              "PARTIALLY_SIGNED",
               "SIGNED_VERIFIED",
               "REJECTED",
               "BROADCAST"
@@ -9783,6 +9792,7 @@
             "enum": [
               "AWAITING_EXPORT",
               "AWAITING_SIGNATURE",
+              "PARTIALLY_SIGNED",
               "SIGNED_VERIFIED",
               "REJECTED",
               "BROADCAST"
