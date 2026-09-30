@@ -21,7 +21,7 @@ test('ingest validates, deduplicates, bounds the buffer and advances the cursor 
   let s = createStreamState();
   let r = ingestEvent(s, JSON.stringify(envelope(1)), validateOrdexEvent, `${envelope(1).sequence}:${envelope(1).id}`);
   assert.equal(r.outcome, 'accepted');
-  assert.equal(r.state.cursor, envelope(1).id);
+  assert.equal(r.state.cursor, `${envelope(1).sequence}:${envelope(1).id}`, 'the SSE id is the resume position');
   s = r.state;
   r = ingestEvent(s, JSON.stringify(envelope(1)), validateOrdexEvent);
   assert.equal(r.outcome, 'duplicate');

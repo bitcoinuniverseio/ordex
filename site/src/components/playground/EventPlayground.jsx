@@ -131,7 +131,7 @@ export function EventPlayground() {
   }, [tab, playing, position]);
 
   const process = (msg) => {
-    const r = ingestEvent(streamRef.current, msg.data, validateOrdexEvent, msg.id);
+    const r = ingestEvent(streamRef.current, msg.data, validateOrdexEvent, msg.id, msg.cursor ?? null);
     streamRef.current = r.state;
     setStream(r.state);
     if (r.outcome === 'invalid') setLastIssue(r.detail);

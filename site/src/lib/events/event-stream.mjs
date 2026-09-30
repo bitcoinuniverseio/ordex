@@ -54,9 +54,11 @@ export function createStreamState() {
 
 /**
  * Process one raw message: parse, validate, deduplicate, bound the buffer and advance the
- * cursor. `validate` is the ordex-event/v1 verifier. Returns { state, outcome, detail }.
+ * cursor. `validate` is the ordex-event/v1 verifier. The cursor is the transport resume
+ * position: the WebSocket frame cursor, else the SSE id (<sequence>:<eventId>), else the event
+ * id for local examples. Returns { state, outcome, detail }.
  */
-export function ingestEvent(state, rawText, validate, transportId = null) {
+export function ingestEvent(state, rawText, validate, transportId = null, position = null) {
   let envelope;
   try {
     envelope = typeof rawText === 'string' ? JSON.parse(rawText) : rawText;
@@ -80,7 +82,7 @@ export function ingestEvent(state, rawText, validate, transportId = null) {
     state: {
       events,
       seen,
-      cursor: envelope.id,
+      cursor: position ?? transportId ?? envelope.id,
       lastSequence: typeof envelope.sequence === 'number' && !outOfOrder ? envelope.sequence : state.lastSequence,
       counts: { ...state.counts, accepted: state.counts.accepted + 1, outOfOrder: state.counts.outOfOrder + (outOfOrder ? 1 : 0) }
     },
@@ -193,7 +195,7 @@ export function runWebSocket({ url, cursor = null, filters = {}, WebSocketImpl =
         }
         if (frame?.op === 'event' && frame.id === SUBSCRIPTION_ID) {
           // Every event arrives wrapped with its subscription cursor; the cursor moves only after it is processed.
-          const processed = await onMessage({ id: null, event: 'message', data: JSON.stringify(frame.event ?? null) });
+          const processed = await onMessage({ id: null, cursor: typeof frame.cursor === 'string' ? frame.cursor : null, event: 'message', data: JSON.stringify(frame.event ?? null) });
           if (processed && typeof frame.cursor === 'string') {
             current = frame.cursor;
             attempt = 0;

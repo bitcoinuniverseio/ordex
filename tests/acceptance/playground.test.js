@@ -28,6 +28,9 @@ const NO_GATEWAY =
 // A local event source serving the conformance event envelopes over SSE and WebSocket.
 const base = vectors.cases.find((c) => c.kind === 'event' && c.expected.ok).event;
 const ev = (n) => ({ ...base, id: `${String(n).padStart(8, '0')}-4b5a-4978-8796-a5b4c3d2e1f0`, sequence: 5000 + n });
+// The stream position of one event, as the SSE id and WebSocket cursor carry it.
+const pos = (e) => `${e.sequence}:${e.id}`;
+const after = (cursor) => Number(cursor.split(':')[1].slice(0, 8)) + 1;
 const seen = { sse: [], ws: [] };
 let expireCursor = null;
 
@@ -70,11 +73,11 @@ before(async () => {
       seen.sse.push(last);
       if (expireCursor && last === expireCursor) return res.writeHead(410, { 'content-type': 'application/json' }).end('{"statusCode":410,"error":"Gone","message":"cursor expired","requestId":"r"}');
       res.writeHead(200, { 'content-type': 'text/event-stream', 'cache-control': 'no-store' });
-      const start = last ? Number(last.slice(0, 8)) + 1 : 1;
-      for (let n = start; n < start + 2; n++) res.write(`id: ${ev(n).id}\ndata: ${JSON.stringify(ev(n))}\n\n`);
-      res.write(`id: ${ev(start).id}\ndata: ${JSON.stringify(ev(start))}\n\n`); // duplicate
+      const start = last ? after(last) : 1;
+      for (let n = start; n < start + 2; n++) res.write(`id: ${pos(ev(n))}\ndata: ${JSON.stringify(ev(n))}\n\n`);
+      res.write(`id: ${pos(ev(start))}\ndata: ${JSON.stringify(ev(start))}\n\n`); // duplicate
       const older = { ...ev(start + 2), sequence: 4000 }; // out of order
-      res.write(`id: ${older.id}\ndata: ${JSON.stringify(older)}\n\n`);
+      res.write(`id: ${pos(older)}\ndata: ${JSON.stringify(older)}\n\n`);
       res.write('data: {"not":"an event"}\n\n');
       return res.end();
     }
@@ -89,9 +92,12 @@ before(async () => {
     socket.once('data', (buf) => {
       const sub = JSON.parse(wsRead(buf));
       seen.ws.push(sub);
-      const start = sub.cursor ? Number(sub.cursor.slice(0, 8)) + 1 : 11;
-      for (let n = start; n < start + 3; n++) socket.write(wsFrame(JSON.stringify(ev(n))));
-      socket.write(wsFrame(JSON.stringify(ev(start))));
+      const start = sub.cursor ? after(sub.cursor) : 11;
+      // Every event is wrapped with its subscription id and its own resume cursor.
+      const frame = (e) => wsFrame(JSON.stringify({ op: 'event', id: sub.id, cursor: pos(e), event: e }));
+      socket.write(wsFrame(JSON.stringify({ op: 'subscribed', id: sub.id })));
+      for (let n = start; n < start + 3; n++) socket.write(frame(ev(n)));
+      socket.write(frame(ev(start)));
     });
     socket.on('error', () => {});
   });
@@ -199,7 +205,7 @@ test('Event Playground rows', { timeout: 300000 }, async () => {
 
   await rec.check(byOp('Replay cursor').id, 'reconnect and reload resume after the last processed event', async () => {
     const cursor = (await page.getByText(/^Resume cursor/).innerText()).split(': ').pop().trim();
-    expect(/^\d{8}-/.test(cursor), `no cursor saved: ${cursor}`);
+    expect(/^\d+:\d{8}-/.test(cursor), `no cursor saved: ${cursor}`);
     await page.reload({ waitUntil: 'networkidle' });
     await page.getByRole('tab', { name: 'SSE stream' }).click();
     const n = seen.sse.length;
@@ -231,7 +237,7 @@ test('Event Playground rows', { timeout: 300000 }, async () => {
     await page.getByRole('button', { name: 'Connect', exact: true }).click();
     await page.getByText(/Accepted 3, duplicates 1/).waitFor({ timeout: 20000 });
     await page.getByRole('button', { name: 'Disconnect' }).click();
-    expect(seen.ws[0]?.op === 'subscribe' && seen.ws[0].filters?.network === 'signet', `subscribe message: ${JSON.stringify(seen.ws[0])}`);
+    expect(seen.ws[0]?.op === 'subscribe' && typeof seen.ws[0].id === 'string' && seen.ws[0].filters?.network === 'signet', `subscribe message: ${JSON.stringify(seen.ws[0])}`);
     return { subscribe: seen.ws[0], counts: await page.getByText(/^Accepted \d+, duplicates/).innerText() };
   });
 

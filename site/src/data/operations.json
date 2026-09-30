@@ -3394,8 +3394,485 @@
     },
     "requestExampleIssue": null,
     "successStatus": 201,
-    "responseExample": null,
-    "responseExampleIssue": "No sample for pattern ^[0-9]{1,6}(\\.[0-9]{1,4})?$ at $.plan.fee.feeRateSatsPerVb",
+    "responseExample": {
+      "planId": "example",
+      "state": "BUILT",
+      "plan": {
+        "schema": "ordex.safeops-plan/v2",
+        "protocolVersion": "example",
+        "network": "mainnet",
+        "operationKind": "BTC_BATCH_SEND",
+        "createdAtHeight": 1,
+        "expiryHeight": 1,
+        "checkpoint": {
+          "height": 0,
+          "blockHash": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
+        },
+        "inputs": [
+          {
+            "outpoint": {
+              "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+              "vout": 0
+            },
+            "valueSats": "10000",
+            "scriptPubKeyHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
+            "sequence": 0,
+            "inventory": {
+              "examined": true,
+              "confirmed": true,
+              "inscriptions": [
+                {
+                  "inscriptionId": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdefi0",
+                  "offset": "10000",
+                  "satpoint": "example"
+                }
+              ],
+              "runeAllocations": [
+                {
+                  "runeId": "840000:1",
+                  "amount": "10000"
+                }
+              ],
+              "counterpartyAssets": [
+                {
+                  "name": "example",
+                  "assetId": "10000",
+                  "quantitySats": "10000"
+                }
+              ],
+              "rareSatRanges": [
+                {
+                  "rangeId": "example",
+                  "offset": "10000",
+                  "count": "10000"
+                }
+              ],
+              "unknownClaims": [
+                "example"
+              ]
+            }
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
+            "valueSats": "10000",
+            "role": "recipient",
+            "explanation": "example"
+          }
+        ],
+        "assetTransitions": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "example",
+            "fromInput": 0,
+            "toOutput": 0,
+            "quantity": "10000"
+          }
+        ],
+        "fee": {
+          "feeSats": "10000",
+          "maxFeeSats": "10000",
+          "feeRateSatsPerVb": "5.2500"
+        },
+        "signing": {
+          "requiredIndexes": [
+            0
+          ],
+          "sighashType": "DEFAULT"
+        },
+        "findings": [
+          {}
+        ],
+        "digest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+        "transaction": {
+          "version": 1,
+          "lockTime": 0
+        }
+      },
+      "verification": {
+        "checkedAt": "2026-09-29T00:00:00Z",
+        "ageSeconds": 1,
+        "maxAgeSeconds": 1,
+        "stale": true
+      },
+      "psbt": "example",
+      "manifest": {
+        "schema": "ordex.expected-transaction-manifest/v2",
+        "network": "mainnet",
+        "purpose": "example",
+        "watchOnly": true,
+        "account": {
+          "descriptor": "example"
+        },
+        "unsignedTx": {
+          "inputs": [
+            {
+              "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+              "vout": 1,
+              "valueSats": "10000",
+              "scriptPubKeyHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
+              "controlledByUser": true,
+              "sighashType": "DEFAULT",
+              "explanation": "example",
+              "sequence": 0,
+              "preservedSignature": {
+                "scriptSigHex": "",
+                "witness": [
+                  ""
+                ]
+              }
+            }
+          ],
+          "outputs": [
+            {
+              "scriptHex": "example",
+              "valueSats": "10000",
+              "role": "example",
+              "explanation": "example",
+              "expectedAssets": [
+                {
+                  "assetType": "example",
+                  "assetId": "example",
+                  "quantity": "10000"
+                }
+              ]
+            }
+          ],
+          "version": 1,
+          "lockTime": 0
+        },
+        "fee": {
+          "feeSats": "10000",
+          "maxFeeSats": "10000"
+        },
+        "digest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
+      },
+      "invalidatedReason": "example",
+      "createdAt": "2026-09-29T00:00:00Z",
+      "updatedAt": "2026-09-29T00:00:00Z",
+      "partition": {
+        "transactions": [
+          {
+            "planId": "example",
+            "state": "BUILT",
+            "plan": {
+              "schema": "ordex.safeops-plan/v2",
+              "protocolVersion": "example",
+              "network": "mainnet",
+              "operationKind": "BTC_BATCH_SEND",
+              "createdAtHeight": 1,
+              "expiryHeight": 1,
+              "checkpoint": {
+                "height": 0,
+                "blockHash": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
+              },
+              "inputs": [
+                {
+                  "outpoint": {
+                    "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+                    "vout": 0
+                  },
+                  "valueSats": "10000",
+                  "scriptPubKeyHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
+                  "sequence": 0,
+                  "inventory": {
+                    "examined": true,
+                    "confirmed": true,
+                    "inscriptions": [
+                      {
+                        "inscriptionId": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdefi0",
+                        "offset": "10000",
+                        "satpoint": "example"
+                      }
+                    ],
+                    "runeAllocations": [
+                      {
+                        "runeId": "840000:1",
+                        "amount": "10000"
+                      }
+                    ],
+                    "counterpartyAssets": [
+                      {
+                        "name": "example",
+                        "assetId": "10000",
+                        "quantitySats": "10000"
+                      }
+                    ],
+                    "rareSatRanges": [
+                      {
+                        "rangeId": "example",
+                        "offset": "10000",
+                        "count": "10000"
+                      }
+                    ],
+                    "unknownClaims": [
+                      "example"
+                    ]
+                  }
+                }
+              ],
+              "outputs": [
+                {
+                  "scriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
+                  "valueSats": "10000",
+                  "role": "recipient",
+                  "explanation": "example"
+                }
+              ],
+              "assetTransitions": [
+                {
+                  "assetType": "ORDINAL",
+                  "assetId": "example",
+                  "fromInput": 0,
+                  "toOutput": 0,
+                  "quantity": "10000"
+                }
+              ],
+              "fee": {
+                "feeSats": "10000",
+                "maxFeeSats": "10000",
+                "feeRateSatsPerVb": "5.2500"
+              },
+              "signing": {
+                "requiredIndexes": [
+                  0
+                ],
+                "sighashType": "DEFAULT"
+              },
+              "findings": [
+                {}
+              ],
+              "digest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+              "transaction": {
+                "version": 1,
+                "lockTime": 0
+              }
+            },
+            "verification": {
+              "checkedAt": "2026-09-29T00:00:00Z",
+              "ageSeconds": 1,
+              "maxAgeSeconds": 1,
+              "stale": true
+            },
+            "psbt": "example",
+            "manifest": {
+              "schema": "ordex.expected-transaction-manifest/v2",
+              "network": "mainnet",
+              "purpose": "example",
+              "watchOnly": true,
+              "account": {
+                "descriptor": "example"
+              },
+              "unsignedTx": {
+                "inputs": [
+                  {
+                    "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+                    "vout": 1,
+                    "valueSats": "10000",
+                    "scriptPubKeyHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
+                    "controlledByUser": true,
+                    "sighashType": "DEFAULT",
+                    "explanation": "example",
+                    "sequence": 0,
+                    "preservedSignature": {
+                      "scriptSigHex": "",
+                      "witness": [
+                        ""
+                      ]
+                    }
+                  }
+                ],
+                "outputs": [
+                  {
+                    "scriptHex": "example",
+                    "valueSats": "10000",
+                    "role": "example",
+                    "explanation": "example",
+                    "expectedAssets": [
+                      {
+                        "assetType": "example",
+                        "assetId": "example",
+                        "quantity": "10000"
+                      }
+                    ]
+                  }
+                ],
+                "version": 1,
+                "lockTime": 0
+              },
+              "fee": {
+                "feeSats": "10000",
+                "maxFeeSats": "10000"
+              },
+              "digest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
+            },
+            "invalidatedReason": "example",
+            "createdAt": "2026-09-29T00:00:00Z",
+            "updatedAt": "2026-09-29T00:00:00Z"
+          },
+          {
+            "planId": "example",
+            "state": "BUILT",
+            "plan": {
+              "schema": "ordex.safeops-plan/v2",
+              "protocolVersion": "example",
+              "network": "mainnet",
+              "operationKind": "BTC_BATCH_SEND",
+              "createdAtHeight": 1,
+              "expiryHeight": 1,
+              "checkpoint": {
+                "height": 0,
+                "blockHash": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
+              },
+              "inputs": [
+                {
+                  "outpoint": {
+                    "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+                    "vout": 0
+                  },
+                  "valueSats": "10000",
+                  "scriptPubKeyHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
+                  "sequence": 0,
+                  "inventory": {
+                    "examined": true,
+                    "confirmed": true,
+                    "inscriptions": [
+                      {
+                        "inscriptionId": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdefi0",
+                        "offset": "10000",
+                        "satpoint": "example"
+                      }
+                    ],
+                    "runeAllocations": [
+                      {
+                        "runeId": "840000:1",
+                        "amount": "10000"
+                      }
+                    ],
+                    "counterpartyAssets": [
+                      {
+                        "name": "example",
+                        "assetId": "10000",
+                        "quantitySats": "10000"
+                      }
+                    ],
+                    "rareSatRanges": [
+                      {
+                        "rangeId": "example",
+                        "offset": "10000",
+                        "count": "10000"
+                      }
+                    ],
+                    "unknownClaims": [
+                      "example"
+                    ]
+                  }
+                }
+              ],
+              "outputs": [
+                {
+                  "scriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
+                  "valueSats": "10000",
+                  "role": "recipient",
+                  "explanation": "example"
+                }
+              ],
+              "assetTransitions": [
+                {
+                  "assetType": "ORDINAL",
+                  "assetId": "example",
+                  "fromInput": 0,
+                  "toOutput": 0,
+                  "quantity": "10000"
+                }
+              ],
+              "fee": {
+                "feeSats": "10000",
+                "maxFeeSats": "10000",
+                "feeRateSatsPerVb": "5.2500"
+              },
+              "signing": {
+                "requiredIndexes": [
+                  0
+                ],
+                "sighashType": "DEFAULT"
+              },
+              "findings": [
+                {}
+              ],
+              "digest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+              "transaction": {
+                "version": 1,
+                "lockTime": 0
+              }
+            },
+            "verification": {
+              "checkedAt": "2026-09-29T00:00:00Z",
+              "ageSeconds": 1,
+              "maxAgeSeconds": 1,
+              "stale": true
+            },
+            "psbt": "example",
+            "manifest": {
+              "schema": "ordex.expected-transaction-manifest/v2",
+              "network": "mainnet",
+              "purpose": "example",
+              "watchOnly": true,
+              "account": {
+                "descriptor": "example"
+              },
+              "unsignedTx": {
+                "inputs": [
+                  {
+                    "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+                    "vout": 1,
+                    "valueSats": "10000",
+                    "scriptPubKeyHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
+                    "controlledByUser": true,
+                    "sighashType": "DEFAULT",
+                    "explanation": "example",
+                    "sequence": 0,
+                    "preservedSignature": {
+                      "scriptSigHex": "",
+                      "witness": [
+                        ""
+                      ]
+                    }
+                  }
+                ],
+                "outputs": [
+                  {
+                    "scriptHex": "example",
+                    "valueSats": "10000",
+                    "role": "example",
+                    "explanation": "example",
+                    "expectedAssets": [
+                      {
+                        "assetType": "example",
+                        "assetId": "example",
+                        "quantity": "10000"
+                      }
+                    ]
+                  }
+                ],
+                "version": 1,
+                "lockTime": 0
+              },
+              "fee": {
+                "feeSats": "10000",
+                "maxFeeSats": "10000"
+              },
+              "digest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
+            },
+            "invalidatedReason": "example",
+            "createdAt": "2026-09-29T00:00:00Z",
+            "updatedAt": "2026-09-29T00:00:00Z"
+          }
+        ]
+      }
+    },
+    "responseExampleIssue": null,
     "responses": {
       "201": {
         "content": {
@@ -3439,8 +3916,485 @@
     "requestExample": null,
     "requestExampleIssue": null,
     "successStatus": 200,
-    "responseExample": null,
-    "responseExampleIssue": "No sample for pattern ^[0-9]{1,6}(\\.[0-9]{1,4})?$ at $.plan.fee.feeRateSatsPerVb",
+    "responseExample": {
+      "planId": "example",
+      "state": "BUILT",
+      "plan": {
+        "schema": "ordex.safeops-plan/v2",
+        "protocolVersion": "example",
+        "network": "mainnet",
+        "operationKind": "BTC_BATCH_SEND",
+        "createdAtHeight": 1,
+        "expiryHeight": 1,
+        "checkpoint": {
+          "height": 0,
+          "blockHash": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
+        },
+        "inputs": [
+          {
+            "outpoint": {
+              "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+              "vout": 0
+            },
+            "valueSats": "10000",
+            "scriptPubKeyHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
+            "sequence": 0,
+            "inventory": {
+              "examined": true,
+              "confirmed": true,
+              "inscriptions": [
+                {
+                  "inscriptionId": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdefi0",
+                  "offset": "10000",
+                  "satpoint": "example"
+                }
+              ],
+              "runeAllocations": [
+                {
+                  "runeId": "840000:1",
+                  "amount": "10000"
+                }
+              ],
+              "counterpartyAssets": [
+                {
+                  "name": "example",
+                  "assetId": "10000",
+                  "quantitySats": "10000"
+                }
+              ],
+              "rareSatRanges": [
+                {
+                  "rangeId": "example",
+                  "offset": "10000",
+                  "count": "10000"
+                }
+              ],
+              "unknownClaims": [
+                "example"
+              ]
+            }
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
+            "valueSats": "10000",
+            "role": "recipient",
+            "explanation": "example"
+          }
+        ],
+        "assetTransitions": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "example",
+            "fromInput": 0,
+            "toOutput": 0,
+            "quantity": "10000"
+          }
+        ],
+        "fee": {
+          "feeSats": "10000",
+          "maxFeeSats": "10000",
+          "feeRateSatsPerVb": "5.2500"
+        },
+        "signing": {
+          "requiredIndexes": [
+            0
+          ],
+          "sighashType": "DEFAULT"
+        },
+        "findings": [
+          {}
+        ],
+        "digest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+        "transaction": {
+          "version": 1,
+          "lockTime": 0
+        }
+      },
+      "verification": {
+        "checkedAt": "2026-09-29T00:00:00Z",
+        "ageSeconds": 1,
+        "maxAgeSeconds": 1,
+        "stale": true
+      },
+      "psbt": "example",
+      "manifest": {
+        "schema": "ordex.expected-transaction-manifest/v2",
+        "network": "mainnet",
+        "purpose": "example",
+        "watchOnly": true,
+        "account": {
+          "descriptor": "example"
+        },
+        "unsignedTx": {
+          "inputs": [
+            {
+              "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+              "vout": 1,
+              "valueSats": "10000",
+              "scriptPubKeyHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
+              "controlledByUser": true,
+              "sighashType": "DEFAULT",
+              "explanation": "example",
+              "sequence": 0,
+              "preservedSignature": {
+                "scriptSigHex": "",
+                "witness": [
+                  ""
+                ]
+              }
+            }
+          ],
+          "outputs": [
+            {
+              "scriptHex": "example",
+              "valueSats": "10000",
+              "role": "example",
+              "explanation": "example",
+              "expectedAssets": [
+                {
+                  "assetType": "example",
+                  "assetId": "example",
+                  "quantity": "10000"
+                }
+              ]
+            }
+          ],
+          "version": 1,
+          "lockTime": 0
+        },
+        "fee": {
+          "feeSats": "10000",
+          "maxFeeSats": "10000"
+        },
+        "digest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
+      },
+      "invalidatedReason": "example",
+      "createdAt": "2026-09-29T00:00:00Z",
+      "updatedAt": "2026-09-29T00:00:00Z",
+      "partition": {
+        "transactions": [
+          {
+            "planId": "example",
+            "state": "BUILT",
+            "plan": {
+              "schema": "ordex.safeops-plan/v2",
+              "protocolVersion": "example",
+              "network": "mainnet",
+              "operationKind": "BTC_BATCH_SEND",
+              "createdAtHeight": 1,
+              "expiryHeight": 1,
+              "checkpoint": {
+                "height": 0,
+                "blockHash": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
+              },
+              "inputs": [
+                {
+                  "outpoint": {
+                    "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+                    "vout": 0
+                  },
+                  "valueSats": "10000",
+                  "scriptPubKeyHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
+                  "sequence": 0,
+                  "inventory": {
+                    "examined": true,
+                    "confirmed": true,
+                    "inscriptions": [
+                      {
+                        "inscriptionId": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdefi0",
+                        "offset": "10000",
+                        "satpoint": "example"
+                      }
+                    ],
+                    "runeAllocations": [
+                      {
+                        "runeId": "840000:1",
+                        "amount": "10000"
+                      }
+                    ],
+                    "counterpartyAssets": [
+                      {
+                        "name": "example",
+                        "assetId": "10000",
+                        "quantitySats": "10000"
+                      }
+                    ],
+                    "rareSatRanges": [
+                      {
+                        "rangeId": "example",
+                        "offset": "10000",
+                        "count": "10000"
+                      }
+                    ],
+                    "unknownClaims": [
+                      "example"
+                    ]
+                  }
+                }
+              ],
+              "outputs": [
+                {
+                  "scriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
+                  "valueSats": "10000",
+                  "role": "recipient",
+                  "explanation": "example"
+                }
+              ],
+              "assetTransitions": [
+                {
+                  "assetType": "ORDINAL",
+                  "assetId": "example",
+                  "fromInput": 0,
+                  "toOutput": 0,
+                  "quantity": "10000"
+                }
+              ],
+              "fee": {
+                "feeSats": "10000",
+                "maxFeeSats": "10000",
+                "feeRateSatsPerVb": "5.2500"
+              },
+              "signing": {
+                "requiredIndexes": [
+                  0
+                ],
+                "sighashType": "DEFAULT"
+              },
+              "findings": [
+                {}
+              ],
+              "digest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+              "transaction": {
+                "version": 1,
+                "lockTime": 0
+              }
+            },
+            "verification": {
+              "checkedAt": "2026-09-29T00:00:00Z",
+              "ageSeconds": 1,
+              "maxAgeSeconds": 1,
+              "stale": true
+            },
+            "psbt": "example",
+            "manifest": {
+              "schema": "ordex.expected-transaction-manifest/v2",
+              "network": "mainnet",
+              "purpose": "example",
+              "watchOnly": true,
+              "account": {
+                "descriptor": "example"
+              },
+              "unsignedTx": {
+                "inputs": [
+                  {
+                    "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+                    "vout": 1,
+                    "valueSats": "10000",
+                    "scriptPubKeyHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
+                    "controlledByUser": true,
+                    "sighashType": "DEFAULT",
+                    "explanation": "example",
+                    "sequence": 0,
+                    "preservedSignature": {
+                      "scriptSigHex": "",
+                      "witness": [
+                        ""
+                      ]
+                    }
+                  }
+                ],
+                "outputs": [
+                  {
+                    "scriptHex": "example",
+                    "valueSats": "10000",
+                    "role": "example",
+                    "explanation": "example",
+                    "expectedAssets": [
+                      {
+                        "assetType": "example",
+                        "assetId": "example",
+                        "quantity": "10000"
+                      }
+                    ]
+                  }
+                ],
+                "version": 1,
+                "lockTime": 0
+              },
+              "fee": {
+                "feeSats": "10000",
+                "maxFeeSats": "10000"
+              },
+              "digest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
+            },
+            "invalidatedReason": "example",
+            "createdAt": "2026-09-29T00:00:00Z",
+            "updatedAt": "2026-09-29T00:00:00Z"
+          },
+          {
+            "planId": "example",
+            "state": "BUILT",
+            "plan": {
+              "schema": "ordex.safeops-plan/v2",
+              "protocolVersion": "example",
+              "network": "mainnet",
+              "operationKind": "BTC_BATCH_SEND",
+              "createdAtHeight": 1,
+              "expiryHeight": 1,
+              "checkpoint": {
+                "height": 0,
+                "blockHash": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
+              },
+              "inputs": [
+                {
+                  "outpoint": {
+                    "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+                    "vout": 0
+                  },
+                  "valueSats": "10000",
+                  "scriptPubKeyHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
+                  "sequence": 0,
+                  "inventory": {
+                    "examined": true,
+                    "confirmed": true,
+                    "inscriptions": [
+                      {
+                        "inscriptionId": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdefi0",
+                        "offset": "10000",
+                        "satpoint": "example"
+                      }
+                    ],
+                    "runeAllocations": [
+                      {
+                        "runeId": "840000:1",
+                        "amount": "10000"
+                      }
+                    ],
+                    "counterpartyAssets": [
+                      {
+                        "name": "example",
+                        "assetId": "10000",
+                        "quantitySats": "10000"
+                      }
+                    ],
+                    "rareSatRanges": [
+                      {
+                        "rangeId": "example",
+                        "offset": "10000",
+                        "count": "10000"
+                      }
+                    ],
+                    "unknownClaims": [
+                      "example"
+                    ]
+                  }
+                }
+              ],
+              "outputs": [
+                {
+                  "scriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
+                  "valueSats": "10000",
+                  "role": "recipient",
+                  "explanation": "example"
+                }
+              ],
+              "assetTransitions": [
+                {
+                  "assetType": "ORDINAL",
+                  "assetId": "example",
+                  "fromInput": 0,
+                  "toOutput": 0,
+                  "quantity": "10000"
+                }
+              ],
+              "fee": {
+                "feeSats": "10000",
+                "maxFeeSats": "10000",
+                "feeRateSatsPerVb": "5.2500"
+              },
+              "signing": {
+                "requiredIndexes": [
+                  0
+                ],
+                "sighashType": "DEFAULT"
+              },
+              "findings": [
+                {}
+              ],
+              "digest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+              "transaction": {
+                "version": 1,
+                "lockTime": 0
+              }
+            },
+            "verification": {
+              "checkedAt": "2026-09-29T00:00:00Z",
+              "ageSeconds": 1,
+              "maxAgeSeconds": 1,
+              "stale": true
+            },
+            "psbt": "example",
+            "manifest": {
+              "schema": "ordex.expected-transaction-manifest/v2",
+              "network": "mainnet",
+              "purpose": "example",
+              "watchOnly": true,
+              "account": {
+                "descriptor": "example"
+              },
+              "unsignedTx": {
+                "inputs": [
+                  {
+                    "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+                    "vout": 1,
+                    "valueSats": "10000",
+                    "scriptPubKeyHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
+                    "controlledByUser": true,
+                    "sighashType": "DEFAULT",
+                    "explanation": "example",
+                    "sequence": 0,
+                    "preservedSignature": {
+                      "scriptSigHex": "",
+                      "witness": [
+                        ""
+                      ]
+                    }
+                  }
+                ],
+                "outputs": [
+                  {
+                    "scriptHex": "example",
+                    "valueSats": "10000",
+                    "role": "example",
+                    "explanation": "example",
+                    "expectedAssets": [
+                      {
+                        "assetType": "example",
+                        "assetId": "example",
+                        "quantity": "10000"
+                      }
+                    ]
+                  }
+                ],
+                "version": 1,
+                "lockTime": 0
+              },
+              "fee": {
+                "feeSats": "10000",
+                "maxFeeSats": "10000"
+              },
+              "digest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
+            },
+            "invalidatedReason": "example",
+            "createdAt": "2026-09-29T00:00:00Z",
+            "updatedAt": "2026-09-29T00:00:00Z"
+          }
+        ]
+      }
+    },
+    "responseExampleIssue": null,
     "responses": {
       "200": {
         "content": {
@@ -3692,7 +4646,99 @@
     "requestExampleIssue": null,
     "successStatus": 201,
     "responseExample": {
-      "plan": null,
+      "plan": {
+        "schema": "ordex.safeops-plan/v2",
+        "protocolVersion": "example",
+        "network": "mainnet",
+        "operationKind": "BTC_BATCH_SEND",
+        "createdAtHeight": 1,
+        "expiryHeight": 1,
+        "checkpoint": {
+          "height": 0,
+          "blockHash": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
+        },
+        "inputs": [
+          {
+            "outpoint": {
+              "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+              "vout": 0
+            },
+            "valueSats": "10000",
+            "scriptPubKeyHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
+            "sequence": 0,
+            "inventory": {
+              "examined": true,
+              "confirmed": true,
+              "inscriptions": [
+                {
+                  "inscriptionId": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdefi0",
+                  "offset": "10000",
+                  "satpoint": "example"
+                }
+              ],
+              "runeAllocations": [
+                {
+                  "runeId": "840000:1",
+                  "amount": "10000"
+                }
+              ],
+              "counterpartyAssets": [
+                {
+                  "name": "example",
+                  "assetId": "10000",
+                  "quantitySats": "10000"
+                }
+              ],
+              "rareSatRanges": [
+                {
+                  "rangeId": "example",
+                  "offset": "10000",
+                  "count": "10000"
+                }
+              ],
+              "unknownClaims": [
+                "example"
+              ]
+            }
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
+            "valueSats": "10000",
+            "role": "recipient",
+            "explanation": "example"
+          }
+        ],
+        "assetTransitions": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "example",
+            "fromInput": 0,
+            "toOutput": 0,
+            "quantity": "10000"
+          }
+        ],
+        "fee": {
+          "feeSats": "10000",
+          "maxFeeSats": "10000",
+          "feeRateSatsPerVb": "5.2500"
+        },
+        "signing": {
+          "requiredIndexes": [
+            0
+          ],
+          "sighashType": "DEFAULT"
+        },
+        "findings": [
+          {}
+        ],
+        "digest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+        "transaction": {
+          "version": 1,
+          "lockTime": 0
+        }
+      },
       "oldFeeSats": "10000",
       "newFeeSats": "10000",
       "incrementalFeeSats": "10000",
@@ -3741,8 +4787,105 @@
     },
     "requestExampleIssue": null,
     "successStatus": 201,
-    "responseExample": null,
-    "responseExampleIssue": "No sample for pattern ^[0-9]{1,6}(\\.[0-9]{1,4})?$ at $.packageFeeRateSatsPerVb",
+    "responseExample": {
+      "plan": {
+        "schema": "ordex.safeops-plan/v2",
+        "protocolVersion": "example",
+        "network": "mainnet",
+        "operationKind": "BTC_BATCH_SEND",
+        "createdAtHeight": 1,
+        "expiryHeight": 1,
+        "checkpoint": {
+          "height": 0,
+          "blockHash": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef"
+        },
+        "inputs": [
+          {
+            "outpoint": {
+              "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+              "vout": 0
+            },
+            "valueSats": "10000",
+            "scriptPubKeyHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
+            "sequence": 0,
+            "inventory": {
+              "examined": true,
+              "confirmed": true,
+              "inscriptions": [
+                {
+                  "inscriptionId": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdefi0",
+                  "offset": "10000",
+                  "satpoint": "example"
+                }
+              ],
+              "runeAllocations": [
+                {
+                  "runeId": "840000:1",
+                  "amount": "10000"
+                }
+              ],
+              "counterpartyAssets": [
+                {
+                  "name": "example",
+                  "assetId": "10000",
+                  "quantitySats": "10000"
+                }
+              ],
+              "rareSatRanges": [
+                {
+                  "rangeId": "example",
+                  "offset": "10000",
+                  "count": "10000"
+                }
+              ],
+              "unknownClaims": [
+                "example"
+              ]
+            }
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "0014d85c2b71d0060b09c9886aeb815e50991dda124d",
+            "valueSats": "10000",
+            "role": "recipient",
+            "explanation": "example"
+          }
+        ],
+        "assetTransitions": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "example",
+            "fromInput": 0,
+            "toOutput": 0,
+            "quantity": "10000"
+          }
+        ],
+        "fee": {
+          "feeSats": "10000",
+          "maxFeeSats": "10000",
+          "feeRateSatsPerVb": "5.2500"
+        },
+        "signing": {
+          "requiredIndexes": [
+            0
+          ],
+          "sighashType": "DEFAULT"
+        },
+        "findings": [
+          {}
+        ],
+        "digest": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
+        "transaction": {
+          "version": 1,
+          "lockTime": 0
+        }
+      },
+      "packageFeeRateSatsPerVb": "5.2500",
+      "allowed": true,
+      "refusalCode": "example"
+    },
+    "responseExampleIssue": null,
     "responses": {
       "201": {
         "content": {
