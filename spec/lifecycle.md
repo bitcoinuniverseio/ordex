@@ -28,6 +28,34 @@ reason. Only a transaction carrying this order's payout output settles it, and
 Ordex remembers the transaction its own preflight accepted so it can tell the
 two apart.
 
+## Catch-up at a new block
+
+When a new block arrives, the asset inventory needs a moment to reach it. An
+order does not flicker out of `LIVE` for that. It stays `LIVE` on its last
+complete evidence while the inventory catches up, and only while every one of
+these holds:
+
+- Bitcoin Core still reports every input of the order unspent.
+- The new verification round found only missing evidence: an authority that
+  has not reached the block yet, never evidence that contradicts the order.
+- No reorg was observed.
+- The last complete evidence is at most 300 seconds old.
+
+The moment any of them fails, the hold ends. A spend, a withdrawal, a
+contaminated input (an asset the order does not name, or one of its assets
+somewhere else), or a reorg ends `LIVE` immediately, with no grace period, in
+the same transition it would take without the hold.
+
+During the catch-up the order is readable but not completable. Quote,
+preflight, batch purchase, and batch preflight answer a retryable `503` with
+code `ORDER_CHECKING` instead of composing on evidence that is not yet
+current. A batch purchase names every order still being checked in
+`refusals`, in the same per-order shape a refused batch uses. An order that
+cannot be bought at all is still refused with `409`, and that refusal comes
+first: a batch answers `503` only when every order passed the other checks.
+The client retries the same request shortly; nothing was composed or
+recorded.
+
 ## Actionability
 
 Actionability is what a customer may do right now, and it is not the same

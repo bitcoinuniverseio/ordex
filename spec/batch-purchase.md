@@ -77,3 +77,9 @@ transaction has approved one set of movements, not a subset of them. When
 composition or verification fails, the answer names every refused order with
 its refusal code, and the buyer either fixes the batch or buys the survivors
 one at a time through the ordinary routes.
+
+An order that is only being checked at a new block is not refused. While any
+order of the batch is in its catch-up hold (see [lifecycle.md](lifecycle.md)),
+batch purchase and batch preflight answer a retryable `503` with code
+`ORDER_CHECKING`; batch purchase names each such order in `refusals`, in the
+same per-order shape as a `409`, and the buyer retries the same batch shortly.

@@ -98,7 +98,7 @@
         "anchor": "no-partial-result"
       }
     ],
-    "rawLength": 4081
+    "rawLength": 4470
   },
   {
     "file": "cold-signing.md",
@@ -347,6 +347,11 @@
       },
       {
         "level": 2,
+        "title": "Catch-up at a new block",
+        "anchor": "catch-up-at-a-new-block"
+      },
+      {
+        "level": 2,
         "title": "Actionability",
         "anchor": "actionability"
       },
@@ -361,7 +366,7 @@
         "anchor": "the-activity-log"
       }
     ],
-    "rawLength": 3102
+    "rawLength": 4569
   },
   {
     "file": "offers.md",

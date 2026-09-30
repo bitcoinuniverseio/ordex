@@ -3317,6 +3317,29 @@ export interface components {
             /** Format: date-time */
             updatedAt: string;
         };
+        OrderCheckingError: components["schemas"]["ErrorResponse"] & {
+            /** @constant */
+            statusCode: 503;
+            error?: string;
+            message: string;
+            requestId?: string;
+            /** @constant */
+            code: "ORDER_CHECKING";
+        };
+        /** @description A batch whose orders all passed the refusal checks, and at least one of which is still being checked at the newest block. It answers for the whole batch and names every such order in the same per-order shape as BatchPurchaseRefused; retry the same batch shortly. An order that cannot be bought at all is refused first, with a 409 BatchPurchaseRefused. */
+        BatchPurchaseChecking: {
+            /** @constant */
+            statusCode: 503;
+            error?: string;
+            message: string;
+            requestId?: string;
+            /** @constant */
+            code: "ORDER_CHECKING";
+            refusals: (components["schemas"]["BatchRefusal"] & {
+                /** @constant */
+                code?: "ORDER_CHECKING";
+            })[];
+        };
     };
     responses: {
         /** @description The request failed. The envelope states the status, a human readable message, and the request id. */
@@ -3353,6 +3376,15 @@ export interface components {
             };
             content: {
                 "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
+        /** @description Retryable. The order is LIVE on its last complete evidence while the asset inventory catches up to a new block (spec/lifecycle.md, catch-up at a new block), so it cannot be quoted or completed until that check finishes. The envelope carries `code: ORDER_CHECKING`; retry shortly. Nothing was composed or recorded. */
+        OrderChecking: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["OrderCheckingError"];
             };
         };
     };
@@ -3879,6 +3911,7 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             404: components["responses"]["NotFound"];
             429: components["responses"]["RateLimited"];
+            503: components["responses"]["OrderChecking"];
             default: components["responses"]["Error"];
         };
     };
@@ -3910,6 +3943,7 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             404: components["responses"]["NotFound"];
             429: components["responses"]["RateLimited"];
+            503: components["responses"]["OrderChecking"];
             default: components["responses"]["Error"];
         };
     };
@@ -3987,6 +4021,15 @@ export interface operations {
                 };
             };
             429: components["responses"]["RateLimited"];
+            /** @description Retryable. The order is LIVE on its last complete evidence while the asset inventory catches up to a new block (spec/lifecycle.md, catch-up at a new block), so it cannot be quoted or completed until that check finishes. The envelope carries `code: ORDER_CHECKING`; retry shortly. Nothing was composed or recorded. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BatchPurchaseChecking"];
+                };
+            };
             default: components["responses"]["Error"];
         };
     };
@@ -4015,6 +4058,7 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             404: components["responses"]["NotFound"];
             429: components["responses"]["RateLimited"];
+            503: components["responses"]["OrderChecking"];
             default: components["responses"]["Error"];
         };
     };

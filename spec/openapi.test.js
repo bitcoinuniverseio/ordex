@@ -96,3 +96,18 @@ test('atomic amounts are strings, never numbers', () => {
   assert.equal(sats.type, 'string');
   assert.ok(sats.pattern);
 });
+
+test('the purchase routes document the retryable 503 ORDER_CHECKING of the catch-up hold', () => {
+  const at = (ref) => ref.slice(2).split('/').reduce((node, key) => node[key], document);
+  for (const path of ['/api/ordex/orders/{id}/quote', '/api/ordex/orders/{id}/preflight', '/api/ordex/orders/batch-preflight']) {
+    const response = document.paths[path].post.responses['503'];
+    assert.equal(response?.$ref, '#/components/responses/OrderChecking', path);
+  }
+  const checking = at(document.components.responses.OrderChecking.content['application/json'].schema.$ref);
+  assert.equal(checking.allOf[1].properties.code.const, 'ORDER_CHECKING');
+  const batch = document.paths['/api/ordex/orders/batch-purchase'].post.responses['503'].content['application/json'].schema;
+  const body = at(batch.$ref);
+  assert.equal(body.properties.code.const, 'ORDER_CHECKING');
+  assert.deepEqual(body.properties.refusals.items.allOf[0], { $ref: '#/components/schemas/BatchRefusal' });
+  assert.equal(document.paths['/api/ordex/orders/batch-purchase'].post.responses['409'].content['application/json'].schema.$ref, '#/components/schemas/BatchPurchaseRefused');
+});
