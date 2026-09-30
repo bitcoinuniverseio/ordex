@@ -893,6 +893,9 @@
           "429": {
             "$ref": "#/components/responses/RateLimited"
           },
+          "503": {
+            "$ref": "#/components/responses/OrderChecking"
+          },
           "default": {
             "$ref": "#/components/responses/Error"
           }
@@ -941,6 +944,9 @@
           },
           "429": {
             "$ref": "#/components/responses/RateLimited"
+          },
+          "503": {
+            "$ref": "#/components/responses/OrderChecking"
           },
           "default": {
             "$ref": "#/components/responses/Error"
@@ -1048,6 +1054,16 @@
           "429": {
             "$ref": "#/components/responses/RateLimited"
           },
+          "503": {
+            "description": "Retryable. The order is LIVE on its last complete evidence while the asset inventory catches up to a new block (spec/lifecycle.md, catch-up at a new block), so it cannot be quoted or completed until that check finishes. The envelope carries `code: ORDER_CHECKING`; retry shortly. Nothing was composed or recorded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchPurchaseChecking"
+                }
+              }
+            }
+          },
           "default": {
             "$ref": "#/components/responses/Error"
           }
@@ -1091,6 +1107,9 @@
           },
           "429": {
             "$ref": "#/components/responses/RateLimited"
+          },
+          "503": {
+            "$ref": "#/components/responses/OrderChecking"
           },
           "default": {
             "$ref": "#/components/responses/Error"
@@ -4121,6 +4140,16 @@
           "application/json": {
             "schema": {
               "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "OrderChecking": {
+        "description": "Retryable. The order is LIVE on its last complete evidence while the asset inventory catches up to a new block (spec/lifecycle.md, catch-up at a new block), so it cannot be quoted or completed until that check finishes. The envelope carries `code: ORDER_CHECKING`; retry shortly. Nothing was composed or recorded.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/OrderCheckingError"
             }
           }
         }
@@ -10512,6 +10541,89 @@
           "updatedAt": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "OrderCheckingError": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ErrorResponse"
+          },
+          {
+            "type": "object",
+            "required": [
+              "statusCode",
+              "code",
+              "message"
+            ],
+            "properties": {
+              "statusCode": {
+                "type": "integer",
+                "const": 503
+              },
+              "error": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
+              "requestId": {
+                "type": "string"
+              },
+              "code": {
+                "type": "string",
+                "const": "ORDER_CHECKING"
+              }
+            }
+          }
+        ]
+      },
+      "BatchPurchaseChecking": {
+        "type": "object",
+        "required": [
+          "statusCode",
+          "code",
+          "message",
+          "refusals"
+        ],
+        "description": "A batch whose orders all passed the refusal checks, and at least one of which is still being checked at the newest block. It answers for the whole batch and names every such order in the same per-order shape as BatchPurchaseRefused; retry the same batch shortly. An order that cannot be bought at all is refused first, with a 409 BatchPurchaseRefused.",
+        "properties": {
+          "statusCode": {
+            "type": "integer",
+            "const": 503
+          },
+          "error": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string",
+            "const": "ORDER_CHECKING"
+          },
+          "refusals": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/BatchRefusal"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "const": "ORDER_CHECKING"
+                    }
+                  }
+                }
+              ]
+            }
           }
         }
       }

@@ -327,6 +327,12 @@ composition or verification fails, the answer names every refused order with
 its refusal code, and the buyer either fixes the batch or buys the survivors
 one at a time through the ordinary routes.
 
+An order that is only being checked at a new block is not refused. While any
+order of the batch is in its catch-up hold (see [lifecycle.md](lifecycle.md)),
+batch purchase and batch preflight answer a retryable `503` with code
+`ORDER_CHECKING`; batch purchase names each such order in `refusals`, in the
+same per-order shape as a `409`, and the buyer retries the same batch shortly.
+
 ---
 
 ## Cold signing and watch-only mode v2 - Cold signing and watch-only mode v2 (heading:Cold signing and watch-only mode v2)
@@ -794,6 +800,35 @@ transitions the validators and the reconciler make.
 
 `MEMPOOL_CONFLICTED` and `SPENT` are deliberately separate. A mempool conflict
 can still be replaced or drop
+
+---
+
+## Order lifecycle - Catch-up at a new block (heading:Catch-up at a new block)
+- Source: spec/lifecycle.md
+- URL: /reference/specifications/#spec-lifecycle
+
+When a new block arrives, the asset inventory needs a moment to reach it. An
+order does not flicker out of `LIVE` for that. It stays `LIVE` on its last
+complete evidence while the inventory catches up, and only while every one of
+these holds:
+
+- Bitcoin Core still reports every input of the order unspent.
+- The new verification round found only missing evidence: an authority that
+  has not reached the block yet, never evidence that contradicts the order.
+- No reorg was observed.
+- The last complete evidence is at most 300 seconds old.
+
+The moment any of them fails, the hold ends. A spend, a withdrawal, a
+contaminated input (an asset the order does not name, or one of its assets
+somewhere else), or a reorg ends `LIVE` immediately, with no grace period, in
+the same transition it would take without the hold.
+
+During the catch-up the order is readable but not completable. Quote,
+preflight, batch purchase, and batch preflight answer a retryable `503` with
+code `ORDER_CHECKING` instead of composing on evidence that is not yet
+current. A batch purchase names every order still being checked in
+`refusals`, in the same per-order shape a refused batch uses. An order that
+cannot be bought at a
 
 ---
 

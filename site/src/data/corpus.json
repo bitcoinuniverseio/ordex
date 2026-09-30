@@ -199,8 +199,8 @@
     "protocolVersion": "1.2",
     "contentType": "specification",
     "title": "Buying several asks in one transaction - No partial result",
-    "content": "A sweep that cannot prove every ask proves nothing. There is no version that\nsettles some asks and quietly drops the rest, because a buyer reviewing one\ntransaction has approved one set of movements, not a subset of them. When\ncomposition or verification fails, the answer names every refused order with\nits refusal code, and the buyer either fixes the batch or buys the survivors\none at a time through the ordinary routes.",
-    "digest": "d85515cc9ceb743f",
+    "content": "A sweep that cannot prove every ask proves nothing. There is no version that\nsettles some asks and quietly drops the rest, because a buyer reviewing one\ntransaction has approved one set of movements, not a subset of them. When\ncomposition or verification fails, the answer names every refused order with\nits refusal code, and the buyer either fixes the batch or buys the survivors\none at a time through the ordinary routes.\n\nAn order that is only being checked at a new block is not refused. While any\norder of the batch is in its catch-up hold (see [lifecycle.md](lifecycle.md)),\nbatch purchase and batch preflight answer a retryable `503` with code\n`ORDER_CHECKING`; batch purchase names each such order in `refusals`, in the\nsame per-order shape as a `409`, and the buyer retries the same batch shortly.",
+    "digest": "93093e063874be77",
     "docUrl": "/reference/specifications/#spec-batch-purchase"
   },
   {
@@ -650,6 +650,18 @@
   {
     "id": "spec-lifecycle-55",
     "sourcePath": "spec/lifecycle.md",
+    "pointer": "heading:Catch-up at a new block",
+    "product": "Protocol Specification",
+    "protocolVersion": "1.2",
+    "contentType": "specification",
+    "title": "Order lifecycle - Catch-up at a new block",
+    "content": "When a new block arrives, the asset inventory needs a moment to reach it. An\norder does not flicker out of `LIVE` for that. It stays `LIVE` on its last\ncomplete evidence while the inventory catches up, and only while every one of\nthese holds:\n\n- Bitcoin Core still reports every input of the order unspent.\n- The new verification round found only missing evidence: an authority that\n  has not reached the block yet, never evidence that contradicts the order.\n- No reorg was observed.\n- The last complete evidence is at most 300 seconds old.\n\nThe moment any of them fails, the hold ends. A spend, a withdrawal, a\ncontaminated input (an asset the order does not name, or one of its assets\nsomewhere else), or a reorg ends `LIVE` immediately, with no grace period, in\nthe same transition it would take without the hold.\n\nDuring the catch-up the order is readable but not completable. Quote,\npreflight, batch purchase, and batch preflight answer a retryable `503` with\ncode `ORDER_CHECKING` instead of composing on evidence that is not yet\ncurrent. A batch purchase names every order still being checked in\n`refusals`, in the same per-order shape a refused batch uses. An order that\ncannot be bought at a",
+    "digest": "29ae483d1aeaa2e1",
+    "docUrl": "/reference/specifications/#spec-lifecycle"
+  },
+  {
+    "id": "spec-lifecycle-56",
+    "sourcePath": "spec/lifecycle.md",
     "pointer": "heading:Actionability",
     "product": "Protocol Specification",
     "protocolVersion": "1.2",
@@ -660,7 +672,7 @@
     "docUrl": "/reference/specifications/#spec-lifecycle"
   },
   {
-    "id": "spec-lifecycle-56",
+    "id": "spec-lifecycle-57",
     "sourcePath": "spec/lifecycle.md",
     "pointer": "heading:Withdrawal is discovery, not cancellation",
     "product": "Protocol Specification",
@@ -672,7 +684,7 @@
     "docUrl": "/reference/specifications/#spec-lifecycle"
   },
   {
-    "id": "spec-lifecycle-57",
+    "id": "spec-lifecycle-58",
     "sourcePath": "spec/lifecycle.md",
     "pointer": "heading:The activity log",
     "product": "Protocol Specification",
@@ -684,7 +696,7 @@
     "docUrl": "/reference/specifications/#spec-lifecycle"
   },
   {
-    "id": "spec-offers-58",
+    "id": "spec-offers-59",
     "sourcePath": "spec/offers.md",
     "pointer": "heading:Offers v1",
     "product": "Protocol Specification",
@@ -696,7 +708,7 @@
     "docUrl": "/reference/specifications/#spec-offers"
   },
   {
-    "id": "spec-offers-59",
+    "id": "spec-offers-60",
     "sourcePath": "spec/offers.md",
     "pointer": "heading:The three offer kinds",
     "product": "Protocol Specification",
@@ -708,7 +720,7 @@
     "docUrl": "/reference/specifications/#spec-offers"
   },
   {
-    "id": "spec-offers-60",
+    "id": "spec-offers-61",
     "sourcePath": "spec/offers.md",
     "pointer": "heading:Offer terms",
     "product": "Protocol Specification",
@@ -720,7 +732,7 @@
     "docUrl": "/reference/specifications/#spec-offers"
   },
   {
-    "id": "spec-offers-61",
+    "id": "spec-offers-62",
     "sourcePath": "spec/offers.md",
     "pointer": "heading:The funded offer output",
     "product": "Protocol Specification",
@@ -732,7 +744,7 @@
     "docUrl": "/reference/specifications/#spec-offers"
   },
   {
-    "id": "spec-offers-62",
+    "id": "spec-offers-63",
     "sourcePath": "spec/offers.md",
     "pointer": "heading:Acceptance",
     "product": "Protocol Specification",
@@ -744,7 +756,7 @@
     "docUrl": "/reference/specifications/#spec-offers"
   },
   {
-    "id": "spec-offers-63",
+    "id": "spec-offers-64",
     "sourcePath": "spec/offers.md",
     "pointer": "heading:Recovery",
     "product": "Protocol Specification",
@@ -756,7 +768,7 @@
     "docUrl": "/reference/specifications/#spec-offers"
   },
   {
-    "id": "spec-offers-64",
+    "id": "spec-offers-65",
     "sourcePath": "spec/offers.md",
     "pointer": "heading:Offer lifecycle",
     "product": "Protocol Specification",
@@ -768,7 +780,7 @@
     "docUrl": "/reference/specifications/#spec-offers"
   },
   {
-    "id": "spec-offers-65",
+    "id": "spec-offers-66",
     "sourcePath": "spec/offers.md",
     "pointer": "heading:What Ordex never does",
     "product": "Protocol Specification",
@@ -780,7 +792,7 @@
     "docUrl": "/reference/specifications/#spec-offers"
   },
   {
-    "id": "spec-purchase-66",
+    "id": "spec-purchase-67",
     "sourcePath": "spec/purchase.md",
     "pointer": "heading:Completing a public ask",
     "product": "Protocol Specification",
@@ -792,7 +804,7 @@
     "docUrl": "/reference/specifications/#spec-purchase"
   },
   {
-    "id": "spec-purchase-67",
+    "id": "spec-purchase-68",
     "sourcePath": "spec/purchase.md",
     "pointer": "heading:The seller half",
     "product": "Protocol Specification",
@@ -804,7 +816,7 @@
     "docUrl": "/reference/specifications/#spec-purchase"
   },
   {
-    "id": "spec-purchase-68",
+    "id": "spec-purchase-69",
     "sourcePath": "spec/purchase.md",
     "pointer": "heading:Rule one: the indexes must match",
     "product": "Protocol Specification",
@@ -816,7 +828,7 @@
     "docUrl": "/reference/specifications/#spec-purchase"
   },
   {
-    "id": "spec-purchase-69",
+    "id": "spec-purchase-70",
     "sourcePath": "spec/purchase.md",
     "pointer": "heading:Rule two: that index cannot be zero",
     "product": "Protocol Specification",
@@ -828,7 +840,7 @@
     "docUrl": "/reference/specifications/#spec-purchase"
   },
   {
-    "id": "spec-purchase-70",
+    "id": "spec-purchase-71",
     "sourcePath": "spec/purchase.md",
     "pointer": "heading:The arrangement Ordex builds",
     "product": "Protocol Specification",
@@ -840,7 +852,7 @@
     "docUrl": "/reference/specifications/#spec-purchase"
   },
   {
-    "id": "spec-purchase-71",
+    "id": "spec-purchase-72",
     "sourcePath": "spec/purchase.md",
     "pointer": "heading:What Ordex refuses",
     "product": "Protocol Specification",
@@ -852,7 +864,7 @@
     "docUrl": "/reference/specifications/#spec-purchase"
   },
   {
-    "id": "spec-purchase-72",
+    "id": "spec-purchase-73",
     "sourcePath": "spec/purchase.md",
     "pointer": "heading:What Ordex never does",
     "product": "Protocol Specification",
@@ -864,7 +876,7 @@
     "docUrl": "/reference/specifications/#spec-purchase"
   },
   {
-    "id": "spec-purchase-73",
+    "id": "spec-purchase-74",
     "sourcePath": "spec/purchase.md",
     "pointer": "heading:A public ask can be raced",
     "product": "Protocol Specification",
@@ -876,7 +888,7 @@
     "docUrl": "/reference/specifications/#spec-purchase"
   },
   {
-    "id": "spec-runes-74",
+    "id": "spec-runes-75",
     "sourcePath": "spec/runes.md",
     "pointer": "heading:Not burning the runes a purchase spends",
     "product": "Protocol Specification",
@@ -888,7 +900,7 @@
     "docUrl": "/reference/specifications/#spec-runes"
   },
   {
-    "id": "spec-runes-75",
+    "id": "spec-runes-76",
     "sourcePath": "spec/runes.md",
     "pointer": "heading:Where a rune balance lives",
     "product": "Protocol Specification",
@@ -900,7 +912,7 @@
     "docUrl": "/reference/specifications/#spec-runes"
   },
   {
-    "id": "spec-runes-76",
+    "id": "spec-runes-77",
     "sourcePath": "spec/runes.md",
     "pointer": "heading:The cenotaph",
     "product": "Protocol Specification",
@@ -912,7 +924,7 @@
     "docUrl": "/reference/specifications/#spec-runes"
   },
   {
-    "id": "spec-runes-77",
+    "id": "spec-runes-78",
     "sourcePath": "spec/runes.md",
     "pointer": "heading:Reading the runestone",
     "product": "Protocol Specification",
@@ -924,7 +936,7 @@
     "docUrl": "/reference/specifications/#spec-runes"
   },
   {
-    "id": "spec-runes-78",
+    "id": "spec-runes-79",
     "sourcePath": "spec/runes.md",
     "pointer": "heading:What makes it a cenotaph",
     "product": "Protocol Specification",
@@ -936,7 +948,7 @@
     "docUrl": "/reference/specifications/#spec-runes"
   },
   {
-    "id": "spec-runes-79",
+    "id": "spec-runes-80",
     "sourcePath": "spec/runes.md",
     "pointer": "heading:Where a readable runestone sends each balance",
     "product": "Protocol Specification",
@@ -948,7 +960,7 @@
     "docUrl": "/reference/specifications/#spec-runes"
   },
   {
-    "id": "spec-runes-80",
+    "id": "spec-runes-81",
     "sourcePath": "spec/runes.md",
     "pointer": "heading:The rule a client must apply",
     "product": "Protocol Specification",
@@ -960,7 +972,7 @@
     "docUrl": "/reference/specifications/#spec-runes"
   },
   {
-    "id": "spec-runes-81",
+    "id": "spec-runes-82",
     "sourcePath": "spec/runes.md",
     "pointer": "heading:Conformance",
     "product": "Protocol Specification",
@@ -972,7 +984,7 @@
     "docUrl": "/reference/specifications/#spec-runes"
   },
   {
-    "id": "spec-safeops-82",
+    "id": "spec-safeops-83",
     "sourcePath": "spec/safeops.md",
     "pointer": "heading:SafeOps v2",
     "product": "Protocol Specification",
@@ -984,7 +996,7 @@
     "docUrl": "/reference/specifications/#spec-safeops"
   },
   {
-    "id": "spec-safeops-83",
+    "id": "spec-safeops-84",
     "sourcePath": "spec/safeops.md",
     "pointer": "heading:Who does what",
     "product": "Protocol Specification",
@@ -996,7 +1008,7 @@
     "docUrl": "/reference/specifications/#spec-safeops"
   },
   {
-    "id": "spec-safeops-84",
+    "id": "spec-safeops-85",
     "sourcePath": "spec/safeops.md",
     "pointer": "heading:Inventory resolution",
     "product": "Protocol Specification",
@@ -1008,7 +1020,7 @@
     "docUrl": "/reference/specifications/#spec-safeops"
   },
   {
-    "id": "spec-safeops-85",
+    "id": "spec-safeops-86",
     "sourcePath": "spec/safeops.md",
     "pointer": "heading:The plan",
     "product": "Protocol Specification",
@@ -1020,7 +1032,7 @@
     "docUrl": "/reference/specifications/#spec-safeops"
   },
   {
-    "id": "spec-safeops-86",
+    "id": "spec-safeops-87",
     "sourcePath": "spec/safeops.md",
     "pointer": "heading:Asset safety rules",
     "product": "Protocol Specification",
@@ -1032,7 +1044,7 @@
     "docUrl": "/reference/specifications/#spec-safeops"
   },
   {
-    "id": "spec-safeops-87",
+    "id": "spec-safeops-88",
     "sourcePath": "spec/safeops.md",
     "pointer": "heading:Partitioning at scale",
     "product": "Protocol Specification",
@@ -1044,7 +1056,7 @@
     "docUrl": "/reference/specifications/#spec-safeops"
   },
   {
-    "id": "spec-safeops-88",
+    "id": "spec-safeops-89",
     "sourcePath": "spec/safeops.md",
     "pointer": "heading:The execution shield",
     "product": "Protocol Specification",
@@ -1056,7 +1068,7 @@
     "docUrl": "/reference/specifications/#spec-safeops"
   },
   {
-    "id": "spec-safeops-89",
+    "id": "spec-safeops-90",
     "sourcePath": "spec/safeops.md",
     "pointer": "heading:Signed results",
     "product": "Protocol Specification",
@@ -1068,7 +1080,7 @@
     "docUrl": "/reference/specifications/#spec-safeops"
   },
   {
-    "id": "spec-safeops-90",
+    "id": "spec-safeops-91",
     "sourcePath": "spec/safeops.md",
     "pointer": "heading:RBF and CPFP",
     "product": "Protocol Specification",
@@ -1080,7 +1092,7 @@
     "docUrl": "/reference/specifications/#spec-safeops"
   },
   {
-    "id": "spec-safeops-91",
+    "id": "spec-safeops-92",
     "sourcePath": "spec/safeops.md",
     "pointer": "heading:Monitoring",
     "product": "Protocol Specification",
@@ -1092,7 +1104,7 @@
     "docUrl": "/reference/specifications/#spec-safeops"
   },
   {
-    "id": "spec-swaps-92",
+    "id": "spec-swaps-93",
     "sourcePath": "spec/swaps.md",
     "pointer": "heading:Atomic swap links and the OTC desk",
     "product": "Protocol Specification",
@@ -1104,7 +1116,7 @@
     "docUrl": "/reference/specifications/#spec-swaps"
   },
   {
-    "id": "spec-swaps-93",
+    "id": "spec-swaps-94",
     "sourcePath": "spec/swaps.md",
     "pointer": "heading:The two stage model",
     "product": "Protocol Specification",
@@ -1116,7 +1128,7 @@
     "docUrl": "/reference/specifications/#spec-swaps"
   },
   {
-    "id": "spec-swaps-94",
+    "id": "spec-swaps-95",
     "sourcePath": "spec/swaps.md",
     "pointer": "heading:The intent",
     "product": "Protocol Specification",
@@ -1128,7 +1140,7 @@
     "docUrl": "/reference/specifications/#spec-swaps"
   },
   {
-    "id": "spec-swaps-95",
+    "id": "spec-swaps-96",
     "sourcePath": "spec/swaps.md",
     "pointer": "heading:Private encrypted links",
     "product": "Protocol Specification",
@@ -1140,7 +1152,7 @@
     "docUrl": "/reference/specifications/#spec-swaps"
   },
   {
-    "id": "spec-swaps-96",
+    "id": "spec-swaps-97",
     "sourcePath": "spec/swaps.md",
     "pointer": "heading:The acceptance plan",
     "product": "Protocol Specification",
@@ -1152,7 +1164,7 @@
     "docUrl": "/reference/specifications/#spec-swaps"
   },
   {
-    "id": "spec-swaps-97",
+    "id": "spec-swaps-98",
     "sourcePath": "spec/swaps.md",
     "pointer": "heading:Lifecycle",
     "product": "Protocol Specification",
@@ -1164,7 +1176,7 @@
     "docUrl": "/reference/specifications/#spec-swaps"
   },
   {
-    "id": "spec-swaps-98",
+    "id": "spec-swaps-99",
     "sourcePath": "spec/swaps.md",
     "pointer": "heading:Settlement cohort",
     "product": "Protocol Specification",
@@ -1176,7 +1188,7 @@
     "docUrl": "/reference/specifications/#spec-swaps"
   },
   {
-    "id": "spec-swaps-99",
+    "id": "spec-swaps-100",
     "sourcePath": "spec/swaps.md",
     "pointer": "heading:Adversarial coverage",
     "product": "Protocol Specification",
