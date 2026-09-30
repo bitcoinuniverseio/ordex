@@ -112,7 +112,9 @@ answers `400`; an unknown method answers `404`; a notification answers
 
 `GET /protocol` is the consumer's first call, and it has to carry enough to
 refuse a gateway that cannot keep the consumer's promises. Since 1.2.1 it
-states the exact `protocolVersion` (and the same value as `version`), the
+states the exact `protocolVersion` (and the same value as `version`), which
+is the contract's own `info.version` and the version the MCP endpoint reports
+in its `serverInfo`: a gateway advertises one version everywhere. It states the
 `network`, a boolean per gateway capability (`browse`, `createListing`,
 `withdraw`, `replace`, `purchase`, `batchPurchase`, `fundedOffers`,
 `offerAcceptance`, `operationReceipts`), the `prerequisites` still missing for

@@ -2,7 +2,7 @@
   {
     "name": "eventsStream",
     "address": "/events/stream",
-    "description": "Server sent events. Each event is sent as `event: ordex-event` with `id: <sequence>:<eventId>`: the envelope sequence and id, so the id both names the event and is its exact resume position without any lookup. Sending that id back as Last-Event-ID (or as the cursor query parameter) resumes exactly after the event. A cursor older than the retained window answers 410 CURSOR_EXPIRED before any event, and the client resyncs instead of skipping events. Filters: network, type, aggregateType, aggregateId, protocol, collectionId.",
+    "description": "Server sent events. Each event is sent as `event: ordex-event` with `id: <sequence>:<eventId>`: the envelope sequence and id, so the id both names the event and is its exact resume position without any lookup. Sending that id back as Last-Event-ID (or as the cursor query parameter) resumes exactly after the event. A cursor older than the retained window answers 410 CURSOR_EXPIRED before any event, and the client resyncs instead of skipping events. Sequences are counted per network. On a stream filtered to one network the resume is exact. On a stream with no network filter, a <sequence>:<eventId> position is exact for that event's network, and the other networks restart from their oldest retained event: the consumer receives duplicates, which it drops by event id, and never a gap. A consumer that needs an exact resume across networks opens one stream per network. Filters: network, type, aggregateType, aggregateId, protocol, collectionId.",
     "messages": {
       "ordexEvent": {
         "$ref": "#/components/messages/ordexEvent"

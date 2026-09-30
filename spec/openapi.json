@@ -5604,7 +5604,7 @@
           "protocolVersion": {
             "type": "string",
             "pattern": "^\\d+\\.\\d+(\\.\\d+)?$",
-            "description": "The exact protocol version this gateway implements."
+            "description": "The exact protocol version this gateway implements: this document's info.version. Every version the gateway advertises (this field, version, and its MCP serverInfo version) is this one value."
           },
           "version": {
             "type": "string",
@@ -8061,7 +8061,12 @@
             "type": "boolean"
           },
           "preflight": {
-            "$ref": "#/components/schemas/VerificationView"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/VerificationView"
+              }
+            ],
+            "description": "Served only by a gateway that can state the maximum age of a session preflight; it is absent otherwise (Core states no such age and never serves it). The preflight route answers the full verdict as SwapPreflightResult either way."
           },
           "updatedAt": {
             "type": "string",
