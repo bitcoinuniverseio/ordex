@@ -1934,7 +1934,7 @@ export interface components {
                 ingestion: "publish-only";
                 note: string;
             };
-            /** @description The exact protocol version this gateway implements. */
+            /** @description The exact protocol version this gateway implements: this document's info.version. Every version the gateway advertises (this field, version, and its MCP serverInfo version) is this one value. */
             protocolVersion: string;
             /** @description Same value as protocolVersion, kept for consumers that pinned `version`. */
             version: string;
@@ -2628,6 +2628,7 @@ export interface components {
             state: components["schemas"]["SwapIntentState"];
             makerSigned?: boolean;
             takerSigned?: boolean;
+            /** @description Served only by a gateway that can state the maximum age of a session preflight; it is absent otherwise (Core states no such age and never serves it). The preflight route answers the full verdict as SwapPreflightResult either way. */
             preflight?: components["schemas"]["VerificationView"];
             /** Format: date-time */
             updatedAt: string;
