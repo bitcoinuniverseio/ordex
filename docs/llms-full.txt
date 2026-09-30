@@ -105,6 +105,32 @@ book.
 
 ---
 
+## The Ordex gateway API - Errors (heading:Errors)
+- Source: spec/api.md
+- URL: /reference/specifications/#spec-api
+
+Every error answers the shared envelope: `statusCode`, `error`, `message`,
+and, where one applies, a stable `code` and the `requestId`. A route that
+names one resource by id answers `404` when nothing with that id exists, with
+the matching `*_NOT_FOUND` code; `400` is only for a request the gateway
+cannot read. A client can therefore tell a stale id from a malformed call
+without parsing the message.
+
+---
+
+## The Ordex gateway API - Agents (heading:Agents)
+- Source: spec/api.md
+- URL: /reference/specifications/#spec-api
+
+The gateway's MCP endpoint speaks the stateless MCP `2026-07-28` Streamable
+HTTP transport: every request is one POST whose `MCP-Protocol-Version`,
+`Mcp-Method` and `Mcp-Name` headers match its body, with no session to open
+or resume. A header that disagrees with the body, or an unsupported version,
+answers `400`; an unknown method answers `404`; a notification answers
+`202` with no body.
+
+---
+
 ## The Ordex gateway API - The protocol contract is checkable (heading:The protocol contract is checkable)
 - Source: spec/api.md
 - URL: /reference/specifications/#spec-api
@@ -593,17 +619,10 @@ No private wallet data, no xpub, no address the policy does not allow, and no pr
 
 Two transports carry the same envelopes:
 
-- Server-sent events at `GET /api/ordex/events/stream`, for resilient browser and server consumption, with `Last-Event-ID` resumption and heartbeats.
-- WebSocket at the streaming gateway, for multiplexed, high-volume consumers: one connection, many filters, cursor resumption.
+- Server-sent events at `GET /api/ordex/events/stream`, for resilient browser and server consumption, with heartbeats. Each event's SSE id is `<sequence>:<eventId>`: it names the event and is also its exact resume position, so sending it back as `Last-Event-ID` (or as the `cursor` query) resumes right after that event with no lookup. An event id alone would not do: resuming from it needs an id-to-sequence lookup that fails once the event leaves retention.
+- WebSocket at `GET /api/ordex/events/ws`, for multiplexed, high-volume consumers. The client opens each subscription with `{op: subscribe, id, filters, cursor}`, where `id` is its own name for that subscription (up to 16 per connection). The server answers `subscribed`, then wraps every event as `{op: event, id, cursor, event}`, so each subscription keeps its own resume cursor on the shared connection. A refused or failed subscription gets `{op: error, id, code, message}`, and a slow consumer gets `{op: disconnect, cursors}` carrying the cursor of every subscription before the socket closes with code 4008.
 
-Required behavior, both transports: filter by network, protocol, collection, event type, and aggregate; deterministic replay from the acknowledged cursor; bounded buffers; slow-consumer disconnection with a resumable cursor; at-least-once delivery with event-id deduplication; seven-day minimum retention; no silent gaps.
-
-Publication latency target: p95 under two seconds from the authoritative database commit. No event loss during worker restart: an at-least-once consumer that deduplicates by id observes exactly-once effect.
-
-<!-- OX-P11: the earlier text kept only a hash of the signing secret yet signed
-every delivery with the secret itself, which a hash cannot do. The delivery key
-is now stored encrypted and recoverable for the delivery worker alone, and a
-hash is never a signing key. -->
+Required behavior, both transports: filter by network, protocol, collection, event
 
 ---
 
@@ -1436,7 +1455,7 @@ Every signed PSBT is reverified after the wallet returns. Verification disagreem
 
 RBF is offered only when node policy accepts the replacement and the user controls every input it requires. The replacement preserves every asset-bearing output, every third-party payment, every seller output, and every amount that may not legally change. The incremental fee comes only from verified user-owned cardinal change or newly added user-owned cardinal inputs. The user sees old fee, new fee, incremental fee, old and new effective fee rate, and every changed input or output.
 
-CPFP is offered only when the user controls a spendable output whose spending moves no tracked asset. The child fee is computed from the combined parent-and-child package fee rate under Bitcoin Core package, ancestor, descendant, dust, and standardness policy. An asset-bearing output may fund a child only when the child provably preserves the complete asset inventory.
+CPFP is offered only when the user controls a spendable output whose spending moves no tracked asset. The child fee is computed from the combined parent-and-child package fee rate under Bitcoin Core package, ancestor, descendant, dust, and standardness policy. An asset-bearing output may fund a child only when the child provably preserves the complete asset inventory. The request names the parent txid, the exact `changeOutpoint` of that parent the child spends, the package `targetFeeRateSatsPerVb`, and the wallet destination for the child (`childReceiveScriptHex` or `childAddress`). A refused bump answers `allowed: false` with a `refusalCode` and a null `plan`.
 
 ---
 

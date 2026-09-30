@@ -19,7 +19,7 @@ test('the SSE parser handles chunk splits, CRLF, comments, multi-line data, id a
 
 test('ingest validates, deduplicates, bounds the buffer and advances the cursor only on processed events', () => {
   let s = createStreamState();
-  let r = ingestEvent(s, JSON.stringify(envelope(1)), validateOrdexEvent, envelope(1).id);
+  let r = ingestEvent(s, JSON.stringify(envelope(1)), validateOrdexEvent, `${envelope(1).sequence}:${envelope(1).id}`);
   assert.equal(r.outcome, 'accepted');
   assert.equal(r.state.cursor, envelope(1).id);
   s = r.state;
@@ -31,8 +31,8 @@ test('ingest validates, deduplicates, bounds the buffer and advances the cursor 
   assert.equal(r.state.cursor, s.cursor, 'invalid input never moves the cursor');
   r = ingestEvent(s, JSON.stringify({ ...envelope(2), schemaVersion: '9' }), validateOrdexEvent);
   assert.equal(r.outcome, 'invalid');
-  r = ingestEvent(s, JSON.stringify(envelope(3)), validateOrdexEvent, 'some-other-id');
-  assert.equal(r.outcome, 'invalid', 'the SSE id must equal the envelope id');
+  r = ingestEvent(s, JSON.stringify(envelope(3)), validateOrdexEvent, envelope(3).id);
+  assert.equal(r.outcome, 'invalid', 'the SSE id must be <sequence>:<eventId> of the envelope, not the bare event id');
   r = ingestEvent(ingestEvent(s, JSON.stringify(envelope(5)), validateOrdexEvent).state, JSON.stringify(envelope(4)), validateOrdexEvent);
   assert.equal(r.outcome, 'out-of-order');
   let big = createStreamState();
@@ -56,8 +56,8 @@ test('SSE resumes after a drop with Last-Event-ID set to the last processed even
   const e1 = envelope(1);
   const e2 = envelope(2);
   const responses = [
-    sseResponse([`id: ${e1.id}\ndata: ${JSON.stringify(e1)}\n\n`]),
-    sseResponse([`id: ${e2.id}\ndata: ${JSON.stringify(e2)}\n\n`])
+    sseResponse([`id: ${e1.sequence}:${e1.id}\ndata: ${JSON.stringify(e1)}\n\n`]),
+    sseResponse([`id: ${e2.sequence}:${e2.id}\ndata: ${JSON.stringify(e2)}\n\n`])
   ];
   const controller = new AbortController();
   let state = createStreamState();
@@ -80,8 +80,8 @@ test('SSE resumes after a drop with Last-Event-ID set to the last processed even
     initialBackoffMs: 1
   });
   const result = await done;
-  assert.deepEqual(calls.slice(0, 3), [null, e1.id, e2.id]);
-  assert.equal(result.cursor, e2.id);
+  assert.deepEqual(calls.slice(0, 3), [null, `${e1.sequence}:${e1.id}`, `${e2.sequence}:${e2.id}`]);
+  assert.equal(result.cursor, `${e2.sequence}:${e2.id}`);
   assert.equal(state.counts.accepted, 2);
   assert.ok(statuses.includes('waiting'));
 });
@@ -137,13 +137,16 @@ test('the WebSocket client subscribes with filters and the cursor, and resubscri
     initialBackoffMs: 1
   });
   for (let i = 0; i < 200 && !sockets[0]?.sent.length; i++) await new Promise((r) => setTimeout(r, 5));
-  assert.deepEqual(sockets[0].sent[0], { op: 'subscribe', filters: { network: 'signet' }, cursor: 'start' });
-  await sockets[0].onmessage({ data: JSON.stringify(envelope(7)) });
+  assert.deepEqual(sockets[0].sent[0], { op: 'subscribe', id: 'playground', filters: { network: 'signet' }, cursor: 'start' });
+  await sockets[0].onmessage({ data: JSON.stringify({ op: 'subscribed', id: 'playground' }) });
+  await sockets[0].onmessage({ data: JSON.stringify({ op: 'event', id: 'other', cursor: 'c-other', event: envelope(6) }) });
+  await sockets[0].onmessage({ data: JSON.stringify({ op: 'event', id: 'playground', cursor: 'c7', event: envelope(7) }) });
+  assert.equal(state.counts.accepted, 1, 'only wrapped events of this subscription are ingested');
   sockets[0].onclose({ code: 1006 });
   for (let i = 0; i < 200 && !sockets[1]?.sent.length; i++) await new Promise((r) => setTimeout(r, 5));
-  assert.equal(sockets[1].sent[0].cursor, envelope(7).id, 'resubscribes from the processed cursor');
+  assert.equal(sockets[1].sent[0].cursor, 'c7', 'resubscribes from the processed event cursor');
   controller.abort();
-  assert.deepEqual(await done, { stopped: 'aborted', cursor: envelope(7).id });
+  assert.deepEqual(await done, { stopped: 'aborted', cursor: 'c7' });
 });
 
 test('stream URLs and backoff follow the contract', () => {

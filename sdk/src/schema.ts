@@ -2217,9 +2217,15 @@ export interface components {
             /** @description A human explanation of the same refusal. */
             reason: string;
         };
-        /** @description Answered when at least one ask cannot coexist in the batch. There is no partial composition: every refused order is named, and the client falls back to separate purchases. */
+        /** @description Answered when at least one ask cannot coexist in the batch. There is no partial composition: every refused order is named, and the client falls back to separate purchases. It carries the shared error envelope fields too. */
         BatchPurchaseRefused: {
             refusals: components["schemas"]["BatchRefusal"][];
+            /** @constant */
+            statusCode?: 409;
+            error?: string;
+            message?: string;
+            requestId?: string;
+            code?: string;
         };
         BatchPreflightRequest: {
             /** @description The identifier the batch-purchase answer carried. The asks are taken from the stored batch. */
@@ -2374,13 +2380,25 @@ export interface components {
             expiryBlocks?: number;
         };
         SafeOpsPlanResult: {
+            /** @description The id every later plan route takes. */
+            planId: string;
+            /** @enum {string} */
+            state: "BUILT" | "SIGNED" | "BROADCAST" | "INVALIDATED";
             plan: components["schemas"]["SafeOpsPlan"];
             verification: components["schemas"]["VerificationView"];
-            /** @description When one transaction cannot carry the operation, the deterministic standard partitions. */
+            /** @description The unsigned PSBT, base64, that reproduces the plan transaction exactly. */
+            psbt?: string;
+            /** @description The expected transaction manifest a cold signer signs against. */
+            manifest?: components["schemas"]["ExpectedTransactionManifest"];
+            /** @description INVALIDATED plans only. */
+            invalidatedReason?: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            /** @description When one transaction cannot carry the operation: every deterministic partition, the first of which is this answer. */
             partition?: {
-                transactions?: {
-                    [key: string]: unknown;
-                }[];
+                transactions: components["schemas"]["SafeOpsPlanResult"][];
             };
         };
         /** @description The signed result to reverify immediately before broadcast, with the digest the user agreed to. */
@@ -2397,6 +2415,13 @@ export interface components {
             conflictingSpend?: components["schemas"]["Outpoint"];
             rbfEligible?: boolean;
             cpfpEligible?: boolean;
+            /**
+             * @description INVALIDATED means the plan can no longer be signed; build a new one.
+             * @enum {string}
+             */
+            outcome?: "VALID" | "INVALIDATED";
+            /** @description True when every finding is an authority outage: the same shield answers again once the authorities recover. */
+            retryable?: boolean;
         };
         SafeOpsSignedResult: {
             /** @constant */
@@ -2409,6 +2434,7 @@ export interface components {
         BroadcastRequest: {
             /** @description The complete signed transaction, hex encoded. */
             signedTx: string;
+            /** @description The digest of the artifact the transaction settles; for context safeops, the plan digest. A signed transaction that is not that plan is refused. */
             artifactDigest?: string;
             /** @enum {string} */
             context?: "safeops" | "swap" | "order" | "offer" | "heritage";
@@ -2436,21 +2462,30 @@ export interface components {
             newFeeRateSatsPerVb?: components["schemas"]["AtomicSats"];
         };
         SafeOpsRbfResult: {
-            plan: components["schemas"]["SafeOpsPlan"];
+            /** @description Null when the bump is refused; refusalCode then says why. */
+            plan: components["schemas"]["SafeOpsPlan"] | null;
             oldFeeSats?: components["schemas"]["AtomicSats"];
             newFeeSats?: components["schemas"]["AtomicSats"];
             incrementalFeeSats?: components["schemas"]["AtomicSats"];
-            allowed?: boolean;
+            allowed: boolean;
             refusalCode?: string;
         };
         SafeOpsCpfpRequest: {
             parentTxid: string;
-            targetFeeRateSatsPerVb?: components["schemas"]["AtomicSats"];
-        };
+            /** @description The output of parentTxid the child spends; it must belong to the wallet and carry no asset. */
+            changeOutpoint: components["schemas"]["Outpoint"];
+            /** @description The package fee rate to reach, whole sats per virtual byte. */
+            targetFeeRateSatsPerVb: components["schemas"]["AtomicSats"];
+            /** @description The wallet script the child pays its remainder to. Give this or childAddress. */
+            childReceiveScriptHex?: string;
+            /** @description The same destination as an address; used only when childReceiveScriptHex is absent. */
+            childAddress?: string;
+        } | unknown | unknown;
         SafeOpsCpfpResult: {
-            plan: components["schemas"]["SafeOpsPlan"];
+            /** @description Null when the bump is refused; refusalCode then says why. */
+            plan: components["schemas"]["SafeOpsPlan"] | null;
             packageFeeRateSatsPerVb?: components["schemas"]["AtomicSats"];
-            allowed?: boolean;
+            allowed: boolean;
             refusalCode?: string;
         };
         /** @description A BIP-322 proof that the maker controls the intent address. The gateway verifies the signature before publishing. */
@@ -2498,6 +2533,8 @@ export interface components {
         /** @enum {string} */
         SwapIntentState: "DRAFT" | "LIVE" | "PRIVATE" | "MATCHING" | "AWAITING_MAKER_SIGNATURE" | "AWAITING_TAKER_SIGNATURE" | "READY_FOR_PREFLIGHT" | "READY_FOR_BROADCAST" | "MEMPOOL" | "CONFIRMED" | "EXPIRED" | "WITHDRAWN" | "CONFLICTED" | "INVALIDATED" | "REORGED";
         SwapIntentView: {
+            /** @description The listed intent id the intent routes take. */
+            id: string;
             intent: components["schemas"]["SwapIntentDocument"];
             state: components["schemas"]["SwapIntentState"];
             /** @enum {string} */
@@ -2612,7 +2649,8 @@ export interface components {
         };
         PrivateSwapEnvelope: {
             privateId: string;
-            ciphertext: string;
+            /** @description Null exactly when destroyed. */
+            ciphertext: string | null;
             /** Format: date-time */
             expiresAt: string;
             destroyed?: boolean;
@@ -2850,11 +2888,12 @@ export interface components {
                 [key: string]: unknown;
             };
             holderCount?: number;
-            attachedUtxos?: components["schemas"]["HeritageAttachmentRecord"][];
+            attachedUtxos: components["schemas"]["HeritageAttachmentRecord"][];
             issuanceHistory?: {
                 [key: string]: unknown;
             }[];
             readiness: components["schemas"]["HeritageReadiness"];
+            completeness: components["schemas"]["HeritageRecordCompleteness"];
         };
         HeritageComposeRequest: {
             address: string;
@@ -2871,8 +2910,12 @@ export interface components {
             explanation: {
                 [key: string]: unknown;
             };
+            /** @description The node reported gas; absent when the node reports none. */
             xcpGasSats?: components["schemas"]["AtomicSats"];
-            minerFeeSats?: components["schemas"]["AtomicSats"];
+            minerFeeSats: components["schemas"]["AtomicSats"];
+            /** @description The heritage operation the relay route takes. */
+            operationId: string;
+            manifest?: components["schemas"]["ExpectedTransactionManifest"];
         };
         /** @description What the signer will see, in human readable and machine verifiable form, before any signature is requested. The digest commits to the exact unsigned transaction bytes, every prevout and the protection policy; purpose, explanations, roles and account are display text outside it. */
         ExpectedTransactionManifest: {
@@ -2934,6 +2977,11 @@ export interface components {
             };
             rejection?: {
                 [key: string]: unknown;
+            };
+            /** @description In the open answer only, exactly once; only their hashes are stored. */
+            capabilities?: {
+                read: string;
+                import: string;
             };
         };
         /** @description Exactly one of psbt and signedTxHex. Signatures are verified from these bytes. */
@@ -3066,7 +3114,7 @@ export interface components {
             items: components["schemas"]["WebhookSubscription"][];
         };
         SigningSessionSummary: {
-            id: string;
+            sessionId: string;
             network: components["schemas"]["V12Network"];
             /** @enum {string} */
             state: "AWAITING_EXPORT" | "AWAITING_SIGNATURE" | "SIGNED_VERIFIED" | "REJECTED" | "BROADCAST";
@@ -3199,6 +3247,52 @@ export interface components {
             /** @description A BIP-340 signature by buyerRecoveryKeyHex over the tagged hash (tag ordex/offer-withdrawal) of the message "Ordex offer withdrawal\nnetwork: <network>\noffer: <id>\nterms: <offerTermsHash>". */
             signature: string;
         };
+        SwapPreflightResult: {
+            sessionId: string;
+            state: components["schemas"]["SwapIntentState"];
+            allowed: boolean;
+            /** @description Allowed settlements only. */
+            txid?: string;
+            refusalCode?: string;
+            reason?: string;
+            /** Format: date-time */
+            checkedAt: string;
+        };
+        PrivateSwapStored: components["schemas"]["PrivateSwapEnvelope"] & {
+            /** @description Returned exactly once; only its hash is stored. Destroying the envelope needs it. */
+            deleteCapability: string;
+        };
+        HeritageRecordCompleteness: {
+            complete: boolean;
+            incomplete: {
+                utxo: string | null;
+                reasons: string[];
+            }[];
+            /** @description Pass as cursor for the next page; null on the last page. */
+            nextCursor: string | null;
+        };
+        HeritageAssetUtxoPage: {
+            asset: {
+                name: string;
+                assetId: string;
+            };
+            attachedUtxos: components["schemas"]["HeritageAttachmentRecord"][];
+            completeness: components["schemas"]["HeritageRecordCompleteness"];
+            readiness: components["schemas"]["HeritageReadiness"];
+        };
+        HeritageAddressAssets: {
+            address: string;
+            balances: {
+                name: string;
+                assetId: string;
+                divisible: boolean;
+                quantitySats: components["schemas"]["AtomicSats"];
+                quantityNormalized?: string;
+                /** @description The carrying outpoint txid:vout, or null for the plain address balance. */
+                utxo: string | null;
+            }[];
+            readiness: components["schemas"]["HeritageReadiness"];
+        };
     };
     responses: {
         /** @description The request failed. The envelope states the status, a human readable message, and the request id. */
@@ -3219,7 +3313,7 @@ export interface components {
                 "application/json": components["schemas"]["ErrorResponse"];
             };
         };
-        /** @description No order with this id. */
+        /** @description Nothing with this id exists. */
         NotFound: {
             headers: {
                 [name: string]: unknown;
@@ -4154,6 +4248,7 @@ export interface operations {
                     "application/json": components["schemas"]["SafeOpsPlanResult"];
                 };
             };
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Error"];
         };
     };
@@ -4182,6 +4277,7 @@ export interface operations {
                     "application/json": components["schemas"]["ShieldResult"];
                 };
             };
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Error"];
         };
     };
@@ -4231,6 +4327,7 @@ export interface operations {
                     "application/json": components["schemas"]["OperationStatus"];
                 };
             };
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Error"];
         };
     };
@@ -4360,6 +4457,7 @@ export interface operations {
                     "application/json": components["schemas"]["SwapIntentView"];
                 };
             };
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Error"];
         };
     };
@@ -4388,6 +4486,7 @@ export interface operations {
                     "application/json": components["schemas"]["SwapIntentView"];
                 };
             };
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Error"];
         };
     };
@@ -4416,6 +4515,7 @@ export interface operations {
                     "application/json": components["schemas"]["SwapSession"];
                 };
             };
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Error"];
         };
     };
@@ -4443,6 +4543,7 @@ export interface operations {
                     "application/json": components["schemas"]["SwapSession"];
                 };
             };
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Error"];
         };
     };
@@ -4474,6 +4575,7 @@ export interface operations {
                     "application/json": components["schemas"]["SwapSession"];
                 };
             };
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Error"];
         };
     };
@@ -4498,9 +4600,10 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["VerificationView"];
+                    "application/json": components["schemas"]["SwapPreflightResult"];
                 };
             };
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Error"];
         };
     };
@@ -4528,6 +4631,7 @@ export interface operations {
                     "application/json": components["schemas"]["BroadcastReceipt"];
                 };
             };
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Error"];
         };
     };
@@ -4571,7 +4675,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PrivateSwapEnvelope"];
+                    "application/json": components["schemas"]["PrivateSwapStored"];
                 };
             };
             default: components["responses"]["Error"];
@@ -4598,6 +4702,7 @@ export interface operations {
                     "application/json": components["schemas"]["PrivateSwapEnvelope"];
                 };
             };
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Error"];
         };
     };
@@ -4628,6 +4733,7 @@ export interface operations {
                     };
                 };
             };
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Error"];
         };
     };
@@ -4801,6 +4907,7 @@ export interface operations {
                     "application/json": components["schemas"]["WebhookSubscription"];
                 };
             };
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Error"];
         };
     };
@@ -4827,6 +4934,7 @@ export interface operations {
                     };
                 };
             };
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Error"];
         };
     };
@@ -4855,6 +4963,7 @@ export interface operations {
                     "application/json": components["schemas"]["WebhookSubscription"];
                 };
             };
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Error"];
         };
     };
@@ -4879,6 +4988,7 @@ export interface operations {
                     "application/json": components["schemas"]["WebhookSecretReveal"];
                 };
             };
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Error"];
         };
     };
@@ -4907,6 +5017,7 @@ export interface operations {
                     "application/json": components["schemas"]["WebhookSubscription"];
                 };
             };
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Error"];
         };
     };
@@ -4931,6 +5042,7 @@ export interface operations {
                     "application/json": components["schemas"]["WebhookDelivery"];
                 };
             };
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Error"];
         };
     };
@@ -4985,6 +5097,7 @@ export interface operations {
                     "application/json": components["schemas"]["WebhookDelivery"];
                 };
             };
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Error"];
         };
     };
@@ -5066,6 +5179,7 @@ export interface operations {
                     "application/json": components["schemas"]["CollectionManifestDocument"];
                 };
             };
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Error"];
         };
     };
@@ -5092,6 +5206,7 @@ export interface operations {
                     "application/json": components["schemas"]["MembershipProofResponse"];
                 };
             };
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Error"];
         };
     };
@@ -5125,6 +5240,7 @@ export interface operations {
                     };
                 };
             };
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Error"];
         };
     };
@@ -5152,6 +5268,7 @@ export interface operations {
                     "application/json": components["schemas"]["CollectionProvenance"];
                 };
             };
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Error"];
         };
     };
@@ -5200,6 +5317,7 @@ export interface operations {
                     "application/json": components["schemas"]["HeritageAsset"];
                 };
             };
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Error"];
         };
     };
@@ -5224,9 +5342,10 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HeritageAttachmentRecord"][];
+                    "application/json": components["schemas"]["HeritageAssetUtxoPage"];
                 };
             };
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Error"];
         };
     };
@@ -5248,11 +5367,10 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    }[];
+                    "application/json": components["schemas"]["HeritageAddressAssets"];
                 };
             };
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Error"];
         };
     };
@@ -5388,6 +5506,7 @@ export interface operations {
                     "application/json": components["schemas"]["SigningSession"];
                 };
             };
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Error"];
         };
     };
@@ -5419,6 +5538,7 @@ export interface operations {
                     "application/json": components["schemas"]["SigningVerificationResult"];
                 };
             };
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Error"];
         };
     };
@@ -5497,6 +5617,7 @@ export interface operations {
                     "application/json": components["schemas"]["HeritageOperation"];
                 };
             };
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Error"];
         };
     };
@@ -5521,6 +5642,7 @@ export interface operations {
                     "application/json": components["schemas"]["HeritageOperation"];
                 };
             };
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Error"];
         };
     };
@@ -5624,6 +5746,7 @@ export interface operations {
                     "application/json": components["schemas"]["HeritageAcceptanceResult"];
                 };
             };
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Error"];
         };
     };
