@@ -115,6 +115,8 @@ test('Product Tour rows', { timeout: 900000 }, async () => {
       const { page, context } = await openPage(browser, stepUrl(tour, i));
       await page.locator(`[data-tour-step="${tour.steps[i].id}"]`).waitFor({ timeout: 15000 });
       await page.getByRole('button', { name: 'Pause' }).click();
+      // The tour leaves the URL once the paused step is stored.
+      await page.waitForURL((url) => !/tour=/.test(String(url)), { timeout: 15000 }).catch(() => {});
       expect(!/tour=/.test(page.url()), 'the tour stayed in the URL after pausing');
       await page.goto(site.url('/tour/'), { waitUntil: 'networkidle' });
       await page.getByRole('link', { name: 'Resume the tour' }).click();

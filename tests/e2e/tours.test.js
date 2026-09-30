@@ -52,7 +52,8 @@ test('navigation, pause and resume, end with focus restored, keyboard inside the
   await page.getByRole('button', { name: 'Previous step' }).click();
   await page.locator('[data-tour-step="disclosure"]').waitFor();
   await page.getByRole('button', { name: 'Pause' }).click();
-  assert.doesNotMatch(page.url(), /tour=/);
+  // The tour leaves the URL once the paused step is stored.
+  await page.waitForURL((url) => !/tour=/.test(String(url)));
   await page.goto(site.url('/tour/'));
   await page.getByRole('link', { name: 'Resume the tour' }).click();
   await page.locator('[data-tour-step="disclosure"]').waitFor();
