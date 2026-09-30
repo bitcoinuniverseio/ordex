@@ -90,11 +90,38 @@ book.
 
 Every write is rate limited.
 
+## Errors
+
+Every error answers the shared envelope: `statusCode`, `error`, `message`,
+and, where one applies, a stable `code` and the `requestId`. A route that
+names one resource by id answers `404` when nothing with that id exists, with
+the matching `*_NOT_FOUND` code; `400` is only for a request the gateway
+cannot read. A client can therefore tell a stale id from a malformed call
+without parsing the message.
+
+A purchase route (quote, preflight, batch purchase, batch preflight) that
+cannot answer right now responds `503` with one of the codes in
+`PurchaseUnavailableCode`. `ORDER_CHECKING` means the listing itself is in its
+catch-up hold at a new block; `INPUT_INVENTORY_UNAVAILABLE` means a buyer
+output could not be checked for assets, so Ordex will not spend it. Every one
+of them is retryable, and nothing was composed or recorded.
+
+## Agents
+
+The gateway's MCP endpoint speaks the stateless MCP `2026-07-28` Streamable
+HTTP transport: every request is one POST whose `MCP-Protocol-Version`,
+`Mcp-Method` and `Mcp-Name` headers match its body, with no session to open
+or resume. A header that disagrees with the body, or an unsupported version,
+answers `400`; an unknown method answers `404`; a notification answers
+`202` with no body.
+
 ## The protocol contract is checkable
 
 `GET /protocol` is the consumer's first call, and it has to carry enough to
 refuse a gateway that cannot keep the consumer's promises. Since 1.2.1 it
-states the exact `protocolVersion` (and the same value as `version`), the
+states the exact `protocolVersion` (and the same value as `version`), which
+is the contract's own `info.version` and the version the MCP endpoint reports
+in its `serverInfo`: a gateway advertises one version everywhere. It states the
 `network`, a boolean per gateway capability (`browse`, `createListing`,
 `withdraw`, `replace`, `purchase`, `batchPurchase`, `fundedOffers`,
 `offerAcceptance`, `operationReceipts`), the `prerequisites` still missing for

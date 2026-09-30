@@ -35,7 +35,7 @@ for (const vector of vectors.cases) {
 
 test('the schema names are stable', () => {
   assert.equal(SWAP_INTENT_SCHEMA, 'ordex.swap-intent/v1');
-  assert.equal(SWAP_ACCEPTANCE_SCHEMA, 'ordex.swap-acceptance-plan/v1');
+  assert.equal(SWAP_ACCEPTANCE_SCHEMA, 'ordex.swap-acceptance-plan/v2');
 });
 
 test('a malformed intent is refused, never thrown on', () => {

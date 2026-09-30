@@ -36,7 +36,7 @@ for (const vector of vectors.cases) {
 }
 
 test('the plan schema name is stable', () => {
-  assert.equal(SAFEOPS_PLAN_SCHEMA, 'ordex.safeops-plan/v1');
+  assert.equal(SAFEOPS_PLAN_SCHEMA, 'ordex.safeops-plan/v2');
 });
 
 test('a malformed plan is refused, never thrown on', () => {

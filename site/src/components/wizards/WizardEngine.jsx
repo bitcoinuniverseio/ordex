@@ -1,237 +1,219 @@
 import { h } from 'preact';
-import { useState, useEffect } from 'preact/hooks';
+import { useEffect, useState } from 'preact/hooks';
 import wizardsData from '../../data/wizards.json';
-import { TruthLabel } from '../shell/TruthLabel.jsx';
+import operationsData from '../../data/operations.json';
 import { resolveUrl } from '../../lib/base-url.js';
+import { missingAnswers, wizardOutcome } from '../../lib/docs/wizard-outcome.mjs';
+import { journeyStore } from '../../lib/session/journey-store';
+import { recordToolEvidence, SOURCE_BUILD } from '../../lib/session/evidence';
+
+// OX-S11: a wizard needs an answer on every step before it continues; answers are kept in this
+// browser per wizard and cleared only by Reset. The outcome links come from the answers
+// (lib/docs/wizard-outcome.mjs) and go to real routes, including a starter kit with the chosen
+// runtime and capabilities. Finishing is learning progress (wizard:<id> evidence), not proof
+// that anything ran; the checklist says which tool evidence is still needed.
+
+const progressKey = (id) => `ordex.wizard.${id}`;
+const loadProgress = (id) => {
+  try {
+    const v = JSON.parse(localStorage.getItem(progressKey(id)) || 'null');
+    return v && typeof v === 'object' && v.answers && Number.isInteger(v.step) ? v : null;
+  } catch {
+    return null;
+  }
+};
 
 export function WizardEngine({ initialWizardId = null }) {
-  const [activeWizardId, setActiveWizardId] = useState(initialWizardId || wizardsData[0]?.id);
-  const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const [activeId, setActiveId] = useState(() => {
+    const wid = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('wizard') : null;
+    return wid && wizardsData.some((w) => w.id === wid) ? wid : initialWizardId || wizardsData[0].id;
+  });
+  const [stepState, setStep] = useState(0);
   const [answers, setAnswers] = useState({});
-  const [filterRole, setFilterRole] = useState('all');
+  const [finished, setFinished] = useState(false);
+  const [announce, setAnnounce] = useState('');
 
-  // Read URL params if present (sanitized choices only)
   useEffect(() => {
-    try {
-      const params = new URLSearchParams(window.location.search);
-      const wid = params.get('wizard');
-      if (wid && wizardsData.some((w) => w.id === wid)) {
-        setActiveWizardId(wid);
-      }
-    } catch (e) {}
+    const wid = new URLSearchParams(window.location.search).get('wizard');
+    if (wid && wizardsData.some((w) => w.id === wid)) setActiveId(wid);
   }, []);
 
-  const wizard = wizardsData.find((w) => w.id === activeWizardId) || wizardsData[0];
-  const steps = wizard.steps || [];
-  const currentStep = steps[currentStepIndex] || steps[0];
-  const isLastStep = currentStepIndex === steps.length - 1;
+  useEffect(() => {
+    const saved = loadProgress(activeId);
+    setAnswers(saved?.answers || {});
+    setStep(Math.min(saved?.step || 0, (wizardsData.find((w) => w.id === activeId)?.steps.length || 1) - 1));
+    setFinished(!!saved?.finished);
+  }, [activeId]);
 
-  const selectOption = (stepId, value, isMulti) => {
-    setAnswers((prev) => {
-      if (isMulti) {
-        const currentList = prev[stepId] || [];
-        const nextList = currentList.includes(value)
-          ? currentList.filter((v) => v !== value)
-          : [...currentList, value];
-        return { ...prev, [stepId]: nextList };
-      }
-      return { ...prev, [stepId]: value };
-    });
+  const wizard = wizardsData.find((w) => w.id === activeId) || wizardsData[0];
+  // Switching wizards renders once before the saved step of the new one is loaded; a step
+  // from the previous wizard must never index past this one's steps.
+  const step = Math.min(stepState, wizard.steps.length - 1);
+  const current = wizard.steps[step];
+  const isLast = step === wizard.steps.length - 1;
+  const answered = current.isMulti ? (answers[current.id] || []).length > 0 : !!answers[current.id];
+  const missing = missingAnswers(wizard, answers);
+  const outcome = wizardOutcome(wizard, answers, operationsData);
+
+  const save = (next) => {
+    try {
+      localStorage.setItem(progressKey(wizard.id), JSON.stringify({ answers, step, finished, ...next }));
+    } catch {}
   };
 
-  const handleNext = () => {
-    if (!isLastStep) {
-      setCurrentStepIndex((prev) => prev + 1);
-    }
+  const choose = (value) => {
+    const next = current.isMulti
+      ? { ...answers, [current.id]: (answers[current.id] || []).includes(value) ? answers[current.id].filter((v) => v !== value) : [...(answers[current.id] || []), value] }
+      : { ...answers, [current.id]: value };
+    setAnswers(next);
+    save({ answers: next });
   };
 
-  const handlePrev = () => {
-    if (currentStepIndex > 0) {
-      setCurrentStepIndex((prev) => prev - 1);
-    }
+  const go = (to) => {
+    setStep(to);
+    save({ step: to });
+    setAnnounce(`Step ${to + 1} of ${wizard.steps.length}: ${wizard.steps[to].title}`);
   };
 
-  const handleReset = () => {
+  const reset = () => {
     setAnswers({});
-    setCurrentStepIndex(0);
+    setStep(0);
+    setFinished(false);
+    try {
+      localStorage.removeItem(progressKey(wizard.id));
+    } catch {}
+    setAnnounce('Answers cleared.');
   };
 
-  const downloadChecklist = () => {
-    const text = `# Ordex Integration Checklist: ${wizard.title}\n\n` +
-      `Summary: ${wizard.summary}\n` +
-      `Protocol Scope: ${wizard.protocolScope}\n\n` +
-      `## Selected Parameters\n` +
-      Object.entries(answers).map(([k, v]) => `- **${k}**: ${Array.isArray(v) ? v.join(', ') : v}`).join('\n') +
-      `\n\n## Next Actions\n` +
-      `- ${wizard.outcome?.recommendation || 'Proceed with integration'}\n` +
-      `- Review reference documentation: https://bitcoinuniverseio.github.io/ordex/\n`;
+  const finish = () => {
+    if (missing.length) return;
+    setFinished(true);
+    save({ finished: true });
+    recordToolEvidence({ tool: 'wizards', operation: `wizard:${wizard.id}`, state: 'passed', evidenceClass: 'Deterministic example' });
+    setAnnounce('Wizard finished. Your next steps are below.');
+  };
 
-    const blob = new Blob([text], { type: 'text/markdown' });
-    const url = URL.createObjectURL(blob);
+  const label = (s, v) => s.options.find((o) => o.value === v)?.label || v;
+
+  const downloadChecklist = async () => {
+    const settings = await journeyStore.getSettings().catch(() => null);
+    const origin = window.location.origin;
+    const text = [
+      `# ${wizard.title}`,
+      '',
+      wizard.summary,
+      '',
+      `Protocol scope: ${wizard.protocolScope}. Network: ${settings?.network || 'mainnet'}. Build: ${SOURCE_BUILD}.`,
+      '',
+      '## Your answers',
+      ...wizard.steps.map((s) => `- ${s.title}: ${[].concat(answers[s.id] || []).map((v) => label(s, v)).join(', ') || 'not answered'}`),
+      '',
+      '## Next steps',
+      wizard.outcome?.recommendation || '',
+      ...outcome.links.map((l) => `- ${l.label}: ${origin}${resolveUrl(l.href)}`),
+      '',
+      '## Still to prove',
+      'Finishing this wizard is learning progress. A mission stage completes only with evidence from the tools above, run against your own inputs.'
+    ].join('\n');
+    const url = URL.createObjectURL(new Blob([text], { type: 'text/markdown' }));
     const a = document.createElement('a');
     a.href = url;
     a.download = `${wizard.id}-checklist.md`;
+    document.body.appendChild(a);
     a.click();
-    URL.revokeObjectURL(url);
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 30000);
+    setAnnounce(`Download started: ${wizard.id}-checklist.md`);
   };
 
   return (
     <div class="wizard-container" style="display: flex; flex-direction: column; gap: 1.5rem;">
-      {/* Wizard Chooser Tabs */}
+      <div class="ox-sr-only" role="status" aria-live="polite">
+        {announce}
+      </div>
       <div class="panel" style="padding: 1rem;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
-          <h3 style="margin: 0; font-size: 1.05rem;">Interactive Guided Workflows (12 Wizards)</h3>
-          <span style="font-size: 0.8rem; color: var(--color-text-muted);">
-            Step-by-step guidance & decision trees
-          </span>
-        </div>
-        <div style="display: flex; flex-wrap: wrap; gap: 0.4rem;">
-          {wizardsData.map((w) => {
-            const isCurrent = w.id === activeWizardId;
-            return (
-              <button
-                key={w.id}
-                class={`btn ${isCurrent ? 'btn-primary' : 'btn-outline'}`}
-                style="font-size: 0.8rem; min-height: 32px; padding: 0.3rem 0.65rem;"
-                onClick={() => {
-                  setActiveWizardId(w.id);
-                  setCurrentStepIndex(0);
-                  setAnswers({});
-                }}
-              >
-                {w.title}
-              </button>
-            );
-          })}
+        <h2 style="margin: 0 0 0.75rem; font-size: 1.05rem;">Guided workflows ({wizardsData.length})</h2>
+        <div role="group" aria-label="Wizards" style="display: flex; flex-wrap: wrap; gap: 0.4rem;">
+          {wizardsData.map((w) => (
+            <button key={w.id} type="button" aria-pressed={w.id === activeId ? 'true' : 'false'} class={`btn ${w.id === activeId ? 'btn-primary' : 'btn-outline'}`} style="font-size: 0.8rem; min-height: 32px; padding: 0.3rem 0.65rem;" onClick={() => setActiveId(w.id)}>
+              {w.title}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Active Wizard Flow */}
       <div class="panel">
-        <div class="panel-header">
+        <div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem;">
           <div>
-            <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.25rem;">
-              <span class="badge badge-verification">{wizard.category}</span>
-              <span style="font-size: 0.8rem; color: var(--color-text-muted);">Protocol {wizard.protocolScope}</span>
-            </div>
-            <h2 style="margin: 0; font-size: 1.35rem;">{wizard.title}</h2>
-            <p style="margin: 0.25rem 0 0 0; color: var(--color-text-secondary); font-size: 0.9rem;">
-              {wizard.summary}
-            </p>
+            <span class="badge badge-verification">{wizard.category}</span> <span style="font-size: 0.8rem; color: var(--color-text-secondary);">Protocol {wizard.protocolScope}</span>
+            <h2 style="margin: 0.25rem 0 0; font-size: 1.35rem;">{wizard.title}</h2>
+            <p style="margin: 0.25rem 0 0; color: var(--color-text-secondary); font-size: 0.9rem;">{wizard.summary}</p>
           </div>
-          <div>
-            <span style="font-size: 0.85rem; font-weight: 600; color: var(--color-text-muted);">
-              Step {currentStepIndex + 1} of {steps.length}
-            </span>
-          </div>
+          <span style="font-size: 0.85rem; font-weight: 600; color: var(--color-text-secondary);">
+            Step {step + 1} of {wizard.steps.length}
+          </span>
         </div>
 
-        {/* Step Progress Bar */}
-        <div style="display: flex; gap: 0.3rem; margin-bottom: 1.5rem;">
-          {steps.map((s, idx) => (
-            <div
-              key={s.id}
-              style={{
-                flex: 1,
-                height: '4px',
-                borderRadius: '2px',
-                backgroundColor: idx <= currentStepIndex ? 'var(--color-brand)' : 'var(--color-bg-muted)'
-              }}
-            />
-          ))}
-        </div>
-
-        {/* Step Body */}
-        <div style="margin-bottom: 2rem;">
-          <h3 style="margin: 0 0 0.5rem 0; font-size: 1.1rem;">
-            {currentStep.title}
-          </h3>
-          <p style="margin: 0 0 1.25rem 0; font-size: 0.9rem; color: var(--color-text-secondary);">
-            {currentStep.description}
+        <fieldset style="border: none; padding: 0; margin: 1.5rem 0;">
+          <legend style="font-size: 1.1rem; font-weight: 700; margin-bottom: 0.25rem;">{current.title}</legend>
+          <p style="margin: 0 0 1rem; font-size: 0.9rem; color: var(--color-text-secondary);">
+            {current.description} {current.isMulti ? 'Choose one or more.' : 'Choose one.'}
           </p>
-
-          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0.75rem;">
-            {currentStep.options?.map((opt) => {
-              const isSelected = currentStep.isMulti
-                ? (answers[currentStep.id] || []).includes(opt.value)
-                : answers[currentStep.id] === opt.value;
-
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr)); gap: 0.75rem;">
+            {current.options.map((opt) => {
+              const selected = current.isMulti ? (answers[current.id] || []).includes(opt.value) : answers[current.id] === opt.value;
               return (
-                <div
-                  key={opt.value}
-                  class={`panel ${isSelected ? 'selected' : ''}`}
-                  style={{
-                    padding: '1rem',
-                    cursor: 'pointer',
-                    border: isSelected ? '2px solid var(--color-brand)' : '1px solid var(--color-border)',
-                    backgroundColor: isSelected ? 'var(--color-brand-subtle)' : 'var(--color-bg-surface)'
-                  }}
-                  onClick={() => selectOption(currentStep.id, opt.value, currentStep.isMulti)}
-                  role="button"
-                  tabIndex={0}
-                >
-                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.3rem;">
-                    <span style="font-weight: 700; font-size: 0.95rem;">{opt.label}</span>
-                    <span style="font-size: 1rem;">{isSelected ? '☑️' : '◻️'}</span>
-                  </div>
-                  <div style="font-size: 0.8rem; color: var(--color-text-secondary); line-height: 1.35;">
-                    {opt.lead}
-                  </div>
-                </div>
+                <label key={opt.value} class="panel" style={{ padding: '1rem', cursor: 'pointer', display: 'flex', gap: '0.6rem', alignItems: 'flex-start', border: selected ? '2px solid var(--color-brand)' : '1px solid var(--color-border)', backgroundColor: selected ? 'var(--color-brand-subtle)' : 'var(--color-bg-surface)' }}>
+                  <input type={current.isMulti ? 'checkbox' : 'radio'} name={`wizard-${wizard.id}-${current.id}`} value={opt.value} checked={selected} onChange={() => choose(opt.value)} style="margin-top: 0.2rem;" />
+                  <span>
+                    <span style="display: block; font-weight: 700; font-size: 0.95rem;">{opt.label}</span>
+                    <span style="font-size: 0.8rem; color: var(--color-text-secondary); line-height: 1.35;">{opt.lead}</span>
+                  </span>
+                </label>
               );
             })}
           </div>
-        </div>
+        </fieldset>
 
-        {/* Navigation & Controls */}
-        <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 1rem; border-top: 1px solid var(--color-border);">
-          <button
-            class="btn btn-outline"
-            onClick={handlePrev}
-            disabled={currentStepIndex === 0}
-          >
-            ← Previous
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap; padding-top: 1rem; border-top: 1px solid var(--color-border);">
+          <button type="button" class="btn btn-outline" onClick={() => go(step - 1)} disabled={step === 0}>
+            Back
           </button>
-
-          <div style="display: flex; gap: 0.5rem;">
-            <button class="btn btn-outline" onClick={handleReset}>
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <button type="button" class="btn btn-outline" onClick={reset}>
               Reset
             </button>
-            {!isLastStep ? (
-              <button class="btn btn-primary" onClick={handleNext}>
-                Continue →
+            {!isLast ? (
+              <button type="button" class="btn btn-primary" onClick={() => go(step + 1)} disabled={!answered}>
+                Continue
               </button>
             ) : (
-              <button class="btn btn-primary" onClick={downloadChecklist}>
-                📥 Download Checklist
+              <button type="button" class="btn btn-primary" onClick={finish} disabled={missing.length > 0}>
+                Finish
               </button>
             )}
           </div>
         </div>
+        {!answered && <p style="margin: 0.5rem 0 0; font-size: 0.8rem; color: var(--color-text-secondary);">Choose an answer to continue.</p>}
 
-        {/* Outcome Summary on Last Step */}
-        {isLastStep && (
-          <div style="margin-top: 2rem; padding: 1.25rem; background: var(--color-bg-subtle); border-radius: var(--radius-md); border-left: 4px solid var(--color-brand);">
-            <h4 style="margin: 0 0 0.5rem 0; font-size: 1rem;">Recommended Next Steps</h4>
-            <p style="margin: 0 0 1rem 0; font-size: 0.9rem; color: var(--color-text-primary);">
-              {wizard.outcome?.recommendation}
-            </p>
+        {finished && (
+          <section aria-labelledby="wizard-next" style="margin-top: 2rem; padding: 1.25rem; background: var(--color-bg-subtle); border-radius: var(--radius-md); border-left: 4px solid var(--color-brand);">
+            <h3 id="wizard-next" style="margin: 0 0 0.5rem; font-size: 1rem;">
+              Next steps
+            </h3>
+            <p style="margin: 0 0 1rem; font-size: 0.9rem;">{wizard.outcome?.recommendation}</p>
             <div style="display: flex; flex-wrap: wrap; gap: 0.6rem;">
-              {wizard.outcome?.apiOperation && (
-                <a href={`/reference/api/#${wizard.outcome.apiOperation}`} class="btn btn-secondary">
-                  Open in API Playground 🚀
+              {outcome.links.map((l) => (
+                <a key={l.href} href={resolveUrl(l.href)} class="btn btn-secondary">
+                  {l.label}
                 </a>
-              )}
-              {wizard.outcome?.verifierFamily && (
-                <a href={resolveUrl(`/lab?family=${wizard.outcome.verifierFamily}`)} class="btn btn-secondary">
-                  Open in Protocol Lab 🔬
-                </a>
-              )}
-              <a href={resolveUrl('/kits')} class="btn btn-primary">
-                Generate Integration Kit 📦
-              </a>
+              ))}
+              <button type="button" class="btn btn-primary" onClick={downloadChecklist}>
+                Download checklist
+              </button>
             </div>
-          </div>
+            <p style="margin: 0.75rem 0 0; font-size: 0.8rem; color: var(--color-text-secondary);">Finishing a wizard is learning progress. Mission stages still need evidence from the tools.</p>
+          </section>
         )}
       </div>
     </div>

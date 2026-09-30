@@ -475,7 +475,7 @@ export interface paths {
         put?: never;
         /**
          * Remove an offer from discovery, proved by the recovery key
-         * @description Discovery, not cancellation: the funded output stays spendable by the acceptance path until it is spent, and by the recovery path after expiry. A BIP 322 signature by the recovery key proves who may stop publishing the offer.
+         * @description Discovery, not cancellation: the funded output stays spendable by the acceptance path until it is spent, and by the recovery path after expiry. A BIP-340 signature by the recovery key over the offer withdrawal message proves who may stop publishing the offer.
          */
         post: operations["withdrawOffer"];
         delete?: never;
@@ -495,7 +495,7 @@ export interface paths {
         put?: never;
         /**
          * State the exact acceptance arrangement for one live offer
-         * @description Given the seller outpoint, reads every value from the node and the ord index, lays out padding, buyer asset, every preserve in sat order, the seller payment at the seller input index, and change, and refuses when the Feline is elsewhere, the root no longer holds, or expiry has passed.
+         * @description Given the seller outpoint, reads every value from the node and the ord index and lays out the seller inputs, the funded output last, the asset outputs that absorb exactly the seller sats (the Feline to the buyer, every other seller asset preserved in sat order), the seller payment, and buyer change. Refuses when the Feline is elsewhere, the root or trait set does not prove it, or expiry has been reached. No buyer input is ever planned.
          */
         post: operations["planOfferAcceptance"];
         delete?: never;
@@ -515,7 +515,7 @@ export interface paths {
         put?: never;
         /**
          * Verify a built acceptance and ask the node
-         * @description Parses the complete acceptance, checks every rule in spec/offers.md including both policy signatures against the committed terms tree, then asks the node whether it would accept the bytes. The answer carries the exact bytes checked.
+         * @description Parses the complete acceptance, checks every rule in spec/offers.md including both policy signatures under the exact acceptance leaf and control block and a closing seller signature on every seller input, then asks the node whether it would accept the bytes. The answer carries the exact bytes checked.
          */
         post: operations["preflightOfferAcceptance"];
         delete?: never;
@@ -837,7 +837,7 @@ export interface paths {
         };
         /**
          * List the caller stored private swap envelopes
-         * @description Returns ciphertext envelopes only. Decryption happens client side with the key from the URL fragment.
+         * @description Private swap envelopes are not enumerable: the gateway currently answers 404 PRIVATE_SWAP_LIST_UNAVAILABLE. A 200 would carry this shape. Read one envelope by its id.
          */
         get: operations["listPrivateSwaps"];
         put?: never;
@@ -999,7 +999,7 @@ export interface paths {
         put?: never;
         /**
          * Rotate the signing secret
-         * @description The old secret keeps verifying during a bounded overlap window so rotation never drops a delivery.
+         * @description Returns the next signing secret exactly once. The previous secret keeps verifying during a bounded overlap: each delivery carries one v1 per unexpired secret, so rotation never drops a delivery.
          */
         post: operations["rotateWebhookSecret"];
         delete?: never;
@@ -1416,6 +1416,120 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/ordex/heritage/operations/{operationId}/relay": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Relay the signed transaction of a composed attach or detach
+         * @description Checks, in order: the heritage authority is ready; the signed bytes are the stored manifest with every input signed and the asset landing where the manifest says; every input is unspent with the balances it carried when composed; the node decodes the composed message; testmempoolaccept allows it; then sendrawtransaction. The operation becomes RELAYED. An operation no longer COMPOSED answers its stored state and sends nothing, which is why this route answers 200.
+         */
+        post: operations["relayHeritageOperation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ordex/heritage/operations/{operationId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * One heritage operation and its ledger settlement
+         * @description An unknown id answers 404 HERITAGE_OPERATION_NOT_FOUND.
+         */
+        get: operations["getHeritageOperation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ordex/heritage/asks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Draft an unsigned ask over one carrying UTXO */
+        post: operations["draftHeritageAsk"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ordex/heritage/swaps": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Draft an unsigned swap over one carrying UTXO */
+        post: operations["draftHeritageSwap"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ordex/heritage/intents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Publish a maker-signed heritage ask or swap
+         * @description A PRIVATE intent travels as an encrypted envelope and is accepted through the private acceptance route instead.
+         */
+        post: operations["publishHeritageIntent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ordex/heritage/intents/{intentId}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Accept a published heritage ask or swap
+         * @description Proves the gives whole again, builds the plan through the swaps desk and adds the UTXO_MOVE ledger events the settlement must produce. Signing, preflight and broadcast use the swap session routes.
+         */
+        post: operations["acceptHeritageIntent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1545,6 +1659,7 @@ export interface components {
             createdAt: string;
             /** Format: date-time */
             updatedAt: string;
+            verification: components["schemas"]["VerificationView"];
         };
         OrderPage: {
             orders: components["schemas"]["OrderSummary"][];
@@ -1611,6 +1726,8 @@ export interface components {
         };
         /** @description Everything a buyer needs to decide, and the unsigned half their wallet will be asked to sign. Every amount is atomic sats as a string. */
         Quote: {
+            /** @description The stored reviewed purchase. Preflight needs it; it expires with expiresAt and reserves nothing. */
+            quoteId: string;
             orderId: string;
             network: components["schemas"]["Network"];
             psbt: string;
@@ -1645,9 +1762,13 @@ export interface components {
             feePolicy: components["schemas"]["FeePolicyReference"];
             /** @description Every fee or royalty output the composed transaction carries. Empty under a zero policy; a zero is stated as an empty list, never omitted. */
             feeOutputs: components["schemas"]["FeeOutput"][];
+            /** @description Every protocol view of the inscription this purchase delivers to the buyer; empty when the asset has no inscription views. */
+            assetViews: components["schemas"]["AssetView"][];
         };
-        /** @description Either the final transaction hex or the signed PSBT a wallet actually answers with. */
+        /** @description The quoteId of the reviewed quote and either the final transaction hex or the signed PSBT a wallet actually answers with. */
         PreflightRequest: {
+            /** @description The quoteId of the reviewed quote. Every unsigned field of the signed bytes must equal that quote; the first differing field is named. */
+            quoteId: string;
             finalTxHex?: string;
             signedPsbt?: string;
         };
@@ -1662,6 +1783,10 @@ export interface components {
             feesSats?: components["schemas"]["AtomicSats"];
             /** Format: date-time */
             checkedAt: string;
+            /** @description The reviewed quote the bytes were checked against. */
+            quoteId?: string;
+            /** @description Every protocol view of the inscription the checked transaction delivers to the buyer; empty when the asset has no inscription views. */
+            assetViews?: components["schemas"]["AssetView"][];
         };
         BuildAskRequest: {
             protocolId: string;
@@ -1813,7 +1938,7 @@ export interface components {
                 ingestion: "publish-only";
                 note: string;
             };
-            /** @description The exact protocol version this gateway implements. */
+            /** @description The exact protocol version this gateway implements: this document's info.version. Every version the gateway advertises (this field, version, and its MCP serverInfo version) is this one value. */
             protocolVersion: string;
             /** @description Same value as protocolVersion, kept for consumers that pinned `version`. */
             version: string;
@@ -1859,7 +1984,7 @@ export interface components {
             offerKind: components["schemas"]["OfferKind"];
             /** @description The collection the scope names. */
             collectionId: string;
-            /** @description Lowercase hex SHA-256 collection Merkle root the scope binds to. */
+            /** @description Lowercase hex membership root of the collection (the manifest membershipRoot) the scope binds to. */
             collectionRoot: string;
             /** @description ITEM offers only: the exact inscription the offer buys. */
             itemInscriptionId?: string;
@@ -1867,17 +1992,17 @@ export interface components {
             traitName?: string;
             /** @description TRAIT offers only: the exact trait value. */
             traitValue?: string;
-            /** @description SHA-256 over the exact serialized scope criteria the buyer accepted, so a verifier can recheck scope membership without trusting a description of it. */
+            /** @description Commitment to the scope the buyer accepted. ITEM and COLLECTION: SHA-256 over the sorted-key JSON of the stated scope under domain ordex.offer-criteria/v1, recomputed by every verifier. TRAIT: the Merkle root over the members the buyer accepted as carrying the trait, which each acceptance proves its Feline against. */
             criteriaHash: string;
-            /** @description Lowercase hex script the bought Feline must land in. */
+            /** @description Lowercase hex of a spendable script (not OP_RETURN). The bought Feline, buyer change and a recovery all pay it. */
             buyerReceiveScriptHex: string;
             /** @description Exact price paid to the accepting seller. */
             priceSats: components["schemas"]["AtomicSats"];
             /** @description The largest fee an acceptance may pay. */
             maxNetworkFeeSats: components["schemas"]["AtomicSats"];
-            /** @description Block height after which acceptance is refused and the recovery path unlocks. */
+            /** @description Block height from which acceptance is refused; a recovery confirms from the next block. Below 500000000, the locktime timestamp threshold, because it is a height-domain CHECKLOCKTIMEVERIFY argument. */
             expiryHeight: number;
-            /** @description Lowercase hex x-only key that can recover the funded output alone after expiry. */
+            /** @description Lowercase hex x-only public key, a valid curve point, that can recover the funded output alone after expiry. */
             buyerRecoveryKeyHex: string;
         };
         /** @description SHA-256 over the terms serialized as UTF-8 JSON with object keys sorted recursively and no insignificant whitespace. Two parties that hold the same terms hold the same hash. */
@@ -1887,11 +2012,11 @@ export interface components {
             fundedTxid: string;
             /** @description The funded output index. */
             fundedVout: number;
-            /** @description Lowercase hex x-only internal key of the funded output. */
+            /** @description The x-only internal key of the funded output: always BIP341 unspendable point H (50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0), so no key path exists. */
             tapInternalKeyHex: string;
-            /** @description The acceptance leaf: the terms hash push, both policy keys, CHECKSIG, CHECKSIGADD, and the 2-of-2 equal. The gateway recomputes the tree and the tweak from these leaves, so the funded script must commit to the exact terms. */
+            /** @description The acceptance leaf, byte for byte: 20 <offerTermsHash> 75 20 <policyKeyA> ac 20 <policyKeyB> ba 52 87. The gateway rebuilds both leaves, the tree and the tweak from the terms and the two policy keys and refuses a funded script that is not exactly that output. */
             acceptanceLeafScriptHex: string;
-            /** @description The recovery leaf: the expiry height, CHECKLOCKTIMEVERIFY, and the buyer recovery key. */
+            /** @description The recovery leaf, byte for byte: the minimal push of expiryHeight, b1 75 20 <buyerRecoveryKey> ac. */
             recoveryLeafScriptHex: string;
         };
         OfferValidation: {
@@ -1930,6 +2055,8 @@ export interface components {
              */
             postedAt: string;
             checkpoint?: components["schemas"]["ListingReadiness"];
+            /** @description Settled offers only: true once the settling transaction is buried deep enough that the gateway treats the settlement as final. */
+            settlementFinal?: boolean;
         };
         OfferPage: {
             offers: components["schemas"]["OfferSummary"][];
@@ -1940,44 +2067,61 @@ export interface components {
         OfferPublishRequest: {
             terms: components["schemas"]["OfferTerms"];
             funding: components["schemas"]["OfferFunding"];
+            /** @description TRAIT offers: the member identities the buyer accepted, whose Merkle root is criteriaHash. */
+            traitMembers?: string[];
         };
         OfferAcceptancePlanRequest: {
             /** @description The output the accepting seller will spend to deliver the Feline. */
             sellerFelineOutpoint: components["schemas"]["Outpoint"];
-            /** @description The script the seller payment output must carry, committed by the seller signature. */
+            /** @description The script the seller payment output must carry, exactly priceSats. The seller signs every input with SIGHASH_ALL. */
             sellerPaymentScriptHex: string;
+            /** @description Optional: the script the seller receives its own other assets and the sats around the Feline at. Defaults to sellerPaymentScriptHex. */
+            sellerReturnScriptHex?: string;
         };
         OfferAcceptancePlan: {
-            /** @description The offer this plan settles. */
             offerId: string;
-            /** @description Where the Feline input sits, and with it the seller payment. */
+            /** @description The Feline input: always 0. */
             sellerInputIndex: number;
-            /** @description Where the funded offer output sits. */
+            /** @description The funded offer output: always the last input. */
             offerInputIndex: number;
             sellerPaymentOutputIndex: number;
             buyerAssetOutputIndex: number;
-            /** @description Every input in transaction order, with the exact values read from the node. */
+            /** @description Every input in transaction order, as the authorities read it. The buyer contributes none. */
             inputs: {
-                txid: string;
-                vout: number;
-                valueSats: components["schemas"]["AtomicSats"];
+                outpoint: components["schemas"]["Outpoint"];
                 /** @enum {string} */
-                role: "PADDING" | "OFFER" | "SELLER_FELINE";
+                party: "SELLER" | "OFFER";
+                valueSats: components["schemas"]["AtomicSats"];
+                scriptPubKeyHex: string;
             }[];
-            /** @description Every output in transaction order: padding merge, buyer asset, seller preserves in sat order, seller payment at the seller input index, buyer change last. */
             outputs: {
                 scriptHex: string;
                 valueSats: components["schemas"]["AtomicSats"];
-                /** @enum {string} */
-                role: "PADDING_MERGE" | "BUYER_ASSET" | "SELLER_PRESERVE" | "SELLER_PAYMENT" | "BUYER_CHANGE";
             }[];
-            /** @description The fee the composed arrangement pays at the current rate. */
             estimatedFeeSats: components["schemas"]["AtomicSats"];
-            /** @description False means the terms refuse acceptance as composed. */
             withinMaxNetworkFee: boolean;
-            /** @description The terms expiry height, restated so a stale plan is visible. */
             expiresAtHeight: number;
-            checkpoint: components["schemas"]["ListingReadiness"];
+            checkpoint: {
+                heightAtomic: string;
+                blockHash: string;
+            };
+            /** @description The unsigned acceptance, base64. */
+            psbt: string;
+            /** @description The ordex.offer-acceptance/v2 fields the policy signers and preflight read, besides the transaction. */
+            acceptance: {
+                seller: {
+                    paymentScriptHex: string;
+                    returnScriptHex?: string;
+                };
+                feline: {
+                    inscriptionId: string;
+                    outpoint: components["schemas"]["Outpoint"];
+                };
+                eligibility: {
+                    membershipProof: Record<string, never>[];
+                    traitProof?: Record<string, never>[];
+                };
+            };
         };
         OfferPreflightRequest: {
             /** @description The complete acceptance, seller signature and both policy signatures included. */
@@ -2042,6 +2186,8 @@ export interface components {
                 assetValueSats: components["schemas"]["AtomicSats"];
                 sellerPaymentScriptHex: string;
                 assetOutpoint: components["schemas"]["Outpoint"];
+                /** @description Every protocol view of the inscription this ask delivers to the buyer; empty when the asset has no inscription views. */
+                assetViews: components["schemas"]["AssetView"][];
             }[];
             totals: {
                 /** @description Every price, every fee, and every padding sat, stated once. */
@@ -2079,12 +2225,18 @@ export interface components {
             /** @description A human explanation of the same refusal. */
             reason: string;
         };
-        /** @description Answered when at least one ask cannot coexist in the batch. There is no partial composition: every refused order is named, and the client falls back to separate purchases. */
+        /** @description Answered when at least one ask cannot coexist in the batch. There is no partial composition: every refused order is named, and the client falls back to separate purchases. It carries the shared error envelope fields too. */
         BatchPurchaseRefused: {
             refusals: components["schemas"]["BatchRefusal"][];
+            /** @constant */
+            statusCode?: 409;
+            error?: string;
+            message?: string;
+            requestId?: string;
+            code?: string;
         };
         BatchPreflightRequest: {
-            /** @description The identifier the batch-purchase answer carried. */
+            /** @description The identifier the batch-purchase answer carried. The asks are taken from the stored batch. */
             batchId: string;
             /** @description The batch PSBT with every buyer input signed. */
             signedPsbt?: string;
@@ -2103,6 +2255,8 @@ export interface components {
             placements: {
                 orderId: string;
                 allowed: boolean;
+                /** @description Present when this ask failed. */
+                rejectCode?: components["schemas"]["BatchPreflightPlacementCode"];
                 /** @description Present when this ask failed inside an otherwise parseable batch. */
                 rejectReason?: string;
             }[];
@@ -2114,6 +2268,10 @@ export interface components {
             checkedAt: string;
             /** @description The batch id the request named, echoed back. */
             batchId?: string | null;
+            /** @description Present exactly when allowed is false. */
+            rejectCode?: components["schemas"]["BatchPreflightRejectCode"];
+            /** @description A human explanation of rejectCode; present exactly when allowed is false. */
+            rejectReason?: string;
         };
         /** @description The error envelope every route answers with. Rate limited requests additionally carry `code: ORDEX_RATE_LIMITED`. */
         ErrorResponse: {
@@ -2130,68 +2288,68 @@ export interface components {
             height: number;
             blockHash: string;
         };
-        /** @description A normalized transaction: exact inputs and outputs in order. Parsers convert raw bytes into this shape before verification. */
-        TxDescription: {
-            inputs: components["schemas"]["TxInputDescription"][];
-            outputs: components["schemas"]["TxOutputDescription"][];
-        };
-        TxInputDescription: {
-            txid: string;
-            vout: number;
-            valueSats: components["schemas"]["AtomicSats"];
-            signaturePresent?: boolean;
-            sighashType?: string;
-        };
-        TxOutputDescription: {
-            scriptHex: string;
-            valueSats: components["schemas"]["AtomicSats"];
-        };
         /**
          * @description The operation the desk will execute.
          * @enum {string}
          */
         SafeOpsOperationKind: "BTC_BATCH_SEND" | "ORDINAL_BATCH_TRANSFER" | "RUNE_BATCH_TRANSFER" | "CARDINAL_CONSOLIDATION" | "SPLIT_AND_POSTAGE" | "RECOVERY" | "RBF_REPLACE" | "CPFP_CHILD";
-        /** @description One exact inventory for one outpoint, resolved from the protocol authorities. Unexamined inputs fail closed. */
+        /** @description One exact inventory for one outpoint, resolved from the protocol authorities at the plan checkpoint. Unexamined inputs fail closed; every sat-bound asset carries its offset inside the input, every rune its exact balance, every Counterparty attachment its exact quantity. */
         SafeOpsInventory: {
             examined: boolean;
             confirmed?: boolean;
             inscriptions?: {
-                [key: string]: unknown;
+                inscriptionId: string;
+                offset: components["schemas"]["AtomicSats"];
+                /** @description txid:vout:offset of this input; when present it must agree with the outpoint and offset. */
+                satpoint?: string;
             }[];
             runeAllocations?: {
-                [key: string]: unknown;
+                runeId: string;
+                amount: components["schemas"]["AtomicSats"];
             }[];
             counterpartyAssets?: {
-                [key: string]: unknown;
+                name: string;
+                assetId: string;
+                quantitySats: components["schemas"]["AtomicSats"];
             }[];
             rareSatRanges?: {
-                [key: string]: unknown;
+                rangeId: string;
+                offset: components["schemas"]["AtomicSats"];
+                count: components["schemas"]["AtomicSats"];
             }[];
             unknownClaims?: string[];
         };
         SafeOpsPlanInput: {
             outpoint: components["schemas"]["Outpoint"];
             valueSats: components["schemas"]["AtomicSats"];
+            /** @description The script of the output this input spends; signatures are verified against it. */
+            scriptPubKeyHex: string;
+            sequence: number;
             inventory: components["schemas"]["SafeOpsInventory"];
         };
         SafeOpsPlanOutput: {
             scriptHex: string;
             valueSats: components["schemas"]["AtomicSats"];
-            /** @enum {string} */
-            role: "recipient" | "change" | "preserve";
+            /**
+             * @description data marks the one zero-value runestone OP_RETURN a rune transfer may carry; every other output meets the Bitcoin Core dust threshold for its script.
+             * @enum {string}
+             */
+            role: "recipient" | "change" | "preserve" | "data";
             explanation?: string;
         };
+        /** @description One derived asset movement. Inscriptions and rare sats name their input; runes are fungible and name only the output and amount. */
         SafeOpsAssetTransition: {
             /** @enum {string} */
             assetType: "ORDINAL" | "RARE_SAT" | "RUNE" | "COUNTERPARTY";
             assetId: string;
-            fromInput: number;
+            fromInput?: number;
             toOutput: number;
+            quantity: components["schemas"]["AtomicSats"];
         };
         /** @description The complete, verifiable plan for one SafeOps operation. Verify it with the SDK before any wallet opens. */
         SafeOpsPlan: {
             /** @constant */
-            schema: "ordex.safeops-plan/v1";
+            schema: "ordex.safeops-plan/v2";
             protocolVersion: string;
             network: components["schemas"]["Network"];
             operationKind: components["schemas"]["SafeOpsOperationKind"];
@@ -2204,16 +2362,24 @@ export interface components {
             fee: {
                 feeSats: components["schemas"]["AtomicSats"];
                 maxFeeSats: components["schemas"]["AtomicSats"];
-                feeRateSatsPerVb?: components["schemas"]["AtomicSats"];
+                /** @description The exact fee rate the plan was built at, sats per virtual byte. */
+                feeRateSatsPerVb?: string;
             };
             signing: {
+                /** @description Every input index, once: the user signs every input. */
                 requiredIndexes: number[];
-                sighashType?: string;
+                /** @enum {string} */
+                sighashType: "DEFAULT" | "ALL";
             };
             findings: {
                 [key: string]: unknown;
             }[];
             digest: string;
+            /** @description The transaction version and locktime the plan signs, so the unsigned transaction is fully determined. */
+            transaction: {
+                version: number;
+                lockTime: number;
+            };
         };
         SafeOpsPlanRequest: {
             operationKind: components["schemas"]["SafeOpsOperationKind"];
@@ -2229,13 +2395,25 @@ export interface components {
             expiryBlocks?: number;
         };
         SafeOpsPlanResult: {
+            /** @description The id every later plan route takes. */
+            planId: string;
+            /** @enum {string} */
+            state: "BUILT" | "SIGNED" | "BROADCAST" | "INVALIDATED";
             plan: components["schemas"]["SafeOpsPlan"];
             verification: components["schemas"]["VerificationView"];
-            /** @description When one transaction cannot carry the operation, the deterministic standard partitions. */
+            /** @description The unsigned PSBT, base64, that reproduces the plan transaction exactly. */
+            psbt?: string;
+            /** @description The expected transaction manifest a cold signer signs against. */
+            manifest?: components["schemas"]["ExpectedTransactionManifest"];
+            /** @description INVALIDATED plans only. */
+            invalidatedReason?: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            /** @description When one transaction cannot carry the operation: every deterministic partition, the first of which is this answer. */
             partition?: {
-                transactions?: {
-                    [key: string]: unknown;
-                }[];
+                transactions: components["schemas"]["SafeOpsPartitionPlan"][];
             };
         };
         /** @description The signed result to reverify immediately before broadcast, with the digest the user agreed to. */
@@ -2252,17 +2430,26 @@ export interface components {
             conflictingSpend?: components["schemas"]["Outpoint"];
             rbfEligible?: boolean;
             cpfpEligible?: boolean;
+            /**
+             * @description INVALIDATED means the plan can no longer be signed; build a new one.
+             * @enum {string}
+             */
+            outcome?: "VALID" | "INVALIDATED";
+            /** @description True when every finding is an authority outage: the same shield answers again once the authorities recover. */
+            retryable?: boolean;
         };
         SafeOpsSignedResult: {
             /** @constant */
-            schema: "ordex.safeops-signed-result/v1";
+            schema: "ordex.safeops-signed-result/v2";
             planDigest: string;
-            tx: components["schemas"]["TxDescription"];
+            /** @description The complete signed transaction. Signatures are verified from these bytes, never from a flag. */
+            signedTxHex: string;
         };
         /** @description A fully signed transaction the user explicitly asked to relay. The gateway verifies, preflights, then relays. */
         BroadcastRequest: {
             /** @description The complete signed transaction, hex encoded. */
             signedTx: string;
+            /** @description The digest of the artifact the transaction settles; for context safeops, the plan digest. A signed transaction that is not that plan is refused. */
             artifactDigest?: string;
             /** @enum {string} */
             context?: "safeops" | "swap" | "order" | "offer" | "heritage";
@@ -2290,29 +2477,32 @@ export interface components {
             newFeeRateSatsPerVb?: components["schemas"]["AtomicSats"];
         };
         SafeOpsRbfResult: {
-            plan: components["schemas"]["SafeOpsPlan"];
+            /** @description Null when the bump is refused; refusalCode then says why. */
+            plan: components["schemas"]["SafeOpsPlan"] | null;
             oldFeeSats?: components["schemas"]["AtomicSats"];
             newFeeSats?: components["schemas"]["AtomicSats"];
             incrementalFeeSats?: components["schemas"]["AtomicSats"];
-            allowed?: boolean;
+            allowed: boolean;
             refusalCode?: string;
         };
         SafeOpsCpfpRequest: {
             parentTxid: string;
-            targetFeeRateSatsPerVb?: components["schemas"]["AtomicSats"];
-        };
+            /** @description The output of parentTxid the child spends; it must belong to the wallet and carry no asset. */
+            changeOutpoint: components["schemas"]["Outpoint"];
+            /** @description The package fee rate to reach, whole sats per virtual byte. */
+            targetFeeRateSatsPerVb: components["schemas"]["AtomicSats"];
+            /** @description The wallet script the child pays its remainder to. Give this or childAddress. */
+            childReceiveScriptHex?: string;
+            /** @description The same destination as an address; used only when childReceiveScriptHex is absent. */
+            childAddress?: string;
+        } | unknown | unknown;
         SafeOpsCpfpResult: {
-            plan: components["schemas"]["SafeOpsPlan"];
-            packageFeeRateSatsPerVb?: components["schemas"]["AtomicSats"];
-            allowed?: boolean;
+            /** @description Null when the bump is refused; refusalCode then says why. */
+            plan: components["schemas"]["SafeOpsPlan"] | null;
+            /** @description The parent and child package fee rate the child reaches, sats per virtual byte. */
+            packageFeeRateSatsPerVb?: string;
+            allowed: boolean;
             refusalCode?: string;
-        };
-        SwapAsset: {
-            /** @enum {string} */
-            assetType: "BTC" | "ORDINAL" | "RARE_SAT" | "RUNE" | "COUNTERPARTY";
-            assetId?: string;
-            inscriptionId?: string;
-            quantitySats?: components["schemas"]["AtomicSats"];
         };
         /** @description A BIP-322 proof that the maker controls the intent address. The gateway verifies the signature before publishing. */
         MakerIdentityProof: {
@@ -2359,6 +2549,8 @@ export interface components {
         /** @enum {string} */
         SwapIntentState: "DRAFT" | "LIVE" | "PRIVATE" | "MATCHING" | "AWAITING_MAKER_SIGNATURE" | "AWAITING_TAKER_SIGNATURE" | "READY_FOR_PREFLIGHT" | "READY_FOR_BROADCAST" | "MEMPOOL" | "CONFIRMED" | "EXPIRED" | "WITHDRAWN" | "CONFLICTED" | "INVALIDATED" | "REORGED";
         SwapIntentView: {
+            /** @description The listed intent id the intent routes take. */
+            id: string;
             intent: components["schemas"]["SwapIntentDocument"];
             state: components["schemas"]["SwapIntentState"];
             /** @enum {string} */
@@ -2382,30 +2574,54 @@ export interface components {
             takerInputs: components["schemas"]["Outpoint"][];
             takerReceiveScriptHex?: string;
             maxTakerFeeSats?: components["schemas"]["AtomicSats"];
+            takerChangeScriptHex?: string;
+            /** @description Required for a taker-bound intent: the bound address signs ordex:swap-taker:<intent digest>:<sorted taker outpoints> (TAKER_BINDING_MISMATCH). */
+            takerIdentityProof?: {
+                /** @constant */
+                kind: "bip322";
+                address: string;
+                signature: string;
+            };
+            /** @description PRIVATE intents only: the decrypted maker-signed intent, whose digest must equal the path intentId (SWAP_INTENT_MALFORMED, SWAP_INTENT_INVALID, MAKER_PROOF_INVALID). */
+            intent?: components["schemas"]["SwapIntentDocument"];
         };
+        /** @description One transaction settling both sides. Every asset movement is derived from the input inventories by the owning protocol; the maker receives every required asset at its receive script, the taker every given asset at its receive script, and each party fee share follows from its value flow. */
         SwapAcceptancePlanDocument: {
             /** @constant */
-            schema: "ordex.swap-acceptance-plan/v1";
+            schema: "ordex.swap-acceptance-plan/v2";
             intentDigest: string;
             network: components["schemas"]["Network"];
+            checkpoint: components["schemas"]["Checkpoint"];
+            taker: {
+                receiveScriptHex: string;
+                changeScriptHex?: string;
+                identityProof?: {
+                    /** @constant */
+                    kind?: "bip322";
+                    address?: string;
+                    signature?: string;
+                };
+            };
+            transaction: {
+                version: number;
+                lockTime: number;
+            };
             tx: {
                 inputs: {
                     outpoint: components["schemas"]["Outpoint"];
                     /** @enum {string} */
                     party: "maker" | "taker";
                     valueSats: components["schemas"]["AtomicSats"];
-                    assets?: components["schemas"]["SwapAsset"][];
+                    scriptPubKeyHex: string;
+                    sequence: number;
+                    inventory: components["schemas"]["SafeOpsInventory"];
                 }[];
                 outputs: {
                     scriptHex: string;
                     valueSats: components["schemas"]["AtomicSats"];
-                    /** @enum {string} */
-                    role: "makerConsideration" | "takerAsset" | "makerChange" | "takerChange" | "preserve";
                 }[];
             };
-            assetTransitions: {
-                [key: string]: unknown;
-            }[];
+            assetTransitions: components["schemas"]["SafeOpsAssetTransition"][];
             fee: {
                 feeSats: components["schemas"]["AtomicSats"];
                 makerFeeSats: components["schemas"]["AtomicSats"];
@@ -2415,6 +2631,7 @@ export interface components {
                 /** @constant */
                 sighashPolicy: "ALL";
             };
+            digest: string;
         };
         SwapSession: {
             sessionId: string;
@@ -2423,11 +2640,14 @@ export interface components {
             state: components["schemas"]["SwapIntentState"];
             makerSigned?: boolean;
             takerSigned?: boolean;
+            /** @description Served only by a gateway that can state the maximum age of a session preflight; it is absent otherwise (Core states no such age and never serves it). The preflight route answers the full verdict as SwapPreflightResult either way. */
             preflight?: components["schemas"]["VerificationView"];
             /** Format: date-time */
             updatedAt: string;
             /** @description The current unsigned or partially signed PSBT, base64. */
             psbt?: string;
+            /** @description PRIVATE intents only, and only in the acceptance answer: returned exactly once. Only its SHA-256 is stored. */
+            sessionCapability?: string;
         };
         SwapSignatureSubmission: {
             /** @description The PSBT after this party signed, base64. */
@@ -2446,7 +2666,8 @@ export interface components {
         };
         PrivateSwapEnvelope: {
             privateId: string;
-            ciphertext: string;
+            /** @description Null exactly when destroyed. */
+            ciphertext: string | null;
             /** Format: date-time */
             expiresAt: string;
             destroyed?: boolean;
@@ -2491,23 +2712,39 @@ export interface components {
             lagEvents?: number;
         };
         WebhookSubscription: {
-            subscriptionId: string;
+            /** @description The subscription id. */
+            id: string;
+            /** @description The developer scope the subscription belongs to: an opaque id derived from the developer key, never the key. */
+            accountId?: string;
             /** Format: uri */
             url: string;
             eventTypes: string[];
-            network?: components["schemas"]["Network"];
+            network: components["schemas"]["V12Network"];
             /** @enum {string} */
             status: "PENDING_VERIFICATION" | "ACTIVE" | "PAUSED" | "FAILED";
-            /** @description The last four characters only. The full secret is shown once at creation. */
-            secretHint?: string;
+            /** @description The last four characters only. The full secret is shown once, at creation or rotation; the gateway keeps it only as ciphertext the delivery worker alone can open. */
+            secretHint: string;
+            /** @description The version of the current signing secret. Rotation increments it. */
+            secretVersion?: number;
             /** Format: date-time */
             createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            /** @description Endpoint challenge progress. The challenge value itself never appears. */
+            verification?: {
+                /** @enum {string} */
+                state: "VERIFIED" | "PENDING" | "SENDING" | "SENT" | "FAILED";
+                /** Format: date-time */
+                expiresAt: string | null;
+                attempts: number;
+                lastError: string | null;
+            };
         };
         WebhookSubscriptionCreateRequest: {
             /** Format: uri */
             url: string;
             eventTypes: string[];
-            network?: components["schemas"]["Network"];
+            network?: components["schemas"]["V12Network"];
         };
         WebhookSubscriptionUpdateRequest: {
             /** Format: uri */
@@ -2517,8 +2754,10 @@ export interface components {
         };
         WebhookSecretReveal: {
             subscriptionId: string;
-            /** @description Shown exactly once. */
+            /** @description Shown exactly once: whsec_ followed by 32 random bytes in base64url. Store it; the gateway cannot show it again. */
             secret: string;
+            /** @description The version this secret signs as. */
+            secretVersion?: number;
         };
         WebhookDelivery: {
             deliveryId: string;
@@ -2666,15 +2905,19 @@ export interface components {
                 [key: string]: unknown;
             };
             holderCount?: number;
-            attachedUtxos?: components["schemas"]["HeritageAttachmentRecord"][];
+            attachedUtxos: components["schemas"]["HeritageAttachmentRecord"][];
             issuanceHistory?: {
                 [key: string]: unknown;
             }[];
             readiness: components["schemas"]["HeritageReadiness"];
+            completeness: components["schemas"]["HeritageRecordCompleteness"];
         };
         HeritageComposeRequest: {
             address: string;
-            assetName: string;
+            /** @description The numeric Counterparty asset id as a decimal string (the id the ledger derives from the asset name: 1 for XCP, the number itself for an A-numbered asset, the base-26 value for a named asset). It is the asset identity; a name alone never is (ASSET_ID_REQUIRED). The gateway refuses an id whose ledger record carries another id (ASSET_ID_MISMATCH). */
+            assetId: string;
+            /** @description Optional display hint. When given it must name the ledger asset for assetId (ASSET_NAME_MISMATCH). */
+            assetName?: string;
             quantitySats: string;
             /** @description The target UTXO or output the attachment moves to. */
             destination: string;
@@ -2687,13 +2930,17 @@ export interface components {
             explanation: {
                 [key: string]: unknown;
             };
+            /** @description The node reported gas; absent when the node reports none. */
             xcpGasSats?: components["schemas"]["AtomicSats"];
-            minerFeeSats?: components["schemas"]["AtomicSats"];
+            minerFeeSats: components["schemas"]["AtomicSats"];
+            /** @description The heritage operation the relay route takes. */
+            operationId: string;
+            manifest?: components["schemas"]["ExpectedTransactionManifest"];
         };
-        /** @description What the signer will see, in human readable and machine verifiable form, before any signature is requested. */
+        /** @description What the signer will see, in human readable and machine verifiable form, before any signature is requested. The digest commits to the exact unsigned transaction bytes, every prevout and the protection policy; purpose, explanations, roles and account are display text outside it. */
         ExpectedTransactionManifest: {
             /** @constant */
-            schema: "ordex.expected-transaction-manifest/v1";
+            schema: "ordex.expected-transaction-manifest/v2";
             network: components["schemas"]["Network"];
             purpose: string;
             watchOnly: boolean;
@@ -2707,8 +2954,18 @@ export interface components {
                     valueSats: components["schemas"]["AtomicSats"];
                     scriptPubKeyHex: string;
                     controlledByUser: boolean;
-                    sighashType?: string;
+                    /**
+                     * @description The one sighash the user may sign this input with; required when controlledByUser.
+                     * @enum {string}
+                     */
+                    sighashType?: "DEFAULT" | "ALL" | "NONE" | "SINGLE" | "ALL|ANYONECANPAY" | "NONE|ANYONECANPAY" | "SINGLE|ANYONECANPAY";
                     explanation: string;
+                    sequence: number;
+                    /** @description A foreign input already signed, such as a seller input; the result must carry it unchanged. */
+                    preservedSignature?: {
+                        scriptSigHex: string;
+                        witness: string[];
+                    };
                 }[];
                 outputs: {
                     scriptHex: string;
@@ -2716,9 +2973,13 @@ export interface components {
                     role: string;
                     explanation: string;
                     expectedAssets?: {
-                        [key: string]: unknown;
+                        assetType: string;
+                        assetId: string;
+                        quantity: components["schemas"]["AtomicSats"];
                     }[];
                 }[];
+                version: number;
+                lockTime: number;
             };
             fee: {
                 feeSats: components["schemas"]["AtomicSats"];
@@ -2730,21 +2991,34 @@ export interface components {
             sessionId: string;
             manifest: components["schemas"]["ExpectedTransactionManifest"];
             /** @enum {string} */
-            state: "AWAITING_EXPORT" | "AWAITING_SIGNATURE" | "SIGNED_VERIFIED" | "REJECTED" | "BROADCAST";
+            state: "AWAITING_EXPORT" | "AWAITING_SIGNATURE" | "PARTIALLY_SIGNED" | "SIGNED_VERIFIED" | "REJECTED" | "BROADCAST";
             signedResult?: {
                 [key: string]: unknown;
             };
             rejection?: {
                 [key: string]: unknown;
             };
+            /** @description In the open answer only, exactly once; only their hashes are stored. */
+            capabilities?: {
+                read: string;
+                import: string;
+            };
         };
+        /** @description Exactly one of psbt and signedTxHex. Signatures are verified from these bytes. */
         SignedResultSubmission: {
             /** @constant */
-            schema: "ordex.offline-signing-session/v1";
+            schema: "ordex.offline-signing-session/v2";
             manifestDigest: string;
-            tx: components["schemas"]["TxDescription"];
-            carriedAssets?: {
-                [key: string]: unknown;
+            /** @description A PSBT v0 or v2, base64 or hex, with the user signatures. */
+            psbt?: string;
+            /** @description A fully signed raw transaction. */
+            signedTxHex?: string;
+            /** @description Protected asset movements derived independently from the signed transaction; required when the manifest expects assets. */
+            observedAssets?: {
+                assetType: string;
+                assetId: string;
+                quantity: components["schemas"]["AtomicSats"];
+                outputIndex: number;
             }[];
             unknownCriticalFields?: string[];
         };
@@ -2818,6 +3092,290 @@ export interface components {
             /** Format: date-time */
             createdAt: string;
         };
+        SwapIntentWithdrawRequest: {
+            /** @description The maker address the intent names. */
+            makerAddress: string;
+            /** @description BIP-322 signature by that address over the withdrawal challenge of this intent. */
+            signature: string;
+        };
+        PrivateSwapDestroyRequest: {
+            /** @description The delete capability returned once when the envelope was stored. */
+            deleteCapability: string;
+        };
+        WebhookVerifyRequest: {
+            /** @description The challenge the endpoint received. Without it the gateway issues a new challenge. */
+            challenge?: string;
+        };
+        HeritageDetachRequest: {
+            /** @description The outpoint that carries the attached balance, txid:vout. */
+            utxo: string;
+            /** @description The address the detached balance is credited to. */
+            destination: string;
+            /** @description Fee rate for the composed transaction. */
+            feeRateSatsPerVb?: components["schemas"]["AtomicSats"];
+        };
+        SigningSessionOpenRequest: {
+            manifest: components["schemas"]["ExpectedTransactionManifest"];
+        };
+        SigningSignedResultRequest: {
+            signedResult: components["schemas"]["SignedResultSubmission"];
+        };
+        SigningVerifyRequest: {
+            manifest: components["schemas"]["ExpectedTransactionManifest"];
+            signed: components["schemas"]["SignedResultSubmission"];
+        };
+        /**
+         * @description The networks the v1.2 webhook and signing session routes accept, testnet included. The shared Network schema is unchanged.
+         * @enum {string}
+         */
+        V12Network: "mainnet" | "testnet" | "signet" | "regtest";
+        /** @description Every subscription of the authenticated developer key. Not paged. */
+        WebhookSubscriptionList: {
+            items: components["schemas"]["WebhookSubscription"][];
+        };
+        SigningSessionSummary: {
+            sessionId: string;
+            network: components["schemas"]["V12Network"];
+            /** @enum {string} */
+            state: "AWAITING_EXPORT" | "AWAITING_SIGNATURE" | "PARTIALLY_SIGNED" | "SIGNED_VERIFIED" | "REJECTED" | "BROADCAST";
+            manifestDigest: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: date-time */
+            expiresAt: string | null;
+        };
+        /** @description Summaries of the sessions the presented capabilities unlock; the manifest and signed result are read one session at a time. */
+        SigningSessionPage: {
+            rows: components["schemas"]["SigningSessionSummary"][];
+            /** @description Empty when this page is the last one. Pass it as cursor for the next page, which continues from the last row by updatedAt then id, newest first. */
+            nextCursor: string;
+        };
+        PrivateSwapList: {
+            privateSwaps: components["schemas"]["PrivateSwapEnvelope"][];
+        };
+        HeritageExpectedLedgerEvent: {
+            /** @enum {string} */
+            event: "ATTACH_TO_UTXO" | "DETACH_FROM_UTXO" | "UTXO_MOVE";
+            /** @description The source address or txid:vout. */
+            source: string;
+            /** @description An address or txid:vout; null before relay, when outputIndex names an output of the operation itself. */
+            destination: string | null;
+            outputIndex?: number;
+            /** @description The ledger's own asset name. */
+            asset: string;
+            /** @description Whole atomic units as decimal text. */
+            quantity: string;
+        };
+        /** @description A composed heritage operation until the Counterparty ledger proves it: COMPOSED, then RELAYED, then SETTLED or LEDGER_MISMATCH. */
+        HeritageOperation: {
+            /** @description hop_<uuid> */
+            operationId: string;
+            /** @enum {string} */
+            kind: "ATTACH" | "DETACH" | "SWAP_MOVE";
+            /** @enum {string} */
+            state: "COMPOSED" | "RELAYED" | "SETTLED" | "LEDGER_MISMATCH";
+            network: components["schemas"]["V12Network"];
+            txid: string | null;
+            manifestDigest: string | null;
+            swapSessionId: string | null;
+            expectedLedgerEvents: components["schemas"]["HeritageExpectedLedgerEvent"][];
+            settlement: {
+                blockHash: string;
+                height: number;
+                ledgerHash: string | null;
+                eventId: string | null;
+            } | null;
+            refusalCode: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        /** @description Exactly one of signedTxHex or a finalized psbt (base64 or hex, at most 1600000 characters); anything else is HERITAGE_RELAY_BODY_INVALID. */
+        HeritageRelayRequest: {
+            signedTxHex?: string;
+            psbt?: string;
+        } & (unknown | unknown);
+        HeritageAskDraftRequest: {
+            /** @description The carrying outpoint, txid:vout. Every balance on it is given whole. */
+            utxo: string;
+            makerReceiveAddress: string;
+            /** @description Defaults to the carrying output value. */
+            maxMakerFeeSats?: components["schemas"]["AtomicSats"];
+            expiryBlocks?: number;
+            /** @enum {string} */
+            visibility?: "PUBLIC" | "PRIVATE";
+            /** @description Binds the intent to one taker. */
+            takerAddress?: string;
+            priceSats: components["schemas"]["AtomicSats"];
+        };
+        HeritageSwapDraftRequest: {
+            /** @description The carrying outpoint, txid:vout. Every balance on it is given whole. */
+            utxo: string;
+            makerReceiveAddress: string;
+            /** @description Defaults to the carrying output value. */
+            maxMakerFeeSats?: components["schemas"]["AtomicSats"];
+            expiryBlocks?: number;
+            /** @enum {string} */
+            visibility?: "PUBLIC" | "PRIVATE";
+            /** @description Binds the intent to one taker. */
+            takerAddress?: string;
+            /** @description What the maker wants instead of BTC: ORDINAL, RARE_SAT, RUNE or BTC. COUNTERPARTY answers COUNTERPARTY_BOTH_SIDES. */
+            requires: {
+                /** @enum {string} */
+                assetType: "ORDINAL" | "RARE_SAT" | "RUNE" | "BTC";
+                assetId?: string;
+                inscriptionId?: string;
+                minQuantitySats: components["schemas"]["AtomicSats"];
+            }[];
+        };
+        /** @description An unsigned ordex.swap-intent/v1 over one carrying UTXO. Nothing is stored; the maker signs digest with BIP-322 and publishes it. */
+        HeritageIntentDraft: {
+            /** @description The swap intent without makerIdentityProof. */
+            intent: {
+                [key: string]: unknown;
+            };
+            digest: string;
+            /** @description The ordex.counterparty-utxo-asset/v1 record of the carrying UTXO. */
+            record: {
+                [key: string]: unknown;
+            };
+            signing: {
+                message: string;
+                /** @constant */
+                kind: "bip322";
+                address: string;
+            };
+        };
+        /** @description A maker-signed intent that gives Counterparty attachments only, each exactly what the ledger holds now (GIVE_QUANTITY_MISMATCH). */
+        HeritageIntentPublishRequest: {
+            intent: components["schemas"]["SwapIntentDocument"];
+        };
+        HeritageAcceptanceResult: components["schemas"]["SwapSession"] & {
+            /** @description One UTXO_MOVE per moved balance. */
+            expectedLedgerEvents: components["schemas"]["HeritageExpectedLedgerEvent"][];
+        };
+        OfferRevalidateRequest: {
+            /** @description A transaction the caller says spent the funded output, checked against the node. */
+            txid?: string;
+        };
+        OfferWithdrawalProof: {
+            /** @description Informational; the key that must sign is terms.buyerRecoveryKeyHex. */
+            address?: string;
+            /** @description A BIP-340 signature by buyerRecoveryKeyHex over the tagged hash (tag ordex/offer-withdrawal) of the message "Ordex offer withdrawal\nnetwork: <network>\noffer: <id>\nterms: <offerTermsHash>". */
+            signature: string;
+        };
+        SwapPreflightResult: {
+            sessionId: string;
+            state: components["schemas"]["SwapIntentState"];
+            allowed: boolean;
+            /** @description Allowed settlements only. */
+            txid?: string;
+            refusalCode?: string;
+            reason?: string;
+            /** Format: date-time */
+            checkedAt: string;
+        };
+        PrivateSwapStored: components["schemas"]["PrivateSwapEnvelope"] & {
+            /** @description Returned exactly once; only its hash is stored. Destroying the envelope needs it. */
+            deleteCapability: string;
+        };
+        HeritageRecordCompleteness: {
+            complete: boolean;
+            incomplete: {
+                utxo: string | null;
+                reasons: string[];
+            }[];
+            /** @description Pass as cursor for the next page; null on the last page. */
+            nextCursor: string | null;
+        };
+        HeritageAssetUtxoPage: {
+            asset: {
+                name: string;
+                assetId: string;
+            };
+            attachedUtxos: components["schemas"]["HeritageAttachmentRecord"][];
+            completeness: components["schemas"]["HeritageRecordCompleteness"];
+            readiness: components["schemas"]["HeritageReadiness"];
+        };
+        HeritageAddressAssets: {
+            address: string;
+            balances: {
+                name: string;
+                assetId: string;
+                divisible: boolean;
+                quantitySats: components["schemas"]["AtomicSats"];
+                quantityNormalized?: string;
+                /** @description The carrying outpoint txid:vout, or null for the plain address balance. */
+                utxo: string | null;
+            }[];
+            readiness: components["schemas"]["HeritageReadiness"];
+        };
+        /** @description One transaction of a partitioned operation: a SafeOpsPlanResult without its own partition. */
+        SafeOpsPartitionPlan: {
+            /** @description The id every later plan route takes. */
+            planId: string;
+            /** @enum {string} */
+            state: "BUILT" | "SIGNED" | "BROADCAST" | "INVALIDATED";
+            plan: components["schemas"]["SafeOpsPlan"];
+            verification: components["schemas"]["VerificationView"];
+            /** @description The unsigned PSBT, base64, that reproduces the plan transaction exactly. */
+            psbt?: string;
+            /** @description The expected transaction manifest a cold signer signs against. */
+            manifest?: components["schemas"]["ExpectedTransactionManifest"];
+            /** @description INVALIDATED plans only. */
+            invalidatedReason?: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        /**
+         * @description Why a purchase route answered 503; every one is retryable and nothing was composed or recorded. ORDER_CHECKING: the listing is in its catch-up hold at a new block (spec/lifecycle.md). ORDER_STALE: the listing could not be verified against the chain just now. INPUT_INVENTORY_UNAVAILABLE: Ordex could not check a buyer funding or padding output (or a transaction input) for assets, so it will not spend it; retry, or choose other outputs. CHAIN_UNAVAILABLE: Bitcoin Core or ord could not be read at the checkpoint. CHAIN_MOVED: the chain moved while Ordex was verifying. ORDEX_NOT_CONFIGURED and ORDEX_DISABLED: the operator must act. OPERATION_UNRECORDED: a refusal could not be recorded; retry with the same idempotency-key. ORDEX_UNAVAILABLE: any other temporary failure.
+         * @enum {string}
+         */
+        PurchaseUnavailableCode: "ORDER_CHECKING" | "ORDER_STALE" | "INPUT_INVENTORY_UNAVAILABLE" | "CHAIN_UNAVAILABLE" | "CHAIN_MOVED" | "ORDEX_NOT_CONFIGURED" | "ORDEX_DISABLED" | "OPERATION_UNRECORDED" | "ORDEX_UNAVAILABLE";
+        PurchaseUnavailable: components["schemas"]["ErrorResponse"] & {
+            /** @constant */
+            statusCode: 503;
+            error?: string;
+            message: string;
+            requestId?: string;
+            code: components["schemas"]["PurchaseUnavailableCode"];
+        };
+        /** @description A batch purchase that could not be composed right now. With code ORDER_CHECKING, every order of the batch passed the refusal checks and at least one is still being checked at the newest block: refusals names each such order in the same per-order shape as BatchPurchaseRefused. Retry the same batch shortly. An order that cannot be bought at all is refused first, with a 409 BatchPurchaseRefused. */
+        BatchPurchaseUnavailable: {
+            /** @constant */
+            statusCode: 503;
+            error?: string;
+            message: string;
+            requestId?: string;
+            code: components["schemas"]["PurchaseUnavailableCode"];
+            refusals?: (components["schemas"]["BatchRefusal"] & {
+                /** @constant */
+                code?: "ORDER_CHECKING";
+            })[];
+        };
+        /** @description One protocol view of the sold inscription. Several views of one inscription (for example a Bitmap claim that is also an SNS name, or a DMT transfer that is also a TAP transfer of its dmt- ticker) are one asset and all move to the buyer, so every one is disclosed, including a view the seller did not declare. */
+        AssetView: {
+            protocolId: string;
+            assetId: string;
+            quantityAtomic: components["schemas"]["AtomicSats"];
+            /** @description A plain description to show the buyer. */
+            label: string;
+        };
+        /**
+         * @description PLACEMENT_REFUSED: at least one ask could not be proved; see placements. NODE_REJECTED: Bitcoin Core would not accept the transaction; rejectReason carries its reason.
+         * @enum {string}
+         */
+        BatchPreflightRejectCode: "PLACEMENT_REFUSED" | "NODE_REJECTED";
+        /**
+         * @description ORDER_UNVERIFIABLE: the ask could not be read or verified. ORDER_NOT_LIVE: the listing left LIVE. ORDER_STALE: it could not be verified against the chain just now. ORDER_CHANGED: it changed since the batch was quoted. ASK_NOT_BOUND: the transaction does not carry this ask exactly. SELLER_INPUT_MOVED: its seller input is not at the reviewed position. DELIVERY_UNPROVEN: the asset delivery could not be proved. RECIPIENT_MISMATCH: the asset would not land in the reviewed buyer output.
+         * @enum {string}
+         */
+        BatchPreflightPlacementCode: "ORDER_UNVERIFIABLE" | "ORDER_NOT_LIVE" | "ORDER_STALE" | "ORDER_CHANGED" | "ASK_NOT_BOUND" | "SELLER_INPUT_MOVED" | "DELIVERY_UNPROVEN" | "RECIPIENT_MISMATCH";
     };
     responses: {
         /** @description The request failed. The envelope states the status, a human readable message, and the request id. */
@@ -2838,7 +3396,7 @@ export interface components {
                 "application/json": components["schemas"]["ErrorResponse"];
             };
         };
-        /** @description No order with this id. */
+        /** @description Nothing with this id exists. */
         NotFound: {
             headers: {
                 [name: string]: unknown;
@@ -2856,6 +3414,15 @@ export interface components {
                 "application/json": components["schemas"]["ErrorResponse"];
             };
         };
+        /** @description Retryable. The envelope carries a stable code from PurchaseUnavailableCode: ORDER_CHECKING while the listing is in its catch-up hold at a new block (spec/lifecycle.md), INPUT_INVENTORY_UNAVAILABLE when a buyer output could not be checked for assets, and the chain and gateway availability codes. Nothing was composed or recorded. */
+        PurchaseUnavailable: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["PurchaseUnavailable"];
+            };
+        };
     };
     parameters: {
         /** @description The order id. */
@@ -2865,6 +3432,18 @@ export interface components {
         /** @description The caller's operation id for this mutation. The gateway commits the order change and a receipt under this id in one transaction; the same id with the same request replays the receipt, the same id with a different request is a 409, and the receipt is readable at `GET /operations/{operationId}`. */
         IdempotencyKey: string;
         OperationId: string;
+        /** @description Page size. */
+        PageLimit: number;
+        /** @description The opaque cursor a previous page returned. A malformed cursor is a 400, never a silent first page. */
+        PageCursor: string;
+        /** @description Only this network. */
+        NetworkFilter: "mainnet" | "testnet" | "signet" | "regtest";
+        /** @description A signing session capability returned once when the session was opened: the read capability shows a session, the import capability also submits its signed result. Listing accepts up to 25, comma separated. */
+        SigningCapability: string;
+        /** @description Resume after this event id, as an EventSource reconnect sends it. */
+        LastEventId: string;
+        /** @description The session capability of a PRIVATE intent, returned once in its acceptance answer. Every route of that session requires it (401 SESSION_CAPABILITY_REQUIRED without it or with another token); sessions of PUBLIC intents ignore it. */
+        SwapCapability: string;
     };
     requestBodies: never;
     headers: never;
@@ -3368,6 +3947,7 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             404: components["responses"]["NotFound"];
             429: components["responses"]["RateLimited"];
+            503: components["responses"]["PurchaseUnavailable"];
             default: components["responses"]["Error"];
         };
     };
@@ -3399,6 +3979,7 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             404: components["responses"]["NotFound"];
             429: components["responses"]["RateLimited"];
+            503: components["responses"]["PurchaseUnavailable"];
             default: components["responses"]["Error"];
         };
     };
@@ -3476,6 +4057,15 @@ export interface operations {
                 };
             };
             429: components["responses"]["RateLimited"];
+            /** @description Retryable. The envelope carries a stable code from PurchaseUnavailableCode: ORDER_CHECKING while the listing is in its catch-up hold at a new block (spec/lifecycle.md), INPUT_INVENTORY_UNAVAILABLE when a buyer output could not be checked for assets, and the chain and gateway availability codes. Nothing was composed or recorded. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BatchPurchaseUnavailable"];
+                };
+            };
             default: components["responses"]["Error"];
         };
     };
@@ -3504,6 +4094,7 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             404: components["responses"]["NotFound"];
             429: components["responses"]["RateLimited"];
+            503: components["responses"]["PurchaseUnavailable"];
             default: components["responses"]["Error"];
         };
     };
@@ -3601,7 +4192,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["OfferRevalidateRequest"];
+            };
+        };
         responses: {
             /** @description The rechecked offer. */
             201: {
@@ -3630,7 +4225,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["OwnershipProof"];
+                "application/json": components["schemas"]["OfferWithdrawalProof"];
             };
         };
         responses: {
@@ -3718,7 +4313,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SafeOpsPlanRequest"];
+            };
+        };
         responses: {
             /** @description The result. */
             201: {
@@ -3753,6 +4352,7 @@ export interface operations {
                     "application/json": components["schemas"]["SafeOpsPlanResult"];
                 };
             };
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Error"];
         };
     };
@@ -3766,7 +4366,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ShieldRequest"];
+            };
+        };
         responses: {
             /** @description The result. */
             201: {
@@ -3777,6 +4381,7 @@ export interface operations {
                     "application/json": components["schemas"]["ShieldResult"];
                 };
             };
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Error"];
         };
     };
@@ -3787,7 +4392,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BroadcastRequest"];
+            };
+        };
         responses: {
             /** @description The result. */
             201: {
@@ -3822,6 +4431,7 @@ export interface operations {
                     "application/json": components["schemas"]["OperationStatus"];
                 };
             };
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Error"];
         };
     };
@@ -3832,7 +4442,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SafeOpsRbfRequest"];
+            };
+        };
         responses: {
             /** @description The result. */
             201: {
@@ -3853,7 +4467,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SafeOpsCpfpRequest"];
+            };
+        };
         responses: {
             /** @description The result. */
             201: {
@@ -3869,7 +4487,16 @@ export interface operations {
     };
     listSwapIntents: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Only this network. */
+                network?: components["parameters"]["NetworkFilter"];
+                /** @description The opaque cursor a previous page returned. A malformed cursor is a 400, never a silent first page. */
+                cursor?: components["parameters"]["PageCursor"];
+                /** @description Page size. */
+                limit?: components["parameters"]["PageLimit"];
+                /** @description Only intents that give or require this asset type. */
+                assetType?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -3895,7 +4522,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SwapIntentPublishRequest"];
+            };
+        };
         responses: {
             /** @description The result. */
             201: {
@@ -3930,6 +4561,7 @@ export interface operations {
                     "application/json": components["schemas"]["SwapIntentView"];
                 };
             };
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Error"];
         };
     };
@@ -3943,7 +4575,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SwapIntentWithdrawRequest"];
+            };
+        };
         responses: {
             /** @description The result. */
             201: {
@@ -3954,6 +4590,7 @@ export interface operations {
                     "application/json": components["schemas"]["SwapIntentView"];
                 };
             };
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Error"];
         };
     };
@@ -3967,7 +4604,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SwapAcceptancePlanRequest"];
+            };
+        };
         responses: {
             /** @description The result. */
             201: {
@@ -3978,13 +4619,17 @@ export interface operations {
                     "application/json": components["schemas"]["SwapSession"];
                 };
             };
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Error"];
         };
     };
     getSwapSession: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description The session capability of a PRIVATE intent, returned once in its acceptance answer. Every route of that session requires it (401 SESSION_CAPABILITY_REQUIRED without it or with another token); sessions of PUBLIC intents ignore it. */
+                "x-ordex-swap-capability"?: components["parameters"]["SwapCapability"];
+            };
             path: {
                 /** @description The session identifier. */
                 sessionId: string;
@@ -4002,20 +4647,28 @@ export interface operations {
                     "application/json": components["schemas"]["SwapSession"];
                 };
             };
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Error"];
         };
     };
     submitSwapSignature: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description The session capability of a PRIVATE intent, returned once in its acceptance answer. Every route of that session requires it (401 SESSION_CAPABILITY_REQUIRED without it or with another token); sessions of PUBLIC intents ignore it. */
+                "x-ordex-swap-capability"?: components["parameters"]["SwapCapability"];
+            };
             path: {
                 /** @description The session identifier. */
                 sessionId: string;
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SwapSignatureSubmission"];
+            };
+        };
         responses: {
             /** @description The result. */
             201: {
@@ -4026,13 +4679,17 @@ export interface operations {
                     "application/json": components["schemas"]["SwapSession"];
                 };
             };
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Error"];
         };
     };
     preflightSwapSession: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description The session capability of a PRIVATE intent, returned once in its acceptance answer. Every route of that session requires it (401 SESSION_CAPABILITY_REQUIRED without it or with another token); sessions of PUBLIC intents ignore it. */
+                "x-ordex-swap-capability"?: components["parameters"]["SwapCapability"];
+            };
             path: {
                 /** @description The session identifier. */
                 sessionId: string;
@@ -4047,16 +4704,20 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["VerificationView"];
+                    "application/json": components["schemas"]["SwapPreflightResult"];
                 };
             };
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Error"];
         };
     };
     broadcastSwapSession: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description The session capability of a PRIVATE intent, returned once in its acceptance answer. Every route of that session requires it (401 SESSION_CAPABILITY_REQUIRED without it or with another token); sessions of PUBLIC intents ignore it. */
+                "x-ordex-swap-capability"?: components["parameters"]["SwapCapability"];
+            };
             path: {
                 /** @description The session identifier. */
                 sessionId: string;
@@ -4074,6 +4735,7 @@ export interface operations {
                     "application/json": components["schemas"]["BroadcastReceipt"];
                 };
             };
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Error"];
         };
     };
@@ -4092,7 +4754,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PrivateSwapEnvelope"][];
+                    "application/json": components["schemas"]["PrivateSwapList"];
                 };
             };
             default: components["responses"]["Error"];
@@ -4105,7 +4767,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PrivateSwapStoreRequest"];
+            };
+        };
         responses: {
             /** @description The result. */
             201: {
@@ -4113,7 +4779,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PrivateSwapEnvelope"];
+                    "application/json": components["schemas"]["PrivateSwapStored"];
                 };
             };
             default: components["responses"]["Error"];
@@ -4140,6 +4806,7 @@ export interface operations {
                     "application/json": components["schemas"]["PrivateSwapEnvelope"];
                 };
             };
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Error"];
         };
     };
@@ -4153,7 +4820,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PrivateSwapDestroyRequest"];
+            };
+        };
         responses: {
             /** @description The result. */
             200: {
@@ -4166,12 +4837,30 @@ export interface operations {
                     };
                 };
             };
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Error"];
         };
     };
     listOrdexEvents: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Only this network. */
+                network?: components["parameters"]["NetworkFilter"];
+                /** @description Only this event type. */
+                type?: string;
+                /** @description Only events of this aggregate type. */
+                aggregateType?: string;
+                /** @description Only events of this aggregate. */
+                aggregateId?: string;
+                /** @description Only events of this protocol. */
+                protocol?: string;
+                /** @description Only events of this collection. */
+                collectionId?: string;
+                /** @description Page size. */
+                limit?: components["parameters"]["PageLimit"];
+                /** @description The opaque cursor a previous page returned. A malformed cursor is a 400, never a silent first page. */
+                cursor?: components["parameters"]["PageCursor"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -4192,8 +4881,26 @@ export interface operations {
     };
     streamOrdexEvents: {
         parameters: {
-            query?: never;
-            header?: never;
+            query?: {
+                /** @description Only this network. */
+                network?: components["parameters"]["NetworkFilter"];
+                /** @description Only this event type. */
+                type?: string;
+                /** @description Only events of this aggregate type. */
+                aggregateType?: string;
+                /** @description Only events of this aggregate. */
+                aggregateId?: string;
+                /** @description Only events of this protocol. */
+                protocol?: string;
+                /** @description Only events of this collection. */
+                collectionId?: string;
+                /** @description The opaque cursor a previous page returned. A malformed cursor is a 400, never a silent first page. */
+                cursor?: components["parameters"]["PageCursor"];
+            };
+            header?: {
+                /** @description Resume after this event id, as an EventSource reconnect sends it. */
+                "last-event-id"?: components["parameters"]["LastEventId"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -4213,7 +4920,10 @@ export interface operations {
     };
     getEventStreamCheckpoint: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Only this network. */
+                network?: components["parameters"]["NetworkFilter"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -4247,7 +4957,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["WebhookSubscription"][];
+                    "application/json": components["schemas"]["WebhookSubscriptionList"];
                 };
             };
             default: components["responses"]["Error"];
@@ -4260,7 +4970,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WebhookSubscriptionCreateRequest"];
+            };
+        };
         responses: {
             /** @description The subscription with its one time secret. */
             201: {
@@ -4297,6 +5011,7 @@ export interface operations {
                     "application/json": components["schemas"]["WebhookSubscription"];
                 };
             };
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Error"];
         };
     };
@@ -4323,6 +5038,7 @@ export interface operations {
                     };
                 };
             };
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Error"];
         };
     };
@@ -4336,7 +5052,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WebhookSubscriptionUpdateRequest"];
+            };
+        };
         responses: {
             /** @description The result. */
             200: {
@@ -4347,6 +5067,7 @@ export interface operations {
                     "application/json": components["schemas"]["WebhookSubscription"];
                 };
             };
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Error"];
         };
     };
@@ -4371,6 +5092,7 @@ export interface operations {
                     "application/json": components["schemas"]["WebhookSecretReveal"];
                 };
             };
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Error"];
         };
     };
@@ -4384,7 +5106,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["WebhookVerifyRequest"];
+            };
+        };
         responses: {
             /** @description The result. */
             201: {
@@ -4395,6 +5121,7 @@ export interface operations {
                     "application/json": components["schemas"]["WebhookSubscription"];
                 };
             };
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Error"];
         };
     };
@@ -4419,12 +5146,22 @@ export interface operations {
                     "application/json": components["schemas"]["WebhookDelivery"];
                 };
             };
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Error"];
         };
     };
     listWebhookDeliveries: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Only deliveries of this subscription. */
+                subscriptionId?: string;
+                /** @description Only deliveries in this state. */
+                state?: string;
+                /** @description Page size. */
+                limit?: components["parameters"]["PageLimit"];
+                /** @description The opaque cursor a previous page returned. A malformed cursor is a 400, never a silent first page. */
+                cursor?: components["parameters"]["PageCursor"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -4464,12 +5201,24 @@ export interface operations {
                     "application/json": components["schemas"]["WebhookDelivery"];
                 };
             };
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Error"];
         };
     };
     listCollectionManifests: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Only manifests of this collection. */
+                collectionId?: string;
+                /** @description Only this network. */
+                network?: components["parameters"]["NetworkFilter"];
+                /** @description Only manifests in this status. */
+                status?: "CREATOR_SIGNED" | "SUPERSEDED" | "REVOKED";
+                /** @description The opaque cursor a previous page returned. A malformed cursor is a 400, never a silent first page. */
+                cursor?: components["parameters"]["PageCursor"];
+                /** @description Page size. */
+                limit?: components["parameters"]["PageLimit"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -4495,7 +5244,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CollectionManifestDocument"];
+            };
+        };
         responses: {
             /** @description The result. */
             201: {
@@ -4530,6 +5283,7 @@ export interface operations {
                     "application/json": components["schemas"]["CollectionManifestDocument"];
                 };
             };
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Error"];
         };
     };
@@ -4556,6 +5310,7 @@ export interface operations {
                     "application/json": components["schemas"]["MembershipProofResponse"];
                 };
             };
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Error"];
         };
     };
@@ -4569,7 +5324,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CollectionRevisionRequest"];
+            };
+        };
         responses: {
             /** @description The result. */
             201: {
@@ -4579,18 +5338,23 @@ export interface operations {
                 content: {
                     "application/json": {
                         manifest: components["schemas"]["CollectionManifestDocument"];
-                        revocation: {
+                        /** @description The signed revocation; REVOKE revisions only. */
+                        revocation?: {
                             [key: string]: unknown;
                         };
                     };
                 };
             };
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Error"];
         };
     };
     getCollectionProvenance: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Only this network. */
+                network?: components["parameters"]["NetworkFilter"];
+            };
             header?: never;
             path: {
                 /** @description The stable collection identifier. */
@@ -4609,6 +5373,7 @@ export interface operations {
                     "application/json": components["schemas"]["CollectionProvenance"];
                 };
             };
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Error"];
         };
     };
@@ -4635,7 +5400,10 @@ export interface operations {
     };
     getHeritageAsset: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description The opaque cursor a previous page returned. A malformed cursor is a 400, never a silent first page. */
+                cursor?: components["parameters"]["PageCursor"];
+            };
             header?: never;
             path: {
                 /** @description The numeric Counterparty asset id or its exact long name. */
@@ -4654,12 +5422,16 @@ export interface operations {
                     "application/json": components["schemas"]["HeritageAsset"];
                 };
             };
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Error"];
         };
     };
     listHeritageAssetUtxos: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description The opaque cursor a previous page returned. A malformed cursor is a 400, never a silent first page. */
+                cursor?: components["parameters"]["PageCursor"];
+            };
             header?: never;
             path: {
                 /** @description The numeric Counterparty asset id or its exact long name. */
@@ -4675,9 +5447,10 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HeritageAttachmentRecord"][];
+                    "application/json": components["schemas"]["HeritageAssetUtxoPage"];
                 };
             };
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Error"];
         };
     };
@@ -4699,11 +5472,10 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    }[];
+                    "application/json": components["schemas"]["HeritageAddressAssets"];
                 };
             };
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Error"];
         };
     };
@@ -4714,7 +5486,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HeritageComposeRequest"];
+            };
+        };
         responses: {
             /** @description The result. */
             201: {
@@ -4735,7 +5511,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HeritageDetachRequest"];
+            };
+        };
         responses: {
             /** @description The result. */
             201: {
@@ -4751,8 +5531,20 @@ export interface operations {
     };
     listSigningSessions: {
         parameters: {
-            query?: never;
-            header?: never;
+            query?: {
+                /** @description Only this network. */
+                network?: components["parameters"]["NetworkFilter"];
+                /** @description Only sessions in this state. */
+                state?: string;
+                /** @description The opaque cursor a previous page returned. A malformed cursor is a 400, never a silent first page. */
+                cursor?: components["parameters"]["PageCursor"];
+                /** @description Page size. */
+                limit?: components["parameters"]["PageLimit"];
+            };
+            header?: {
+                /** @description A signing session capability returned once when the session was opened: the read capability shows a session, the import capability also submits its signed result. Listing accepts up to 25, comma separated. */
+                "x-ordex-signing-capability"?: components["parameters"]["SigningCapability"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -4764,7 +5556,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SigningSession"][];
+                    "application/json": components["schemas"]["SigningSessionPage"];
                 };
             };
             default: components["responses"]["Error"];
@@ -4777,7 +5569,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SigningSessionOpenRequest"];
+            };
+        };
         responses: {
             /** @description The result. */
             201: {
@@ -4794,7 +5590,10 @@ export interface operations {
     getSigningSession: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description A signing session capability returned once when the session was opened: the read capability shows a session, the import capability also submits its signed result. Listing accepts up to 25, comma separated. */
+                "x-ordex-signing-capability"?: components["parameters"]["SigningCapability"];
+            };
             path: {
                 /** @description The session identifier. */
                 sessionId: string;
@@ -4812,20 +5611,28 @@ export interface operations {
                     "application/json": components["schemas"]["SigningSession"];
                 };
             };
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Error"];
         };
     };
     submitSignedResult: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description A signing session capability returned once when the session was opened: the read capability shows a session, the import capability also submits its signed result. Listing accepts up to 25, comma separated. */
+                "x-ordex-signing-capability"?: components["parameters"]["SigningCapability"];
+            };
             path: {
                 /** @description The session identifier. */
                 sessionId: string;
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SigningSignedResultRequest"];
+            };
+        };
         responses: {
             /** @description The result. */
             201: {
@@ -4836,6 +5643,7 @@ export interface operations {
                     "application/json": components["schemas"]["SigningVerificationResult"];
                 };
             };
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Error"];
         };
     };
@@ -4846,7 +5654,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SigningVerifyRequest"];
+            };
+        };
         responses: {
             /** @description The result. */
             201: {
@@ -4882,6 +5694,164 @@ export interface operations {
             };
             404: components["responses"]["NotFound"];
             429: components["responses"]["RateLimited"];
+            default: components["responses"]["Error"];
+        };
+    };
+    relayHeritageOperation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The heritage operation id, hop_<uuid>. */
+                operationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HeritageRelayRequest"];
+            };
+        };
+        responses: {
+            /** @description The operation after relay, or its stored state. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HeritageOperation"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            default: components["responses"]["Error"];
+        };
+    };
+    getHeritageOperation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The heritage operation id, hop_<uuid>. */
+                operationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The operation. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HeritageOperation"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            default: components["responses"]["Error"];
+        };
+    };
+    draftHeritageAsk: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HeritageAskDraftRequest"];
+            };
+        };
+        responses: {
+            /** @description The unsigned intent and what to sign. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HeritageIntentDraft"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    draftHeritageSwap: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HeritageSwapDraftRequest"];
+            };
+        };
+        responses: {
+            /** @description The unsigned intent and what to sign. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HeritageIntentDraft"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    publishHeritageIntent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HeritageIntentPublishRequest"];
+            };
+        };
+        responses: {
+            /** @description The published intent. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SwapIntentView"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    acceptHeritageIntent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The published intent id. */
+                intentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SwapAcceptancePlanRequest"];
+            };
+        };
+        responses: {
+            /** @description The acceptance plan with its expected ledger events. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HeritageAcceptanceResult"];
+                };
+            };
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Error"];
         };
     };

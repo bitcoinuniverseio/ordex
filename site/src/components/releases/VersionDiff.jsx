@@ -20,10 +20,11 @@ export function VersionDiff() {
               Inspect additive capabilities, schema changes, and migration steps between protocol versions.
             </p>
           </div>
-          <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
             <div>
-              <label style="font-size: 0.8rem; font-weight: 600; margin-right: 0.4rem;">Base:</label>
+              <label for="version-diff-base" style="font-size: 0.8rem; font-weight: 600; margin-right: 0.4rem;">Base:</label>
               <select
+                id="version-diff-base"
                 class="btn btn-outline"
                 value={baseVer}
                 onChange={(e) => setBaseVer(e.target.value)}
@@ -38,8 +39,9 @@ export function VersionDiff() {
             <span style="color: var(--color-text-muted);">➔</span>
 
             <div>
-              <label style="font-size: 0.8rem; font-weight: 600; margin-right: 0.4rem;">Target:</label>
+              <label for="version-diff-target" style="font-size: 0.8rem; font-weight: 600; margin-right: 0.4rem;">Target:</label>
               <select
+                id="version-diff-target"
                 class="btn btn-outline"
                 value={targetVer}
                 onChange={(e) => setTargetVer(e.target.value)}
@@ -54,7 +56,7 @@ export function VersionDiff() {
         </div>
 
         {/* Diff Comparison Grid */}
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1rem;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); gap: 1.5rem; margin-top: 1rem;">
           {/* Base Version Details */}
           <div class="panel" style="padding: 1rem; background: var(--color-bg-subtle);">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
@@ -65,7 +67,7 @@ export function VersionDiff() {
               {baseObj.description}
             </p>
             <div style="font-size: 0.8rem; font-family: var(--font-mono); margin-bottom: 0.5rem; word-break: break-all;">
-              Contract Digest: {baseObj.contractDigest}
+              Contract Digest: {baseObj.contractDigest || 'Not recorded for this release'}
             </div>
             <div>
               <strong style="font-size: 0.8rem; text-transform: uppercase; color: var(--color-text-muted);">
@@ -89,10 +91,10 @@ export function VersionDiff() {
               {targetObj.description}
             </p>
             <div style="font-size: 0.8rem; font-family: var(--font-mono); margin-bottom: 0.5rem; word-break: break-all;">
-              Contract Digest: {targetObj.contractDigest}
+              Contract Digest: {targetObj.contractDigest || 'Not recorded for this release'}
             </div>
             <div>
-              <strong style="font-size: 0.8rem; text-transform: uppercase; color: var(--color-brand);">
+              <strong style="font-size: 0.8rem; text-transform: uppercase; color: var(--color-brand-text);">
                 Added / Upgraded in v{targetObj.version}:
               </strong>
               <ul style="margin: 0.4rem 0 0 1.2rem; padding: 0; font-size: 0.85rem;">

@@ -6,6 +6,8 @@
  * 1. understand -> 2. prepare -> 3. simulate -> 4. inspect -> 5. verify -> 6. integrate -> 7. validate -> 8. finish
  */
 
+import vectorManifest from '../../data/vectorManifest.json';
+
 export type StageId =
   | 'understand'
   | 'prepare'
@@ -19,7 +21,11 @@ export type StageId =
 export interface MissionPrerequisite {
   id: string;
   label: string;
-  satisfied: boolean;
+  /**
+   * OX-S03: how the workspace can check this prerequisite. Without a check it is the
+   * user's own responsibility and is shown as not checked, never as satisfied.
+   */
+  check?: 'gateway-origin' | 'web-worker';
   helpLink?: string;
 }
 
@@ -66,7 +72,11 @@ function createStandardStages(cfg: {
   prepareLabel: string;
   simulateDesc: string;
   simulateLabel: string;
+  /** The tool that produces this mission's simulate evidence, when it is not the Sandbox. */
+  simulateRoute?: string;
   inspectDesc: string;
+  /** The tool that produces this mission's inspect evidence, when it is not Artifact Lens. */
+  inspectRoute?: string;
   inspectLabel: string;
   verifyDesc: string;
   verifyLabel: string;
@@ -74,6 +84,8 @@ function createStandardStages(cfg: {
   integrateLabel: string;
   validateDesc: string;
   validateLabel: string;
+  /** The tool that produces this mission's validate evidence, when it is not /verify. */
+  validateRoute?: string;
   finishDesc: string;
 }): MissionStageDefinition[] {
   return [
@@ -97,7 +109,7 @@ function createStandardStages(cfg: {
       id: 'simulate',
       title: 'Simulate Execution',
       description: cfg.simulateDesc,
-      toolRoute: '/sandbox',
+      toolRoute: cfg.simulateRoute || '/sandbox',
       toolActionLabel: cfg.simulateLabel,
       summaryTemplate: 'Deterministic multi-actor simulation completed.'
     },
@@ -105,7 +117,7 @@ function createStandardStages(cfg: {
       id: 'inspect',
       title: 'Inspect Artifacts',
       description: cfg.inspectDesc,
-      toolRoute: '/inspect',
+      toolRoute: cfg.inspectRoute || '/inspect',
       toolActionLabel: cfg.inspectLabel,
       summaryTemplate: 'Transaction artifacts and sat-flow inspected in Artifact Lens.'
     },
@@ -129,7 +141,7 @@ function createStandardStages(cfg: {
       id: 'validate',
       title: 'Validate Conformance',
       description: cfg.validateDesc,
-      toolRoute: '/verify',
+      toolRoute: cfg.validateRoute || '/verify',
       toolActionLabel: cfg.validateLabel,
       summaryTemplate: 'Conformance vectors and compatibility checks verified.'
     },
@@ -154,8 +166,8 @@ export const MISSIONS: MissionDefinition[] = [
     roles: ['Marketplace Integrator', 'Seller Wallet'],
     supportedProtocolVersions: ['1.0', '1.1', '1.2'],
     prerequisites: [
-      { id: 'prereq-seller-asset', label: 'Confirmed digital asset outpoint (Inscription or Rune)', satisfied: true },
-      { id: 'prereq-seller-payment-addr', label: 'Payment address receiving proceeds', satisfied: true }
+      { id: 'prereq-seller-asset', label: 'Confirmed digital asset outpoint (Inscription or Rune)' },
+      { id: 'prereq-seller-payment-addr', label: 'Payment address receiving proceeds' }
     ],
     stages: createStandardStages({
       understandDesc: 'Learn how SIGHASH_SINGLE enables trustless, portable listings without custodial escrow.',
@@ -176,7 +188,7 @@ export const MISSIONS: MissionDefinition[] = [
     }),
     completionCriteria: [
       { id: 'crit-psbt-valid', description: 'PSBT passes structural binary parsing', evidenceClass: 'Deterministic example' },
-      { id: 'crit-verifier-pass', description: 'Purchase reference verifier passes invariants 1 & 2', evidenceClass: 'Protocol verification', verifierRef: 'purchase' },
+      { id: 'crit-verifier-pass', description: 'The purchase reference verifier accepts the arrangement: matching indexes, a nonzero index and exact sat flow (spec/purchase.md)', evidenceClass: 'Protocol verification', verifierRef: 'purchase' },
       { id: 'crit-order-published', description: 'Order registered in gateway catalog', evidenceClass: 'Gateway observation' }
     ],
     sourceRefs: [
@@ -194,8 +206,8 @@ export const MISSIONS: MissionDefinition[] = [
     roles: ['Marketplace Integrator', 'Buyer Wallet'],
     supportedProtocolVersions: ['1.0', '1.1', '1.2'],
     prerequisites: [
-      { id: 'prereq-open-asks', label: 'One or more OPEN public asks available', satisfied: true },
-      { id: 'prereq-buyer-utxo', label: 'Buyer funding UTXOs for price and miner fees', satisfied: true }
+      { id: 'prereq-open-asks', label: 'One or more OPEN public asks available' },
+      { id: 'prereq-buyer-utxo', label: 'Buyer funding UTXOs for price and miner fees' }
     ],
     stages: createStandardStages({
       understandDesc: 'Learn how atomic purchases combine seller inputs and buyer funding into one unspendable-if-altered tx.',
@@ -233,7 +245,7 @@ export const MISSIONS: MissionDefinition[] = [
     roles: ['Marketplace Integrator', 'Trader'],
     supportedProtocolVersions: ['1.1', '1.2'],
     prerequisites: [
-      { id: 'prereq-taproot', label: 'Taproot capable wallet or signer', satisfied: true }
+      { id: 'prereq-taproot', label: 'Taproot capable wallet or signer' }
     ],
     stages: createStandardStages({
       understandDesc: 'Examine Taproot script tree containing acceptance and CLTV recovery leaves.',
@@ -271,7 +283,7 @@ export const MISSIONS: MissionDefinition[] = [
     roles: ['Wallet Developer', 'Security Officer'],
     supportedProtocolVersions: ['1.0', '1.1', '1.2'],
     prerequisites: [
-      { id: 'prereq-verifier-worker', label: 'Local verifier Web Worker initialized', satisfied: true }
+      { id: 'prereq-verifier-worker', label: 'Local verifier Web Worker initialized', check: 'web-worker' }
     ],
     stages: createStandardStages({
       understandDesc: 'Review dangerous mutations: output reordering, sighash downgrades, fee inflation, and missing assets.',
@@ -309,7 +321,7 @@ export const MISSIONS: MissionDefinition[] = [
     roles: ['Marketplace Integrator', 'OTC Desk'],
     supportedProtocolVersions: ['1.1', '1.2'],
     prerequisites: [
-      { id: 'prereq-swap-maker', label: 'Maker asset outpoint and requested consideration defined', satisfied: true }
+      { id: 'prereq-swap-maker', label: 'Maker asset outpoint and requested consideration defined' }
     ],
     stages: createStandardStages({
       understandDesc: 'Learn how maker intent and taker acceptance combine without intermediate escrow.',
@@ -346,22 +358,24 @@ export const MISSIONS: MissionDefinition[] = [
     roles: ['Gateway Operator', 'DevOps Engineer'],
     supportedProtocolVersions: ['1.0', '1.1', '1.2'],
     prerequisites: [
-      { id: 'prereq-gateway-url', label: 'Ordex gateway origin or test environment', satisfied: true }
+      { id: 'prereq-gateway-url', label: 'Ordex gateway origin or test environment', check: 'gateway-origin' }
     ],
     stages: createStandardStages({
       understandDesc: 'Review stateless catalog endpoints, event cursors, and webhook signatures.',
       prepareDesc: 'Configure gateway URLs, CORS policies, and HMAC secrets.',
-      prepareRoute: '/operate',
+      prepareRoute: '/build/playground',
       prepareLabel: 'Configure Gateway',
       simulateDesc: 'Subscribe to real-time events and verify HMAC-SHA256 webhook signatures.',
       simulateLabel: 'Open Event Playground',
+      simulateRoute: '/build/playground',
       inspectDesc: 'Inspect signed event envelopes and cursor headers.',
       inspectLabel: 'Inspect Envelopes',
+      inspectRoute: '/build/playground',
       verifyDesc: 'Verify event delivery with verifier/events.js.',
       verifyLabel: 'Verify Events',
       integrateDesc: 'Generate webhook receiver server boilerplate.',
       integrateLabel: 'Get Receiver Code',
-      validateDesc: 'Execute Gateway Doctor 17-step compatibility diagnosis.',
+      validateDesc: 'Run Gateway Doctor against the configured gateway until every check passes.',
       validateLabel: 'Run Gateway Doctor',
       finishDesc: 'Gateway verified healthy and event streaming active.'
     }),
@@ -384,7 +398,7 @@ export const MISSIONS: MissionDefinition[] = [
     roles: ['Creator', 'Curator', 'Marketplace'],
     supportedProtocolVersions: ['1.2'],
     prerequisites: [
-      { id: 'prereq-collection-root', label: 'Collection manifest with creator signature or Counterparty record', satisfied: true }
+      { id: 'prereq-collection-root', label: 'Collection manifest with creator signature or Counterparty record' }
     ],
     stages: createStandardStages({
       understandDesc: 'Understand O(log N) Merkle membership proofs and Counterparty sat-flow preservation.',
@@ -423,7 +437,7 @@ export const MISSIONS: MissionDefinition[] = [
     roles: ['Developer', 'Operator', 'Support'],
     supportedProtocolVersions: ['1.0', '1.1', '1.2'],
     prerequisites: [
-      { id: 'prereq-error-payload', label: 'Refusal code, verifier output, or error log available', satisfied: true }
+      { id: 'prereq-error-payload', label: 'Refusal code, verifier output, or error log available' }
     ],
     stages: createStandardStages({
       understandDesc: 'Paste refusal code or error JSON for automated deterministic diagnosis.',
@@ -440,6 +454,7 @@ export const MISSIONS: MissionDefinition[] = [
       integrateLabel: 'Get Error Code',
       validateDesc: 'Check error envelope against authoritative OpenAPI schema.',
       validateLabel: 'Validate Schema',
+      validateRoute: '/build/playground',
       finishDesc: 'Executed remediation sequence and confirmed fix.'
     }),
     completionCriteria: [
@@ -459,7 +474,7 @@ export const MISSIONS: MissionDefinition[] = [
     roles: ['Security Auditor', 'Architect'],
     supportedProtocolVersions: ['1.0', '1.1', '1.2'],
     prerequisites: [
-      { id: 'prereq-audit-scope', label: 'Application integration architecture defined', satisfied: true }
+      { id: 'prereq-audit-scope', label: 'Application integration architecture defined' }
     ],
     stages: createStandardStages({
       understandDesc: 'Inspect trust boundaries between browser workers, gateways, indexers, and nodes.',
@@ -474,7 +489,7 @@ export const MISSIONS: MissionDefinition[] = [
       verifyLabel: 'Run Verifiers',
       integrateDesc: 'Review signing policies and key isolation documentation.',
       integrateLabel: 'Review Policies',
-      validateDesc: 'Run 151 checked-in conformance vectors across all protocol features.',
+      validateDesc: `Run ${vectorManifest.total} checked-in conformance vectors across all protocol features.`,
       validateLabel: 'Run Conformance Vectors',
       finishDesc: 'Security review report generated and exported.'
     }),

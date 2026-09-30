@@ -3,16 +3,25 @@ import { useState, useEffect } from 'preact/hooks';
 import atlasData from '../../data/atlas.json';
 import { TruthLabel } from '../shell/TruthLabel.jsx';
 import { resolveUrl } from '../../lib/base-url.js';
+import { recordToolEvidence } from '../../lib/session/evidence';
 
 export function VisualProtocolAtlas({ initialDiagramId = null }) {
   const [selectedDiagramId, setSelectedDiagramId] = useState(initialDiagramId || atlasData[0]?.id);
   const [currentStep, setCurrentStep] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [activeSidePanel, setActiveSidePanel] = useState('wire'); // 'wire', 'verifier', 'transcript'
+  const [activeSidePanel, setActiveSidePanel] = useState('source'); // 'source', 'verifier', 'transcript'
 
   const diagram = atlasData.find((d) => d.id === selectedDiagramId) || atlasData[0];
   const steps = diagram.steps || [];
   const activeStepObj = steps[currentStep] || steps[0];
+
+  // OX-S03: reaching the last step of a diagram is a reading record (read:<diagram>), the
+  // evidence the security review mission asks of the Atlas. It is not verification.
+  useEffect(() => {
+    if (steps.length && currentStep === steps.length - 1) {
+      recordToolEvidence({ tool: 'atlas', operation: `read:${diagram.id}`, state: 'read', evidenceClass: 'Deterministic example', reason: `Walked all ${steps.length} steps of ${diagram.title}.` });
+    }
+  }, [currentStep, selectedDiagramId]);
 
   // Auto playback
   useEffect(() => {
@@ -42,15 +51,41 @@ export function VisualProtocolAtlas({ initialDiagramId = null }) {
   const exportSvg = () => {
     const svgEl = document.getElementById('protocol-atlas-svg');
     if (!svgEl) return;
+    // A standalone file has no page stylesheet: resolve every CSS variable to the color the page
+    // shows, and give the file its own size, background and title.
+    const clone = svgEl.cloneNode(true);
+    const live = svgEl.querySelectorAll('*');
+    clone.querySelectorAll('*').forEach((el, i) => {
+      const cs = getComputedStyle(live[i]);
+      for (const attr of ['fill', 'stroke']) {
+        const v = el.getAttribute(attr);
+        if (v && v.includes('var(')) el.setAttribute(attr, cs[attr]);
+      }
+    });
+    const [, , vw, vh] = (svgEl.getAttribute('viewBox') || '0 0 900 240').split(/\s+/);
+    clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    clone.setAttribute('width', vw);
+    clone.setAttribute('height', vh);
+    clone.removeAttribute('style');
+    const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    bg.setAttribute('width', '100%');
+    bg.setAttribute('height', '100%');
+    bg.setAttribute('fill', getComputedStyle(svgEl.parentElement).backgroundColor || '#ffffff');
+    clone.insertBefore(bg, clone.firstChild);
+    const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+    title.textContent = `${diagram.title}, step ${currentStep + 1} of ${steps.length}`;
+    clone.insertBefore(title, clone.firstChild);
     const serializer = new XMLSerializer();
-    const source = serializer.serializeToString(svgEl);
+    const source = serializer.serializeToString(clone);
     const blob = new Blob([source], { type: 'image/svg+xml;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = `${diagram.id}-step-${currentStep + 1}.svg`;
+    document.body.appendChild(a);
     a.click();
-    URL.revokeObjectURL(url);
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 30000);
   };
 
   return (
@@ -91,7 +126,7 @@ export function VisualProtocolAtlas({ initialDiagramId = null }) {
           </div>
 
           {/* Playback Controls */}
-          <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
             <button class="btn btn-outline" onClick={handlePrev} disabled={currentStep === 0}>
               ◀ Prev
             </button>
@@ -108,7 +143,7 @@ export function VisualProtocolAtlas({ initialDiagramId = null }) {
         </div>
 
         {/* Actor Lanes & Step Visualization SVG */}
-        <div style="background: var(--color-bg-subtle); border-radius: var(--radius-md); padding: 1.5rem; overflow-x: auto; margin-bottom: 1.5rem;">
+        <div tabIndex={0} role="region" aria-label={`Sequence diagram: ${diagram.title}`} style="background: var(--color-bg-subtle); border-radius: var(--radius-md); padding: 1.5rem; overflow-x: auto; margin-bottom: 1.5rem;">
           <svg
             id="protocol-atlas-svg"
             viewBox="0 0 900 240"
@@ -151,7 +186,7 @@ export function VisualProtocolAtlas({ initialDiagramId = null }) {
                           x={x}
                           y={32}
                           text-anchor="middle"
-                          fill={isFrom || isTo ? '#ffffff' : 'var(--color-text-primary)'}
+                          fill={isFrom || isTo ? 'var(--color-on-brand)' : 'var(--color-text-primary)'}
                           font-size="11"
                           font-weight="700"
                           font-family="system-ui"
@@ -244,83 +279,84 @@ export function VisualProtocolAtlas({ initialDiagramId = null }) {
         </div>
 
         {/* Step Details & Side Panels */}
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); gap: 1.5rem;">
           {/* Left: Step Breakdown */}
           <div style="background: var(--color-bg-subtle); padding: 1.25rem; border-radius: var(--radius-md);">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
-              <h4 style="margin: 0; font-size: 1rem;">
-                Step {activeStepObj.step} of {steps.length}: {activeStepObj.label}
-              </h4>
-              <span class="badge badge-verification">Active Invariant</span>
-            </div>
+            <h4 style="margin: 0 0 0.5rem 0; font-size: 1rem;">
+              Step {activeStepObj.step} of {steps.length}: {activeStepObj.label}
+            </h4>
             <p style="margin: 0 0 1rem 0; font-size: 0.85rem; color: var(--color-text-secondary); line-height: 1.4;">
-              Safety Guarantee: {activeStepObj.safety}
+              Why it is safe: {activeStepObj.safety}
             </p>
-            <div style="display: flex; gap: 0.5rem;">
-              <a href={resolveUrl('/lab')} class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.2rem 0.5rem;">
-                Open in Protocol Lab 🔬
-              </a>
-              <a href={resolveUrl('/build/playground')} class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.2rem 0.5rem;">
-                Open Related API 🚀
-              </a>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              {activeStepObj.verifier && (
+                <a href={resolveUrl(`/lab/?family=${encodeURIComponent(activeStepObj.verifier)}`)} class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.2rem 0.5rem;">
+                  Run the {activeStepObj.verifier} verifier in Protocol Lab
+                </a>
+              )}
+              {activeStepObj.ref?.operationId && (
+                <a href={resolveUrl(`/build/playground/?operation=${encodeURIComponent(activeStepObj.ref.operationId)}`)} class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.2rem 0.5rem;">
+                  Open {activeStepObj.ref.operationId} in the API Playground
+                </a>
+              )}
             </div>
           </div>
 
           {/* Right: Technical Inspector Tabs */}
           <div>
-            <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">
-              <button
-                class={`btn ${activeSidePanel === 'wire' ? 'btn-primary' : 'btn-outline'}`}
-                style="font-size: 0.8rem; min-height: 30px; padding: 0.2rem 0.6rem;"
-                onClick={() => setActiveSidePanel('wire')}
-              >
-                Wire Format
-              </button>
-              <button
-                class={`btn ${activeSidePanel === 'verifier' ? 'btn-primary' : 'btn-outline'}`}
-                style="font-size: 0.8rem; min-height: 30px; padding: 0.2rem 0.6rem;"
-                onClick={() => setActiveSidePanel('verifier')}
-              >
-                Verifier Rule
-              </button>
-              <button
-                class={`btn ${activeSidePanel === 'transcript' ? 'btn-primary' : 'btn-outline'}`}
-                style="font-size: 0.8rem; min-height: 30px; padding: 0.2rem 0.6rem;"
-                onClick={() => setActiveSidePanel('transcript')}
-              >
-                Text Transcript
-              </button>
+            <div role="group" aria-label="Step details" style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem; flex-wrap: wrap;">
+              {[['source', 'Source'], ['verifier', 'Verifier'], ['transcript', 'Text Transcript']].map(([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  aria-pressed={activeSidePanel === id ? 'true' : 'false'}
+                  class={`btn ${activeSidePanel === id ? 'btn-primary' : 'btn-outline'}`}
+                  style="font-size: 0.8rem; min-height: 30px; padding: 0.2rem 0.6rem;"
+                  onClick={() => setActiveSidePanel(id)}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
 
-            <div style="background: var(--color-bg-subtle); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 0.85rem; font-size: 0.85rem; max-height: 180px; overflow-y: auto;">
-              {activeSidePanel === 'wire' && (
+            <div aria-live="polite" style="background: var(--color-bg-subtle); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 0.85rem; font-size: 0.85rem; max-height: 180px; overflow-y: auto;">
+              {activeSidePanel === 'source' && (
                 <div>
-                  <div style="font-family: var(--font-mono); font-size: 0.8em; color: var(--color-text-primary);">
-                    // Wire payload for step {activeStepObj.step}:<br />
-                    {JSON.stringify({
-                      action: activeStepObj.label,
-                      sourceActor: activeStepObj.from,
-                      destinationActor: activeStepObj.to,
-                      enforcedBy: 'Ordex Engine v1.2'
-                    }, null, 2)}
-                  </div>
+                  {activeStepObj.ref?.operationId ? (
+                    <>
+                      <strong>Contract operation:</strong> <code>{activeStepObj.ref.method} {activeStepObj.ref.path}</code> ({activeStepObj.ref.operationId}, spec/openapi.json)
+                    </>
+                  ) : activeStepObj.ref?.channel ? (
+                    <>
+                      <strong>Event channel:</strong> <code>{activeStepObj.ref.channel}</code> (spec/asyncapi.json)
+                    </>
+                  ) : activeStepObj.ref?.path ? (
+                    <>
+                      <strong>Specification:</strong> <a style="text-decoration: underline;" href={resolveUrl(`/reference/specifications/#spec-${activeStepObj.ref.path.replace(/^spec\//, '').replace(/\.md$/, '')}`)}>{activeStepObj.ref.path}</a>, section <em>{activeStepObj.ref.heading}</em>
+                    </>
+                  ) : (
+                    <span>No source is recorded for this step.</span>
+                  )}
                 </div>
               )}
 
               {activeSidePanel === 'verifier' && (
                 <div>
-                  <strong>Enforced Verifier Check:</strong>
-                  <p style="margin: 0.25rem 0 0 0; color: var(--color-text-secondary);">
-                    Rule: {activeStepObj.safety}. Handled deterministically by verifier in browser Web Worker.
-                  </p>
+                  {activeStepObj.verifier ? (
+                    <p style="margin: 0;">
+                      The <strong>{activeStepObj.verifier}</strong> reference verifier checks this step. It runs in a Web Worker in this browser when you open it in Protocol Lab.
+                    </p>
+                  ) : (
+                    <p style="margin: 0; color: var(--color-text-secondary);">No reference verifier runs at this step; the source describes what happens.</p>
+                  )}
                 </div>
               )}
 
               {activeSidePanel === 'transcript' && (
                 <div style="display: flex; flex-direction: column; gap: 0.4rem;">
                   {steps.map((st) => (
-                    <div key={st.step} style={{ color: st.step === activeStepObj.step ? 'var(--color-brand)' : 'var(--color-text-secondary)' }}>
-                      <strong>{st.step}.</strong> {st.from} ➔ {st.to}: {st.label}
+                    <div key={st.step} style={{ color: st.step === activeStepObj.step ? 'var(--color-brand-text, var(--color-text-primary))' : 'var(--color-text-secondary)', fontWeight: st.step === activeStepObj.step ? 700 : 400 }}>
+                      <strong>{st.step}.</strong> {st.from} to {st.to}: {st.label}
                     </div>
                   ))}
                 </div>

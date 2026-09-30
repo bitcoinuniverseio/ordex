@@ -2,7 +2,9 @@
 import { GlobalSearch } from '../components/shell/GlobalSearch.jsx';
 import { ThemeToggle } from '../components/shell/ThemeToggle.jsx';
 import { OfflineStatus } from '../components/offline/OfflineStatus.jsx';
+import { SettingsMenu } from '../components/shell/SettingsMenu.tsx';
 import '../styles/design-system.css';
+import '../styles/experience-tokens.css';
 
 interface Props {
   title?: string;
@@ -61,6 +63,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 
         <div class="header-actions">
           <GlobalSearch client:load />
+          <SettingsMenu client:load />
           <ThemeToggle client:load />
         </div>
       </div>

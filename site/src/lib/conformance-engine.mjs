@@ -1,6 +1,12 @@
 // Conformance Engine
-// Shared deterministic conformance vector runner for both CLI and Browser / Conformance Studio.
-// Loads authoritative repository-owned vectors and executes corresponding reference verifiers.
+// Shared deterministic conformance vector executor for the CLI, Conformance Studio,
+// Protocol Lab, the Sandbox and the MCP dispatcher.
+//
+// OX-S07: this module is browser-safe. It imports no Node built-ins and reads no files;
+// vector files are loaded by scripts/docs/vector-loader.mjs in Node and by generated JSON
+// in the browser, and both hand complete source cases to the same functions below. The
+// verifiers' node:crypto import resolves to a pinned pure implementation in browser
+// bundles (site/src/lib/browser/node-crypto.mjs), tested byte for byte against Node.
 
 import * as purchaseVerifier from '../../../verifier/purchase.js';
 import * as offersVerifier from '../../../verifier/offers.js';
@@ -11,216 +17,263 @@ import * as eventsVerifier from '../../../verifier/events.js';
 import * as collectionManifestVerifier from '../../../verifier/collection-manifest.js';
 import * as counterpartyAssetVerifier from '../../../verifier/counterparty-asset.js';
 import * as offlineSigningVerifier from '../../../verifier/offline-signing.js';
+import { FAMILY_REGISTRY, FAMILIES, isKnownFamily, variantOf, variantArguments, resultKey, expectedFieldsOf } from './conformance-registry.mjs';
 
-export const FAMILY_CONFIG = {
-  purchase: { file: 'purchase-vectors.json', verifier: 'purchase.js' },
-  offers: { file: 'offer-vectors.json', verifier: 'offers.js' },
-  runes: { file: 'rune-burn-vectors.json', verifier: 'runes.js' },
-  safeops: { file: 'safeops-vectors.json', verifier: 'safeops.js' },
-  swaps: { file: 'swap-vectors.json', verifier: 'swaps.js' },
-  events: { file: 'event-vectors.json', verifier: 'events.js' },
-  'collection-manifest': { file: 'collection-manifest-vectors.json', verifier: 'collection-manifest.js' },
-  'counterparty-asset': { file: 'counterparty-asset-vectors.json', verifier: 'counterparty-asset.js' },
-  'offline-signing': { file: 'offline-signing-vectors.json', verifier: 'offline-signing.js' }
-};
+export { FAMILY_REGISTRY, FAMILIES, isKnownFamily, variantOf, variantArguments };
 
-export const FAMILIES = Object.keys(FAMILY_CONFIG);
+/** File and verifier names per family, kept for existing callers. */
+export const FAMILY_CONFIG = Object.freeze(
+  Object.fromEntries(FAMILIES.map((f) => [f, { file: FAMILY_REGISTRY[f].file, verifier: FAMILY_REGISTRY[f].verifier }]))
+);
+
+const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
+
+export class ConformanceError extends Error {
+  constructor(code, message) {
+    super(message);
+    this.name = 'ConformanceError';
+    this.code = code;
+  }
+}
+
+/** A generated entry nests the untouched source case under `case`; a raw source case is used as is. */
+export function sourceCaseOf(vectorCase) {
+  if (vectorCase && typeof vectorCase === 'object' && vectorCase.case && typeof vectorCase.case === 'object') {
+    return vectorCase.case;
+  }
+  return vectorCase;
+}
+
+function webhookHeader(c) {
+  const verifying = c.verifying || {};
+  if (typeof verifying.headerOverride === 'string') return verifying.headerOverride;
+  return eventsVerifier.signWebhookDelivery(c.signing);
+}
 
 /**
- * Execute a single vector case.
- * Returns: { ok: boolean, passed: boolean, expected: object, actual: object, reason?: string, durationMs: number }
+ * Call the reference verifier for one case, with the exact arguments of its variant.
+ * Returns the verifier's own result object, unmodified.
+ */
+export function invokeVerifier(family, source, variant = variantOf(family, source)) {
+  if (!isKnownFamily(family)) throw new ConformanceError('UNKNOWN_FAMILY', `Unsupported verifier family: ${family}`);
+  if (!variant || !FAMILY_REGISTRY[family].variants[variant]) {
+    throw new ConformanceError('UNKNOWN_VARIANT', `No ${family} variant matches this case.`);
+  }
+  const c = source;
+  switch (`${family}:${variant}`) {
+    case 'purchase:completion':
+      return purchaseVerifier.verifyPublicAskCompletion(c.transaction, c.order);
+    case 'offers:terms':
+      return offersVerifier.verifyOfferTerms(c.terms);
+    case 'offers:acceptance':
+      return offersVerifier.verifyOfferAcceptance(c.acceptance, c.offer);
+    case 'offers:recovery':
+      return offersVerifier.verifyOfferRecovery(c.recovery, c.offer);
+    case 'runes:allocation':
+      return runesVerifier.verifyRuneAllocation(c.outputScriptsHex, c.inputs, c.expectedAllocation, c.mint ? { mint: c.mint } : {});
+    case 'runes:burn-safety':
+      return runesVerifier.verifyRuneBurnSafety(c.outputScriptsHex, c.inputs, c.outputCount);
+    case 'safeops:signed':
+      return safeopsVerifier.verifySafeOpsSignedResult(c.signed, c.plan);
+    case 'safeops:plan':
+      return safeopsVerifier.verifySafeOpsPlan(c.plan);
+    case 'swaps:acceptance':
+      return swapsVerifier.verifySwapAcceptance(c.acceptance, c.intent);
+    case 'swaps:signed':
+      return swapsVerifier.verifySwapSignedTransaction(c.signed, c.acceptance, c.intent);
+    case 'swaps:intent':
+      return swapsVerifier.verifySwapIntent(c.intent);
+    case 'events:webhook': {
+      const { headerOverride, ...rest } = c.verifying || {};
+      return eventsVerifier.verifyWebhookSignature({ header: webhookHeader(c), ...rest });
+    }
+    case 'events:event':
+      return eventsVerifier.validateOrdexEvent(c.event);
+    case 'collection-manifest:membership':
+      return collectionManifestVerifier.verifyMembershipProof({
+        manifest: c.manifest,
+        memberIdentity: c.membership?.memberIdentity,
+        proof: c.membership?.proof
+      });
+    case 'collection-manifest:revocation':
+      return collectionManifestVerifier.verifyManifestRevocation(c.revocation, c.manifest);
+    case 'collection-manifest:manifest':
+      return collectionManifestVerifier.verifyCollectionManifest(c.manifest);
+    case 'counterparty-asset:attachment':
+      return counterpartyAssetVerifier.verifyAttachmentFollows(c.record, c.spendTx, c.expectedOutputIndex);
+    case 'counterparty-asset:ledger':
+      return counterpartyAssetVerifier.verifyCounterpartyLedgerEvents(c.expectedEvents, c.observedEvents);
+    case 'counterparty-asset:record':
+      return counterpartyAssetVerifier.verifyCounterpartyUtxoAsset(c.record);
+    case 'offline-signing:signed':
+      return offlineSigningVerifier.compareSignedResultToManifest(c.signed, c.manifest);
+    case 'offline-signing:manifest':
+      return offlineSigningVerifier.verifyExpectedTransactionManifest(c.manifest);
+    default:
+      throw new ConformanceError('UNKNOWN_VARIANT', `No executor for ${family}:${variant}.`);
+  }
+}
+
+/**
+ * Normalize a verifier result into an explicit candidate verdict. Rune results report
+ * `safe`, every other family reports `ok`; anything else is unknown, never accepted.
+ */
+export function normalizeVerdict(family, raw, variant) {
+  // A variant may report a different flag than its family (runes allocation reports ok).
+  const kind = FAMILY_REGISTRY[family]?.variants?.[variant]?.result || FAMILY_REGISTRY[family]?.result;
+  const flag = raw && typeof raw === 'object' ? raw[kind] : undefined;
+  if (flag === true) return { state: 'accepted', code: null, reason: null };
+  if (flag === false) {
+    return { state: 'refused', code: raw.code ?? null, reason: raw.reason ?? null };
+  }
+  return { state: 'unknown', code: raw?.code ?? null, reason: 'The verifier returned no verdict.' };
+}
+
+/**
+ * Compare every expected field of a vector with the verifier result. An expected field the
+ * engine does not know how to compare is a mismatch, so no expectation is silently skipped.
+ */
+export function compareExpected(family, expected, raw, variant) {
+  const spec = { result: resultKey(family, variant), expectedFields: expectedFieldsOf(family, variant) };
+  const mismatches = [];
+  if (!expected || typeof expected !== 'object') {
+    return { passed: false, mismatches: [{ field: 'expected', expected: 'object', actual: typeof expected }] };
+  }
+  if (!Object.prototype.hasOwnProperty.call(expected, spec.result)) {
+    mismatches.push({ field: spec.result, expected: 'present', actual: 'missing from vector' });
+  }
+  for (const [field, want] of Object.entries(expected)) {
+    if (!spec.expectedFields.includes(field)) {
+      mismatches.push({ field, expected: want, actual: 'field not supported by this family' });
+      continue;
+    }
+    if (field === 'flaw') {
+      const flaws = Array.isArray(raw?.flaws) ? raw.flaws : [];
+      if (!flaws.includes(want)) mismatches.push({ field, expected: want, actual: flaws });
+      continue;
+    }
+    const got = raw?.[field];
+    if (got !== want) mismatches.push({ field, expected: want, actual: got === undefined ? null : got });
+  }
+  // An accepting expectation with no code must not come back carrying a refusal code.
+  if (expected[spec.result] === true && expected.code === undefined && raw?.code !== undefined && raw?.code !== null) {
+    mismatches.push({ field: 'code', expected: null, actual: raw.code });
+  }
+  return { passed: mismatches.length === 0, mismatches };
+}
+
+function caseName(vectorCase, source) {
+  return vectorCase?.name || vectorCase?.title || source?.name || source?.title || 'unnamed';
+}
+
+/**
+ * Execute one conformance vector (a raw source case or a generated entry).
+ * `passed` means the verifier reached exactly the expected verdict, which for a refusal
+ * vector is a matched refusal, not an accepted transaction and never chain acceptance.
  */
 export function executeVector(family, vectorCase) {
-  const start = performance.now();
-  let actual = null;
-  let passed = false;
-
+  const start = now();
+  const source = sourceCaseOf(vectorCase);
+  const variant = variantOf(family, source);
+  let raw = null;
+  let error = null;
   try {
-    switch (family) {
-      case 'purchase': {
-        const res = purchaseVerifier.verifyPublicAskCompletion(vectorCase.transaction, vectorCase.order);
-        actual = { ok: res.ok, code: res.code, sharedIndex: res.sharedIndex, reason: res.reason };
-        passed = (res.ok === vectorCase.expected.ok) &&
-                 (!vectorCase.expected.code || res.code === vectorCase.expected.code) &&
-                 (vectorCase.expected.sharedIndex === undefined || res.sharedIndex === vectorCase.expected.sharedIndex);
-        break;
-      }
-      case 'offers': {
-        let res;
-        if (vectorCase.kind === 'terms') {
-          res = offersVerifier.verifyOfferTerms(vectorCase.terms);
-        } else if (vectorCase.kind === 'acceptance') {
-          res = offersVerifier.verifyOfferAcceptance(vectorCase.acceptance, vectorCase.offer);
-        } else if (vectorCase.kind === 'recovery') {
-          res = offersVerifier.verifyOfferRecovery(vectorCase.recovery, vectorCase.offer);
-        } else {
-          res = { ok: false, code: 'UNKNOWN_OFFER_CASE' };
-        }
-        actual = { ok: res.ok, code: res.code, sharedIndex: res.sharedIndex, offerTermsHash: res.offerTermsHash, reason: res.reason };
-        passed = (res.ok === vectorCase.expected.ok) &&
-                 (!vectorCase.expected.code || res.code === vectorCase.expected.code) &&
-                 (vectorCase.expected.sharedIndex === undefined || res.sharedIndex === vectorCase.expected.sharedIndex) &&
-                 (vectorCase.expected.offerTermsHash === undefined || res.offerTermsHash === vectorCase.expected.offerTermsHash);
-        break;
-      }
-      case 'runes': {
-        const res = runesVerifier.verifyRuneBurnSafety(vectorCase.outputScriptsHex, vectorCase.inputs, vectorCase.outputCount);
-        actual = { safe: res.safe, code: res.code, runestone: res.runestone, reason: res.reason };
-        passed = (res.safe === vectorCase.expected.safe) &&
-                 (!vectorCase.expected.code || res.code === vectorCase.expected.code) &&
-                 (vectorCase.expected.runestone === undefined || res.runestone === vectorCase.expected.runestone);
-        break;
-      }
-      case 'safeops': {
-        let res;
-        if (vectorCase.signed) {
-          res = safeopsVerifier.verifySafeOpsSignedResult(vectorCase.signed, vectorCase.plan);
-        } else {
-          res = safeopsVerifier.verifySafeOpsPlan(vectorCase.plan);
-        }
-        actual = { ok: res.ok, code: res.code, digest: res.digest, reason: res.reason };
-        passed = (res.ok === vectorCase.expected.ok) &&
-                 (!vectorCase.expected.code || res.code === vectorCase.expected.code);
-        break;
-      }
-      case 'swaps': {
-        let res;
-        if (vectorCase.acceptance) {
-          res = swapsVerifier.verifySwapAcceptance(vectorCase.acceptance, vectorCase.intent);
-        } else {
-          res = swapsVerifier.verifySwapIntent(vectorCase.intent);
-        }
-        actual = { ok: res.ok, code: res.code, reason: res.reason };
-        passed = (res.ok === vectorCase.expected.ok) &&
-                 (!vectorCase.expected.code || res.code === vectorCase.expected.code);
-        break;
-      }
-      case 'events': {
-        let res;
-        if (vectorCase.kind === 'webhook') {
-          const header = vectorCase.verifying.headerOverride || eventsVerifier.signWebhookDelivery(vectorCase.signing);
-          const { headerOverride, ...rest } = vectorCase.verifying;
-          res = eventsVerifier.verifyWebhookSignature({ header, ...rest });
-        } else {
-          res = eventsVerifier.validateOrdexEvent(vectorCase.event);
-        }
-        actual = { ok: res.ok, code: res.code, reason: res.reason };
-        passed = (res.ok === vectorCase.expected.ok) &&
-                 (!vectorCase.expected.code || res.code === vectorCase.expected.code);
-        break;
-      }
-      case 'collection-manifest': {
-        let res;
-        if (vectorCase.membership) {
-          res = collectionManifestVerifier.verifyMembershipProof({
-            manifest: vectorCase.manifest,
-            memberIdentity: vectorCase.membership.memberIdentity,
-            proof: vectorCase.membership.proof
-          });
-        } else if (vectorCase.revocation) {
-          res = collectionManifestVerifier.verifyManifestRevocation(vectorCase.revocation, vectorCase.manifest);
-        } else {
-          res = collectionManifestVerifier.verifyCollectionManifest(vectorCase.manifest);
-        }
-        actual = { ok: res.ok, code: res.code, reason: res.reason };
-        passed = (res.ok === vectorCase.expected.ok) &&
-                 (!vectorCase.expected.code || res.code === vectorCase.expected.code);
-        break;
-      }
-      case 'counterparty-asset': {
-        let res;
-        if (vectorCase.spendTx) {
-          res = counterpartyAssetVerifier.verifyAttachmentFollows(vectorCase.record, vectorCase.spendTx, vectorCase.expectedOutputIndex);
-        } else {
-          res = counterpartyAssetVerifier.verifyCounterpartyUtxoAsset(vectorCase.record);
-        }
-        actual = { ok: res.ok, code: res.code, carriedToIndex: res.carriedToIndex, reason: res.reason };
-        passed = (res.ok === vectorCase.expected.ok) &&
-                 (!vectorCase.expected.code || res.code === vectorCase.expected.code) &&
-                 (vectorCase.expected.carriedToIndex === undefined || res.carriedToIndex === vectorCase.expected.carriedToIndex);
-        break;
-      }
-      case 'offline-signing': {
-        let res;
-        if (vectorCase.signed) {
-          res = offlineSigningVerifier.compareSignedResultToManifest(vectorCase.signed, vectorCase.manifest);
-        } else {
-          res = offlineSigningVerifier.verifyExpectedTransactionManifest(vectorCase.manifest);
-        }
-        actual = { ok: res.ok, code: res.code, digest: res.digest, reason: res.reason };
-        passed = (res.ok === vectorCase.expected.ok) &&
-                 (!vectorCase.expected.code || res.code === vectorCase.expected.code);
-        break;
-      }
-      default:
-        throw new Error(`Unsupported verifier family: ${family}`);
-    }
+    raw = invokeVerifier(family, source, variant);
   } catch (err) {
-    actual = { ok: false, error: err.message, stack: err.stack };
-    passed = false;
+    error = { code: err?.code || 'VERIFIER_THREW', message: String(err?.message || err) };
   }
-
-  const durationMs = performance.now() - start;
+  const expected = source?.expected;
+  const verdict = error ? { state: 'unknown', code: error.code, reason: error.message } : normalizeVerdict(family, raw, variant);
+  const comparison = error
+    ? { passed: false, mismatches: [{ field: 'execution', expected: 'verdict', actual: error.message }] }
+    : compareExpected(family, expected, raw, variant);
+  const resultKind = resultKey(family, variant) || 'ok';
+  const actual = error
+    ? { [resultKind]: false, code: error.code, error: error.message }
+    : { ...raw };
   return {
-    name: vectorCase.name || vectorCase.title || 'unnamed',
+    id: vectorCase?.id || null,
+    name: caseName(vectorCase, source),
     family,
-    passed,
-    expected: vectorCase.expected,
+    variant,
+    passed: comparison.passed,
+    outcome: comparison.passed
+      ? verdict.state === 'accepted'
+        ? 'EXPECTED_ACCEPTANCE_MATCHED'
+        : 'EXPECTED_REFUSAL_MATCHED'
+      : 'MISMATCH',
+    expected,
     actual,
-    durationMs
+    verdict,
+    mismatches: comparison.mismatches,
+    durationMs: now() - start
   };
 }
 
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-const __conformanceDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../conformance');
-
-export function loadVectorFamily(family) {
-  const cfg = FAMILY_CONFIG[family];
-  if (!cfg) return [];
-  const p = path.resolve(__conformanceDir, cfg.file);
-  const data = JSON.parse(fs.readFileSync(p, 'utf8'));
-  const cases = data.cases || data.vectors || [];
-  return cases.map(c => ({ ...c, family, title: c.name || c.title || c.description }));
+/**
+ * Evaluate a candidate from Protocol Lab or the Sandbox. There is no expected verdict:
+ * the result is the verifier's own accepted/refused/unknown state plus its raw output.
+ */
+export function evaluateCandidate(family, variant, args) {
+  const start = now();
+  if (!isKnownFamily(family)) throw new ConformanceError('UNKNOWN_FAMILY', `Unsupported verifier family: ${family}`);
+  const need = variantArguments(family, variant);
+  if (!need) throw new ConformanceError('UNKNOWN_VARIANT', `Unknown ${family} variant: ${variant}`);
+  if (!args || typeof args !== 'object' || Array.isArray(args)) {
+    throw new ConformanceError('MALFORMED_INPUT', 'Candidate input must be a JSON object.');
+  }
+  const missing = need.required.filter((k) => args[k] === undefined || args[k] === null);
+  if (missing.length) {
+    throw new ConformanceError('MISSING_ARGUMENTS', `The ${variant} variant needs: ${missing.join(', ')}.`);
+  }
+  // The chosen variant pins the dispatch, independent of predicate order.
+  let raw;
+  try {
+    raw = invokeVerifier(family, args, variant);
+  } catch (err) {
+    return {
+      family,
+      variant,
+      verdict: { state: 'unknown', code: err?.code || 'VERIFIER_THREW', reason: String(err?.message || err) },
+      raw: null,
+      durationMs: now() - start
+    };
+  }
+  return { family, variant, verdict: normalizeVerdict(family, raw, variant), raw, durationMs: now() - start };
 }
 
-export { runConformanceSuite as runAllVectors };
-export function runConformanceSuite(familiesData = null, selectedFamilies = null) {
-  const start = performance.now();
-  const results = [];
-  const familiesToRun = selectedFamilies || (familiesData ? Object.keys(familiesData) : FAMILIES);
-
-  for (const family of familiesToRun) {
-    const cases = familiesData
-      ? (familiesData[family]?.cases || familiesData[family]?.vectors || [])
-      : loadVectorFamily(family);
-    for (const vectorCase of cases) {
-      const res = executeVector(family, vectorCase);
-      results.push(res);
-    }
+/**
+ * Run a suite over loaded vector data: { family: { cases: [...] } } for any selection of
+ * families. An empty or unknown selection is an error, never a success.
+ */
+export function runConformanceSuite(familiesData, selectedFamilies = null) {
+  if (!familiesData || typeof familiesData !== 'object') {
+    throw new ConformanceError('NO_VECTOR_DATA', 'No vector data was supplied. Load it with scripts/docs/vector-loader.mjs or generated data.');
   }
-
+  const start = now();
+  const families = selectedFamilies || Object.keys(familiesData);
+  for (const family of families) {
+    if (!isKnownFamily(family)) throw new ConformanceError('UNKNOWN_FAMILY', `Unsupported verifier family: ${family}`);
+  }
+  const results = [];
+  for (const family of families) {
+    const cases = familiesData[family]?.cases || familiesData[family]?.vectors || [];
+    for (const vectorCase of cases) results.push(executeVector(family, vectorCase));
+  }
   const total = results.length;
-  const passed = results.filter(r => r.passed).length;
+  const passed = results.filter((r) => r.passed).length;
   const failed = total - passed;
-  const totalDurationMs = performance.now() - start;
-
-  return {
+  const success = total > 0 && failed === 0;
+  const durationMs = now() - start;
+  const summary = {
     total,
     passed,
     failed,
-    success: failed === 0,
-    durationMs: totalDurationMs,
-    summary: {
-      total,
-      passed,
-      failed,
-      success: failed === 0,
-      durationMs: totalDurationMs,
-      timestamp: new Date().toISOString()
-    },
-    results
+    empty: total === 0,
+    success,
+    families: families.length,
+    durationMs,
+    timestamp: new Date().toISOString()
   };
+  return { total, passed, failed, success, durationMs, summary, results };
 }

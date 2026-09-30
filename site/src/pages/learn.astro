@@ -23,9 +23,9 @@ import { FeedbackWidget } from '../components/feedback/FeedbackWidget.jsx';
     </div>
 
     {/* Architectural Pillars */}
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem;">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); gap: 1.25rem;">
       <div class="panel">
-        <h3 style="margin: 0 0 0.5rem 0; font-size: 1.1rem; color: var(--color-brand);">1. Portable Public Asks</h3>
+        <h3 style="margin: 0 0 0.5rem 0; font-size: 1.1rem; color: var(--color-brand-text);">1. Portable Public Asks</h3>
         <p style="margin: 0; font-size: 0.85rem; color: var(--color-text-secondary); line-height: 1.4;">
           Sellers sign an input with <code>SIGHASH_SINGLE | ANYONECANPAY</code>, cryptographically locking their ordinal input to a specific payment output index. The ask is portable and verifiable by any gateway or marketplace.
         </p>

@@ -1,0 +1,251 @@
+// OX-S05: Event Playground transports. Connected mode reads the gateway's documented
+// streams (spec/asyncapi.json: SSE at /events/stream whose id <sequence>:<eventId> is the
+// Last-Event-ID resume position, and the WebSocket at /events/ws with a named subscribe
+// message carrying the cursor, answered by events wrapped with their own cursor). Every envelope is
+// validated with the ordex-event/v1 verifier, deduplicated by id and buffered within a
+// bound; the cursor advances only after an event was processed. Reconnects back off, and an
+// expired cursor stops the stream for an explicit resync instead of skipping events.
+
+export const MAX_BUFFER = 200;
+const SUBSCRIPTION_ID = 'playground';
+const MAX_SEEN = 5000;
+
+/** Incremental text/event-stream parser (WHATWG HTML server-sent events). */
+export function createSseParser() {
+  let buffer = '';
+  let data = [];
+  let eventType = '';
+  let id = null;
+  let retry = null;
+  return {
+    push(chunk) {
+      buffer += chunk;
+      const out = [];
+      let idx;
+      while ((idx = buffer.search(/\r\n|\r|\n/)) >= 0) {
+        const line = buffer.slice(0, idx);
+        const sepLen = buffer[idx] === '\r' && buffer[idx + 1] === '\n' ? 2 : 1;
+        buffer = buffer.slice(idx + sepLen);
+        if (line === '') {
+          if (data.length) out.push({ id, event: eventType || 'message', data: data.join('\n'), retry });
+          data = [];
+          eventType = '';
+          continue;
+        }
+        if (line.startsWith(':')) continue;
+        const colon = line.indexOf(':');
+        const field = colon < 0 ? line : line.slice(0, colon);
+        let value = colon < 0 ? '' : line.slice(colon + 1);
+        if (value.startsWith(' ')) value = value.slice(1);
+        if (field === 'data') data.push(value);
+        else if (field === 'event') eventType = value;
+        else if (field === 'id' && !value.includes('\0')) id = value;
+        else if (field === 'retry' && /^\d+$/.test(value)) retry = Number(value);
+      }
+      return out;
+    }
+  };
+}
+
+/** A fresh stream state. */
+export function createStreamState() {
+  return { events: [], seen: [], cursor: null, lastSequence: null, counts: { accepted: 0, duplicate: 0, invalid: 0, outOfOrder: 0 } };
+}
+
+/**
+ * Process one raw message: parse, validate, deduplicate, bound the buffer and advance the
+ * cursor. `validate` is the ordex-event/v1 verifier. The cursor is the transport resume
+ * position: the WebSocket frame cursor, else the SSE id (<sequence>:<eventId>), else the event
+ * id for local examples. Returns { state, outcome, detail }.
+ */
+export function ingestEvent(state, rawText, validate, transportId = null, position = null) {
+  let envelope;
+  try {
+    envelope = typeof rawText === 'string' ? JSON.parse(rawText) : rawText;
+  } catch (err) {
+    return { state: { ...state, counts: { ...state.counts, invalid: state.counts.invalid + 1 } }, outcome: 'invalid', detail: `Not JSON: ${err.message}` };
+  }
+  const verdict = validate(envelope);
+  if (!verdict.ok) {
+    return { state: { ...state, counts: { ...state.counts, invalid: state.counts.invalid + 1 } }, outcome: 'invalid', detail: `${verdict.code}: ${verdict.reason || ''}` };
+  }
+  if (transportId !== null && transportId !== `${envelope.sequence}:${envelope.id}`) {
+    return { state: { ...state, counts: { ...state.counts, invalid: state.counts.invalid + 1 } }, outcome: 'invalid', detail: 'The SSE id is not <sequence>:<eventId> of the envelope it carries.' };
+  }
+  if (state.seen.includes(envelope.id)) {
+    return { state: { ...state, counts: { ...state.counts, duplicate: state.counts.duplicate + 1 } }, outcome: 'duplicate', detail: envelope.id };
+  }
+  const outOfOrder = state.lastSequence !== null && typeof envelope.sequence === 'number' && envelope.sequence <= state.lastSequence;
+  const events = [{ ...envelope, _outOfOrder: outOfOrder }, ...state.events].slice(0, MAX_BUFFER);
+  const seen = [...state.seen, envelope.id].slice(-MAX_SEEN);
+  return {
+    state: {
+      events,
+      seen,
+      cursor: position ?? transportId ?? envelope.id,
+      lastSequence: typeof envelope.sequence === 'number' && !outOfOrder ? envelope.sequence : state.lastSequence,
+      counts: { ...state.counts, accepted: state.counts.accepted + 1, outOfOrder: state.counts.outOfOrder + (outOfOrder ? 1 : 0) }
+    },
+    outcome: outOfOrder ? 'out-of-order' : 'accepted',
+    detail: envelope.id
+  };
+}
+
+const wait = (ms, signal) =>
+  new Promise((resolve) => {
+    const t = setTimeout(resolve, ms);
+    signal?.addEventListener?.('abort', () => {
+      clearTimeout(t);
+      resolve();
+    }, { once: true });
+  });
+
+export function backoffDelay(attempt, initialMs = 1000, maxMs = 30000) {
+  return Math.min(maxMs, initialMs * 2 ** Math.max(0, attempt));
+}
+
+/**
+ * Consume the SSE stream until `signal` aborts. `onMessage(message)` must resolve true once
+ * the message is processed; only then is its id used as the resume cursor.
+ */
+export async function runSse({ url, lastEventId = null, fetchImpl = fetch, onMessage, onStatus = () => {}, signal, initialBackoffMs = 1000, maxBackoffMs = 30000 }) {
+  let cursor = lastEventId;
+  let attempt = 0;
+  while (!signal?.aborted) {
+    onStatus({ state: attempt === 0 ? 'connecting' : 'reconnecting', attempt, cursor });
+    try {
+      const response = await fetchImpl(url, {
+        headers: { accept: 'text/event-stream', ...(cursor ? { 'last-event-id': cursor } : {}) },
+        signal,
+        credentials: 'omit',
+        cache: 'no-store'
+      });
+      if (response.status === 410) {
+        onStatus({ state: 'cursor-expired', cursor });
+        return { stopped: 'cursor-expired', cursor };
+      }
+      if (!response.ok || !response.body) throw new Error(`HTTP ${response.status}`);
+      const type = (response.headers.get('content-type') || '').split(';')[0].trim();
+      if (type !== 'text/event-stream') throw new Error(`Expected text/event-stream, got ${type || 'no content type'}`);
+      onStatus({ state: 'open', cursor });
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      const parser = createSseParser();
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        for (const msg of parser.push(decoder.decode(value, { stream: true }))) {
+          const processed = await onMessage(msg);
+          if (processed && msg.id) {
+            cursor = msg.id;
+            attempt = 0;
+          }
+        }
+      }
+      throw new Error('The stream ended');
+    } catch (err) {
+      if (signal?.aborted) break;
+      const delay = backoffDelay(attempt, initialBackoffMs, maxBackoffMs);
+      onStatus({ state: 'waiting', attempt: attempt + 1, delayMs: delay, error: String(err?.message || err), cursor });
+      attempt += 1;
+      await wait(delay, signal);
+    }
+  }
+  onStatus({ state: 'closed', cursor });
+  return { stopped: 'aborted', cursor };
+}
+
+/**
+ * Consume the WebSocket stream until `signal` aborts: subscribe with filters and the cursor,
+ * advance the cursor after processing, reconnect with backoff.
+ */
+export function runWebSocket({ url, cursor = null, filters = {}, WebSocketImpl = globalThis.WebSocket, onMessage, onStatus = () => {}, signal, initialBackoffMs = 1000, maxBackoffMs = 30000 }) {
+  return new Promise((resolve) => {
+    let attempt = 0;
+    let socket = null;
+    let current = cursor;
+    let timer = null;
+    let done = false;
+    let expired = false;
+    const finish = (stopped) => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      onStatus({ state: 'closed', cursor: current });
+      resolve({ stopped, cursor: current });
+    };
+    const open = () => {
+      if (signal?.aborted) return finish('aborted');
+      onStatus({ state: attempt === 0 ? 'connecting' : 'reconnecting', attempt, cursor: current });
+      try {
+        socket = new WebSocketImpl(url);
+      } catch (err) {
+        return retry(String(err?.message || err));
+      }
+      socket.onopen = () => {
+        onStatus({ state: 'open', cursor: current });
+        socket.send(JSON.stringify({ op: 'subscribe', id: SUBSCRIPTION_ID, filters, ...(current ? { cursor: current } : {}) }));
+      };
+      socket.onmessage = async (event) => {
+        let frame;
+        try {
+          frame = JSON.parse(typeof event.data === 'string' ? event.data : '');
+        } catch {
+          frame = null;
+        }
+        if (frame?.op === 'event' && frame.id === SUBSCRIPTION_ID) {
+          // Every event arrives wrapped with its subscription cursor; the cursor moves only after it is processed.
+          const processed = await onMessage({ id: null, cursor: typeof frame.cursor === 'string' ? frame.cursor : null, event: 'message', data: JSON.stringify(frame.event ?? null) });
+          if (processed && typeof frame.cursor === 'string') {
+            current = frame.cursor;
+            attempt = 0;
+          }
+        } else if (frame?.op === 'disconnect' && typeof frame.cursors?.[SUBSCRIPTION_ID] === 'string') {
+          current = frame.cursors[SUBSCRIPTION_ID];
+        } else if (frame?.op === 'error' && frame.code === 'CURSOR_EXPIRED') {
+          expired = true;
+          try {
+            socket.close(1000, 'cursor-expired');
+          } catch {
+            // already closed
+          }
+        }
+      };
+      socket.onclose = (event) => {
+        if (signal?.aborted) return finish('aborted');
+        if (expired || event?.reason === 'cursor-expired') {
+          onStatus({ state: 'cursor-expired', cursor: current });
+          return finish('cursor-expired');
+        }
+        retry(`closed ${event?.code ?? ''}`);
+      };
+      socket.onerror = () => {
+        // onclose follows and schedules the retry
+      };
+    };
+    const retry = (error) => {
+      const delay = backoffDelay(attempt, initialBackoffMs, maxBackoffMs);
+      onStatus({ state: 'waiting', attempt: attempt + 1, delayMs: delay, error, cursor: current });
+      attempt += 1;
+      timer = setTimeout(open, delay);
+    };
+    signal?.addEventListener?.('abort', () => {
+      clearTimeout(timer);
+      try {
+        socket?.close(1000, 'client closed');
+      } catch {
+        // already closed
+      }
+      finish('aborted');
+    }, { once: true });
+    open();
+  });
+}
+
+/** Stream URLs under a gateway origin, per spec/asyncapi.json. */
+export function streamUrls(origin, filters = {}) {
+  const qs = new URLSearchParams(Object.entries(filters).filter(([, v]) => v)).toString();
+  const base = `${origin}/api/ordex/events`;
+  const ws = `${origin.replace(/^http/, 'ws')}/api/ordex/events/ws`;
+  return { sse: `${base}/stream${qs ? `?${qs}` : ''}`, ws };
+}

@@ -1,163 +1,81 @@
 /**
- * Ordex Accessible Product Tour Engine
- * 
- * Lightweight, accessible in-product walkthrough engine targeting real DOM elements.
- * Supports keyboard navigation, screen reader announcements, pause/resume, and static capture fallback.
+ * Ordex guided tours (OX-S10).
+ *
+ * One manifest (tours.json) drives the live tour overlay, the tour page and the screenshot
+ * capture script. Every step names the page it runs on and a `data-tour` target on that page;
+ * the overlay highlights the real element there. Screenshots, when present, come from
+ * scripts/capture-walkthroughs.mjs driving the built site in a browser (tourCaptures.json);
+ * nothing is drawn or simulated.
  */
+
+import toursData from './tours.json';
+import capturesData from '../../data/tourCaptures.json';
 
 export interface TourStep {
   id: string;
-  targetSelector: string;
+  route: string;
+  target: string;
   title: string;
   content: string;
-  placement: 'top' | 'bottom' | 'left' | 'right';
-  badge?: string;
+  /** Shown while the target is not on the page yet (it appears after an interaction). */
+  hint?: string;
 }
 
 export interface TourDefinition {
   id: string;
   title: string;
   summary: string;
-  relatedMissionId?: string;
+  relatedMissionId: string | null;
   steps: TourStep[];
-  captures: {
-    desktopLight: string;
-    desktopDark: string;
-    mobileLight: string;
-  };
 }
 
-export const PRODUCT_TOURS: TourDefinition[] = [
-  {
-    id: 'tour-overview',
-    title: 'Ordex Overview & Trust Boundaries',
-    summary: 'Discover the task-first workspace, local Web Worker verifiers, and non-custodial boundaries.',
-    steps: [
-      {
-        id: 'step-brand',
-        targetSelector: '.ox-brand',
-        title: 'Ordex Protocol Workspace',
-        content: 'Ordex provides portable orderbooks and deterministic settlement for Bitcoin digital artifacts.',
-        placement: 'bottom',
-        badge: 'Foundation'
-      },
-      {
-        id: 'step-disclosure',
-        targetSelector: '.ox-disclosure-toggle',
-        title: 'Progressive Disclosure Modes',
-        content: 'Switch between Plain English (outcomes), Builder (API fields), and Protocol Proof (exact byte invariants).',
-        placement: 'bottom',
-        badge: 'Modes'
-      },
-      {
-        id: 'step-command',
-        targetSelector: '.ox-command-trigger',
-        title: 'Command Center',
-        content: 'Press Cmd+K to jump to any mission, API endpoint, scenario, or refusal code instantly.',
-        placement: 'bottom',
-        badge: 'Shortcut'
-      },
-      {
-        id: 'step-rail',
-        targetSelector: '.ox-context-rail',
-        title: 'Context Lens Rail',
-        content: 'The right rail continuously follows your active task, offering glossary definitions and verifier checks.',
-        placement: 'left',
-        badge: 'Context'
-      }
-    ],
-    captures: {
-      desktopLight: 'assets/tours/overview-desktop-light.png',
-      desktopDark: 'assets/tours/overview-desktop-dark.png',
-      mobileLight: 'assets/tours/overview-mobile-light.png'
-    }
-  },
-  {
-    id: 'tour-public-asks',
-    title: 'Publish & Settle Public Asks',
-    summary: 'Walk through how a seller lists an inscription and a buyer funds the purchase without custodian escrow.',
-    relatedMissionId: 'integrate-public-asks',
-    steps: [
-      {
-        id: 'step-mission-stage',
-        targetSelector: 'nav[aria-label="Mission Stages"]',
-        title: 'Standard 8-Stage Model',
-        content: 'Missions guide you through Understand, Prepare, Simulate, Inspect, Verify, Integrate, Validate, Finish.',
-        placement: 'bottom'
-      },
-      {
-        id: 'step-target-tool',
-        targetSelector: '.ox-app-shell',
-        title: 'Integrated Tool Adapters',
-        content: 'Structured parameters transfer between Wizards, Protocol Lab, and Sandbox without copy-pasting.',
-        placement: 'top'
-      }
-    ],
-    captures: {
-      desktopLight: 'assets/tours/public-asks-desktop-light.png',
-      desktopDark: 'assets/tours/public-asks-desktop-dark.png',
-      mobileLight: 'assets/tours/public-asks-mobile-light.png'
-    }
-  },
-  {
-    id: 'tour-wallet-mutations',
-    title: 'Inspect Wallet Mutations in Artifact Lens',
-    summary: 'Detect output reordering, dropped proprietary keys, and sighash downgrades before signing.',
-    steps: [
-      {
-        id: 'step-inspect-tabs',
-        targetSelector: 'div[role="tablist"]',
-        title: 'Synchronized Inspection Views',
-        content: 'Explore Summary, Structure AST, Synchronized Bytes, and Mutation Lab comparison.',
-        placement: 'bottom'
-      }
-    ],
-    captures: {
-      desktopLight: 'assets/tours/wallet-mutations-desktop-light.png',
-      desktopDark: 'assets/tours/wallet-mutations-desktop-dark.png',
-      mobileLight: 'assets/tours/wallet-mutations-mobile-light.png'
-    }
-  },
-  {
-    id: 'tour-failure-diagnose',
-    title: 'Diagnose Protocol Failures',
-    summary: 'Map refusal codes to violated invariants and generate minimal deterministic reproducers.',
-    steps: [
-      {
-        id: 'step-diag-input',
-        targetSelector: 'input[placeholder*="Enter refusal code"]',
-        title: 'Automated Input Detection',
-        content: 'Paste refusal codes, verifier envelopes, or HTTP error responses for deterministic triage.',
-        placement: 'bottom'
-      }
-    ],
-    captures: {
-      desktopLight: 'assets/tours/diagnose-desktop-light.png',
-      desktopDark: 'assets/tours/diagnose-desktop-dark.png',
-      mobileLight: 'assets/tours/diagnose-mobile-light.png'
-    }
-  },
-  {
-    id: 'tour-agent-bridge',
-    title: 'Connect AI Coding Agents (MCP)',
-    summary: 'Configure Claude Code, Cursor, or Codex over local stdio or modern Streamable HTTP.',
-    steps: [
-      {
-        id: 'step-mcp-explorer',
-        targetSelector: '.ox-app-shell',
-        title: 'MCP 2026-07-28 Tool Explorer',
-        content: 'Inspect all 10 read-only tools and test live in-browser execution.',
-        placement: 'top'
-      }
-    ],
-    captures: {
-      desktopLight: 'assets/tours/agent-bridge-desktop-light.png',
-      desktopDark: 'assets/tours/agent-bridge-desktop-dark.png',
-      mobileLight: 'assets/tours/agent-bridge-mobile-light.png'
-    }
-  }
-];
+export interface TourCapture {
+  variant: 'desktop-light' | 'desktop-dark' | 'mobile-light';
+  file: string;
+  sha256: string;
+  width: number;
+  height: number;
+  hotspot: { x: number; y: number; width: number; height: number };
+}
 
-export function getTourById(id: string): TourDefinition | undefined {
-  return PRODUCT_TOURS.find(t => t.id === id);
+export const PRODUCT_TOURS: TourDefinition[] = toursData as TourDefinition[];
+
+const captures = capturesData as { schema: string; revision: string | null; capturedAt: string | null; captures: Record<string, TourCapture[]> };
+export const CAPTURE_REVISION = captures.revision;
+
+export function getTourById(id: string | null | undefined): TourDefinition | undefined {
+  return PRODUCT_TOURS.find((t) => t.id === id);
+}
+
+/** Screenshots captured from the real site for one step, possibly none. */
+export function capturesFor(tourId: string, stepId: string): TourCapture[] {
+  return captures.captures[`${tourId}/${stepId}`] || [];
+}
+
+/** The URL of a step: its page, with the tour and step in the query. */
+export function stepHref(basePath: string, tour: TourDefinition, index: number): string {
+  const step = tour.steps[index];
+  const url = new URL(step.route, 'https://ordex.invalid');
+  url.searchParams.set('tour', tour.id);
+  url.searchParams.set('step', String(index + 1));
+  return `${basePath}${url.pathname}${url.search}`;
+}
+
+/** The active tour from a query string, when the step exists. */
+export function tourFromSearch(search: string): { tour: TourDefinition; index: number } | null {
+  const params = new URLSearchParams(search);
+  const tour = getTourById(params.get('tour'));
+  const n = Number(params.get('step'));
+  if (!tour || !Number.isInteger(n) || n < 1 || n > tour.steps.length) return null;
+  return { tour, index: n - 1 };
+}
+
+/** True when the current location is the page a step runs on (path and its own query). */
+export function onStepPage(step: TourStep, basePath: string, location: { pathname: string; search: string }): boolean {
+  const want = new URL(step.route, 'https://ordex.invalid');
+  const path = location.pathname.startsWith(basePath) ? location.pathname.slice(basePath.length) || '/' : location.pathname;
+  const norm = (p: string) => (p.endsWith('/') ? p : `${p}/`);
+  if (norm(path) !== norm(want.pathname)) return false;
+  const have = new URLSearchParams(location.search);
+  return [...want.searchParams.entries()].every(([k, v]) => have.get(k) === v);
 }

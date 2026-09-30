@@ -167,26 +167,52 @@ export function eventSortKey(event: OrdexEventSortFields): string {
   return `${event.network}:${String(event.sequence).padStart(20, '0')}:${event.id}`;
 }
 
+/** At most this many secrets sign one delivery: the current one and those inside their rotation overlap. */
+export const WEBHOOK_MAX_SIGNING_SECRETS = 4;
+
+/**
+ * The key material of a signing call: exactly one of `secret` or `secrets`
+ * (current first, while a rotation overlap lasts).
+ */
 export interface WebhookSigningInput {
-  secret: string;
+  secret?: string;
+  secrets?: readonly string[];
   timestamp: number;
   deliveryId: string;
   body: string;
 }
+
+function secretList(secret: unknown, secrets: unknown): string[] | null {
+  if ((secret === undefined) === (secrets === undefined)) return null;
+  const list = secrets === undefined ? [secret] : secrets;
+  if (!Array.isArray(list) || list.length === 0 || list.length > WEBHOOK_MAX_SIGNING_SECRETS) return null;
+  if (!list.every((s) => typeof s === 'string' && s.length > 0) || new Set(list).size !== list.length) return null;
+  return list as string[];
+}
+
+const deliveryMac = (secret: string, timestamp: number, deliveryId: string, bodyDigest: string): string =>
+  createHmac('sha256', secret).update(`${timestamp}.${deliveryId}.${bodyDigest}`, 'utf8').digest('hex');
 
 /**
  * Sign a webhook delivery.
  *
  * The signed payload binds the unix timestamp, the delivery id, and the
  * SHA-256 digest of the exact body that will be sent:
- *   `${timestamp}.${deliveryId}.${sha256(body)}`
- * signed with HMAC-SHA256 under the subscription secret.
  *
- * Returns the exact value for the X-Ordex-Signature header.
+ *   `${timestamp}.${deliveryId}.${sha256(body)}`
+ *
+ * signed with HMAC-SHA256 under the subscription secret, one v1 per secret.
+ * The secret is the value the gateway returned once at creation or rotation
+ * (`whsec_...`); a stored hash of it is not a key. This is a pure utility
+ * over a key the caller holds. Returns the X-Ordex-Signature header value.
  */
-export function signWebhookDelivery({ secret, timestamp, deliveryId, body }: WebhookSigningInput): string {
-  if (typeof secret !== 'string' || secret.length === 0) {
-    throw new TypeError('secret must be a nonempty string');
+// OX-P11: the delivery key must stay usable for every future delivery, so the
+// contract stores it encrypted and recoverable, never as a hash; this signer
+// only ever takes the key itself, and signs with each overlapping key.
+export function signWebhookDelivery({ secret, secrets, timestamp, deliveryId, body }: WebhookSigningInput): string {
+  const keys = secretList(secret, secrets);
+  if (!keys) {
+    throw new TypeError(`pass secret, or secrets as 1 to ${WEBHOOK_MAX_SIGNING_SECRETS} distinct nonempty strings`);
   }
   if (!Number.isInteger(timestamp)) {
     throw new TypeError('timestamp must be unix seconds as an integer');
@@ -198,13 +224,14 @@ export function signWebhookDelivery({ secret, timestamp, deliveryId, body }: Web
     throw new TypeError('body must be the exact string that will be sent');
   }
   const bodyDigest = createHash('sha256').update(body, 'utf8').digest('hex');
-  const mac = createHmac('sha256', secret).update(`${timestamp}.${deliveryId}.${bodyDigest}`, 'utf8').digest('hex');
-  return `t=${timestamp},d=${deliveryId},v1=${mac}`;
+  return [`t=${timestamp}`, `d=${deliveryId}`, ...keys.map((key) => `v1=${deliveryMac(key, timestamp, deliveryId, bodyDigest)}`)].join(',');
 }
 
 export interface WebhookVerificationInput {
   header?: unknown;
+  /** The receiver's secret; or pass `secrets` while holding both sides of a rotation. */
   secret?: unknown;
+  secrets?: unknown;
   body?: unknown;
   nowSeconds?: unknown;
   toleranceSeconds?: unknown;
@@ -236,17 +263,15 @@ const equalConstantTime = (a: string, b: string): boolean => {
 };
 
 /**
- * Verify a webhook delivery signature.
- *
- * Accepts the header value produced by signWebhookDelivery and the exact
- * body that was received. Returns { ok: true } or
- * { ok: false, code, reason }. The timestamp tolerance guards against
- * replay; the digest binds the body so a replayed signature over a changed
- * body fails.
+ * Verify a webhook delivery signature against the exact body received. The
+ * delivery verifies when any v1 in the header matches any secret given.
+ * Returns { ok: true } or { ok: false, code, reason }. The timestamp
+ * tolerance guards against replay; the digest binds the body.
  */
 export function verifyWebhookSignature({
   header,
   secret,
+  secrets,
   body,
   nowSeconds,
   toleranceSeconds = 300,
@@ -254,28 +279,32 @@ export function verifyWebhookSignature({
   if (typeof header !== 'string' || header.length === 0) {
     return refuseWebhook('HEADER_MISSING', 'Expected an X-Ordex-Signature header value.');
   }
-  if (typeof secret !== 'string' || secret.length === 0) {
-    return refuseWebhook('SECRET_INVALID', 'The subscription secret must be a nonempty string.');
+  const keys = secretList(secret, secrets);
+  if (!keys) {
+    return refuseWebhook('SECRET_INVALID', `Pass the subscription secret, or 1 to ${WEBHOOK_MAX_SIGNING_SECRETS} distinct secrets during a rotation.`);
   }
   if (typeof body !== 'string') {
     return refuseWebhook('BODY_INVALID', 'The body must be the exact string that was received.');
   }
-  const parts = new Map<string, string>();
+  const fields: Record<'t' | 'd' | 'v1', string[]> = { t: [], d: [], v1: [] };
   for (const piece of header.split(',')) {
     const eq = piece.indexOf('=');
     if (eq <= 0) return refuseWebhook('HEADER_MALFORMED', 'The header must look like t=<unix>,d=<id>,v1=<hex>.');
-    parts.set(piece.slice(0, eq).trim(), piece.slice(eq + 1).trim());
+    const key = piece.slice(0, eq).trim();
+    if (key === 't' || key === 'd' || key === 'v1') fields[key].push(piece.slice(eq + 1).trim());
   }
-  const timestamp = Number(parts.get('t'));
-  const deliveryId = parts.get('d');
-  const signature = parts.get('v1');
+  const timestamp = Number(fields.t[0]);
+  const deliveryId = fields.d[0];
   if (
+    fields.t.length !== 1 ||
+    fields.d.length !== 1 ||
     !Number.isInteger(timestamp) ||
     !deliveryId ||
-    typeof signature !== 'string' ||
-    !/^[0-9a-f]{64}$/.test(signature)
+    fields.v1.length === 0 ||
+    fields.v1.length > WEBHOOK_MAX_SIGNING_SECRETS ||
+    !fields.v1.every((signature) => /^[0-9a-f]{64}$/.test(signature))
   ) {
-    return refuseWebhook('HEADER_MALFORMED', 'The header must carry t, d, and a 64 hex v1 signature.');
+    return refuseWebhook('HEADER_MALFORMED', 'The header must carry one t, one d, and one to four 64 hex v1 signatures.');
   }
   const now = Number.isInteger(nowSeconds) ? (nowSeconds as number) : Math.floor(Date.now() / 1000);
   const skew = typeof toleranceSeconds === 'number' && toleranceSeconds >= 0 ? toleranceSeconds : 300;
@@ -283,8 +312,14 @@ export function verifyWebhookSignature({
     return refuseWebhook('TIMESTAMP_OUT_OF_TOLERANCE', 'The delivery timestamp is outside the allowed clock skew.');
   }
   const bodyDigest = createHash('sha256').update(body, 'utf8').digest('hex');
-  const expected = createHmac('sha256', secret).update(`${timestamp}.${deliveryId}.${bodyDigest}`, 'utf8').digest('hex');
-  if (!equalConstantTime(expected, signature)) {
+  let matched = false;
+  for (const key of keys) {
+    const expected = deliveryMac(key, timestamp, deliveryId, bodyDigest);
+    for (const signature of fields.v1) {
+      if (equalConstantTime(expected, signature)) matched = true;
+    }
+  }
+  if (!matched) {
     return refuseWebhook('SIGNATURE_INVALID', 'The signature does not match this secret, delivery id, and body.');
   }
   return { ok: true };

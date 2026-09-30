@@ -24,15 +24,23 @@ they may sign and what every verifier can recheck for itself.
 
 | Kind | Scope | An eligible Feline is one that |
 | --- | --- | --- |
-| `ITEM` | one exact inscription | has exactly the named inscription ID. |
-| `COLLECTION` | a whole collection | is included in the manifest the named collection root commits to. |
-| `TRAIT` | one trait value | is included in that root and carries exactly the named trait name and value. |
+| `ITEM` | one exact inscription | has exactly the named inscription ID and is a member of the named collection root. |
+| `COLLECTION` | a whole collection | is a member of the collection the named root commits to. |
+| `TRAIT` | one trait value | is a member of that root and one of the members the buyer accepted as carrying exactly the named trait name and value. |
 
-A collection or trait offer binds to one confirmed collection root. The root is
-part of the terms, so acceptance is provable against a fixed manifest instead
-of against "whatever the collection is this week". When the collection
-publishes a new root, existing offers keep binding the root they were posted
-with, and a buyer who wants the new root posts new offers.
+Every offer binds to one confirmed collection root. The root is part of the
+terms, so acceptance is provable against a fixed member set instead of against
+"whatever the collection is this week". When the collection publishes a new
+root, existing offers keep binding the root they were posted with, and a buyer
+who wants the new root posts new offers. Offers bind collections whose member
+identity is the inscription ID.
+
+<!-- OX-P05: P-R14 (buyer script placement passed for delivery), P-R15 (missing
+locktime passed) and P-R16 (timestamp expiry passed) are closed by proving
+delivery from the Feline satpoint and every leaf, tree, locktime and signature
+from the transaction bytes. Buyer padding was removed: the buyer signs nothing
+at acceptance, so no acceptance can depend on a buyer signature that was never
+given. -->
 
 ## Offer terms
 
@@ -45,21 +53,37 @@ The terms are an object with schema `ordex.offer-terms/v1`:
 | `network` | string | always | `mainnet`, `testnet`, `signet`, or `regtest`. |
 | `offerKind` | string | always | `ITEM`, `COLLECTION`, or `TRAIT`. |
 | `collectionId` | string | always | The collection the scope names. |
-| `collectionRoot` | string | always | Lowercase hex SHA-256 collection Merkle root the scope binds to. |
+| `collectionRoot` | string | always | Lowercase hex membership root of that collection (the manifest `membershipRoot`). |
 | `itemInscriptionId` | string | `ITEM` only | The exact inscription the offer buys. |
 | `traitName` | string | `TRAIT` only | The exact trait name. |
 | `traitValue` | string | `TRAIT` only | The exact trait value. |
-| `criteriaHash` | string | always | SHA-256 over the exact serialized scope criteria the buyer accepted, so a verifier can recheck scope membership without trusting a description of it. |
-| `buyerReceiveScript` | string | always | Lowercase hex script the bought Feline must land in. |
+| `criteriaHash` | string | always | Lowercase hex commitment to the scope the buyer accepted; see below. |
+| `buyerReceiveScriptHex` | string | always | Lowercase hex of a spendable script (not `OP_RETURN`). The Feline, buyer change, and a recovery all pay it. |
 | `priceSats` | string | always | Exact price paid to the seller, atomic sats as a decimal string. |
 | `maxNetworkFeeSats` | string | always | The largest fee an acceptance may pay, decimal string. |
-| `expiryHeight` | integer | always | Block height after which acceptance is refused and recovery is allowed. |
-| `buyerRecoveryKey` | string | always | Lowercase hex x-only key that can recover the funded output alone after `expiryHeight`. |
+| `expiryHeight` | integer | always | Block height from which acceptance is refused and recovery can confirm; see below. |
+| `buyerRecoveryKeyHex` | string | always | Lowercase hex x-only public key, a valid curve point, that can recover the funded output alone after expiry. |
 
 Every amount is an atomic integer carried as a decimal string. Floating point
-never appears. `expiryHeight` is a non-negative safe integer below
-2^31, because a locktime that a node cannot parse is a locktime that means
-nothing.
+never appears. `expiryHeight` is a safe integer from 0 to 499999999: it is the
+argument of a height-domain `CHECKLOCKTIMEVERIFY`, and a locktime of 500000000
+or more is a timestamp, which a height can never satisfy.
+
+`criteriaHash` is recomputed wherever the terms alone determine it:
+
+- `ITEM` and `COLLECTION`: SHA-256 over the sorted-key JSON of
+  `{ domain: "ordex.offer-criteria/v1", offerKind, collectionId, collectionRoot, itemInscriptionId }`
+  (`itemInscriptionId` for `ITEM` only). Terms carrying any other value are
+  refused.
+- `TRAIT`: the collection root does not commit to trait values, so the buyer
+  commits to the eligible members themselves. `criteriaHash` is the Merkle root
+  over leaves SHA-256 of sorted-key JSON
+  `{ domain: "ordex.offer-trait-member/v1", collectionId, collectionRoot, traitName, traitValue, memberIdentity }`,
+  with interior nodes SHA-256 of `{ domain: "ordex.offer-trait-node/v1", left, right }`,
+  children in ascending order, leaves sorted, and a lone node promoted, exactly
+  as the collection membership tree is built. The buyer's wallet computes it
+  from the member list it showed the buyer (`offerCriteriaHash`), and every
+  acceptance proves its Feline against it (`buildTraitMemberProof`).
 
 The `offerTermsHash` is SHA-256 over the terms serialized as UTF-8 JSON with
 object keys sorted recursively and no insignificant whitespace. Two parties
@@ -69,9 +93,12 @@ they cannot rederive.
 
 ## The funded offer output
 
-A posted offer is one Taproot output the buyer funded and signed. Its address
-commits to exactly two script leaves, so the output cannot be spent in a way
-its address does not describe.
+A posted offer is one Taproot output the buyer funded and signed. Its internal
+key is BIP341's unspendable point
+`H = 50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0`, so no
+key path exists, and its tree is exactly two leaves at depth one, so the output
+cannot be spent in a way its address does not describe. `offerOutputTree`
+returns every byte below from the terms and the two policy keys.
 
 ### Acceptance leaf
 
@@ -82,13 +109,12 @@ its address does not describe.
 OP_2 OP_EQUAL
 ```
 
+In bytes: `20 <offerTermsHash> 75 20 <policyKeyA> ac 20 <policyKeyB> ba 52 87`.
 Both policy signatures are required. `CHECKSIGADD` accumulates, so the leaf
-evaluates to true only when each independent key signed this exact script, and
-the script embeds the terms hash, so the leaf itself, the tree, the Merkle
-root, the tweak, and the output address all change if one term changes. No
-single policy key can spend the output. The two signatures commit to the
-acceptance transaction through the tapscript sighash, so a signer approves one
-transaction, not a policy.
+evaluates to true only when each independent key signed, and the witness is
+`<sigB> <sigA> <leaf> <control block>`. The leaf embeds the terms hash, so the
+leaf, the tree, the tweak, and the address all change if one term changes. No
+single policy key can spend the output.
 
 ### Recovery leaf
 
@@ -97,115 +123,138 @@ transaction, not a policy.
 <buyerRecoveryKey> OP_CHECKSIG
 ```
 
-After the expiry height has been reached, the buyer signs this leaf alone and
-takes the whole output back. Before expiry the leaf is unusable, which is what
-makes the commitment real for the seller during the window they can accept.
+In bytes: `<minimal push of expiryHeight> b1 75 20 <buyerRecoveryKey> ac`. The
+height is pushed as the minimal script number: `00` for 0, `51` to `60` for 1
+to 16, otherwise its little-endian bytes with a sign byte when the top bit is
+set (120000 is `03c0d401`, 499999999 is `04ff64cd1d`). The witness is
+`<signature> <leaf> <control block>`.
+
+The control block of each leaf is `c0` or `c1` (the output key parity), then
+`H`, then the hash of the other leaf. A verifier rebuilds the leaves, the tree
+and the output key and requires the funded output script, each revealed leaf
+and each control block to equal them byte for byte. A script that merely
+contains a key or an opcode byte somewhere is not a leaf.
 
 ### The policy signers
 
-The two policy keys belong to two independent signer services. Each service
-verifies the acceptance policy on its own evidence, keeps its own keys and
-credential store, and appends its own audit record before answering. The
-protocol constrains what they may sign; the deployment must make them
-independent, because two services sharing a credential are one service.
+The two policy keys are distinct valid x-only keys, neither of them the buyer
+recovery key nor `H`. They belong to two independent signer services. Each
+service keeps its own key and credential store, verifies the acceptance on its
+own evidence, and appends its own audit record before answering. The protocol
+constrains what they may sign; the deployment must make them independent,
+because two services sharing a credential are one service.
 
-A policy signer answers a signature request only when it independently
-proves, from its own authorities:
+The signing contract: a policy signer receives the acceptance (unsigned or
+partly signed) and signs exactly one message, the BIP341 script path
+signature hash of the funded input under the acceptance leaf with
+`SIGHASH_DEFAULT`, which `offerPolicySighash` returns after every acceptance
+rule below except signatures has passed. It signs only when it also proves,
+from its own authorities:
 
-- the offer output is currently unspent;
-- the offer output's committed terms hash equals the hash of the exact offer
-  terms presented for acceptance;
-- the offered Feline is currently owned by the accepting seller, and its
-  current outpoint is the input the acceptance names;
-- the Feline belongs to the confirmed collection root in the terms;
-- for an `ITEM` offer, the Feline is exactly the named inscription; for a
-  `TRAIT` offer, the root, the exact trait name, and the exact trait value all
-  match, with an inclusion proof;
-- the acceptance pays the buyer's receive script the exact Feline, and pays
-  the seller exactly `priceSats`;
-- no output takes any other asset from the seller's input, and no output
-  exists that the terms do not describe except buyer change;
-- the fee is at or below `maxNetworkFeeSats`;
+- the funded output is currently unspent and is the output the terms, the two
+  policy keys and `H` produce;
+- the offered Feline is currently at the outpoint the acceptance names, owned
+  by the accepting seller, and the inventory of every input is what the ord,
+  runes and Counterparty authorities report;
+- the Feline belongs to the collection root, and for `TRAIT`, to the committed
+  trait set;
 - the current height is below `expiryHeight`;
 - the node would accept the transaction.
 
 A signer that cannot prove every line refuses, and a refusal is an answer, not
-an error to retry into submission.
+an error to retry into submission. A policy signature with any hash type other
+than `SIGHASH_DEFAULT` or `SIGHASH_ALL` is refused, because it would leave part
+of the transaction open to change.
 
 ## Acceptance
 
-Acceptance is one transaction. The arrangement below is the exact one a
-compatible client must build, and every rule after it exists because getting
-it wrong produces a valid transaction that pays the wrong party rather than
-an invalid one a node rejects:
+Acceptance is one transaction, `ordex.offer-acceptance/v2`:
 
 ```
 inputs                                outputs
-0..k-1  buyer padding inputs          0        merged padding, buyer payment script
-k       seller's Feline input         1        buyer asset script, = Feline postage
-k+1     the offer output              2..k-1   seller preserves, one per other
-                                               asset in the Feline output's sat
-                                               range, in sat order
-                                      k        seller payment script, = priceSats
-                                      last     buyer change, when above dust
+0..s-1  seller inputs (the Feline     0..a-1  asset outputs: exactly the seller
+        input among them)                     input sats, one of them the buyer
+s       the funded offer output               asset output, the rest seller
+                                              returns
+                                      a       seller payment, = priceSats
+                                      a+1     buyer change, when above dust
 ```
 
-The seller's input sits at index `k` and signs
-`SIGHASH_SINGLE | SIGHASH_ANYONECANPAY` against the seller payment output,
-which sits at the same index `k`. That is the same half a public ask uses, so
-an ask and an offer acceptance are one arrangement a wallet already
-understands. The offer output is spent by the acceptance leaf with the two
-policy signatures, at the input right after the seller's, so its sats flow
-into the seller payment, the change, and the fee, and never backwards over
-the Feline's range. The buyer signs nothing at acceptance time; the buyer
-signed when funding the offer.
+The seller builds the transaction and signs every seller input with
+`SIGHASH_ALL` (or the Taproot default), committing to the whole arrangement.
+The two policy signers spend the funded output under the acceptance leaf. The
+buyer signs nothing at acceptance time; the buyer's only commitment is the
+funded output, signed when funding. There are no buyer padding inputs: a seller
+output ahead of the buyer asset output takes the sats that precede the Feline,
+so no input of the buyer's could ever be spent without a buyer signature, and
+no verifier ever has to assume one. An input described as the buyer's is
+refused (`BUYER_INPUT_UNAUTHORIZED`).
 
-Read against the stream:
-
-- Outputs `0..k-1` absorb exactly `sum(inputs 0..k)`: the padding merge, the
-  Feline postage, and every preserve's postage add up to the padding inputs
-  plus the whole Feline output value. The equality places the Feline's sat
-  range wholly inside output 1 and each preserved asset wholly inside its own
-  output, in sat order.
-- The payment at index `k` is the first destination the offer output's sats
-  reach, and it takes exactly `priceSats`.
-- Whatever the offer output funded beyond the price is buyer change or fee,
-  and the fee is bounded by the terms.
+The acceptance document names the seller payment script and an optional seller
+return script, the delivered Feline and its outpoint, the membership proof (and
+for `TRAIT`, the trait proof), every input with its outpoint, party (`SELLER`
+or `OFFER`), value, script and authority inventory, and the transaction bytes.
+Every asset movement is derived, never declared: inscriptions and rare sat
+ranges by absolute sat position, runes by the ord 0.29.0 allocation, and
+Counterparty attachments by the Counterparty Core move rule.
 
 The rules an acceptance must satisfy, each recheckable by anyone:
 
-1. The offer outpoint is spent exactly once, by the acceptance leaf witness
-   carrying both policy signatures against the tree that commits the terms
-   hash.
-2. The seller's Feline input appears exactly once, and the seller payment
-   output sits at the same index with exactly the script and value the
-   seller's signature commits to.
-3. Outputs ahead of the seller payment absorb the whole sat range the Feline
-   input occupies, so the Feline lands whole in the buyer asset output and
-   never inside the payment going back to the seller. This is the same
-   invariant a purchase checks, with the seller input in the offered role.
-4. The seller payment is exactly `priceSats` to the script the terms committed
-   to. Not one sat more, not one sat less.
-5. The fee actually paid, `sum(inputs) - sum(outputs)`, is at or below
-   `maxNetworkFeeSats`.
-6. Every other inscription or tracked asset in the seller's Feline output is
-   preserved, in sat order, in outputs the seller owns. The buyer receives the
-   Feline and nothing else, and the seller loses the Feline and nothing else.
-7. The current height is below `expiryHeight`.
+1. The terms verify, the two policy keys are valid and distinct, and the funded
+   output is exactly the output they produce (`OFFER_OUTPUT_MISMATCH`,
+   `POLICY_KEYS_INVALID`).
+2. It is checked at a known height below `expiryHeight`, on the terms' network,
+   with a height-domain locktime no later than that height, and no input
+   carries a relative timelock (`OFFER_EXPIRED`, `NETWORK_MISMATCH`,
+   `LOCKTIME_INVALID`, `SEQUENCE_INVALID`).
+3. The Feline is the named inscription for `ITEM`, proves membership in the
+   collection root, and for `TRAIT` proves membership in the committed trait
+   set (`SCOPE_MISMATCH`, `COLLECTION_MEMBERSHIP_NOT_PROVEN`,
+   `TRAIT_NOT_PROVEN`).
+4. Every input is described once and in order; the funded output is spent
+   exactly once, as the last input, with its funded value and script; the
+   Feline is on a seller input (`OFFER_INPUT_POSITION`, `OFFER_INPUT_MISMATCH`,
+   `FELINE_NOT_HELD`).
+5. The asset outputs absorb exactly the sats of the seller inputs, so the offer
+   output's sats never reach them; exactly one pays the buyer receive script and
+   the rest pay seller scripts; then the seller payment pays exactly
+   `priceSats` to the seller payment script; then at most one buyer change
+   output; nothing else, no data output and no dust
+   (`ASSET_OUTPUTS_UNBALANCED`, `SELLER_VALUE_MISMATCH`, `OUTPUT_UNDESCRIBED`,
+   `DUST_OUTPUT`).
+6. The fee actually paid, `sum(inputs) - sum(outputs)`, is at or below
+   `maxNetworkFeeSats` (`FEE_OVER_MAXIMUM`).
+7. The Feline lands in the buyer asset output, and every other asset lands
+   with its owner: the seller's other inscriptions, rare sats, runes and
+   Counterparty attachments in seller outputs (`FELINE_NOT_DELIVERED`,
+   `ASSET_MISDIRECTED`). The buyer receives the Feline and nothing else of the
+   seller's, and the seller loses the Feline and nothing else.
+8. Both policy signatures verify under the exact acceptance leaf and control
+   block, and every seller input carries a verifying closing signature
+   (`POLICY_SIGNATURES_MISSING`, `POLICY_SIGNATURE_INVALID`,
+   `ACCEPTANCE_LEAF_MISMATCH`, `CONTROL_BLOCK_MISMATCH`, `SIGNATURE_MISSING`,
+   `UNCLOSED_SIGHASH`). A missing signature is refused, never assumed.
 
-The node is the final authority on signature validity and consensus rules.
-Ordex refuses a transaction before a node sees it when any of the seven rules
-fails, and asks the node whether it would accept the result before anyone
-broadcasts.
+`verifyOfferAcceptance` answers the txid, the fee, and the indexes of the funded
+input, the Feline input, the buyer asset output and the seller payment. The
+node is the final authority on consensus and relay; Ordex refuses a
+transaction before a node sees it when any rule fails, and asks the node
+whether it would accept the result before anyone broadcasts. An acceptance
+signed while the tip is below expiry can still confirm after expiry if it was
+not mined in time; a policy signature cannot be withdrawn once given.
 
 ## Recovery
 
-Recovery is one transaction: the offer output spent by the recovery leaf, with
-`nLockTime` at or after `expiryHeight`, paying the entire output value minus
-the fee to `buyerReceiveScript`. Anyone may broadcast it; only the buyer's key
-can sign it. A recovery attempt before expiry is invalid by consensus, because
-`CHECKLOCKTIMEVERIFY` refuses to evaluate before its height, so no one has to
-trust a gateway to enforce the calendar.
+Recovery is one transaction, `ordex.offer-recovery/v2`: the funded output
+alone, spent by the exact recovery leaf and control block with a
+`SIGHASH_DEFAULT` or `SIGHASH_ALL` signature by the buyer recovery key, paying
+one output to `buyerReceiveScriptHex` of at least its dust threshold. Its
+`nLockTime` is a height at or after `expiryHeight` and below 500000000, and its
+input sequence is not final (`0xffffffff` disables the locktime), so
+`CHECKLOCKTIMEVERIFY` passes. Consensus lets it confirm from block
+`expiryHeight + 1`; a recovery attempt any earlier is invalid by consensus, so
+no one has to trust a gateway to enforce the calendar. Anyone may broadcast it;
+only the buyer's key can sign it.
 
 After a recovery confirms, the offer is `RECOVERED`, and every surface reads
 it as closed. After an acceptance confirms, the offer is `ACCEPTED`, and the
@@ -221,19 +270,28 @@ orderbook records which order the acceptance settled.
 | `RECOVERED` | A transaction spending the output by the recovery leaf confirmed. |
 | `MEMPOOL_CONFLICTED` | An unconfirmed transaction spends the funded output. It can still be replaced or dropped. |
 | `SPENT` | The funded output was spent on chain by a transaction that was neither its acceptance nor its recovery. |
-| `EXPIRED` | The current height passed `expiryHeight` with the output unspent. Recovery is now the only path. |
-| `WITHDRAWN` | The buyer proved ownership of the recovery key before expiry and removed the offer from discovery. Withdrawal is discovery, not cancellation; only a spend settles the funds. |
-| `REJECTED` | The posted evidence was unusable: malformed terms, wrong network, or a root that does not exist. |
+| `EXPIRED` | The current height reached `expiryHeight` with the output unspent. Acceptance is refused; recovery confirms from the next block. |
+| `WITHDRAWN` | The buyer proved ownership of the recovery key before expiry and removed the offer from discovery, with a BIP-340 signature by `buyerRecoveryKeyHex` over the tagged hash (tag `ordex/offer-withdrawal`) of the message `Ordex offer withdrawal\nnetwork: <network>\noffer: <id>\nterms: <offerTermsHash>`. Withdrawal is discovery, not cancellation; only a spend settles the funds. |
+| `REJECTED` | The posted evidence was unusable: malformed terms, wrong network, a root that does not exist, or a funded output that is not the tree the terms and policy keys produce. |
 
 An offer that ages past its freshness bound is presented as stale and cannot
 be accepted through Ordex until it revalidates, exactly as a listing is.
 Stale is a presentation verdict, not a state: the chain decides when the funds
-move.
+move. A reorganization that removes the block confirming an acceptance or a
+recovery returns the offer to `MEMPOOL_CONFLICTED` while the spend waits in the
+mempool, or to `LIVE` or `EXPIRED` if it was dropped. A refused or abandoned
+acceptance is retried only by building and verifying a new one at the current
+height; nothing is retried into submission.
+
+Outputs funded under earlier drafts of this contract, with a different internal
+key, leaf or expiry domain, are never reinterpreted: this verifier refuses them
+(`OFFER_OUTPUT_MISMATCH` or a terms refusal), and their funds remain
+recoverable exactly as their own recovery leaf states.
 
 ## What Ordex never does
 
 Ordex composes, verifies, and records. It does not hold a policy key, does not
 sign, does not custody the funded output, and does not broadcast on its own
 initiative. The buyer funds and posts, two independent signers approve one
-acceptance each, the seller signs one input, and every broadcast is a
+acceptance each, the seller signs its own inputs, and every broadcast is a
 deliberate act by the party who owns the money that moves.

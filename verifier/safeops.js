@@ -1,9 +1,9 @@
-// Reference verifier for Ordex SafeOps v1.
+// Reference verifier for Ordex SafeOps v2.
 //
 // This file restates spec/safeops.md as executable checks. It answers two
 // questions about an already prepared operation: is the plan internally
-// sound and asset safe, and does a signed result still match the plan the
-// user agreed to. Reading live input values, protocol inventories, and
+// sound and asset safe, and does a signed transaction still match the plan
+// the user agreed to. Reading live input values, protocol inventories, and
 // mempool state from Bitcoin Core, ord, and the other chain authorities is
 // the caller's responsibility; the gateway runs those reads first and then
 // these same checks.
@@ -13,10 +13,21 @@
 
 import { createHash } from 'node:crypto';
 
+import {
+  MAX_OP_RETURN_RELAY_BYTES,
+  bytesToHex,
+  dustThresholdSats,
+  parseTransaction,
+  serializeTransaction,
+  unsignedCopy,
+  verifyInputSignature,
+} from './bitcoin-tx.js';
+import { checkTransitionShapes, deriveAssetFlow, matchTransitions, readInventory } from './asset-flow.js';
+
 const DECIMAL = /^(0|[1-9][0-9]*)$/;
 const HEX64 = /^[0-9a-f]{64}$/;
 const EVEN_HEX = /^(?:[0-9a-f]{2})+$/;
-const NETWORKS = ['mainnet', 'testnet', 'signet', 'regtest'];
+const NETWORKS = ['mainnet', 'testnet', 'testnet4', 'signet', 'regtest'];
 const OPERATION_KINDS = [
   'BTC_BATCH_SEND',
   'ORDINAL_BATCH_TRANSFER',
@@ -27,11 +38,19 @@ const OPERATION_KINDS = [
   'RBF_REPLACE',
   'CPFP_CHILD',
 ];
-const OUTPUT_ROLES = ['recipient', 'change', 'preserve'];
+const OUTPUT_ROLES = ['recipient', 'change', 'preserve', 'data'];
 const CARDINAL_ONLY_KINDS = ['BTC_BATCH_SEND', 'CARDINAL_CONSOLIDATION'];
-export const SAFEOPS_PLAN_SCHEMA = 'ordex.safeops-plan/v1';
-export const SAFEOPS_SIGNED_RESULT_SCHEMA = 'ordex.safeops-signed-result/v1';
+const SIGHASH_POLICIES = ['DEFAULT', 'ALL'];
+const U32_MAX = 0xffffffff;
+export const SAFEOPS_PLAN_SCHEMA = 'ordex.safeops-plan/v2';
+export const SAFEOPS_SIGNED_RESULT_SCHEMA = 'ordex.safeops-signed-result/v2';
 export const SAFEOPS_PROTOCOL_MIN = '1.2';
+/**
+ * Ordex product postage: the least an output carrying a sat-bound asset (an
+ * inscription or a rare sat range) may hold. A product rule, separate from the
+ * script-specific Bitcoin Core dust threshold every spendable output meets.
+ */
+export const SAFEOPS_POSTAGE_FLOOR_SATS = '546';
 
 export function parseSats(value) {
   if (typeof value !== 'string' || !DECIMAL.test(value)) return null;
@@ -65,23 +84,6 @@ export function safeopsPlanDigest(plan) {
 
 const refuse = (code, reason) => ({ ok: false, code, reason });
 
-/**
- * The output index that receives the first sat of input `fromInput`: the
- * first output whose accumulated value passes the range start. Returns -1
- * when no output absorbs the range start, meaning those sats can only be
- * the fee.
- */
-function firstSatOutputIndex(inputValues, fromInput, outputs) {
-  let rangeStart = 0n;
-  for (let i = 0; i < fromInput; i += 1) rangeStart += inputValues[i];
-  let accumulated = 0n;
-  for (let j = 0; j < outputs.length; j += 1) {
-    accumulated += parseSats(outputs[j].valueSats);
-    if (accumulated > rangeStart) return j;
-  }
-  return -1;
-}
-
 function validOutpoint(outpoint) {
   return (
     !!outpoint &&
@@ -92,16 +94,8 @@ function validOutpoint(outpoint) {
   );
 }
 
-function trackedAssets(inventory) {
-  if (!inventory || typeof inventory !== 'object') return [];
-  return [
-    ...((inventory.inscriptions || []).map((a) => ({ assetType: 'ORDINAL', assetId: a.inscriptionId || a }))),
-    ...((inventory.runeAllocations || []).map((a) => ({ assetType: 'RUNE', assetId: a.runeId || a }))),
-    ...((inventory.counterpartyAssets || []).map((a) => ({ assetType: 'COUNTERPARTY', assetId: a.assetId || a }))),
-    ...((inventory.rareSatRanges || []).map((a) => ({ assetType: 'RARE_SAT', assetId: a.rangeId || a }))),
-    ...((inventory.unknownClaims || []).map((a) => ({ assetType: 'UNKNOWN', assetId: String(a) }))),
-  ];
-}
+const isU32 = (n) => Number.isInteger(n) && n >= 0 && n <= U32_MAX;
+const isOpReturn = (scriptHex) => scriptHex.startsWith('6a');
 
 /**
  * Verify a SafeOps plan.
@@ -109,23 +103,33 @@ function trackedAssets(inventory) {
  * plan:
  *   schema, protocolVersion, network, operationKind, createdAtHeight,
  *   expiryHeight, checkpoint { height, blockHash },
- *   inputs  [{ outpoint {txid, vout}, valueSats, inventory {
- *             examined, inscriptions [], runeAllocations [],
- *             counterpartyAssets [], rareSatRanges [], unknownClaims [] } }],
+ *   transaction { version, lockTime },
+ *   inputs  [{ outpoint {txid, vout}, valueSats, scriptPubKeyHex, sequence,
+ *             inventory { examined, inscriptions [{ inscriptionId, offset }],
+ *             rareSatRanges [{ rangeId, offset, count }],
+ *             runeAllocations [{ runeId, amount }],
+ *             counterpartyAssets [{ name, assetId, quantitySats }],
+ *             unknownClaims [] } }],
  *   outputs [{ scriptHex, valueSats, role }],
- *   assetTransitions [{ assetType, assetId, fromInput, toOutput }],
+ *   assetTransitions [{ assetType, assetId, fromInput?, toOutput, quantity }],
  *   fee { feeSats, maxFeeSats, feeRateSatsPerVb },
  *   signing { requiredIndexes [], sighashType },
  *   findings [], digest
  *
  * Answers { ok: true, digest } or { ok: false, code, reason }.
  */
+// OX-P01: every asset family moves by its own protocol rule. Inscriptions and rare
+// sats follow the absolute sat position (prior input values plus offset), runes the
+// ord 0.29.0 allocation, and Counterparty attachments the Core v11.4.0 move rule, and
+// the plan's transitions must equal that derived multiset exactly. A zero-value
+// OP_RETURN is allowed only as the one runestone whose allocation is proved, and
+// dust follows Bitcoin Core v29 per script while postage is a separate product rule.
 export function verifySafeOpsPlan(plan) {
   if (!plan || typeof plan !== 'object' || Array.isArray(plan)) {
     return refuse('MALFORMED_PLAN', 'Expected a plan object.');
   }
   if (plan.schema !== SAFEOPS_PLAN_SCHEMA) {
-    return refuse('SCHEMA_UNSUPPORTED', 'The plan schema is not ordex.safeops-plan/v1.');
+    return refuse('SCHEMA_UNSUPPORTED', 'The plan schema is not ordex.safeops-plan/v2. Replan an older plan; it is never reinterpreted.');
   }
   if (typeof plan.protocolVersion !== 'string' || !/^1\.[2-9][0-9]*$/.test(plan.protocolVersion)) {
     return refuse('PROTOCOL_UNSUPPORTED', 'The plan protocol version must be 1.2 or a later 1.x.');
@@ -139,8 +143,8 @@ export function verifySafeOpsPlan(plan) {
   if (!Array.isArray(plan.inputs) || plan.inputs.length === 0) {
     return refuse('INPUTS_EMPTY', 'A plan must select at least one input.');
   }
-  if (!Array.isArray(plan.outputs)) {
-    return refuse('MALFORMED_PLAN', 'Expected an outputs array.');
+  if (!Array.isArray(plan.outputs) || plan.outputs.length === 0) {
+    return refuse('MALFORMED_PLAN', 'Expected a non-empty outputs array.');
   }
   if (
     !plan.checkpoint ||
@@ -154,65 +158,118 @@ export function verifySafeOpsPlan(plan) {
   if (!Number.isInteger(plan.expiryHeight) || plan.expiryHeight <= plan.checkpoint.height) {
     return refuse('EXPIRY_INVALID', 'The expiry height must be a block after the checkpoint height.');
   }
+  if (
+    !plan.transaction ||
+    typeof plan.transaction !== 'object' ||
+    !isU32(plan.transaction.version) ||
+    plan.transaction.version < 1 ||
+    !isU32(plan.transaction.lockTime)
+  ) {
+    return refuse('TRANSACTION_INVALID', 'The plan must fix the transaction version and locktime it will sign.');
+  }
   if (!plan.fee || typeof plan.fee !== 'object') {
     return refuse('FEE_INVALID', 'The plan must carry a fee object.');
   }
   const declaredFee = parseSats(plan.fee.feeSats);
   const maxFee = parseSats(plan.fee.maxFeeSats);
-  if (declaredFee === null || maxFee === null || declaredFee < 0n || declaredFee > maxFee) {
+  if (declaredFee === null || maxFee === null || declaredFee > maxFee) {
     return refuse('FEE_INVALID', 'feeSats and maxFeeSats must be exact decimal strings and fee <= maxFee.');
   }
 
-  // Every selected input must carry an examined inventory. An input whose
-  // inventory was never examined is refused, never assumed cardinal.
+  // Every selected input is a distinct outpoint with its value, script,
+  // sequence and an examined inventory. An input whose inventory was never
+  // examined is refused, never assumed cardinal.
   let totalIn = 0n;
   const inputValues = [];
+  const inputAssets = [];
+  const outpoints = new Set();
+  const assetIds = new Set();
   for (let i = 0; i < plan.inputs.length; i += 1) {
     const input = plan.inputs[i];
     if (!validOutpoint(input && input.outpoint)) {
       return refuse('INPUT_OUTPOINT_INVALID', `Input ${i} does not carry a lowercase txid and vout.`);
     }
-    const value = parseSats(input && input.valueSats);
+    const key = `${input.outpoint.txid}:${input.outpoint.vout}`;
+    if (outpoints.has(key)) return refuse('INPUT_DUPLICATED', `Input ${i} spends ${key} a second time.`);
+    outpoints.add(key);
+    const value = parseSats(input.valueSats);
     if (value === null) {
       return refuse('INPUT_VALUE_INVALID', `Input ${i} does not carry an exact decimal value.`);
     }
-    const inventory = input.inventory;
-    if (!inventory || typeof inventory !== 'object' || inventory.examined !== true) {
-      return refuse('INVENTORY_UNEXAMINED', `Input ${i} was never examined against the protocol authorities.`);
+    if (typeof input.scriptPubKeyHex !== 'string' || !EVEN_HEX.test(input.scriptPubKeyHex)) {
+      return refuse('INPUT_SCRIPT_INVALID', `Input ${i} does not carry the script of the output it spends.`);
     }
-    const assets = trackedAssets(inventory);
-    if (CARDINAL_ONLY_KINDS.includes(plan.operationKind) && assets.length > 0) {
+    if (!isU32(input.sequence)) {
+      return refuse('INPUT_SEQUENCE_INVALID', `Input ${i} does not fix its sequence number.`);
+    }
+    const read = readInventory(input.inventory, i, value, input.outpoint);
+    if (!read.assets) return read;
+    for (const asset of read.assets) {
+      if (asset.assetType === 'RUNE' || asset.assetType === 'COUNTERPARTY') continue;
+      const id = `${asset.assetType}:${asset.assetId}`;
+      if (assetIds.has(id)) return refuse('INVENTORY_INVALID', `${id} is listed on more than one input.`);
+      assetIds.add(id);
+    }
+    if (CARDINAL_ONLY_KINDS.includes(plan.operationKind) && read.assets.length > 0) {
       return refuse(
         'ASSET_IN_CARDINAL_OPERATION',
-        `Input ${i} carries ${assets[0].assetType} ${assets[0].assetId}; this operation moves cardinal value only.`,
+        `Input ${i} carries ${read.assets[0].assetType} ${read.assets[0].assetId}; this operation moves cardinal value only.`,
       );
     }
-    if (plan.operationKind === 'RUNE_BATCH_TRANSFER') {
-      const hasRune = (inventory.runeAllocations || []).length > 0;
-      if (!hasRune) {
-        return refuse('RUNE_INPUT_MISSING_ALLOCATION', `Input ${i} carries no rune allocation.`);
-      }
+    // D7: a rune transfer may be funded by cardinal inputs that carry no tracked
+    // asset, so a rune on a dust output can move; an input with other assets and
+    // no rune allocation is refused, and some input must carry a rune allocation.
+    if (
+      plan.operationKind === 'RUNE_BATCH_TRANSFER' &&
+      read.assets.length > 0 &&
+      !read.assets.some((a) => a.assetType === 'RUNE')
+    ) {
+      return refuse(
+        'RUNE_INPUT_MISSING_ALLOCATION',
+        `Input ${i} carries ${read.assets[0].assetType} ${read.assets[0].assetId} but no rune allocation; a rune transfer is funded only by rune inputs or asset-free inputs.`,
+      );
     }
     inputValues.push(value);
+    inputAssets.push(read.assets);
     totalIn += value;
   }
+  if (
+    plan.operationKind === 'RUNE_BATCH_TRANSFER' &&
+    !inputAssets.some((assets) => assets.some((a) => a.assetType === 'RUNE'))
+  ) {
+    return refuse('RUNE_INPUT_MISSING_ALLOCATION', 'No input carries a rune allocation, so there is no rune to transfer.');
+  }
 
+  // Outputs: an OP_RETURN is only ever a declared data output of zero value;
+  // every other output meets the Bitcoin Core dust threshold for its script.
   let totalOut = 0n;
+  const outputValues = [];
+  const dataOutputs = [];
   for (let i = 0; i < plan.outputs.length; i += 1) {
     const output = plan.outputs[i];
     if (typeof (output && output.scriptHex) !== 'string' || !EVEN_HEX.test(output.scriptHex)) {
       return refuse('OUTPUT_SCRIPT_INVALID', `Output ${i} does not carry lowercase hex script bytes.`);
     }
-    const value = parseSats(output && output.valueSats);
+    const value = parseSats(output.valueSats);
     if (value === null) {
       return refuse('OUTPUT_VALUE_INVALID', `Output ${i} does not carry an exact decimal value.`);
     }
-    if (value < 546n) {
-      return refuse('DUST_OUTPUT', `Output ${i} is below the 546 sat dust floor.`);
-    }
     if (typeof output.role !== 'string' || !OUTPUT_ROLES.includes(output.role)) {
-      return refuse('OUTPUT_ROLE_UNKNOWN', `Output ${i} does not name a recipient, change, or preserve role.`);
+      return refuse('OUTPUT_ROLE_UNKNOWN', `Output ${i} does not name a recipient, change, preserve, or data role.`);
     }
+    if ((output.role === 'data') !== isOpReturn(output.scriptHex)) {
+      return refuse('DATA_OUTPUT_ROLE_MISMATCH', `Output ${i}: an OP_RETURN output is a data output and a data output is an OP_RETURN.`);
+    }
+    if (output.role === 'data') {
+      if (value !== 0n) return refuse('DATA_OUTPUT_BURNS_VALUE', `Output ${i} would burn ${output.valueSats} sats in an OP_RETURN.`);
+      dataOutputs.push(i);
+    } else if (value < dustThresholdSats(output.scriptHex)) {
+      return refuse(
+        'DUST_OUTPUT',
+        `Output ${i} holds ${output.valueSats} sats, below the ${dustThresholdSats(output.scriptHex)} sat dust threshold for its script.`,
+      );
+    }
+    outputValues.push(value);
     totalOut += value;
   }
 
@@ -223,60 +280,62 @@ export function verifySafeOpsPlan(plan) {
     );
   }
 
-  // Every tracked asset on a selected input must be assigned to exactly one
-  // existing output. An unassigned tracked asset could land in the fee
-  // region or in unrelated change, so the plan is refused. The destination
-  // of a tracked asset is the output that receives the input's first sat:
-  // the first output whose accumulated value passes the sat range start.
-  const transitions = Array.isArray(plan.assetTransitions) ? plan.assetTransitions : [];
-  const transitionKeys = new Set();
-  for (let i = 0; i < plan.inputs.length; i += 1) {
-    for (const asset of trackedAssets(plan.inputs[i].inventory)) {
-      if (asset.assetType === 'UNKNOWN') {
-        return refuse(
-          'UNKNOWN_CLAIM_FAILS_CLOSED',
-          `Input ${i} carries an unrecognized claim (${asset.assetId}); resolve it before planning.`,
-        );
-      }
-      const key = `${asset.assetType}:${asset.assetId}`;
-      if (transitionKeys.has(key)) {
-        return refuse('ASSET_TRANSITION_DUPLICATED', `Asset ${key} is assigned to more than one transition.`);
-      }
-      transitionKeys.add(key);
-      const transition = transitions.find(
-        (t) => t && t.assetType === asset.assetType && t.assetId === asset.assetId,
-      );
-      if (!transition) {
-        return refuse('TRACKED_ASSET_UNASSIGNED', `Asset ${key} has no destination in the asset transitions.`);
-      }
-      if (!Number.isInteger(transition.fromInput) || transition.fromInput !== i) {
-        return refuse(
-          'TRANSITION_SOURCE_MISMATCH',
-          `Asset ${key} declares input ${transition.fromInput} but rides on input ${i}.`,
-        );
-      }
-      if (!Number.isInteger(transition.toOutput) || !plan.outputs[transition.toOutput]) {
-        return refuse('TRANSITION_OUTPUT_MISSING', `Asset ${key} names output ${transition.toOutput}, which does not exist.`);
-      }
-      if (transition.toOutput !== firstSatOutputIndex(inputValues, i, plan.outputs)) {
-        return refuse(
-          'TRANSITION_SAT_FLOW_MISMATCH',
-          `Asset ${key} declares output ${transition.toOutput}, but the sat range of input ${i} begins in a different output.`,
-        );
-      }
+  // The only data output a plan may carry is one runestone, and only for rune
+  // balances whose allocation is proved below. Relay policy allows one
+  // OP_RETURN of at most 83 bytes.
+  const carriesRunes = inputAssets.some((assets) => assets.some((a) => a.assetType === 'RUNE'));
+  const scripts = plan.outputs.map((o) => o.scriptHex);
+  if (dataOutputs.length > 0) {
+    const index = dataOutputs[0];
+    // A cenotaph passes this gate so the allocation below names its burn.
+    if (dataOutputs.length > 1 || !carriesRunes || !scripts[index].startsWith('6a5d')) {
+      return refuse('DATA_OUTPUT_NOT_PERMITTED', 'The only data output a plan may carry is one readable runestone for the runes it moves.');
+    }
+    if (scripts[index].length / 2 > MAX_OP_RETURN_RELAY_BYTES) {
+      return refuse('DATA_OUTPUT_NONSTANDARD', `The runestone exceeds the ${MAX_OP_RETURN_RELAY_BYTES} byte relay limit.`);
     }
   }
 
-  if (!Array.isArray(plan.signing) && typeof plan.signing !== 'object') {
+  const transitions = plan.assetTransitions;
+  if (!Array.isArray(transitions)) return refuse('MALFORMED_PLAN', 'Expected an assetTransitions array.');
+  const shapes = checkTransitionShapes(transitions, plan.outputs.length);
+  if (!shapes.ok) return shapes;
+
+  // Derive every asset movement from the protocol rules, then require the
+  // plan's transitions to be exactly that multiset.
+  const flow = deriveAssetFlow({
+    network: plan.network,
+    height: plan.checkpoint.height + 1,
+    inputs: plan.inputs.map((input, i) => ({ outpoint: input.outpoint, value: inputValues[i], assets: inputAssets[i] })),
+    outputs: plan.outputs,
+  });
+  if (!flow.ok) return flow;
+  for (const m of flow.movements) {
+    if ((m.assetType === 'ORDINAL' || m.assetType === 'RARE_SAT') && outputValues[m.toOutput] < BigInt(SAFEOPS_POSTAGE_FLOOR_SATS)) {
+      return refuse('POSTAGE_BELOW_FLOOR', `Output ${m.toOutput} carries ${m.assetId} with less than the ${SAFEOPS_POSTAGE_FLOOR_SATS} sat postage floor.`);
+    }
+  }
+  const matched = matchTransitions(transitions, flow.movements);
+  if (!matched.ok) return matched;
+
+  // The user signs every input, with SIGHASH_ALL or its Taproot default only.
+  const signing = plan.signing;
+  if (!signing || typeof signing !== 'object' || Array.isArray(signing)) {
     return refuse('SIGNING_INVALID', 'The plan must carry a signing object.');
   }
-  if (!Array.isArray(plan.signing.requiredIndexes) || plan.signing.requiredIndexes.length === 0) {
-    return refuse('SIGNING_INVALID', 'The plan must name at least one required signing index.');
+  if (!Array.isArray(signing.requiredIndexes)) {
+    return refuse('SIGNING_INVALID', 'The plan must list its required signing indexes.');
   }
-  for (const index of plan.signing.requiredIndexes) {
-    if (!Number.isInteger(index) || index < 0 || index >= plan.inputs.length) {
-      return refuse('SIGNING_INVALID', `Signing index ${String(index)} is not one of the selected inputs.`);
-    }
+  const required = new Set(signing.requiredIndexes);
+  if (
+    required.size !== signing.requiredIndexes.length ||
+    signing.requiredIndexes.some((index) => !Number.isInteger(index) || index < 0 || index >= plan.inputs.length) ||
+    required.size !== plan.inputs.length
+  ) {
+    return refuse('SIGNING_INVALID', 'The user signs every selected input exactly once; list each input index once.');
+  }
+  if (!SIGHASH_POLICIES.includes(signing.sighashType)) {
+    return refuse('SIGHASH_NOT_PERMITTED', 'SafeOps signs with SIGHASH_ALL or the Taproot default only, so no input or output can change after signing.');
   }
 
   const digest = safeopsPlanDigest(plan);
@@ -286,20 +345,40 @@ export function verifySafeOpsPlan(plan) {
   return { ok: true, digest };
 }
 
+/** The exact unsigned transaction a verified plan describes. */
+export function safeopsUnsignedTransaction(plan) {
+  return {
+    version: plan.transaction.version,
+    lockTime: plan.transaction.lockTime,
+    inputs: plan.inputs.map((input) => ({
+      txid: input.outpoint.txid,
+      vout: input.outpoint.vout,
+      scriptSigHex: '',
+      sequence: input.sequence,
+      witness: [],
+    })),
+    outputs: plan.outputs.map((output) => ({ valueSats: output.valueSats, scriptHex: output.scriptHex })),
+  };
+}
+
 /**
  * Verify a signed SafeOps result against its plan.
  *
- * signed:
- *   schema, planDigest,
- *   tx { inputs  [{ txid, vout, valueSats, signaturePresent, sighashType? }],
- *        outputs [{ scriptHex, valueSats }] }
+ * signed: { schema, planDigest, signedTxHex }
+ *
+ * The transaction is read from its bytes: it must be exactly the plan's
+ * unsigned transaction plus witnesses, and every input must carry a signature
+ * that verifies against the plan's prevouts under the approved sighash.
  */
+// OX-P01: a signature is proved from the transaction bytes, never from a label. A
+// signaturePresent flag in caller JSON proved nothing, so v2 results carry the raw
+// signed transaction and every input's signature is checked cryptographically.
 export function verifySafeOpsSignedResult(signed, plan) {
   if (!signed || typeof signed !== 'object' || Array.isArray(signed)) {
     return refuse('MALFORMED_SIGNED_RESULT', 'Expected a signed result object.');
   }
   if (signed.schema !== SAFEOPS_SIGNED_RESULT_SCHEMA) {
-    return refuse('SCHEMA_UNSUPPORTED', 'The signed result schema is not ordex.safeops-signed-result/v1.');
+    return refuse('SCHEMA_UNSUPPORTED', 'The signed result schema is not ordex.safeops-signed-result/v2.');
   }
   const planVerdict = verifySafeOpsPlan(plan);
   if (!planVerdict.ok) return planVerdict;
@@ -310,63 +389,59 @@ export function verifySafeOpsSignedResult(signed, plan) {
       'The signed result was not produced from this plan. Refresh the plan and sign again.',
     );
   }
-  const tx = signed.tx;
-  if (!tx || !Array.isArray(tx.inputs) || !Array.isArray(tx.outputs)) {
-    return refuse('MALFORMED_SIGNED_RESULT', 'The signed result must carry transaction inputs and outputs.');
-  }
+  const parsed = parseTransaction(signed.signedTxHex);
+  if (!parsed.ok) return refuse('MALFORMED_SIGNED_RESULT', parsed.reason);
+  const tx = parsed.tx;
+  const expected = safeopsUnsignedTransaction(plan);
 
-  if (tx.inputs.length !== plan.inputs.length) {
+  if (tx.version !== expected.version || tx.lockTime !== expected.lockTime) {
+    return refuse('TRANSACTION_CHANGED', 'The signed transaction changed its version or locktime.');
+  }
+  if (tx.inputs.length !== expected.inputs.length) {
     return refuse('INPUT_SET_CHANGED', 'The signed transaction does not spend exactly the planned inputs.');
   }
-  for (let i = 0; i < plan.inputs.length; i += 1) {
-    const planned = plan.inputs[i];
+  for (let i = 0; i < expected.inputs.length; i += 1) {
     const actual = tx.inputs[i];
-    if (!actual || actual.txid !== planned.outpoint.txid || actual.vout !== planned.outpoint.vout) {
+    if (actual.txid !== expected.inputs[i].txid || actual.vout !== expected.inputs[i].vout) {
       return refuse('INPUT_ORDER_CHANGED', `Input ${i} was reordered or substituted after the plan was agreed.`);
     }
-    const value = parseSats(actual && actual.valueSats);
-    if (value === null || value !== parseSats(planned.valueSats)) {
-      return refuse('INPUT_VALUE_CHANGED', `Input ${i} no longer carries its planned value.`);
+    if (actual.sequence !== expected.inputs[i].sequence) {
+      return refuse('SEQUENCE_CHANGED', `Input ${i} changed its sequence number.`);
     }
   }
-
-  if (tx.outputs.length !== plan.outputs.length) {
+  if (tx.outputs.length !== expected.outputs.length) {
     return refuse('OUTPUT_SET_CHANGED', 'The signed transaction does not carry exactly the planned outputs.');
   }
-  for (let i = 0; i < plan.outputs.length; i += 1) {
-    const planned = plan.outputs[i];
-    const actual = tx.outputs[i];
-    if (!actual || actual.scriptHex !== planned.scriptHex) {
+  for (let i = 0; i < expected.outputs.length; i += 1) {
+    if (tx.outputs[i].scriptHex !== expected.outputs[i].scriptHex) {
       return refuse('SCRIPT_CHANGED', `Output ${i} no longer pays the planned script.`);
     }
-    if (parseSats(actual && actual.valueSats) !== parseSats(planned.valueSats)) {
+    if (tx.outputs[i].valueSats !== String(parseSats(expected.outputs[i].valueSats))) {
       return refuse('VALUE_CHANGED', `Output ${i} no longer carries its planned value.`);
     }
   }
-
-  let totalIn = 0n;
-  let totalOut = 0n;
-  for (const input of tx.inputs) totalIn += parseSats(input.valueSats);
-  for (const output of tx.outputs) totalOut += parseSats(output.valueSats);
-  const fee = totalIn - totalOut;
-  if (fee !== parseSats(plan.fee.feeSats)) {
-    return refuse('FEE_CHANGED', 'The signed transaction fee no longer matches the planned fee.');
+  // With every field above equal, the unsigned bytes are the plan's bytes.
+  if (bytesToHex(serializeTransaction(unsignedCopy(tx))) !== bytesToHex(serializeTransaction(expected))) {
+    return refuse('TRANSACTION_CHANGED', 'The signed transaction is not the planned transaction.');
   }
 
-  const required = new Set(plan.signing.requiredIndexes);
+  const prevouts = plan.inputs.map((input) => ({ valueSats: input.valueSats, scriptHex: input.scriptPubKeyHex }));
   for (let i = 0; i < tx.inputs.length; i += 1) {
-    const signedInput = tx.inputs[i];
-    const hasSignature = signedInput.signaturePresent === true;
-    if (required.has(i) && !hasSignature) {
+    const verdict = verifyInputSignature(tx, i, prevouts);
+    if (verdict.status === 'UNSIGNED') {
       return refuse('SIGNATURE_MISSING', `Input ${i} is required to sign and is still unsigned.`);
     }
-    if (!required.has(i) && hasSignature) {
-      return refuse('UNEXPECTED_SIGNATURE', `Input ${i} was not part of the signing policy but carries a signature.`);
+    if (verdict.status === 'UNSUPPORTED') {
+      return refuse('SIGNATURE_UNVERIFIABLE', `Input ${i} spends a script this verifier cannot check, so its signature is unproven.`);
     }
-    if (hasSignature && plan.signing.sighashType && signedInput.sighashType !== plan.signing.sighashType) {
+    if (verdict.status !== 'VALID') {
+      return refuse('SIGNATURE_INVALID', `Input ${i} carries a signature that does not verify against the planned transaction.`);
+    }
+    const allowed = verdict.type === 'p2tr' && plan.signing.sighashType === 'DEFAULT' ? 0x00 : 0x01;
+    if (verdict.sighashType !== allowed) {
       return refuse('SIGHASH_CHANGED', `Input ${i} was signed with a different sighash than the plan approved.`);
     }
   }
 
-  return { ok: true };
+  return { ok: true, txid: parsed.txid };
 }

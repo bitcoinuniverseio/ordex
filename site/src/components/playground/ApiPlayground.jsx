@@ -1,338 +1,364 @@
 import { h } from 'preact';
-import { useState, useEffect } from 'preact/hooks';
+import { useState, useEffect, useRef, useMemo } from 'preact/hooks';
 import operationsData from '../../data/operations.json';
+import openapi from '../../../../spec/openapi.json';
 import { TruthLabel } from '../shell/TruthLabel.jsx';
+import { journeyStore, DEFAULT_SETTINGS } from '../../lib/session/journey-store';
+import { recordToolEvidence } from '../../lib/session/evidence';
+import {
+  buildRequestPlan,
+  authorizePlan,
+  planFingerprint,
+  executePlan,
+  curlFor,
+  operationParameters,
+  effectOf,
+  contractOperation
+} from '../../lib/api/request-plan.mjs';
 
-export function ApiPlayground({ initialOperationId = null }) {
-  const [selectedOpId, setSelectedOpId] = useState(initialOperationId || operationsData[0]?.operationId);
-  const [connectionMode, setConnectionMode] = useState('mock'); // 'mock', 'gateway_read', 'gateway_write'
-  const [gatewayOrigin, setGatewayOrigin] = useState('http://localhost:8080');
-  const [activeTab, setActiveTab] = useState('form'); // 'form', 'raw'
-  const [requestBodyText, setRequestBodyText] = useState('');
-  const [responseOutput, setResponseOutput] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [copied, setCopied] = useState(false);
+const EFFECT_TEXT = {
+  read: 'Read: no effect',
+  write: 'Write: changes gateway state',
+  broadcast: 'Broadcast: sends a transaction to the network',
+  operator: 'Operator only'
+};
 
-  const currentOp = operationsData.find((op) => op.operationId === selectedOpId) || operationsData[0];
+function initialOperationId(fallback) {
+  if (typeof window !== 'undefined') {
+    const id = new URLSearchParams(window.location.search).get('operation');
+    if (id && operationsData.some((op) => op.operationId === id)) return id;
+  }
+  return fallback || operationsData[0]?.operationId;
+}
+
+// OX-S05: requests are built from the OpenAPI 3.1 contract and the shared settings, checked
+// before sending, sent only when the mode and network allow their effect (writes need an
+// approval bound to the exact request), and every response is checked against the schema
+// documented for its status, separately from HTTP success.
+export function ApiPlayground({ initialOperationId: fallbackId = null }) {
+  const [selectedOpId, setSelectedOpId] = useState(() => initialOperationId(fallbackId));
+  const [settings, setSettings] = useState({ ...DEFAULT_SETTINGS });
+  const [values, setValues] = useState({ path: {}, query: {}, header: {} });
+  const [bodyText, setBodyText] = useState('');
+  const [approval, setApproval] = useState(null);
+  const [reviewing, setReviewing] = useState(false);
+  const [result, setResult] = useState(null);
+  const [showExample, setShowExample] = useState(false);
+  const [running, setRunning] = useState(false);
+  const [notice, setNotice] = useState(null);
+  // A developer API key lives in this component only: never stored, logged or put in cURL.
+  const [developerKey, setDeveloperKey] = useState('');
+  const abortRef = useRef(null);
+  const seqRef = useRef(0);
+
+  const op = operationsData.find((o) => o.operationId === selectedOpId) || operationsData[0];
+  const raw = contractOperation(openapi, op);
+  const params = useMemo(() => operationParameters(openapi, op), [op.operationId]);
+  const effect = effectOf(op, raw || {});
 
   useEffect(() => {
-    if (currentOp?.requestExample) {
-      setRequestBodyText(JSON.stringify(currentOp.requestExample, null, 2));
-    } else {
-      setRequestBodyText('');
+    let live = true;
+    const load = () => journeyStore.getSettings().then((s) => live && setSettings(s)).catch(() => {});
+    load();
+    const off = journeyStore.subscribe((e) => e.type === 'settings' && load());
+    return () => {
+      live = false;
+      off();
+    };
+  }, []);
+
+  useEffect(() => {
+    abortRef.current?.abort();
+    setValues({ path: {}, query: {}, header: {} });
+    setBodyText(op.requestExample ? JSON.stringify(op.requestExample, null, 2) : '');
+    setResult(null);
+    setShowExample(false);
+    setApproval(null);
+    setReviewing(false);
+    setNotice(null);
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('operation', op.operationId);
+      window.history.replaceState(null, '', url);
     }
-    setResponseOutput(null);
   }, [selectedOpId]);
 
-  const handleExecute = async () => {
-    setLoading(true);
-    const start = performance.now();
+  const plan = buildRequestPlan({ doc: openapi, operation: op, origin: settings.gatewayOrigin, values, bodyText });
+  const auth = authorizePlan(plan, settings, approval, { developerKey });
 
-    // Mode 1: Deterministic Mock
-    if (connectionMode === 'mock') {
-      setTimeout(() => {
-        setResponseOutput({
-          mode: 'Deterministic Mock',
-          status: 200,
-          statusText: 'OK',
-          durationMs: (performance.now() - start).toFixed(2),
-          headers: {
-            'content-type': 'application/json',
-            'x-ordex-mode': 'mock-deterministic',
-            'x-ordex-protocol': '1.2'
-          },
-          body: currentOp.responseExample,
-          verdict: 'PASS (Matches OpenAPI Schema)',
-          evidence: 'Deterministic example'
-        });
-        setLoading(false);
-      }, 50);
-      return;
+  const setValue = (loc, name, v) => {
+    setValues((prev) => ({ ...prev, [loc]: { ...prev[loc], [name]: v } }));
+    setResult(null);
+  };
+
+  const send = async () => {
+    if (running || !auth.allowed) return;
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    const seq = ++seqRef.current;
+    setRunning(true);
+    setResult(null);
+    setReviewing(false);
+    const res = await executePlan({ doc: openapi, operation: op, plan, signal: controller.signal, developerKey });
+    if (seq !== seqRef.current) return; // a newer request superseded this one
+    setRunning(false);
+    setResult(res);
+    setApproval(null);
+    // A stream sample is shown as received; it is neither a pass nor a failure of the contract.
+    if (res.ok && res.schema.state !== 'not-validated') {
+      const conforms = res.schema.state === 'valid';
+      recordToolEvidence({
+        tool: 'playground',
+        operation: `api:${op.operationId}`,
+        state: !conforms ? 'failed' : res.http.ok ? 'passed' : 'refused',
+        code: `HTTP_${res.status}`,
+        reason: conforms ? `HTTP ${res.status} with a body matching the documented schema.` : res.schema.errors[0]?.message || res.schema.errors[0] || 'Schema check failed',
+        evidenceClass: 'Gateway observation'
+      });
     }
+  };
 
-    // Mode 2 & 3: Live Gateway Request (Browser direct to origin)
+  const cancel = () => {
+    abortRef.current?.abort();
+    seqRef.current++;
+    setRunning(false);
+    setResult({ ok: false, code: 'CANCELLED', message: 'Cancelled. No result is shown for a cancelled request.' });
+  };
+
+  const copy = async (text) => {
     try {
-      const url = `${gatewayOrigin.replace(/\/$/, '')}${currentOp.path}`;
-      const options = {
-        method: currentOp.method,
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Ordex-Client': 'ordex-docs-playground'
-        }
-      };
-
-      if (currentOp.isWrite && requestBodyText) {
-        options.body = requestBodyText;
-      }
-
-      const res = await fetch(url, options);
-      const data = await res.json().catch(() => ({}));
-      const durationMs = (performance.now() - start).toFixed(2);
-
-      const headersObj = {};
-      res.headers.forEach((v, k) => { headersObj[k] = v; });
-
-      setResponseOutput({
-        mode: connectionMode === 'gateway_write' ? 'Explicit Gateway Mutation' : 'Configured Gateway Read',
-        status: res.status,
-        statusText: res.statusText,
-        durationMs,
-        headers: headersObj,
-        body: data,
-        verdict: res.ok ? 'PASS (Gateway Accepted)' : 'REFUSED (Gateway Rejected)',
-        evidence: 'Gateway observation'
-      });
-    } catch (err) {
-      setResponseOutput({
-        mode: 'Gateway Connection Failed',
-        status: 0,
-        statusText: 'Network / CORS Error',
-        durationMs: (performance.now() - start).toFixed(2),
-        headers: {},
-        body: {
-          error: 'Connection failed',
-          message: err.message,
-          corsGuidance: 'Ensure the Ordex gateway includes Access-Control-Allow-Origin: ' + window.location.origin + ' and Access-Control-Allow-Headers: Content-Type, X-Ordex-Client.'
-        },
-        verdict: 'FAIL (CORS or Unreachable Gateway)',
-        evidence: 'Gateway observation'
-      });
-    } finally {
-      setLoading(false);
+      await navigator.clipboard.writeText(text);
+      setNotice('Copied.');
+    } catch {
+      setNotice('Copy failed. Select the text and copy it manually.');
     }
   };
 
-  const copyCode = (text) => {
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const curlCommand = `curl -X ${currentOp.method} "${connectionMode === 'mock' ? 'http://localhost:8080' : gatewayOrigin}${currentOp.path}" \\
-  -H "Content-Type: application/json"${currentOp.isWrite && requestBodyText ? ` \\\n  -d '${requestBodyText.replace(/\n/g, '').replace(/\s+/g, ' ')}'` : ''}`;
+  const curl = plan.url ? curlFor(plan) : null;
+  const statusTone = result?.ok ? (result.schema.state === 'valid' ? 'var(--color-success)' : 'var(--color-danger)') : 'var(--color-danger)';
 
   return (
     <div class="api-playground-container" style="display: flex; flex-direction: column; gap: 1.5rem;">
-      {/* Operation Picker Bar */}
-      <div class="panel" style="padding: 1rem;">
-        <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem;">
-          <div style="display: flex; align-items: center; gap: 0.75rem;">
-            <span style="font-weight: 700; font-size: 0.95rem;">Operation:</span>
-            <select
-              class="btn btn-outline"
-              value={selectedOpId}
-              onChange={(e) => setSelectedOpId(e.target.value)}
-              style="padding: 0.4rem 0.8rem; font-family: var(--font-mono); font-size: 0.85rem;"
-            >
-              {operationsData.map((op) => (
-                <option key={op.operationId} value={op.operationId}>
-                  [{op.method}] {op.path} ({op.operationId})
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Connection Mode Radios */}
-          <div style="display: flex; align-items: center; gap: 0.5rem; background: var(--color-bg-subtle); padding: 0.3rem 0.6rem; border-radius: var(--radius-md); border: 1px solid var(--color-border);">
-            <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--color-text-muted);">
-              Mode:
-            </span>
-            <label style="display: flex; align-items: center; gap: 0.3rem; font-size: 0.8rem; cursor: pointer;">
-              <input
-                type="radio"
-                name="conn_mode"
-                checked={connectionMode === 'mock'}
-                onChange={() => setConnectionMode('mock')}
-              />
-              Deterministic Mock
-            </label>
-            <label style="display: flex; align-items: center; gap: 0.3rem; font-size: 0.8rem; cursor: pointer;">
-              <input
-                type="radio"
-                name="conn_mode"
-                checked={connectionMode === 'gateway_read'}
-                onChange={() => setConnectionMode('gateway_read')}
-              />
-              Gateway Read
-            </label>
-            {currentOp.isWrite && (
-              <label style="display: flex; align-items: center; gap: 0.3rem; font-size: 0.8rem; cursor: pointer; color: var(--color-danger);">
-                <input
-                  type="radio"
-                  name="conn_mode"
-                  checked={connectionMode === 'gateway_write'}
-                  onChange={() => setConnectionMode('gateway_write')}
-                />
-                Explicit Gateway Write
-              </label>
-            )}
-          </div>
+      <div class="panel" style="padding: 1rem; display: flex; flex-direction: column; gap: 0.75rem;">
+        <label style="display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; font-weight: 700; font-size: 0.95rem;">
+          Operation
+          <select class="btn btn-outline" value={selectedOpId} onChange={(e) => setSelectedOpId(e.currentTarget.value)} style="padding: 0.4rem 0.8rem; font-family: var(--font-mono); font-size: 0.85rem; max-width: 100%;">
+            {operationsData.map((o) => (
+              <option key={o.operationId} value={o.operationId}>
+                [{o.method}] {o.path} ({o.operationId})
+              </option>
+            ))}
+          </select>
+        </label>
+        <div style="font-size: 0.85rem; color: var(--color-text-secondary);">
+          Gateway: <strong>{settings.gatewayOrigin || 'none configured'}</strong> · Network: <strong>{settings.network}</strong> · Mode: <strong>{settings.mode}</strong>. Change these in the settings menu at the top of the page.
         </div>
-
-        {/* Gateway Origin Input when connected */}
-        {connectionMode !== 'mock' && (
-          <div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--color-border); display: flex; align-items: center; gap: 0.75rem;">
-            <label style="font-size: 0.85rem; font-weight: 600;">Gateway Origin:</label>
-            <input
-              type="text"
-              value={gatewayOrigin}
-              onInput={(e) => setGatewayOrigin(e.target.value)}
-              placeholder="http://localhost:8080"
-              style="flex: 1; max-width: 350px; padding: 0.35rem 0.6rem; font-family: var(--font-mono); font-size: 0.85rem; border: 1px solid var(--color-border); border-radius: var(--radius-sm);"
-            />
-            <span style="font-size: 0.75rem; color: var(--color-text-muted);">
-              Browser calls origin directly. Zero credentials relayed.
-            </span>
-          </div>
-        )}
       </div>
 
-      {/* Safety Notice */}
-      <div style="background: var(--color-brand-subtle); border-left: 4px solid var(--color-brand); padding: 0.75rem 1rem; border-radius: var(--radius-md); font-size: 0.85rem;">
-        <strong>Safety Boundary:</strong> Ordex documentation never holds private keys, signs PSBTs, or broadcasts transactions. Operations generate or inspect unsigned artifacts only.
+      <div style="background: var(--color-bg-subtle); border-left: 4px solid var(--color-focus); padding: 0.75rem 1rem; border-radius: var(--radius-md); font-size: 0.85rem;">
+        <strong>What this sends:</strong> read operations go to the configured gateway. Writes and broadcasts are sent only in write mode, only to Signet, Testnet4 or Regtest, and only after you confirm the exact request. Nothing is signed here.
       </div>
 
-      {/* Main Request & Response Grid */}
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
-        {/* Left: Request Builder */}
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr)); gap: 1.5rem;">
         <div class="panel">
-          <div class="panel-header">
+          <div class="panel-header" style="flex-wrap: wrap; gap: 0.5rem;">
             <div>
-              <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
-                <code style="font-weight: 800; color: var(--color-brand);">{currentOp.method}</code>
-                <code style="font-size: 0.9rem;">{currentOp.path}</code>
+              <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem; flex-wrap: wrap;">
+                <code style="font-weight: 800;">{op.method}</code>
+                <code style="font-size: 0.9rem; word-break: break-all;">{op.path}</code>
               </div>
-              <p style="margin: 0; font-size: 0.85rem; color: var(--color-text-secondary);">
-                {currentOp.summary}
-              </p>
+              <p style="margin: 0; font-size: 0.85rem; color: var(--color-text-secondary);">{op.summary}</p>
+              <p style="margin: 0.25rem 0 0 0; font-size: 0.8rem; font-weight: 700;">{EFFECT_TEXT[effect]}</p>
             </div>
-            <TruthLabel level={currentOp.authorityLevel} />
+            <TruthLabel level={op.authorityLevel} />
           </div>
 
-          {/* Parameters Section */}
-          {currentOp.parameters?.length > 0 && (
-            <div style="margin-bottom: 1rem;">
-              <h4 style="margin: 0 0 0.5rem 0; font-size: 0.85rem; text-transform: uppercase; color: var(--color-text-muted);">
-                Parameters
-              </h4>
-              <div style="display: flex; flex-direction: column; gap: 0.4rem;">
-                {currentOp.parameters.map((p) => (
-                  <div key={p.name} style="display: flex; align-items: center; justify-content: space-between; font-size: 0.85rem; padding: 0.35rem 0.5rem; background: var(--color-bg-subtle); border-radius: 4px;">
-                    <div>
-                      <code>{p.name}</code>
-                      <span style="font-size: 0.75rem; color: var(--color-text-muted); margin-left: 0.4rem;">({p.in})</span>
+          {params.length > 0 && (
+            <fieldset style="border: none; padding: 0; margin: 0 0 1rem 0;">
+              <legend style="font-size: 0.85rem; text-transform: uppercase; color: var(--color-text-secondary); margin-bottom: 0.5rem;">Parameters</legend>
+              <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                {params.map((p) => {
+                  const id = `param-${p.in}-${p.name}`;
+                  const schema = p.schema?.$ref ? null : p.schema || {};
+                  return (
+                    <div key={id} style="display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.85rem;">
+                      <label for={id}>
+                        <code>{p.name}</code> <span style="color: var(--color-text-secondary);">({p.in}{p.required || p.in === 'path' ? ', required' : ''})</span>
+                      </label>
+                      {Array.isArray(schema?.enum) ? (
+                        <select id={id} value={values[p.in]?.[p.name] || ''} onChange={(e) => setValue(p.in, p.name, e.currentTarget.value)} style="padding: 0.35rem; font-family: var(--font-mono);">
+                          <option value="">(not set)</option>
+                          {schema.enum.map((v) => <option key={String(v)} value={String(v)}>{String(v)}</option>)}
+                        </select>
+                      ) : (
+                        <input
+                          id={id}
+                          type="text"
+                          value={values[p.in]?.[p.name] || ''}
+                          placeholder={schema?.pattern ? `pattern ${schema.pattern}` : schema?.type || 'value'}
+                          onInput={(e) => setValue(p.in, p.name, e.currentTarget.value)}
+                          style="padding: 0.35rem 0.5rem; font-family: var(--font-mono); font-size: 0.85rem; border: 1px solid var(--color-border); border-radius: var(--radius-sm);"
+                        />
+                      )}
+                      {p.description && <span style="font-size: 0.75rem; color: var(--color-text-secondary);">{p.description}</span>}
                     </div>
-                    <span style="font-size: 0.8rem; color: var(--color-text-secondary);">{p.description || 'string'}</span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
+            </fieldset>
+          )}
+
+          {plan.credential === 'developer' && (
+            <div style="display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.85rem; margin-bottom: 1rem;">
+              <label for="api-developer-key">Developer API key (webhooks:write)</label>
+              <input
+                id="api-developer-key"
+                type="password"
+                autocomplete="off"
+                value={developerKey}
+                onInput={(e) => {
+                  setDeveloperKey(e.currentTarget.value);
+                  setResult(null);
+                }}
+                style="padding: 0.35rem 0.5rem; font-family: var(--font-mono); font-size: 0.85rem; border: 1px solid var(--color-border); border-radius: var(--radius-sm);"
+              />
+              <span style="font-size: 0.75rem; color: var(--color-text-secondary);">Sent as Authorization: Bearer to the configured gateway only. It stays in this page, is cleared on reload and never appears in cURL or saved evidence. Use a test key.</span>
             </div>
           )}
 
-          {/* Request Body Editor */}
-          {currentOp.isWrite && (
+          {raw?.requestBody && (
             <div style="margin-bottom: 1rem;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
-                <h4 style="margin: 0; font-size: 0.85rem; text-transform: uppercase; color: var(--color-text-muted);">
-                  JSON Request Body
-                </h4>
-                <div style="font-size: 0.75rem; color: var(--color-text-muted);">
-                  BigInt-safe decimal strings supported
-                </div>
-              </div>
+              <label for="api-body" style="display: block; font-size: 0.85rem; text-transform: uppercase; color: var(--color-text-secondary); margin-bottom: 0.4rem;">
+                JSON request body (amounts as decimal strings)
+              </label>
+              {!op.requestExample && op.requestExampleIssue && (
+                <p style="font-size: 0.8rem; color: var(--color-text-secondary); margin: 0 0 0.35rem 0;">No validated example is available: {op.requestExampleIssue}.</p>
+              )}
               <textarea
-                rows={8}
-                value={requestBodyText}
-                onInput={(e) => setRequestBodyText(e.target.value)}
+                id="api-body"
+                rows={10}
+                value={bodyText}
+                spellcheck={false}
+                onInput={(e) => {
+                  setBodyText(e.currentTarget.value);
+                  setResult(null);
+                }}
                 style="width: 100%; font-family: var(--font-mono); font-size: 0.85rem; padding: 0.6rem; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-bg-subtle); color: var(--color-text-primary);"
               />
             </div>
           )}
 
-          {/* Action Bar */}
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--color-border);">
-            <button
-              class="btn btn-outline"
-              onClick={() => copyCode(curlCommand)}
-              style="font-size: 0.8rem;"
-            >
-              {copied ? '✓ Copied cURL' : 'Copy cURL'}
-            </button>
-
-            <button
-              class={`btn ${connectionMode === 'gateway_write' ? 'btn-danger' : 'btn-primary'}`}
-              onClick={handleExecute}
-              disabled={loading}
-              style="min-width: 130px;"
-            >
-              {loading ? 'Executing...' : connectionMode === 'gateway_write' ? 'Authorize Write Request' : 'Send Request'}
-            </button>
-          </div>
-        </div>
-
-        {/* Right: Response Inspector */}
-        <div class="panel">
-          <div class="panel-header">
-            <h3 style="margin: 0; font-size: 1.1rem;">Response Inspector</h3>
-            {responseOutput && (
-              <span class={`badge ${responseOutput.status === 200 ? 'badge-verification' : 'badge-claim'}`}>
-                {responseOutput.status} {responseOutput.statusText} ({responseOutput.durationMs}ms)
-              </span>
+          <div aria-live="polite">
+            {!plan.ok && (
+              <div role="alert">
+                <ul style="margin: 0 0 0.75rem 0; font-size: 0.8rem; color: var(--color-danger);">
+                  {plan.errors.slice(0, 8).map((e) => <li key={e}>{e}</li>)}
+                </ul>
+              </div>
+            )}
+            {!auth.allowed && !auth.needsApproval && (plan.ok || auth.reason !== plan.errors[0]) && (
+              <p role="status" style="font-size: 0.85rem; color: var(--color-danger); margin: 0 0 0.75rem 0;">{auth.reason}</p>
             )}
           </div>
 
-          {!responseOutput ? (
-            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 320px; color: var(--color-text-muted); text-align: center;">
-              <span style="font-size: 2.5rem; margin-bottom: 0.75rem;">⚡</span>
-              <p style="margin: 0; font-size: 0.95rem;">Send a request to inspect headers, timing, and schema verdicts.</p>
-              <p style="margin: 0.25rem 0 0 0; font-size: 0.8rem;">Deterministic Mock mode runs fully offline.</p>
+          {reviewing && auth.needsApproval && (
+            <div role="group" aria-label="Confirm this request" style="border: 2px solid var(--color-danger); border-radius: var(--radius-md); padding: 0.75rem; margin-bottom: 0.75rem; font-size: 0.85rem;">
+              <strong>Confirm this exact request</strong>
+              <dl style="display: grid; grid-template-columns: max-content 1fr; gap: 0.2rem 0.75rem; margin: 0.5rem 0;">
+                <dt>Effect</dt><dd style="margin: 0;">{EFFECT_TEXT[effect]}</dd>
+                <dt>Network</dt><dd style="margin: 0;">{settings.network}</dd>
+                <dt>Request</dt><dd style="margin: 0; word-break: break-all;"><code>{plan.method} {plan.url}</code></dd>
+              </dl>
+              {plan.body && <pre style="max-height: 160px; overflow: auto; font-size: 0.75rem;"><code>{plan.body}</code></pre>}
+              <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <button class="btn btn-danger" type="button" onClick={() => setApproval(planFingerprint(plan, settings))}>Confirm</button>
+                <button class="btn btn-outline" type="button" onClick={() => setReviewing(false)}>Back</button>
+              </div>
+              {approval && <p role="status" style="margin: 0.5rem 0 0 0;">Confirmed. Any change to the request clears this confirmation.</p>}
             </div>
-          ) : (
+          )}
+
+          <div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--color-border);">
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <button class="btn btn-outline" type="button" disabled={!curl} onClick={() => copy(curl)} style="font-size: 0.8rem;">Copy cURL</button>
+              <button class="btn btn-outline" type="button" onClick={() => setShowExample((v) => !v)} aria-pressed={showExample ? 'true' : 'false'} style="font-size: 0.8rem;">
+                Contract example
+              </button>
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+              {running && <button class="btn btn-outline" type="button" onClick={cancel}>Cancel</button>}
+              {auth.needsApproval && !approval ? (
+                <button class="btn btn-danger" type="button" onClick={() => setReviewing(true)}>Review request</button>
+              ) : (
+                <button class="btn btn-primary" type="button" onClick={send} disabled={running || !auth.allowed} style="min-width: 130px;">
+                  {running ? 'Sending...' : 'Send to gateway'}
+                </button>
+              )}
+            </div>
+          </div>
+          {notice && <p role="status" style="font-size: 0.8rem; margin: 0.5rem 0 0 0;">{notice}</p>}
+          {curl && (
+            <details style="margin-top: 0.75rem;">
+              <summary style="cursor: pointer; font-size: 0.85rem;">cURL</summary>
+              <pre style="font-size: 0.75rem; overflow: auto;"><code>{curl}</code></pre>
+            </details>
+          )}
+        </div>
+
+        <div class="panel" aria-live="polite">
+          <div class="panel-header">
+            <h3 style="margin: 0; font-size: 1.1rem;">Response</h3>
+          </div>
+          {showExample && (
+            <div style="margin-bottom: 1rem;">
+              <p style="font-size: 0.8rem; margin: 0 0 0.35rem 0;">
+                <strong>Contract example</strong> for the {op.successStatus || 'success'} response. It validates against the schema; no request was sent.
+              </p>
+              {op.responseExample !== null ? (
+                <pre style="max-height: 240px; overflow: auto; font-size: 0.8em;"><code>{JSON.stringify(op.responseExample, null, 2)}</code></pre>
+              ) : (
+                <p style="font-size: 0.85rem;">No example is available: {op.responseExampleIssue}.</p>
+              )}
+            </div>
+          )}
+          {!result && !showExample && (
+            <p style="font-size: 0.9rem; color: var(--color-text-secondary);">Send a request to see the gateway's answer and whether it matches the contract.</p>
+          )}
+          {result && !result.ok && (
+            <div role="alert" style="font-size: 0.9rem; color: var(--color-danger);">
+              <strong>{result.code}</strong>: {result.message}
+            </div>
+          )}
+          {result && result.ok && (
             <div>
-              {/* Verdict banner */}
-              <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.6rem 0.85rem; margin-bottom: 0.75rem; background: var(--color-bg-subtle); border-radius: var(--radius-sm); font-size: 0.85rem;">
+              <div style="display: flex; flex-direction: column; gap: 0.35rem; padding: 0.6rem 0.85rem; margin-bottom: 0.75rem; background: var(--color-bg-subtle); border-radius: var(--radius-sm); font-size: 0.85rem;">
                 <div>
-                  <strong>Schema Verdict: </strong>
-                  <span style="color: responseOutput.status === 200 ? 'var(--color-success)' : 'var(--color-danger)'; font-weight: 600;">
-                    {responseOutput.verdict}
-                  </span>
+                  <strong>HTTP:</strong> {result.status} {result.statusText} ({result.durationMs} ms)
                 </div>
-                <TruthLabel level={responseOutput.evidence} />
-              </div>
-
-              {/* JSON Response Body */}
-              <div style="margin-bottom: 1rem;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
-                  <span style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: var(--color-text-muted);">
-                    Response Payload
-                  </span>
-                  <button
-                    class="btn btn-outline"
-                    style="font-size: 0.75rem; padding: 0.15rem 0.5rem; min-height: 24px;"
-                    onClick={() => copyCode(JSON.stringify(responseOutput.body, null, 2))}
-                  >
-                    Copy JSON
-                  </button>
+                <div style={{ color: statusTone }}>
+                  <strong>Contract check:</strong>{' '}
+                  {result.schema.state === 'valid'
+                    ? 'the body matches the documented schema'
+                    : result.schema.state === 'not-validated'
+                      ? result.schema.errors[0]
+                      : `does not match: ${result.schema.errors.map((e) => (typeof e === 'string' ? e : `${e.path} ${e.message}`)).slice(0, 3).join('; ')}`}
                 </div>
-                <pre style="max-height: 280px; margin: 0; font-size: 0.8em; overflow: auto;">
-                  <code>{JSON.stringify(responseOutput.body, null, 2)}</code>
-                </pre>
+                <div style="font-size: 0.8rem; color: var(--color-text-secondary);">A gateway answer is an observation of that gateway. It is not chain confirmation.</div>
               </div>
-
-              {/* Headers Table */}
-              <div>
-                <span style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: var(--color-text-muted); display: block; margin-bottom: 0.35rem;">
-                  Response Headers
-                </span>
-                <div style="font-size: 0.8rem; background: var(--color-bg-subtle); border: 1px solid var(--color-border); border-radius: var(--radius-sm); padding: 0.5rem; font-family: var(--font-mono); max-height: 120px; overflow-y: auto;">
-                  {Object.entries(responseOutput.headers).map(([k, v]) => (
-                    <div key={k} style="display: flex; justify-content: space-between; gap: 1rem;">
-                      <span style="color: var(--color-text-muted);">{k}:</span>
-                      <span style="color: var(--color-text-primary); text-align: right;">{v}</span>
+              <pre style="max-height: 280px; margin: 0 0 1rem 0; font-size: 0.8em; overflow: auto;">
+                <code>{typeof result.body === 'string' ? result.body : JSON.stringify(result.body, null, 2)}</code>
+              </pre>
+              <details>
+                <summary style="cursor: pointer; font-size: 0.85rem;">Response headers</summary>
+                <div style="font-size: 0.8rem; font-family: var(--font-mono);">
+                  {Object.entries(result.headers).map(([k, v]) => (
+                    <div key={k}>
+                      {k}: {v}
                     </div>
                   ))}
                 </div>
-              </div>
+              </details>
             </div>
           )}
         </div>

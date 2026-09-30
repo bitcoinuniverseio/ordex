@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-import { decipherRunestone, parseScriptHex, verifyRuneBurnSafety } from './runes.js';
+import { decipherRunestone, parseScriptHex, verifyRuneAllocation, verifyRuneBurnSafety } from './runes.js';
 
 const vectorsPath = fileURLToPath(new URL('../conformance/rune-burn-vectors.json', import.meta.url));
 const vectors = JSON.parse(await readFile(vectorsPath, 'utf8'));
@@ -17,11 +17,30 @@ test('the vector file covers every refusal code the verifier can return', () => 
   const codes = new Set(vectors.cases.map((c) => c.expected.code).filter(Boolean));
   assert.deepEqual(
     [...codes].sort(),
-    ['CENOTAPH_BURNS_BALANCE', 'CENOTAPH_WITH_UNPROVEN_INPUT']
+    [
+      'ALLOCATION_BURNS_BALANCE',
+      'BURN_PATH_WITH_UNPROVEN_INPUT',
+      'CENOTAPH_BURNS_BALANCE',
+      'CENOTAPH_WITH_UNPROVEN_INPUT',
+      'MALFORMED_RUNE_BALANCE',
+      'RUNE_ALLOCATION_MISMATCH',
+      'RUNE_BALANCES_REQUIRED',
+      'RUNE_MINT_UNRESOLVED',
+      'RUNE_OUTPUTS_INCOMPLETE',
+    ]
   );
 });
 
-for (const vector of vectors.cases) {
+// A vector with an expected allocation checks verifyRuneAllocation, the rest burn safety.
+for (const vector of vectors.cases.filter((c) => c.expectedAllocation)) {
+  test(`vector: ${vector.name}`, () => {
+    const verdict = verifyRuneAllocation(vector.outputScriptsHex, vector.inputs, vector.expectedAllocation, vector.mint ? { mint: vector.mint } : {});
+    assert.equal(verdict.ok, vector.expected.ok, verdict.reason || '');
+    assert.equal(verdict.code, vector.expected.code, verdict.reason || '');
+  });
+}
+
+for (const vector of vectors.cases.filter((c) => !c.expectedAllocation)) {
   test(`vector: ${vector.name}`, () => {
     const verdict = verifyRuneBurnSafety(
       vector.outputScriptsHex,
@@ -34,10 +53,13 @@ for (const vector of vectors.cases) {
       assert.equal(verdict.code, undefined);
     } else {
       assert.equal(verdict.code, vector.expected.code, verdict.reason || '');
-      assert.ok(
-        verdict.flaws.includes(vector.expected.flaw),
-        `expected flaw ${vector.expected.flaw}, got ${verdict.flaws.join(', ')}`
-      );
+      // Only a cenotaph has flaws; an allocation burn is a readable runestone.
+      if (vector.expected.flaw) {
+        assert.ok(
+          verdict.flaws.includes(vector.expected.flaw),
+          `expected flaw ${vector.expected.flaw}, got ${verdict.flaws.join(', ')}`
+        );
+      }
     }
   });
 }

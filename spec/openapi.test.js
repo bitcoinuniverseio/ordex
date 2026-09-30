@@ -44,7 +44,9 @@ test('every read declares 200 and every write declares 201', () => {
   for (const { path, method, operation } of operations) {
     const where = `${method.toUpperCase()} ${path}`;
     if (method === 'get') assert.ok(operation.responses['200'], where);
-    if (method === 'post') assert.ok(operation.responses['201'], where);
+    // A write answers 201, unless it declares x-ordex-success-status 200 because
+    // repeating it answers the stored state instead of creating anything.
+    if (method === 'post') assert.ok(operation.responses[operation['x-ordex-success-status'] === 200 ? '200' : '201'], where);
   }
 });
 
@@ -93,4 +95,28 @@ test('atomic amounts are strings, never numbers', () => {
   const sats = document.components.schemas.AtomicSats;
   assert.equal(sats.type, 'string');
   assert.ok(sats.pattern);
+});
+
+test('every purchase route documents a coded, retryable 503', () => {
+  const at = (ref) => ref.slice(2).split('/').reduce((node, key) => node[key], document);
+  const codes = document.components.schemas.PurchaseUnavailableCode.enum;
+  for (const code of ['ORDER_CHECKING', 'INPUT_INVENTORY_UNAVAILABLE']) assert.ok(codes.includes(code), code);
+  for (const path of ['/api/ordex/orders/{id}/quote', '/api/ordex/orders/{id}/preflight', '/api/ordex/orders/batch-preflight']) {
+    const response = document.paths[path].post.responses['503'];
+    assert.equal(response?.$ref, '#/components/responses/PurchaseUnavailable', path);
+  }
+  const single = at(document.components.responses.PurchaseUnavailable.content['application/json'].schema.$ref);
+  assert.deepEqual(single.allOf[1].properties.code, { $ref: '#/components/schemas/PurchaseUnavailableCode' });
+  assert.ok(single.allOf[1].required.includes('code'));
+  const batch = at(document.paths['/api/ordex/orders/batch-purchase'].post.responses['503'].content['application/json'].schema.$ref);
+  assert.ok(batch.required.includes('code'));
+  assert.deepEqual(batch.properties.refusals.items.allOf[0], { $ref: '#/components/schemas/BatchRefusal' });
+  assert.equal(document.paths['/api/ordex/orders/batch-purchase'].post.responses['409'].content['application/json'].schema.$ref, '#/components/schemas/BatchPurchaseRefused');
+});
+
+test('what the buyer approves discloses every view of the sold inscription', () => {
+  const s = document.components.schemas;
+  assert.ok(s.Quote.required.includes('assetViews'));
+  assert.ok(s.BatchPurchaseResult.properties.placements.items.required.includes('assetViews'));
+  assert.deepEqual(s.PreflightResult.properties.assetViews.items, { $ref: '#/components/schemas/AssetView' });
 });

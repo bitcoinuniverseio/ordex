@@ -6,6 +6,9 @@
  * evidence classes, and responsive layout primitives.
  */
 
+/* OX-S10: text and action colors are measured against WCAG 2.2 AA (4.5:1 for normal text).
+ * Bitcoin orange stays the accent and action background; text on it is dark ink (7.4:1), and
+ * orange as text uses --ox-accent-text (5.0:1 on the light surfaces). */
 :root {
   /* Surface colors (Light Mode Primary) */
   --ox-surface-bg: #f8f9fa;
@@ -17,7 +20,7 @@
   /* Text & Content */
   --ox-text-primary: #1a1d20;
   --ox-text-secondary: #495057;
-  --ox-text-muted: #6c757d;
+  --ox-text-muted: #5c636a;
   --ox-text-inverse: #ffffff;
 
   /* Borders & Dividers */
@@ -32,13 +35,20 @@
   --ox-bitcoin-subtle: #fff4e6;
   --ox-bitcoin-border: #ffd8a8;
 
+  /* Accessible action and accent pairs */
+  --ox-action-bg: #f7931a;
+  --ox-action-bg-hover: #e07f0a;
+  --ox-action-fg: #1a1d20;
+  --ox-text-on-accent: #1a1d20;
+  --ox-accent-text: #a35200;
+
   /* Semantic Outcome & Status States */
   --ox-status-success-bg: #ebfbee;
-  --ox-status-success-text: #2b8a3e;
+  --ox-status-success-text: #237032;
   --ox-status-success-border: #b2f2bb;
 
   --ox-status-warning-bg: #fff9db;
-  --ox-status-warning-text: #e67700;
+  --ox-status-warning-text: #a35200;
   --ox-status-warning-border: #ffec99;
 
   --ox-status-refusal-bg: #fff5f5;
@@ -122,6 +132,12 @@
   --ox-bitcoin-hover: #ffaa33;
   --ox-bitcoin-subtle: #2d1e08;
   --ox-bitcoin-border: #66410a;
+
+  --ox-action-bg: #f7931a;
+  --ox-action-bg-hover: #ffaa33;
+  --ox-action-fg: #1a1d20;
+  --ox-text-on-accent: #1a1d20;
+  --ox-accent-text: #f7931a;
 
   --ox-status-success-bg: #0d2818;
   --ox-status-success-text: #40c057;

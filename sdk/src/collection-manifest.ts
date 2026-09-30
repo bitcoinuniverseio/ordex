@@ -15,6 +15,8 @@
 import { createHash } from 'node:crypto';
 
 const HEX64 = /^[0-9a-f]{64}$/;
+const BASE64 = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
+const MAX_SIGNATURE_LENGTH = 10000;
 const NETWORKS = ['mainnet', 'testnet', 'signet', 'regtest'];
 const IDENTITY_TYPES = ['inscriptionId', 'output', 'assetId', 'satpoint'];
 const PROTOCOLS = ['ordinals', 'runes', 'stamps', 'counterparty', 'multi'];
@@ -169,6 +171,30 @@ export function buildMembershipProof(
     level = next;
   }
   return path;
+}
+
+/**
+ * The membership root a proof resolves to for one member identity, without
+ * the manifest: what an offer checks against the root its terms commit to.
+ * Returns lowercase hex, or null for a malformed proof.
+ */
+// OX-P05: funded offers bind a bare collection root, so membership is proved
+// against that root with the same leaf and node hashing as a manifest.
+export function membershipProofRoot(collectionId: string, memberIdentity: string, proof: unknown): string | null {
+  if (
+    !Array.isArray(proof) ||
+    !proof.every(
+      (step: MembershipProofStep) =>
+        !!step && HEX64.test(step.sibling as string) && (step.position === 'left' || step.position === 'right'),
+    )
+  ) {
+    return null;
+  }
+  let digest = memberLeafHash(collectionId, memberIdentity);
+  for (const step of proof as Array<{ sibling: string; position: 'left' | 'right' }>) {
+    digest = step.position === 'left' ? nodeHash(step.sibling, digest) : nodeHash(digest, step.sibling);
+  }
+  return digest;
 }
 
 /**
@@ -415,12 +441,19 @@ export type CollectionRevocationRefusalCode =
   | 'MANIFEST_DIGEST_INVALID'
   | 'REASON_REQUIRED'
   | 'CREATOR_SIGNATURE_INVALID'
+  | 'REVOCATION_CONTEXT_MISMATCH'
   | 'SIGNER_IDENTITY_MISMATCH'
   | 'MANIFEST_DIGEST_MISMATCH'
   | 'DIGEST_MISMATCH';
 
+/**
+ * TARGET_BOUND: checked against the manifest it revokes. STRUCTURE_ONLY:
+ * checked without it, so it proves nothing about which manifest it may revoke.
+ */
+export type CollectionRevocationScope = 'TARGET_BOUND' | 'STRUCTURE_ONLY';
+
 export type CollectionRevocationVerdict =
-  | { ok: true; digest: string }
+  | { ok: true; digest: string; scope: CollectionRevocationScope }
   | { ok: false; code: CollectionRevocationRefusalCode | CollectionManifestRefusalCode; reason: string };
 
 const refuseRevocation = (
@@ -431,10 +464,15 @@ const refuseRevocation = (
 /**
  * Verify a signed revocation of a manifest.
  *
- * revocation: { schema, protocolVersion, network, collectionId,
- *   manifestDigest, reason, creatorSignature { kind, address, signature },
- *   digest }
+ * With the target manifest, the revocation must name exactly its network,
+ * collection, digest and creator, and the verdict carries scope
+ * TARGET_BOUND. Without it the verdict carries scope STRUCTURE_ONLY. Registry
+ * state changes only on a TARGET_BOUND verdict together with an independent
+ * BIP-322 verification of creatorSignature over `digest`.
  */
+// OX-P09: P-R17 accepted a revocation naming another network and collection
+// because only the digest and signer were compared. The context is now checked
+// first, and a check without the target states that it proves no target.
 export function verifyManifestRevocation(
   revocation: unknown,
   manifest?: unknown,
@@ -464,19 +502,29 @@ export function verifyManifestRevocation(
   const signature = r.creatorSignature;
   if (
     !signature ||
+    typeof signature !== 'object' ||
     signature.kind !== 'bip322' ||
     typeof signature.address !== 'string' ||
-    signature.address.length === 0
+    signature.address.length === 0 ||
+    typeof signature.signature !== 'string' ||
+    signature.signature.length === 0 ||
+    signature.signature.length > MAX_SIGNATURE_LENGTH ||
+    !BASE64.test(signature.signature)
   ) {
-    return refuseRevocation('CREATOR_SIGNATURE_INVALID', 'The revocation must carry a bip322 creator signature.');
+    return refuseRevocation('CREATOR_SIGNATURE_INVALID', 'The revocation must carry a bip322 creator signature: an address and a base64 signature.');
   }
-  if (manifest) {
+  const bound = manifest !== undefined && manifest !== null;
+  if (bound) {
     const manifestVerdict = verifyCollectionManifest(manifest);
     if (!manifestVerdict.ok) return manifestVerdict;
+    const m = manifest as CollectionManifest;
+    if (r.network !== m.network || r.collectionId !== m.collectionId) {
+      return refuseRevocation('REVOCATION_CONTEXT_MISMATCH', 'The revocation names a different network or collection than the manifest it revokes.');
+    }
     if (manifestVerdict.digest !== r.manifestDigest) {
       return refuseRevocation('MANIFEST_DIGEST_MISMATCH', 'The revocation names a different manifest than the one supplied.');
     }
-    if (signature.address !== (manifest as CollectionManifest).creatorAddress) {
+    if (signature.address !== m.creatorAddress) {
       return refuseRevocation('SIGNER_IDENTITY_MISMATCH', 'The revocation was signed by an address that never created the manifest.');
     }
   }
@@ -484,5 +532,5 @@ export function verifyManifestRevocation(
   if (r.digest !== digest) {
     return refuseRevocation('DIGEST_MISMATCH', 'The revocation digest does not match its content.');
   }
-  return { ok: true, digest };
+  return { ok: true, digest, scope: bound ? 'TARGET_BOUND' : 'STRUCTURE_ONLY' };
 }

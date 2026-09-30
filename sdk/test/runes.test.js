@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-import { decipherRunestone, verifyRuneBurnSafety } from '../dist/index.js';
+import { decipherRunestone, verifyRuneAllocation, verifyRuneBurnSafety } from '../dist/index.js';
 
 const vectorsPath = fileURLToPath(
   new URL('../../conformance/rune-burn-vectors.json', import.meta.url)
@@ -12,7 +12,16 @@ const vectors = JSON.parse(await readFile(vectorsPath, 'utf8'));
 
 // The SDK port and the repository root verifier both run this exact vector
 // file, so the two implementations cannot drift apart silently.
-for (const vector of vectors.cases) {
+// A vector with an expected allocation checks verifyRuneAllocation, the rest burn safety.
+for (const vector of vectors.cases.filter((c) => c.expectedAllocation)) {
+  test(`vector: ${vector.name}`, () => {
+    const verdict = verifyRuneAllocation(vector.outputScriptsHex, vector.inputs, vector.expectedAllocation, vector.mint ? { mint: vector.mint } : {});
+    assert.equal(verdict.ok, vector.expected.ok, verdict.reason || '');
+    assert.equal(verdict.ok ? undefined : verdict.code, vector.expected.code, verdict.reason || '');
+  });
+}
+
+for (const vector of vectors.cases.filter((c) => !c.expectedAllocation)) {
   test(`vector: ${vector.name}`, () => {
     const verdict = verifyRuneBurnSafety(
       vector.outputScriptsHex,
@@ -25,10 +34,13 @@ for (const vector of vectors.cases) {
       assert.equal(verdict.code, undefined);
     } else {
       assert.equal(verdict.code, vector.expected.code, verdict.reason || '');
-      assert.ok(
-        verdict.flaws.includes(vector.expected.flaw),
-        `expected flaw ${vector.expected.flaw}, got ${verdict.flaws.join(', ')}`
-      );
+      // Only a cenotaph has flaws; an allocation burn is a readable runestone.
+      if (vector.expected.flaw) {
+        assert.ok(
+          verdict.flaws.includes(vector.expected.flaw),
+          `expected flaw ${vector.expected.flaw}, got ${verdict.flaws.join(', ')}`
+        );
+      }
     }
   });
 }

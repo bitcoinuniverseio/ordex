@@ -5,7 +5,7 @@
     {
       "name": "a cardinal batch send plan with examined inputs is accepted",
       "plan": {
-        "schema": "ordex.safeops-plan/v1",
+        "schema": "ordex.safeops-plan/v2",
         "protocolVersion": "1.2",
         "network": "mainnet",
         "operationKind": "BTC_BATCH_SEND",
@@ -15,6 +15,10 @@
           "height": 900000,
           "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
         },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
         "inputs": [
           {
             "outpoint": {
@@ -22,6 +26,8 @@
               "vout": 0
             },
             "valueSats": "50000",
+            "scriptPubKeyHex": "5120f3893c6e54427448da37c6486c37fad14849038282aaf23390ee9e144f335f64",
+            "sequence": 4294967293,
             "inventory": {
               "examined": true
             }
@@ -32,6 +38,8 @@
               "vout": 1
             },
             "valueSats": "60000",
+            "scriptPubKeyHex": "00148d85947dc48654dfe077116c141885d3b7904ce1",
+            "sequence": 4294967293,
             "inventory": {
               "examined": true
             }
@@ -68,7 +76,7 @@
           "sighashType": "DEFAULT"
         },
         "findings": [],
-        "digest": "6809a0ffd3167d90151a659912d7f12b74753d056a171a6e8797299d66008179"
+        "digest": "38072879ad33ee02d8376958e9f75dc374e0e1bf56f2e29894204336e32dff7f"
       },
       "expected": {
         "ok": true
@@ -77,7 +85,7 @@
     {
       "name": "an input that was never examined fails closed",
       "plan": {
-        "schema": "ordex.safeops-plan/v1",
+        "schema": "ordex.safeops-plan/v2",
         "protocolVersion": "1.2",
         "network": "mainnet",
         "operationKind": "BTC_BATCH_SEND",
@@ -87,6 +95,10 @@
           "height": 900000,
           "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
         },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
         "inputs": [
           {
             "outpoint": {
@@ -94,6 +106,8 @@
               "vout": 0
             },
             "valueSats": "50000",
+            "scriptPubKeyHex": "5120f3893c6e54427448da37c6486c37fad14849038282aaf23390ee9e144f335f64",
+            "sequence": 4294967293,
             "inventory": {
               "examined": false
             }
@@ -130,7 +144,7 @@
           "sighashType": "DEFAULT"
         },
         "findings": [],
-        "digest": "d870eea8aeffe94c8d8d8862054040440886533236f66147ee68f08ef744060e"
+        "digest": "1d1ca5ad5e736f57ebea2b67e25622cb3dba0e2db89a060b47d84e21f74b5c1d"
       },
       "expected": {
         "ok": false,
@@ -138,9 +152,9 @@
       }
     },
     {
-      "name": "a cardinal operation refuses an input that carries an inscription",
+      "name": "P-R04: the same outpoint spent twice is refused",
       "plan": {
-        "schema": "ordex.safeops-plan/v1",
+        "schema": "ordex.safeops-plan/v2",
         "protocolVersion": "1.2",
         "network": "mainnet",
         "operationKind": "BTC_BATCH_SEND",
@@ -150,6 +164,10 @@
           "height": 900000,
           "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
         },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
         "inputs": [
           {
             "outpoint": {
@@ -157,21 +175,20 @@
               "vout": 0
             },
             "valueSats": "50000",
+            "scriptPubKeyHex": "5120f3893c6e54427448da37c6486c37fad14849038282aaf23390ee9e144f335f64",
+            "sequence": 4294967293,
             "inventory": {
-              "examined": true,
-              "inscriptions": [
-                {
-                  "inscriptionId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0"
-                }
-              ]
+              "examined": true
             }
           },
           {
             "outpoint": {
-              "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-              "vout": 1
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0
             },
             "valueSats": "60000",
+            "scriptPubKeyHex": "5120f3893c6e54427448da37c6486c37fad14849038282aaf23390ee9e144f335f64",
+            "sequence": 4294967293,
             "inventory": {
               "examined": true
             }
@@ -208,7 +225,94 @@
           "sighashType": "DEFAULT"
         },
         "findings": [],
-        "digest": "bfad32fb5e7019e3a92b88588692d8f0b29df584f4f1708aed034f969e78cda7"
+        "digest": "1a0d127f4968fd04c9d56bbf726acbc7acb0ab1a1e9eab0a7caeabc65bd13f13"
+      },
+      "expected": {
+        "ok": false,
+        "code": "INPUT_DUPLICATED"
+      }
+    },
+    {
+      "name": "a cardinal operation refuses an input that carries an inscription",
+      "plan": {
+        "schema": "ordex.safeops-plan/v2",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "operationKind": "BTC_BATCH_SEND",
+        "createdAtHeight": 900000,
+        "expiryHeight": 900010,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
+        "inputs": [
+          {
+            "outpoint": {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0
+            },
+            "valueSats": "50000",
+            "scriptPubKeyHex": "5120f3893c6e54427448da37c6486c37fad14849038282aaf23390ee9e144f335f64",
+            "sequence": 4294967293,
+            "inventory": {
+              "examined": true,
+              "inscriptions": [
+                {
+                  "inscriptionId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+                  "offset": "0"
+                }
+              ]
+            }
+          },
+          {
+            "outpoint": {
+              "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "vout": 1
+            },
+            "valueSats": "60000",
+            "scriptPubKeyHex": "00148d85947dc48654dfe077116c141885d3b7904ce1",
+            "sequence": 4294967293,
+            "inventory": {
+              "examined": true
+            }
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "valueSats": "10000",
+            "role": "recipient"
+          },
+          {
+            "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "valueSats": "20000",
+            "role": "recipient"
+          },
+          {
+            "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "valueSats": "79400",
+            "role": "change"
+          }
+        ],
+        "assetTransitions": [],
+        "fee": {
+          "feeSats": "600",
+          "maxFeeSats": "2000",
+          "feeRateSatsPerVb": "12"
+        },
+        "signing": {
+          "requiredIndexes": [
+            0,
+            1
+          ],
+          "sighashType": "DEFAULT"
+        },
+        "findings": [],
+        "digest": "d2037b42027d0a23d57833231edeff2f03a45323747014398dace09e1203117d"
       },
       "expected": {
         "ok": false,
@@ -216,9 +320,9 @@
       }
     },
     {
-      "name": "a tracked asset without a transition is refused",
+      "name": "an inscription at offset 0 moves with the first sat of its input",
       "plan": {
-        "schema": "ordex.safeops-plan/v1",
+        "schema": "ordex.safeops-plan/v2",
         "protocolVersion": "1.2",
         "network": "mainnet",
         "operationKind": "ORDINAL_BATCH_TRANSFER",
@@ -228,6 +332,10 @@
           "height": 900000,
           "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
         },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
         "inputs": [
           {
             "outpoint": {
@@ -235,11 +343,14 @@
               "vout": 0
             },
             "valueSats": "50000",
+            "scriptPubKeyHex": "5120f3893c6e54427448da37c6486c37fad14849038282aaf23390ee9e144f335f64",
+            "sequence": 4294967293,
             "inventory": {
               "examined": true,
               "inscriptions": [
                 {
                   "inscriptionId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+                  "offset": "0",
                   "satpoint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:0:0"
                 }
               ]
@@ -251,6 +362,98 @@
               "vout": 1
             },
             "valueSats": "60000",
+            "scriptPubKeyHex": "00148d85947dc48654dfe077116c141885d3b7904ce1",
+            "sequence": 4294967293,
+            "inventory": {
+              "examined": true
+            }
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "valueSats": "10000",
+            "role": "recipient"
+          },
+          {
+            "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "valueSats": "99400",
+            "role": "change"
+          }
+        ],
+        "assetTransitions": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+            "fromInput": 0,
+            "toOutput": 0,
+            "quantity": "1"
+          }
+        ],
+        "fee": {
+          "feeSats": "600",
+          "maxFeeSats": "2000",
+          "feeRateSatsPerVb": "12"
+        },
+        "signing": {
+          "requiredIndexes": [
+            0,
+            1
+          ],
+          "sighashType": "DEFAULT"
+        },
+        "findings": [],
+        "digest": "c5b7b0ea974e4d847919908de62f40434b714840b9fd6806ebde58fdcde62076"
+      },
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "name": "a tracked asset without a transition is refused",
+      "plan": {
+        "schema": "ordex.safeops-plan/v2",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "operationKind": "ORDINAL_BATCH_TRANSFER",
+        "createdAtHeight": 900000,
+        "expiryHeight": 900010,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
+        "inputs": [
+          {
+            "outpoint": {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0
+            },
+            "valueSats": "50000",
+            "scriptPubKeyHex": "5120f3893c6e54427448da37c6486c37fad14849038282aaf23390ee9e144f335f64",
+            "sequence": 4294967293,
+            "inventory": {
+              "examined": true,
+              "inscriptions": [
+                {
+                  "inscriptionId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+                  "offset": "0",
+                  "satpoint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:0:0"
+                }
+              ]
+            }
+          },
+          {
+            "outpoint": {
+              "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "vout": 1
+            },
+            "valueSats": "60000",
+            "scriptPubKeyHex": "00148d85947dc48654dfe077116c141885d3b7904ce1",
+            "sequence": 4294967293,
             "inventory": {
               "examined": true
             }
@@ -282,7 +485,7 @@
           "sighashType": "DEFAULT"
         },
         "findings": [],
-        "digest": "58cb043df0dd3f9bef7faa159ccb79b3ac1a1e6f1245cdd60a6b507f60a268b9"
+        "digest": "d9544be301a70300c2eaf56d0fd369404a1acc32c3b3dd20744970baf1c67607"
       },
       "expected": {
         "ok": false,
@@ -292,7 +495,7 @@
     {
       "name": "a transition naming a missing output is refused",
       "plan": {
-        "schema": "ordex.safeops-plan/v1",
+        "schema": "ordex.safeops-plan/v2",
         "protocolVersion": "1.2",
         "network": "mainnet",
         "operationKind": "ORDINAL_BATCH_TRANSFER",
@@ -302,6 +505,10 @@
           "height": 900000,
           "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
         },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
         "inputs": [
           {
             "outpoint": {
@@ -309,11 +516,14 @@
               "vout": 0
             },
             "valueSats": "50000",
+            "scriptPubKeyHex": "5120f3893c6e54427448da37c6486c37fad14849038282aaf23390ee9e144f335f64",
+            "sequence": 4294967293,
             "inventory": {
               "examined": true,
               "inscriptions": [
                 {
                   "inscriptionId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+                  "offset": "0",
                   "satpoint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:0:0"
                 }
               ]
@@ -325,6 +535,8 @@
               "vout": 1
             },
             "valueSats": "60000",
+            "scriptPubKeyHex": "00148d85947dc48654dfe077116c141885d3b7904ce1",
+            "sequence": 4294967293,
             "inventory": {
               "examined": true
             }
@@ -347,7 +559,8 @@
             "assetType": "ORDINAL",
             "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
             "fromInput": 0,
-            "toOutput": 5
+            "toOutput": 5,
+            "quantity": "1"
           }
         ],
         "fee": {
@@ -363,7 +576,7 @@
           "sighashType": "DEFAULT"
         },
         "findings": [],
-        "digest": "ea791c88a72c1e304f133674036858f93982c43eaea743533f2458b9eacd99cb"
+        "digest": "97dcc31ecdd3376145c1540eeca29049e1513b32edc4931c80cf4c40a9cf5b01"
       },
       "expected": {
         "ok": false,
@@ -371,9 +584,9 @@
       }
     },
     {
-      "name": "a transition against the sat flow is refused",
+      "name": "P-R01: an inscription 1500 sats in is not delivered to output 0",
       "plan": {
-        "schema": "ordex.safeops-plan/v1",
+        "schema": "ordex.safeops-plan/v2",
         "protocolVersion": "1.2",
         "network": "mainnet",
         "operationKind": "ORDINAL_BATCH_TRANSFER",
@@ -383,43 +596,264 @@
           "height": 900000,
           "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
         },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
         "inputs": [
           {
             "outpoint": {
               "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
               "vout": 0
             },
-            "valueSats": "50000",
+            "valueSats": "2000",
+            "scriptPubKeyHex": "5120f3893c6e54427448da37c6486c37fad14849038282aaf23390ee9e144f335f64",
+            "sequence": 4294967293,
             "inventory": {
               "examined": true,
               "inscriptions": [
                 {
                   "inscriptionId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
-                  "satpoint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:0:0"
+                  "offset": "1500"
                 }
               ]
-            }
-          },
-          {
-            "outpoint": {
-              "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-              "vout": 1
-            },
-            "valueSats": "60000",
-            "inventory": {
-              "examined": true
             }
           }
         ],
         "outputs": [
           {
             "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-            "valueSats": "10000",
+            "valueSats": "1000",
             "role": "recipient"
           },
           {
-            "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-            "valueSats": "99400",
+            "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "valueSats": "900",
+            "role": "recipient"
+          }
+        ],
+        "assetTransitions": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+            "fromInput": 0,
+            "toOutput": 0,
+            "quantity": "1"
+          }
+        ],
+        "fee": {
+          "feeSats": "100",
+          "maxFeeSats": "100",
+          "feeRateSatsPerVb": "1"
+        },
+        "signing": {
+          "requiredIndexes": [
+            0
+          ],
+          "sighashType": "DEFAULT"
+        },
+        "findings": [],
+        "digest": "fc7a74eeb9cca77b600c26942567c168cf83fc24c918881a79bf85b16e9924eb"
+      },
+      "expected": {
+        "ok": false,
+        "code": "TRANSITION_MISMATCH"
+      }
+    },
+    {
+      "name": "P-R01: the same inscription is correctly planned to output 1",
+      "plan": {
+        "schema": "ordex.safeops-plan/v2",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "operationKind": "ORDINAL_BATCH_TRANSFER",
+        "createdAtHeight": 900000,
+        "expiryHeight": 900010,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
+        "inputs": [
+          {
+            "outpoint": {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0
+            },
+            "valueSats": "2000",
+            "scriptPubKeyHex": "5120f3893c6e54427448da37c6486c37fad14849038282aaf23390ee9e144f335f64",
+            "sequence": 4294967293,
+            "inventory": {
+              "examined": true,
+              "inscriptions": [
+                {
+                  "inscriptionId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+                  "offset": "1500"
+                }
+              ]
+            }
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "valueSats": "1000",
+            "role": "recipient"
+          },
+          {
+            "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "valueSats": "900",
+            "role": "recipient"
+          }
+        ],
+        "assetTransitions": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+            "fromInput": 0,
+            "toOutput": 1,
+            "quantity": "1"
+          }
+        ],
+        "fee": {
+          "feeSats": "100",
+          "maxFeeSats": "100",
+          "feeRateSatsPerVb": "1"
+        },
+        "signing": {
+          "requiredIndexes": [
+            0
+          ],
+          "sighashType": "DEFAULT"
+        },
+        "findings": [],
+        "digest": "bf337f4f2a0fddc7e3cb8e99f050a83568a78b8bff5f75c0fc6ca449209cf4f8"
+      },
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "name": "an inscription whose sat would fall into the fee is refused",
+      "plan": {
+        "schema": "ordex.safeops-plan/v2",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "operationKind": "ORDINAL_BATCH_TRANSFER",
+        "createdAtHeight": 900000,
+        "expiryHeight": 900010,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
+        "inputs": [
+          {
+            "outpoint": {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0
+            },
+            "valueSats": "2000",
+            "scriptPubKeyHex": "5120f3893c6e54427448da37c6486c37fad14849038282aaf23390ee9e144f335f64",
+            "sequence": 4294967293,
+            "inventory": {
+              "examined": true,
+              "inscriptions": [
+                {
+                  "inscriptionId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+                  "offset": "1950"
+                }
+              ]
+            }
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "valueSats": "1900",
+            "role": "recipient"
+          }
+        ],
+        "assetTransitions": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+            "fromInput": 0,
+            "toOutput": 0,
+            "quantity": "1"
+          }
+        ],
+        "fee": {
+          "feeSats": "100",
+          "maxFeeSats": "100",
+          "feeRateSatsPerVb": "1"
+        },
+        "signing": {
+          "requiredIndexes": [
+            0
+          ],
+          "sighashType": "DEFAULT"
+        },
+        "findings": [],
+        "digest": "079d003d9a80fa2036e26c88f874fd691d48e07b32b1cd1d314f2de2374ef6eb"
+      },
+      "expected": {
+        "ok": false,
+        "code": "ASSET_TO_FEE"
+      }
+    },
+    {
+      "name": "an inscription below the product postage floor is refused",
+      "plan": {
+        "schema": "ordex.safeops-plan/v2",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "operationKind": "ORDINAL_BATCH_TRANSFER",
+        "createdAtHeight": 900000,
+        "expiryHeight": 900010,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
+        "inputs": [
+          {
+            "outpoint": {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0
+            },
+            "valueSats": "2000",
+            "scriptPubKeyHex": "5120f3893c6e54427448da37c6486c37fad14849038282aaf23390ee9e144f335f64",
+            "sequence": 4294967293,
+            "inventory": {
+              "examined": true,
+              "inscriptions": [
+                {
+                  "inscriptionId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+                  "offset": "0"
+                }
+              ]
+            }
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "valueSats": "400",
+            "role": "recipient"
+          },
+          {
+            "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "valueSats": "1500",
             "role": "change"
           }
         ],
@@ -428,33 +862,193 @@
             "assetType": "ORDINAL",
             "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
             "fromInput": 0,
-            "toOutput": 1
+            "toOutput": 0,
+            "quantity": "1"
           }
         ],
         "fee": {
-          "feeSats": "600",
-          "maxFeeSats": "2000",
-          "feeRateSatsPerVb": "12"
+          "feeSats": "100",
+          "maxFeeSats": "100",
+          "feeRateSatsPerVb": "1"
         },
         "signing": {
           "requiredIndexes": [
-            0,
-            1
+            0
           ],
           "sighashType": "DEFAULT"
         },
         "findings": [],
-        "digest": "93ef02766c729cab4f4577d915a318ff4000c67d98c36fc7dcfa01d7ef2fc4ae"
+        "digest": "c6e37554513b88245c5ac12622d4088e9fd0da2cd8a7cddc809261e693e3ebd2"
       },
       "expected": {
         "ok": false,
-        "code": "TRANSITION_SAT_FLOW_MISMATCH"
+        "code": "POSTAGE_BELOW_FLOOR"
+      }
+    },
+    {
+      "name": "a rare sat range delivered whole is accepted",
+      "plan": {
+        "schema": "ordex.safeops-plan/v2",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "operationKind": "SPLIT_AND_POSTAGE",
+        "createdAtHeight": 900000,
+        "expiryHeight": 900010,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
+        "inputs": [
+          {
+            "outpoint": {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0
+            },
+            "valueSats": "20000",
+            "scriptPubKeyHex": "5120f3893c6e54427448da37c6486c37fad14849038282aaf23390ee9e144f335f64",
+            "sequence": 4294967293,
+            "inventory": {
+              "examined": true,
+              "rareSatRanges": [
+                {
+                  "rangeId": "uncommon-1",
+                  "offset": "600",
+                  "count": "1"
+                }
+              ]
+            }
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "valueSats": "600",
+            "role": "change"
+          },
+          {
+            "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "valueSats": "600",
+            "role": "preserve"
+          },
+          {
+            "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "valueSats": "18500",
+            "role": "change"
+          }
+        ],
+        "assetTransitions": [
+          {
+            "assetType": "RARE_SAT",
+            "assetId": "uncommon-1",
+            "fromInput": 0,
+            "toOutput": 1,
+            "quantity": "1"
+          }
+        ],
+        "fee": {
+          "feeSats": "300",
+          "maxFeeSats": "500",
+          "feeRateSatsPerVb": "2"
+        },
+        "signing": {
+          "requiredIndexes": [
+            0
+          ],
+          "sighashType": "DEFAULT"
+        },
+        "findings": [],
+        "digest": "3840f4bad4141f60fa0ba0816930f60e5b4ee3fa4954fce1e9641691cf0b2f87"
+      },
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "name": "a rare sat range split across outputs is refused",
+      "plan": {
+        "schema": "ordex.safeops-plan/v2",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "operationKind": "SPLIT_AND_POSTAGE",
+        "createdAtHeight": 900000,
+        "expiryHeight": 900010,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
+        "inputs": [
+          {
+            "outpoint": {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0
+            },
+            "valueSats": "20000",
+            "scriptPubKeyHex": "5120f3893c6e54427448da37c6486c37fad14849038282aaf23390ee9e144f335f64",
+            "sequence": 4294967293,
+            "inventory": {
+              "examined": true,
+              "rareSatRanges": [
+                {
+                  "rangeId": "block-9",
+                  "offset": "500",
+                  "count": "200"
+                }
+              ]
+            }
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "valueSats": "600",
+            "role": "preserve"
+          },
+          {
+            "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "valueSats": "19100",
+            "role": "change"
+          }
+        ],
+        "assetTransitions": [
+          {
+            "assetType": "RARE_SAT",
+            "assetId": "block-9",
+            "fromInput": 0,
+            "toOutput": 0,
+            "quantity": "200"
+          }
+        ],
+        "fee": {
+          "feeSats": "300",
+          "maxFeeSats": "500",
+          "feeRateSatsPerVb": "2"
+        },
+        "signing": {
+          "requiredIndexes": [
+            0
+          ],
+          "sighashType": "DEFAULT"
+        },
+        "findings": [],
+        "digest": "9485a5db4ce34534f038280260cfb6265e9949b141738e2000e64d0e0912e92b"
+      },
+      "expected": {
+        "ok": false,
+        "code": "RARE_SAT_RANGE_SPLIT"
       }
     },
     {
       "name": "an unknown claim fails closed even with a transition",
       "plan": {
-        "schema": "ordex.safeops-plan/v1",
+        "schema": "ordex.safeops-plan/v2",
         "protocolVersion": "1.2",
         "network": "mainnet",
         "operationKind": "ORDINAL_BATCH_TRANSFER",
@@ -464,6 +1058,10 @@
           "height": 900000,
           "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
         },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
         "inputs": [
           {
             "outpoint": {
@@ -471,11 +1069,14 @@
               "vout": 0
             },
             "valueSats": "50000",
+            "scriptPubKeyHex": "5120f3893c6e54427448da37c6486c37fad14849038282aaf23390ee9e144f335f64",
+            "sequence": 4294967293,
             "inventory": {
               "examined": true,
               "inscriptions": [
                 {
-                  "inscriptionId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0"
+                  "inscriptionId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+                  "offset": "0"
                 }
               ],
               "unknownClaims": [
@@ -489,6 +1090,8 @@
               "vout": 1
             },
             "valueSats": "60000",
+            "scriptPubKeyHex": "00148d85947dc48654dfe077116c141885d3b7904ce1",
+            "sequence": 4294967293,
             "inventory": {
               "examined": true
             }
@@ -511,7 +1114,8 @@
             "assetType": "ORDINAL",
             "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
             "fromInput": 0,
-            "toOutput": 0
+            "toOutput": 0,
+            "quantity": "1"
           }
         ],
         "fee": {
@@ -527,7 +1131,7 @@
           "sighashType": "DEFAULT"
         },
         "findings": [],
-        "digest": "85467d55e8c9cf7b522b556bfff3a900dd691a16eb2b87b0b29bdb1233775829"
+        "digest": "fc02a446db6e2081baa8f478fa69cceeb6b93607d017f0b32a96843e414d1f9a"
       },
       "expected": {
         "ok": false,
@@ -537,7 +1141,7 @@
     {
       "name": "outputs that do not conserve value are refused",
       "plan": {
-        "schema": "ordex.safeops-plan/v1",
+        "schema": "ordex.safeops-plan/v2",
         "protocolVersion": "1.2",
         "network": "mainnet",
         "operationKind": "BTC_BATCH_SEND",
@@ -547,6 +1151,10 @@
           "height": 900000,
           "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
         },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
         "inputs": [
           {
             "outpoint": {
@@ -554,6 +1162,8 @@
               "vout": 0
             },
             "valueSats": "50000",
+            "scriptPubKeyHex": "5120f3893c6e54427448da37c6486c37fad14849038282aaf23390ee9e144f335f64",
+            "sequence": 4294967293,
             "inventory": {
               "examined": true
             }
@@ -564,6 +1174,8 @@
               "vout": 1
             },
             "valueSats": "60000",
+            "scriptPubKeyHex": "00148d85947dc48654dfe077116c141885d3b7904ce1",
+            "sequence": 4294967293,
             "inventory": {
               "examined": true
             }
@@ -600,7 +1212,7 @@
           "sighashType": "DEFAULT"
         },
         "findings": [],
-        "digest": "979123677c3284f05304a0b2ae80721957bd1611d40f24680a7cbf44426271f7"
+        "digest": "8896c7846f41d15d6bd2e4fe455f01c13f48b649f47d3188b304260fc0c9200d"
       },
       "expected": {
         "ok": false,
@@ -608,9 +1220,9 @@
       }
     },
     {
-      "name": "a dust output is refused",
+      "name": "an output below its script dust threshold is refused",
       "plan": {
-        "schema": "ordex.safeops-plan/v1",
+        "schema": "ordex.safeops-plan/v2",
         "protocolVersion": "1.2",
         "network": "mainnet",
         "operationKind": "BTC_BATCH_SEND",
@@ -620,6 +1232,10 @@
           "height": 900000,
           "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
         },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
         "inputs": [
           {
             "outpoint": {
@@ -627,6 +1243,8 @@
               "vout": 0
             },
             "valueSats": "50000",
+            "scriptPubKeyHex": "5120f3893c6e54427448da37c6486c37fad14849038282aaf23390ee9e144f335f64",
+            "sequence": 4294967293,
             "inventory": {
               "examined": true
             }
@@ -637,6 +1255,8 @@
               "vout": 1
             },
             "valueSats": "60000",
+            "scriptPubKeyHex": "00148d85947dc48654dfe077116c141885d3b7904ce1",
+            "sequence": 4294967293,
             "inventory": {
               "examined": true
             }
@@ -645,7 +1265,7 @@
         "outputs": [
           {
             "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-            "valueSats": "100",
+            "valueSats": "293",
             "role": "recipient"
           },
           {
@@ -655,7 +1275,7 @@
           },
           {
             "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-            "valueSats": "69300",
+            "valueSats": "89107",
             "role": "change"
           }
         ],
@@ -673,7 +1293,7 @@
           "sighashType": "DEFAULT"
         },
         "findings": [],
-        "digest": "8fabdfc2b01f7c63b8e7e70fa1eaa8aaead0f527c26494c6b4ccc152158f1c38"
+        "digest": "1fcb222017fb8b09297d8b5c02508015859eac6e413a2036b43c50a3e7f4e738"
       },
       "expected": {
         "ok": false,
@@ -681,9 +1301,89 @@
       }
     },
     {
+      "name": "a P2WPKH output at the Bitcoin Core dust threshold of 294 sats is accepted",
+      "plan": {
+        "schema": "ordex.safeops-plan/v2",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "operationKind": "BTC_BATCH_SEND",
+        "createdAtHeight": 900000,
+        "expiryHeight": 900010,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
+        "inputs": [
+          {
+            "outpoint": {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0
+            },
+            "valueSats": "50000",
+            "scriptPubKeyHex": "5120f3893c6e54427448da37c6486c37fad14849038282aaf23390ee9e144f335f64",
+            "sequence": 4294967293,
+            "inventory": {
+              "examined": true
+            }
+          },
+          {
+            "outpoint": {
+              "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "vout": 1
+            },
+            "valueSats": "60000",
+            "scriptPubKeyHex": "00148d85947dc48654dfe077116c141885d3b7904ce1",
+            "sequence": 4294967293,
+            "inventory": {
+              "examined": true
+            }
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "valueSats": "294",
+            "role": "recipient"
+          },
+          {
+            "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "valueSats": "20000",
+            "role": "recipient"
+          },
+          {
+            "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "valueSats": "89106",
+            "role": "change"
+          }
+        ],
+        "assetTransitions": [],
+        "fee": {
+          "feeSats": "600",
+          "maxFeeSats": "2000",
+          "feeRateSatsPerVb": "12"
+        },
+        "signing": {
+          "requiredIndexes": [
+            0,
+            1
+          ],
+          "sighashType": "DEFAULT"
+        },
+        "findings": [],
+        "digest": "da57b911a7d749318f677be82d39c2e137bcb155706783265af52f8a2a94f4d3"
+      },
+      "expected": {
+        "ok": true
+      }
+    },
+    {
       "name": "a rune operation without a rune allocation is refused",
       "plan": {
-        "schema": "ordex.safeops-plan/v1",
+        "schema": "ordex.safeops-plan/v2",
         "protocolVersion": "1.2",
         "network": "mainnet",
         "operationKind": "RUNE_BATCH_TRANSFER",
@@ -693,6 +1393,10 @@
           "height": 900000,
           "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
         },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
         "inputs": [
           {
             "outpoint": {
@@ -700,11 +1404,14 @@
               "vout": 0
             },
             "valueSats": "50000",
+            "scriptPubKeyHex": "5120f3893c6e54427448da37c6486c37fad14849038282aaf23390ee9e144f335f64",
+            "sequence": 4294967293,
             "inventory": {
               "examined": true,
               "inscriptions": [
                 {
                   "inscriptionId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+                  "offset": "0",
                   "satpoint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:0:0"
                 }
               ]
@@ -716,6 +1423,8 @@
               "vout": 1
             },
             "valueSats": "60000",
+            "scriptPubKeyHex": "00148d85947dc48654dfe077116c141885d3b7904ce1",
+            "sequence": 4294967293,
             "inventory": {
               "examined": true
             }
@@ -738,7 +1447,8 @@
             "assetType": "ORDINAL",
             "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
             "fromInput": 0,
-            "toOutput": 0
+            "toOutput": 0,
+            "quantity": "1"
           }
         ],
         "fee": {
@@ -754,7 +1464,7 @@
           "sighashType": "DEFAULT"
         },
         "findings": [],
-        "digest": "ab352e27cdcfbd8f015bc0f85ea9cc86ba093eba1f85bc18c74a5e24b7c2596d"
+        "digest": "afd2043b59a1b0d9886c2c3e1f12b4b6ba4a851d32adeec7de9962add10f16a1"
       },
       "expected": {
         "ok": false,
@@ -762,9 +1472,1287 @@
       }
     },
     {
-      "name": "a plan whose digest was edited is refused",
+      "name": "D7: a rune on a dust output moves with an asset-free funding input",
       "plan": {
-        "schema": "ordex.safeops-plan/v1",
+        "schema": "ordex.safeops-plan/v2",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "operationKind": "RUNE_BATCH_TRANSFER",
+        "createdAtHeight": 900000,
+        "expiryHeight": 900010,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
+        "inputs": [
+          {
+            "outpoint": {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0
+            },
+            "valueSats": "546",
+            "scriptPubKeyHex": "5120f3893c6e54427448da37c6486c37fad14849038282aaf23390ee9e144f335f64",
+            "sequence": 4294967293,
+            "inventory": {
+              "examined": true,
+              "runeAllocations": [
+                {
+                  "runeId": "840000:1",
+                  "amount": "1000"
+                }
+              ]
+            }
+          },
+          {
+            "outpoint": {
+              "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "vout": 1
+            },
+            "valueSats": "20000",
+            "scriptPubKeyHex": "00148d85947dc48654dfe077116c141885d3b7904ce1",
+            "sequence": 4294967293,
+            "inventory": {
+              "examined": true
+            }
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "6a5d0800c0a23301f40301",
+            "valueSats": "0",
+            "role": "data"
+          },
+          {
+            "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "valueSats": "546",
+            "role": "recipient"
+          },
+          {
+            "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "valueSats": "19400",
+            "role": "change"
+          }
+        ],
+        "assetTransitions": [
+          {
+            "assetType": "RUNE",
+            "assetId": "840000:1",
+            "toOutput": 1,
+            "quantity": "1000"
+          }
+        ],
+        "fee": {
+          "feeSats": "600",
+          "maxFeeSats": "2000",
+          "feeRateSatsPerVb": "12"
+        },
+        "signing": {
+          "requiredIndexes": [
+            0,
+            1
+          ],
+          "sighashType": "DEFAULT"
+        },
+        "findings": [],
+        "digest": "6f46624b398f8e61992349c6a85c2657f7a34d9ce12fbdf57e003e6ba30446c5"
+      },
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "name": "D7: a funding input of a rune transfer that carries an inscription is refused",
+      "plan": {
+        "schema": "ordex.safeops-plan/v2",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "operationKind": "RUNE_BATCH_TRANSFER",
+        "createdAtHeight": 900000,
+        "expiryHeight": 900010,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
+        "inputs": [
+          {
+            "outpoint": {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0
+            },
+            "valueSats": "546",
+            "scriptPubKeyHex": "5120f3893c6e54427448da37c6486c37fad14849038282aaf23390ee9e144f335f64",
+            "sequence": 4294967293,
+            "inventory": {
+              "examined": true,
+              "runeAllocations": [
+                {
+                  "runeId": "840000:1",
+                  "amount": "1000"
+                }
+              ]
+            }
+          },
+          {
+            "outpoint": {
+              "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "vout": 1
+            },
+            "valueSats": "20000",
+            "scriptPubKeyHex": "00148d85947dc48654dfe077116c141885d3b7904ce1",
+            "sequence": 4294967293,
+            "inventory": {
+              "examined": true,
+              "inscriptions": [
+                {
+                  "inscriptionId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+                  "offset": "0"
+                }
+              ]
+            }
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "6a5d0800c0a23301f40301",
+            "valueSats": "0",
+            "role": "data"
+          },
+          {
+            "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "valueSats": "546",
+            "role": "recipient"
+          },
+          {
+            "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "valueSats": "19400",
+            "role": "change"
+          }
+        ],
+        "assetTransitions": [
+          {
+            "assetType": "RUNE",
+            "assetId": "840000:1",
+            "toOutput": 1,
+            "quantity": "1000"
+          }
+        ],
+        "fee": {
+          "feeSats": "600",
+          "maxFeeSats": "2000",
+          "feeRateSatsPerVb": "12"
+        },
+        "signing": {
+          "requiredIndexes": [
+            0,
+            1
+          ],
+          "sighashType": "DEFAULT"
+        },
+        "findings": [],
+        "digest": "fdb93f7d43eb608d26a5b2e2cb07826498a3f9060dcb142b43c3f58c80bf6f7f"
+      },
+      "expected": {
+        "ok": false,
+        "code": "RUNE_INPUT_MISSING_ALLOCATION"
+      }
+    },
+    {
+      "name": "D7: a rune transfer whose inputs are all asset-free is refused",
+      "plan": {
+        "schema": "ordex.safeops-plan/v2",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "operationKind": "RUNE_BATCH_TRANSFER",
+        "createdAtHeight": 900000,
+        "expiryHeight": 900010,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
+        "inputs": [
+          {
+            "outpoint": {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0
+            },
+            "valueSats": "546",
+            "scriptPubKeyHex": "5120f3893c6e54427448da37c6486c37fad14849038282aaf23390ee9e144f335f64",
+            "sequence": 4294967293,
+            "inventory": {
+              "examined": true
+            }
+          },
+          {
+            "outpoint": {
+              "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "vout": 1
+            },
+            "valueSats": "20000",
+            "scriptPubKeyHex": "00148d85947dc48654dfe077116c141885d3b7904ce1",
+            "sequence": 4294967293,
+            "inventory": {
+              "examined": true
+            }
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "6a5d0800c0a23301f40301",
+            "valueSats": "0",
+            "role": "data"
+          },
+          {
+            "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "valueSats": "546",
+            "role": "recipient"
+          },
+          {
+            "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "valueSats": "19400",
+            "role": "change"
+          }
+        ],
+        "assetTransitions": [
+          {
+            "assetType": "RUNE",
+            "assetId": "840000:1",
+            "toOutput": 1,
+            "quantity": "1000"
+          }
+        ],
+        "fee": {
+          "feeSats": "600",
+          "maxFeeSats": "2000",
+          "feeRateSatsPerVb": "12"
+        },
+        "signing": {
+          "requiredIndexes": [
+            0,
+            1
+          ],
+          "sighashType": "DEFAULT"
+        },
+        "findings": [],
+        "digest": "ddcde13a8d9d46ba3671fdad3019e0d4bc555b4aeebf46e34a46a59096b4ef35"
+      },
+      "expected": {
+        "ok": false,
+        "code": "RUNE_INPUT_MISSING_ALLOCATION"
+      }
+    },
+    {
+      "name": "P-R02: a zero-sat runestone with a proved allocation is accepted",
+      "plan": {
+        "schema": "ordex.safeops-plan/v2",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "operationKind": "RUNE_BATCH_TRANSFER",
+        "createdAtHeight": 900000,
+        "expiryHeight": 900010,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
+        "inputs": [
+          {
+            "outpoint": {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0
+            },
+            "valueSats": "10000",
+            "scriptPubKeyHex": "5120f3893c6e54427448da37c6486c37fad14849038282aaf23390ee9e144f335f64",
+            "sequence": 4294967293,
+            "inventory": {
+              "examined": true,
+              "runeAllocations": [
+                {
+                  "runeId": "840000:1",
+                  "amount": "1000"
+                }
+              ]
+            }
+          },
+          {
+            "outpoint": {
+              "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "vout": 1
+            },
+            "valueSats": "20000",
+            "scriptPubKeyHex": "00148d85947dc48654dfe077116c141885d3b7904ce1",
+            "sequence": 4294967293,
+            "inventory": {
+              "examined": true,
+              "runeAllocations": [
+                {
+                  "runeId": "840000:1",
+                  "amount": "200"
+                }
+              ]
+            }
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "6a5d0800c0a23301f40301",
+            "valueSats": "0",
+            "role": "data"
+          },
+          {
+            "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "valueSats": "546",
+            "role": "recipient"
+          },
+          {
+            "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "valueSats": "28854",
+            "role": "change"
+          }
+        ],
+        "assetTransitions": [
+          {
+            "assetType": "RUNE",
+            "assetId": "840000:1",
+            "toOutput": 1,
+            "quantity": "1200"
+          }
+        ],
+        "fee": {
+          "feeSats": "600",
+          "maxFeeSats": "2000",
+          "feeRateSatsPerVb": "12"
+        },
+        "signing": {
+          "requiredIndexes": [
+            0,
+            1
+          ],
+          "sighashType": "DEFAULT"
+        },
+        "findings": [],
+        "digest": "3db931790a30f83a2559ddbf3fc346cc479755252f5570d351dae5f8b7470296"
+      },
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "name": "a runestone whose edict names its own OP_RETURN burns runes and is refused",
+      "plan": {
+        "schema": "ordex.safeops-plan/v2",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "operationKind": "RUNE_BATCH_TRANSFER",
+        "createdAtHeight": 900000,
+        "expiryHeight": 900010,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
+        "inputs": [
+          {
+            "outpoint": {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0
+            },
+            "valueSats": "10000",
+            "scriptPubKeyHex": "5120f3893c6e54427448da37c6486c37fad14849038282aaf23390ee9e144f335f64",
+            "sequence": 4294967293,
+            "inventory": {
+              "examined": true,
+              "runeAllocations": [
+                {
+                  "runeId": "840000:1",
+                  "amount": "1000"
+                }
+              ]
+            }
+          },
+          {
+            "outpoint": {
+              "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "vout": 1
+            },
+            "valueSats": "20000",
+            "scriptPubKeyHex": "00148d85947dc48654dfe077116c141885d3b7904ce1",
+            "sequence": 4294967293,
+            "inventory": {
+              "examined": true,
+              "runeAllocations": [
+                {
+                  "runeId": "840000:1",
+                  "amount": "200"
+                }
+              ]
+            }
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "6a5d0800c0a23301f40300",
+            "valueSats": "0",
+            "role": "data"
+          },
+          {
+            "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "valueSats": "546",
+            "role": "recipient"
+          },
+          {
+            "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "valueSats": "28854",
+            "role": "change"
+          }
+        ],
+        "assetTransitions": [
+          {
+            "assetType": "RUNE",
+            "assetId": "840000:1",
+            "toOutput": 1,
+            "quantity": "700"
+          }
+        ],
+        "fee": {
+          "feeSats": "600",
+          "maxFeeSats": "2000",
+          "feeRateSatsPerVb": "12"
+        },
+        "signing": {
+          "requiredIndexes": [
+            0,
+            1
+          ],
+          "sighashType": "DEFAULT"
+        },
+        "findings": [],
+        "digest": "252952d90c7cf65bba859194d9ae15d4e7cf4e96f7d29bd5526531d40c391b35"
+      },
+      "expected": {
+        "ok": false,
+        "code": "ALLOCATION_BURNS_BALANCE"
+      }
+    },
+    {
+      "name": "a rune transition that states the wrong quantity is refused",
+      "plan": {
+        "schema": "ordex.safeops-plan/v2",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "operationKind": "RUNE_BATCH_TRANSFER",
+        "createdAtHeight": 900000,
+        "expiryHeight": 900010,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
+        "inputs": [
+          {
+            "outpoint": {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0
+            },
+            "valueSats": "10000",
+            "scriptPubKeyHex": "5120f3893c6e54427448da37c6486c37fad14849038282aaf23390ee9e144f335f64",
+            "sequence": 4294967293,
+            "inventory": {
+              "examined": true,
+              "runeAllocations": [
+                {
+                  "runeId": "840000:1",
+                  "amount": "1000"
+                }
+              ]
+            }
+          },
+          {
+            "outpoint": {
+              "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "vout": 1
+            },
+            "valueSats": "20000",
+            "scriptPubKeyHex": "00148d85947dc48654dfe077116c141885d3b7904ce1",
+            "sequence": 4294967293,
+            "inventory": {
+              "examined": true,
+              "runeAllocations": [
+                {
+                  "runeId": "840000:1",
+                  "amount": "200"
+                }
+              ]
+            }
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "6a5d0800c0a23301f40301",
+            "valueSats": "0",
+            "role": "data"
+          },
+          {
+            "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "valueSats": "546",
+            "role": "recipient"
+          },
+          {
+            "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "valueSats": "28854",
+            "role": "change"
+          }
+        ],
+        "assetTransitions": [
+          {
+            "assetType": "RUNE",
+            "assetId": "840000:1",
+            "toOutput": 1,
+            "quantity": "500"
+          }
+        ],
+        "fee": {
+          "feeSats": "600",
+          "maxFeeSats": "2000",
+          "feeRateSatsPerVb": "12"
+        },
+        "signing": {
+          "requiredIndexes": [
+            0,
+            1
+          ],
+          "sighashType": "DEFAULT"
+        },
+        "findings": [],
+        "digest": "665628d18a355e8398590f20829bb9b816b04b9f407c970bd5525d41a6ca6bc6"
+      },
+      "expected": {
+        "ok": false,
+        "code": "RUNE_ALLOCATION_MISMATCH"
+      }
+    },
+    {
+      "name": "a data output that carries value is refused as a burn",
+      "plan": {
+        "schema": "ordex.safeops-plan/v2",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "operationKind": "RUNE_BATCH_TRANSFER",
+        "createdAtHeight": 900000,
+        "expiryHeight": 900010,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
+        "inputs": [
+          {
+            "outpoint": {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0
+            },
+            "valueSats": "10000",
+            "scriptPubKeyHex": "5120f3893c6e54427448da37c6486c37fad14849038282aaf23390ee9e144f335f64",
+            "sequence": 4294967293,
+            "inventory": {
+              "examined": true,
+              "runeAllocations": [
+                {
+                  "runeId": "840000:1",
+                  "amount": "1000"
+                }
+              ]
+            }
+          },
+          {
+            "outpoint": {
+              "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "vout": 1
+            },
+            "valueSats": "20000",
+            "scriptPubKeyHex": "00148d85947dc48654dfe077116c141885d3b7904ce1",
+            "sequence": 4294967293,
+            "inventory": {
+              "examined": true,
+              "runeAllocations": [
+                {
+                  "runeId": "840000:1",
+                  "amount": "200"
+                }
+              ]
+            }
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "6a5d0800c0a23301f40301",
+            "valueSats": "100",
+            "role": "data"
+          },
+          {
+            "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "valueSats": "546",
+            "role": "recipient"
+          },
+          {
+            "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "valueSats": "28754",
+            "role": "change"
+          }
+        ],
+        "assetTransitions": [
+          {
+            "assetType": "RUNE",
+            "assetId": "840000:1",
+            "toOutput": 1,
+            "quantity": "1200"
+          }
+        ],
+        "fee": {
+          "feeSats": "600",
+          "maxFeeSats": "2000",
+          "feeRateSatsPerVb": "12"
+        },
+        "signing": {
+          "requiredIndexes": [
+            0,
+            1
+          ],
+          "sighashType": "DEFAULT"
+        },
+        "findings": [],
+        "digest": "191e1fa44d7e53cce07d8a9253a3d4bc950ca213b54421dc28782f0e60cdc933"
+      },
+      "expected": {
+        "ok": false,
+        "code": "DATA_OUTPUT_BURNS_VALUE"
+      }
+    },
+    {
+      "name": "an OP_RETURN given a spendable role is refused",
+      "plan": {
+        "schema": "ordex.safeops-plan/v2",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "operationKind": "RUNE_BATCH_TRANSFER",
+        "createdAtHeight": 900000,
+        "expiryHeight": 900010,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
+        "inputs": [
+          {
+            "outpoint": {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0
+            },
+            "valueSats": "10000",
+            "scriptPubKeyHex": "5120f3893c6e54427448da37c6486c37fad14849038282aaf23390ee9e144f335f64",
+            "sequence": 4294967293,
+            "inventory": {
+              "examined": true,
+              "runeAllocations": [
+                {
+                  "runeId": "840000:1",
+                  "amount": "1000"
+                }
+              ]
+            }
+          },
+          {
+            "outpoint": {
+              "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "vout": 1
+            },
+            "valueSats": "20000",
+            "scriptPubKeyHex": "00148d85947dc48654dfe077116c141885d3b7904ce1",
+            "sequence": 4294967293,
+            "inventory": {
+              "examined": true,
+              "runeAllocations": [
+                {
+                  "runeId": "840000:1",
+                  "amount": "200"
+                }
+              ]
+            }
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "6a5d0800c0a23301f40301",
+            "valueSats": "0",
+            "role": "preserve"
+          },
+          {
+            "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "valueSats": "546",
+            "role": "recipient"
+          },
+          {
+            "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "valueSats": "28854",
+            "role": "change"
+          }
+        ],
+        "assetTransitions": [
+          {
+            "assetType": "RUNE",
+            "assetId": "840000:1",
+            "toOutput": 1,
+            "quantity": "1200"
+          }
+        ],
+        "fee": {
+          "feeSats": "600",
+          "maxFeeSats": "2000",
+          "feeRateSatsPerVb": "12"
+        },
+        "signing": {
+          "requiredIndexes": [
+            0,
+            1
+          ],
+          "sighashType": "DEFAULT"
+        },
+        "findings": [],
+        "digest": "485b74df513cbaf7db52b5f938ddf83c9e4ea4a5b503f0062c45c008ccd16845"
+      },
+      "expected": {
+        "ok": false,
+        "code": "DATA_OUTPUT_ROLE_MISMATCH"
+      }
+    },
+    {
+      "name": "an OP_RETURN that is not a runestone is refused",
+      "plan": {
+        "schema": "ordex.safeops-plan/v2",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "operationKind": "BTC_BATCH_SEND",
+        "createdAtHeight": 900000,
+        "expiryHeight": 900010,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
+        "inputs": [
+          {
+            "outpoint": {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0
+            },
+            "valueSats": "50000",
+            "scriptPubKeyHex": "5120f3893c6e54427448da37c6486c37fad14849038282aaf23390ee9e144f335f64",
+            "sequence": 4294967293,
+            "inventory": {
+              "examined": true
+            }
+          },
+          {
+            "outpoint": {
+              "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "vout": 1
+            },
+            "valueSats": "60000",
+            "scriptPubKeyHex": "00148d85947dc48654dfe077116c141885d3b7904ce1",
+            "sequence": 4294967293,
+            "inventory": {
+              "examined": true
+            }
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "6a0401020304",
+            "valueSats": "0",
+            "role": "data"
+          },
+          {
+            "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "valueSats": "20000",
+            "role": "recipient"
+          },
+          {
+            "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "valueSats": "89400",
+            "role": "change"
+          }
+        ],
+        "assetTransitions": [],
+        "fee": {
+          "feeSats": "600",
+          "maxFeeSats": "2000",
+          "feeRateSatsPerVb": "12"
+        },
+        "signing": {
+          "requiredIndexes": [
+            0,
+            1
+          ],
+          "sighashType": "DEFAULT"
+        },
+        "findings": [],
+        "digest": "259b9448af438a0a5591e1a93ad10df9df98ce475da4ec7d07dedf345c00ae32"
+      },
+      "expected": {
+        "ok": false,
+        "code": "DATA_OUTPUT_NOT_PERMITTED"
+      }
+    },
+    {
+      "name": "a Counterparty attachment moves to the first spendable output",
+      "plan": {
+        "schema": "ordex.safeops-plan/v2",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "operationKind": "RECOVERY",
+        "createdAtHeight": 900000,
+        "expiryHeight": 900010,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
+        "inputs": [
+          {
+            "outpoint": {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0
+            },
+            "valueSats": "50000",
+            "scriptPubKeyHex": "5120f3893c6e54427448da37c6486c37fad14849038282aaf23390ee9e144f335f64",
+            "sequence": 4294967293,
+            "inventory": {
+              "examined": true
+            }
+          },
+          {
+            "outpoint": {
+              "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+              "vout": 2
+            },
+            "valueSats": "20000",
+            "scriptPubKeyHex": "5120f3893c6e54427448da37c6486c37fad14849038282aaf23390ee9e144f335f64",
+            "sequence": 4294967293,
+            "inventory": {
+              "examined": true,
+              "counterpartyAssets": [
+                {
+                  "name": "RAREPEPE",
+                  "assetId": "137",
+                  "quantitySats": "1"
+                }
+              ]
+            }
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "valueSats": "1000",
+            "role": "preserve"
+          },
+          {
+            "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "valueSats": "68400",
+            "role": "change"
+          }
+        ],
+        "assetTransitions": [
+          {
+            "assetType": "COUNTERPARTY",
+            "assetId": "137",
+            "fromInput": 1,
+            "toOutput": 0,
+            "quantity": "1"
+          }
+        ],
+        "fee": {
+          "feeSats": "600",
+          "maxFeeSats": "2000",
+          "feeRateSatsPerVb": "12"
+        },
+        "signing": {
+          "requiredIndexes": [
+            0,
+            1
+          ],
+          "sighashType": "DEFAULT"
+        },
+        "findings": [],
+        "digest": "7d5c08959ee256633647a5b11e783a9cd56a0280c3fb7225f25a31a0beaf3e39"
+      },
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "name": "a Counterparty attachment planned along its sat range is refused",
+      "plan": {
+        "schema": "ordex.safeops-plan/v2",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "operationKind": "RECOVERY",
+        "createdAtHeight": 900000,
+        "expiryHeight": 900010,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
+        "inputs": [
+          {
+            "outpoint": {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0
+            },
+            "valueSats": "50000",
+            "scriptPubKeyHex": "5120f3893c6e54427448da37c6486c37fad14849038282aaf23390ee9e144f335f64",
+            "sequence": 4294967293,
+            "inventory": {
+              "examined": true
+            }
+          },
+          {
+            "outpoint": {
+              "txid": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+              "vout": 2
+            },
+            "valueSats": "20000",
+            "scriptPubKeyHex": "5120f3893c6e54427448da37c6486c37fad14849038282aaf23390ee9e144f335f64",
+            "sequence": 4294967293,
+            "inventory": {
+              "examined": true,
+              "counterpartyAssets": [
+                {
+                  "name": "RAREPEPE",
+                  "assetId": "137",
+                  "quantitySats": "1"
+                }
+              ]
+            }
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "valueSats": "1000",
+            "role": "preserve"
+          },
+          {
+            "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "valueSats": "68400",
+            "role": "change"
+          }
+        ],
+        "assetTransitions": [
+          {
+            "assetType": "COUNTERPARTY",
+            "assetId": "137",
+            "fromInput": 1,
+            "toOutput": 1,
+            "quantity": "1"
+          }
+        ],
+        "fee": {
+          "feeSats": "600",
+          "maxFeeSats": "2000",
+          "feeRateSatsPerVb": "12"
+        },
+        "signing": {
+          "requiredIndexes": [
+            0,
+            1
+          ],
+          "sighashType": "DEFAULT"
+        },
+        "findings": [],
+        "digest": "9f8ec61ee50fb1e2c1df7845c23480c518a42bc15a9dfa7a1085aa573ac168e6"
+      },
+      "expected": {
+        "ok": false,
+        "code": "TRANSITION_MISMATCH"
+      }
+    },
+    {
+      "name": "P-R03: a null signing policy is refused, never thrown on",
+      "plan": {
+        "schema": "ordex.safeops-plan/v2",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "operationKind": "BTC_BATCH_SEND",
+        "createdAtHeight": 900000,
+        "expiryHeight": 900010,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
+        "inputs": [
+          {
+            "outpoint": {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0
+            },
+            "valueSats": "50000",
+            "scriptPubKeyHex": "5120f3893c6e54427448da37c6486c37fad14849038282aaf23390ee9e144f335f64",
+            "sequence": 4294967293,
+            "inventory": {
+              "examined": true
+            }
+          },
+          {
+            "outpoint": {
+              "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "vout": 1
+            },
+            "valueSats": "60000",
+            "scriptPubKeyHex": "00148d85947dc48654dfe077116c141885d3b7904ce1",
+            "sequence": 4294967293,
+            "inventory": {
+              "examined": true
+            }
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "valueSats": "10000",
+            "role": "recipient"
+          },
+          {
+            "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "valueSats": "20000",
+            "role": "recipient"
+          },
+          {
+            "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "valueSats": "79400",
+            "role": "change"
+          }
+        ],
+        "assetTransitions": [],
+        "fee": {
+          "feeSats": "600",
+          "maxFeeSats": "2000",
+          "feeRateSatsPerVb": "12"
+        },
+        "signing": null,
+        "findings": [],
+        "digest": "370d954be049357a62ffaf6392450fcf54740040df86d6dbe98520cf7c83313d"
+      },
+      "expected": {
+        "ok": false,
+        "code": "SIGNING_INVALID"
+      }
+    },
+    {
+      "name": "a signing policy that skips an input is refused",
+      "plan": {
+        "schema": "ordex.safeops-plan/v2",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "operationKind": "BTC_BATCH_SEND",
+        "createdAtHeight": 900000,
+        "expiryHeight": 900010,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
+        "inputs": [
+          {
+            "outpoint": {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0
+            },
+            "valueSats": "50000",
+            "scriptPubKeyHex": "5120f3893c6e54427448da37c6486c37fad14849038282aaf23390ee9e144f335f64",
+            "sequence": 4294967293,
+            "inventory": {
+              "examined": true
+            }
+          },
+          {
+            "outpoint": {
+              "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "vout": 1
+            },
+            "valueSats": "60000",
+            "scriptPubKeyHex": "00148d85947dc48654dfe077116c141885d3b7904ce1",
+            "sequence": 4294967293,
+            "inventory": {
+              "examined": true
+            }
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "valueSats": "10000",
+            "role": "recipient"
+          },
+          {
+            "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "valueSats": "20000",
+            "role": "recipient"
+          },
+          {
+            "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "valueSats": "79400",
+            "role": "change"
+          }
+        ],
+        "assetTransitions": [],
+        "fee": {
+          "feeSats": "600",
+          "maxFeeSats": "2000",
+          "feeRateSatsPerVb": "12"
+        },
+        "signing": {
+          "requiredIndexes": [
+            0
+          ],
+          "sighashType": "DEFAULT"
+        },
+        "findings": [],
+        "digest": "8400156f03a8dea0fbe82b8436bec3c9ff1845c86b14de61b6a89cec7d3f52ba"
+      },
+      "expected": {
+        "ok": false,
+        "code": "SIGNING_INVALID"
+      }
+    },
+    {
+      "name": "a sighash that lets the transaction change after signing is refused",
+      "plan": {
+        "schema": "ordex.safeops-plan/v2",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "operationKind": "BTC_BATCH_SEND",
+        "createdAtHeight": 900000,
+        "expiryHeight": 900010,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
+        "inputs": [
+          {
+            "outpoint": {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0
+            },
+            "valueSats": "50000",
+            "scriptPubKeyHex": "5120f3893c6e54427448da37c6486c37fad14849038282aaf23390ee9e144f335f64",
+            "sequence": 4294967293,
+            "inventory": {
+              "examined": true
+            }
+          },
+          {
+            "outpoint": {
+              "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "vout": 1
+            },
+            "valueSats": "60000",
+            "scriptPubKeyHex": "00148d85947dc48654dfe077116c141885d3b7904ce1",
+            "sequence": 4294967293,
+            "inventory": {
+              "examined": true
+            }
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "valueSats": "10000",
+            "role": "recipient"
+          },
+          {
+            "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "valueSats": "20000",
+            "role": "recipient"
+          },
+          {
+            "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "valueSats": "79400",
+            "role": "change"
+          }
+        ],
+        "assetTransitions": [],
+        "fee": {
+          "feeSats": "600",
+          "maxFeeSats": "2000",
+          "feeRateSatsPerVb": "12"
+        },
+        "signing": {
+          "requiredIndexes": [
+            0,
+            1
+          ],
+          "sighashType": "SINGLE|ANYONECANPAY"
+        },
+        "findings": [],
+        "digest": "16ced5d1528ee74b26e001ff4b393040515d986017232f8b825136734ae99ee0"
+      },
+      "expected": {
+        "ok": false,
+        "code": "SIGHASH_NOT_PERMITTED"
+      }
+    },
+    {
+      "name": "a plan that does not fix version and locktime is refused",
+      "plan": {
+        "schema": "ordex.safeops-plan/v2",
         "protocolVersion": "1.2",
         "network": "mainnet",
         "operationKind": "BTC_BATCH_SEND",
@@ -781,6 +2769,8 @@
               "vout": 0
             },
             "valueSats": "50000",
+            "scriptPubKeyHex": "5120f3893c6e54427448da37c6486c37fad14849038282aaf23390ee9e144f335f64",
+            "sequence": 4294967293,
             "inventory": {
               "examined": true
             }
@@ -791,6 +2781,170 @@
               "vout": 1
             },
             "valueSats": "60000",
+            "scriptPubKeyHex": "00148d85947dc48654dfe077116c141885d3b7904ce1",
+            "sequence": 4294967293,
+            "inventory": {
+              "examined": true
+            }
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "valueSats": "10000",
+            "role": "recipient"
+          },
+          {
+            "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "valueSats": "20000",
+            "role": "recipient"
+          },
+          {
+            "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "valueSats": "79400",
+            "role": "change"
+          }
+        ],
+        "assetTransitions": [],
+        "fee": {
+          "feeSats": "600",
+          "maxFeeSats": "2000",
+          "feeRateSatsPerVb": "12"
+        },
+        "signing": {
+          "requiredIndexes": [
+            0,
+            1
+          ],
+          "sighashType": "DEFAULT"
+        },
+        "findings": [],
+        "digest": "8aedf92dea55e0477f7ee5fa5ccff7955e9a26e0f0183c6afd4e55f8ba4179f4"
+      },
+      "expected": {
+        "ok": false,
+        "code": "TRANSACTION_INVALID"
+      }
+    },
+    {
+      "name": "a v1 plan is refused rather than reinterpreted",
+      "plan": {
+        "schema": "ordex.safeops-plan/v1",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "operationKind": "BTC_BATCH_SEND",
+        "createdAtHeight": 900000,
+        "expiryHeight": 900010,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
+        "inputs": [
+          {
+            "outpoint": {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0
+            },
+            "valueSats": "50000",
+            "scriptPubKeyHex": "5120f3893c6e54427448da37c6486c37fad14849038282aaf23390ee9e144f335f64",
+            "sequence": 4294967293,
+            "inventory": {
+              "examined": true
+            }
+          },
+          {
+            "outpoint": {
+              "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "vout": 1
+            },
+            "valueSats": "60000",
+            "scriptPubKeyHex": "00148d85947dc48654dfe077116c141885d3b7904ce1",
+            "sequence": 4294967293,
+            "inventory": {
+              "examined": true
+            }
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "valueSats": "10000",
+            "role": "recipient"
+          },
+          {
+            "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "valueSats": "20000",
+            "role": "recipient"
+          },
+          {
+            "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "valueSats": "79400",
+            "role": "change"
+          }
+        ],
+        "assetTransitions": [],
+        "fee": {
+          "feeSats": "600",
+          "maxFeeSats": "2000",
+          "feeRateSatsPerVb": "12"
+        },
+        "signing": {
+          "requiredIndexes": [
+            0,
+            1
+          ],
+          "sighashType": "DEFAULT"
+        },
+        "findings": [],
+        "digest": "f31e27269317a24c4e28c6b96793db72e3a880f156e1011a8058483217500520"
+      },
+      "expected": {
+        "ok": false,
+        "code": "SCHEMA_UNSUPPORTED"
+      }
+    },
+    {
+      "name": "a plan whose digest was edited is refused",
+      "plan": {
+        "schema": "ordex.safeops-plan/v2",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "operationKind": "BTC_BATCH_SEND",
+        "createdAtHeight": 900000,
+        "expiryHeight": 900010,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
+        "inputs": [
+          {
+            "outpoint": {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0
+            },
+            "valueSats": "50000",
+            "scriptPubKeyHex": "5120f3893c6e54427448da37c6486c37fad14849038282aaf23390ee9e144f335f64",
+            "sequence": 4294967293,
+            "inventory": {
+              "examined": true
+            }
+          },
+          {
+            "outpoint": {
+              "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "vout": 1
+            },
+            "valueSats": "60000",
+            "scriptPubKeyHex": "00148d85947dc48654dfe077116c141885d3b7904ce1",
+            "sequence": 4294967293,
             "inventory": {
               "examined": true
             }
@@ -837,7 +2991,7 @@
     {
       "name": "a fully signed result matching its plan is accepted",
       "plan": {
-        "schema": "ordex.safeops-plan/v1",
+        "schema": "ordex.safeops-plan/v2",
         "protocolVersion": "1.2",
         "network": "mainnet",
         "operationKind": "ORDINAL_BATCH_TRANSFER",
@@ -847,6 +3001,10 @@
           "height": 900000,
           "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
         },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
         "inputs": [
           {
             "outpoint": {
@@ -854,11 +3012,14 @@
               "vout": 0
             },
             "valueSats": "50000",
+            "scriptPubKeyHex": "5120f3893c6e54427448da37c6486c37fad14849038282aaf23390ee9e144f335f64",
+            "sequence": 4294967293,
             "inventory": {
               "examined": true,
               "inscriptions": [
                 {
                   "inscriptionId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+                  "offset": "0",
                   "satpoint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:0:0"
                 }
               ]
@@ -870,6 +3031,8 @@
               "vout": 1
             },
             "valueSats": "60000",
+            "scriptPubKeyHex": "00148d85947dc48654dfe077116c141885d3b7904ce1",
+            "sequence": 4294967293,
             "inventory": {
               "examined": true
             }
@@ -892,7 +3055,8 @@
             "assetType": "ORDINAL",
             "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
             "fromInput": 0,
-            "toOutput": 0
+            "toOutput": 0,
+            "quantity": "1"
           }
         ],
         "fee": {
@@ -908,39 +3072,116 @@
           "sighashType": "DEFAULT"
         },
         "findings": [],
-        "digest": "9f1fdf6eacb72561a6e45385bcc5e9fc6522e4b942ea6317cf86e944a603c4e5"
+        "digest": "c5b7b0ea974e4d847919908de62f40434b714840b9fd6806ebde58fdcde62076"
       },
       "signed": {
-        "schema": "ordex.safeops-signed-result/v1",
-        "planDigest": "9f1fdf6eacb72561a6e45385bcc5e9fc6522e4b942ea6317cf86e944a603c4e5",
-        "tx": {
-          "inputs": [
-            {
+        "schema": "ordex.safeops-signed-result/v2",
+        "planDigest": "c5b7b0ea974e4d847919908de62f40434b714840b9fd6806ebde58fdcde62076",
+        "signedTxHex": "02000000000102aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa0000000000fdffffffbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb0100000000fdffffff021027000000000000225120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa4884010000000000160014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb0140646120a0904df46e1a72f7a1fc54cdc74cb9420b1780b2e36753a423bc6e1b25a71ceb6d96b5487097a6b1bc23ca82d446cad97afcdbf64929748ac8745eda4f02483045022100b7cf95fda0118997ccd108ad2492939ddc8fd66c5f6fdb0d4b2300ac0db35877022040f1a3788470534c60d1beb26a3c5c7b7b7e916018c428789b5995d43e807a07012102084ed3ade9df5c68a68c0b74f0e7ccd16d8a8c4bae4bf5d5b2e1b2a5dd6229f900000000"
+      },
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "name": "a signed rune transfer with its runestone is accepted",
+      "plan": {
+        "schema": "ordex.safeops-plan/v2",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "operationKind": "RUNE_BATCH_TRANSFER",
+        "createdAtHeight": 900000,
+        "expiryHeight": 900010,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
+        "inputs": [
+          {
+            "outpoint": {
               "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-              "vout": 0,
-              "valueSats": "50000",
-              "signaturePresent": true,
-              "sighashType": "DEFAULT"
+              "vout": 0
             },
-            {
+            "valueSats": "10000",
+            "scriptPubKeyHex": "5120f3893c6e54427448da37c6486c37fad14849038282aaf23390ee9e144f335f64",
+            "sequence": 4294967293,
+            "inventory": {
+              "examined": true,
+              "runeAllocations": [
+                {
+                  "runeId": "840000:1",
+                  "amount": "1000"
+                }
+              ]
+            }
+          },
+          {
+            "outpoint": {
               "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-              "vout": 1,
-              "valueSats": "60000",
-              "signaturePresent": true,
-              "sighashType": "DEFAULT"
-            }
-          ],
-          "outputs": [
-            {
-              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-              "valueSats": "10000"
+              "vout": 1
             },
-            {
-              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-              "valueSats": "99400"
+            "valueSats": "20000",
+            "scriptPubKeyHex": "00148d85947dc48654dfe077116c141885d3b7904ce1",
+            "sequence": 4294967293,
+            "inventory": {
+              "examined": true,
+              "runeAllocations": [
+                {
+                  "runeId": "840000:1",
+                  "amount": "200"
+                }
+              ]
             }
-          ]
-        }
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "6a5d0800c0a23301f40301",
+            "valueSats": "0",
+            "role": "data"
+          },
+          {
+            "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "valueSats": "546",
+            "role": "recipient"
+          },
+          {
+            "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "valueSats": "28854",
+            "role": "change"
+          }
+        ],
+        "assetTransitions": [
+          {
+            "assetType": "RUNE",
+            "assetId": "840000:1",
+            "toOutput": 1,
+            "quantity": "1200"
+          }
+        ],
+        "fee": {
+          "feeSats": "600",
+          "maxFeeSats": "2000",
+          "feeRateSatsPerVb": "12"
+        },
+        "signing": {
+          "requiredIndexes": [
+            0,
+            1
+          ],
+          "sighashType": "DEFAULT"
+        },
+        "findings": [],
+        "digest": "3db931790a30f83a2559ddbf3fc346cc479755252f5570d351dae5f8b7470296"
+      },
+      "signed": {
+        "schema": "ordex.safeops-signed-result/v2",
+        "planDigest": "3db931790a30f83a2559ddbf3fc346cc479755252f5570d351dae5f8b7470296",
+        "signedTxHex": "02000000000102aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa0000000000fdffffffbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb0100000000fdffffff0300000000000000000b6a5d0800c0a23301f403012202000000000000225120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab670000000000000160014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb014051dc843fd89fe4be2820bd95f2e6bf87b5d79b270e78fd96b2927db13962ce282aa9d555d3322858be8bb5039b3641f04d6f520d73cb731212b008f3240f47700247304402202a7f553198fa9a1cef5abcc58eb9510ac594efdaa14a121dd725fcbc4caee4bd02201202d466bb361b1b65aac7ff837e445fc2c977ab9bbaf5d3a74fdd856802c62b012102084ed3ade9df5c68a68c0b74f0e7ccd16d8a8c4bae4bf5d5b2e1b2a5dd6229f900000000"
       },
       "expected": {
         "ok": true
@@ -949,7 +3190,7 @@
     {
       "name": "a signed result from a different plan is refused",
       "plan": {
-        "schema": "ordex.safeops-plan/v1",
+        "schema": "ordex.safeops-plan/v2",
         "protocolVersion": "1.2",
         "network": "mainnet",
         "operationKind": "ORDINAL_BATCH_TRANSFER",
@@ -959,6 +3200,10 @@
           "height": 900000,
           "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
         },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
         "inputs": [
           {
             "outpoint": {
@@ -966,11 +3211,14 @@
               "vout": 0
             },
             "valueSats": "50000",
+            "scriptPubKeyHex": "5120f3893c6e54427448da37c6486c37fad14849038282aaf23390ee9e144f335f64",
+            "sequence": 4294967293,
             "inventory": {
               "examined": true,
               "inscriptions": [
                 {
                   "inscriptionId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+                  "offset": "0",
                   "satpoint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:0:0"
                 }
               ]
@@ -982,6 +3230,8 @@
               "vout": 1
             },
             "valueSats": "60000",
+            "scriptPubKeyHex": "00148d85947dc48654dfe077116c141885d3b7904ce1",
+            "sequence": 4294967293,
             "inventory": {
               "examined": true
             }
@@ -1004,7 +3254,8 @@
             "assetType": "ORDINAL",
             "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
             "fromInput": 0,
-            "toOutput": 0
+            "toOutput": 0,
+            "quantity": "1"
           }
         ],
         "fee": {
@@ -1020,39 +3271,12 @@
           "sighashType": "DEFAULT"
         },
         "findings": [],
-        "digest": "9f1fdf6eacb72561a6e45385bcc5e9fc6522e4b942ea6317cf86e944a603c4e5"
+        "digest": "c5b7b0ea974e4d847919908de62f40434b714840b9fd6806ebde58fdcde62076"
       },
       "signed": {
-        "schema": "ordex.safeops-signed-result/v1",
-        "planDigest": "bfc86f1bba4f9e1f0c4725eb46037e90ac3d8c622121622f45f4bbc44b1476de",
-        "tx": {
-          "inputs": [
-            {
-              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-              "vout": 0,
-              "valueSats": "50000",
-              "signaturePresent": true,
-              "sighashType": "DEFAULT"
-            },
-            {
-              "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-              "vout": 1,
-              "valueSats": "60000",
-              "signaturePresent": true,
-              "sighashType": "DEFAULT"
-            }
-          ],
-          "outputs": [
-            {
-              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-              "valueSats": "10000"
-            },
-            {
-              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-              "valueSats": "99400"
-            }
-          ]
-        }
+        "schema": "ordex.safeops-signed-result/v2",
+        "planDigest": "9678f84588cc53a183f386b9715056608f39f01c17a9ebef2981ec99d097a8f0",
+        "signedTxHex": "02000000000102aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa0000000000fdffffffbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb0100000000fdffffff021027000000000000225120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa4884010000000000160014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb0140646120a0904df46e1a72f7a1fc54cdc74cb9420b1780b2e36753a423bc6e1b25a71ceb6d96b5487097a6b1bc23ca82d446cad97afcdbf64929748ac8745eda4f02483045022100b7cf95fda0118997ccd108ad2492939ddc8fd66c5f6fdb0d4b2300ac0db35877022040f1a3788470534c60d1beb26a3c5c7b7b7e916018c428789b5995d43e807a07012102084ed3ade9df5c68a68c0b74f0e7ccd16d8a8c4bae4bf5d5b2e1b2a5dd6229f900000000"
       },
       "expected": {
         "ok": false,
@@ -1062,7 +3286,7 @@
     {
       "name": "a changed output script is refused after signing",
       "plan": {
-        "schema": "ordex.safeops-plan/v1",
+        "schema": "ordex.safeops-plan/v2",
         "protocolVersion": "1.2",
         "network": "mainnet",
         "operationKind": "ORDINAL_BATCH_TRANSFER",
@@ -1072,6 +3296,10 @@
           "height": 900000,
           "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
         },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
         "inputs": [
           {
             "outpoint": {
@@ -1079,11 +3307,14 @@
               "vout": 0
             },
             "valueSats": "50000",
+            "scriptPubKeyHex": "5120f3893c6e54427448da37c6486c37fad14849038282aaf23390ee9e144f335f64",
+            "sequence": 4294967293,
             "inventory": {
               "examined": true,
               "inscriptions": [
                 {
                   "inscriptionId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+                  "offset": "0",
                   "satpoint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:0:0"
                 }
               ]
@@ -1095,6 +3326,8 @@
               "vout": 1
             },
             "valueSats": "60000",
+            "scriptPubKeyHex": "00148d85947dc48654dfe077116c141885d3b7904ce1",
+            "sequence": 4294967293,
             "inventory": {
               "examined": true
             }
@@ -1117,7 +3350,8 @@
             "assetType": "ORDINAL",
             "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
             "fromInput": 0,
-            "toOutput": 0
+            "toOutput": 0,
+            "quantity": "1"
           }
         ],
         "fee": {
@@ -1133,39 +3367,12 @@
           "sighashType": "DEFAULT"
         },
         "findings": [],
-        "digest": "9f1fdf6eacb72561a6e45385bcc5e9fc6522e4b942ea6317cf86e944a603c4e5"
+        "digest": "c5b7b0ea974e4d847919908de62f40434b714840b9fd6806ebde58fdcde62076"
       },
       "signed": {
-        "schema": "ordex.safeops-signed-result/v1",
-        "planDigest": "9f1fdf6eacb72561a6e45385bcc5e9fc6522e4b942ea6317cf86e944a603c4e5",
-        "tx": {
-          "inputs": [
-            {
-              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-              "vout": 0,
-              "valueSats": "50000",
-              "signaturePresent": true,
-              "sighashType": "DEFAULT"
-            },
-            {
-              "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-              "vout": 1,
-              "valueSats": "60000",
-              "signaturePresent": true,
-              "sighashType": "DEFAULT"
-            }
-          ],
-          "outputs": [
-            {
-              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-              "valueSats": "10000"
-            },
-            {
-              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-              "valueSats": "99400"
-            }
-          ]
-        }
+        "schema": "ordex.safeops-signed-result/v2",
+        "planDigest": "c5b7b0ea974e4d847919908de62f40434b714840b9fd6806ebde58fdcde62076",
+        "signedTxHex": "02000000000102aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa0000000000fdffffffbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb0100000000fdffffff021027000000000000160014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb4884010000000000160014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb0140646120a0904df46e1a72f7a1fc54cdc74cb9420b1780b2e36753a423bc6e1b25a71ceb6d96b5487097a6b1bc23ca82d446cad97afcdbf64929748ac8745eda4f02483045022100b7cf95fda0118997ccd108ad2492939ddc8fd66c5f6fdb0d4b2300ac0db35877022040f1a3788470534c60d1beb26a3c5c7b7b7e916018c428789b5995d43e807a07012102084ed3ade9df5c68a68c0b74f0e7ccd16d8a8c4bae4bf5d5b2e1b2a5dd6229f900000000"
       },
       "expected": {
         "ok": false,
@@ -1175,7 +3382,7 @@
     {
       "name": "an unsigned required input is refused",
       "plan": {
-        "schema": "ordex.safeops-plan/v1",
+        "schema": "ordex.safeops-plan/v2",
         "protocolVersion": "1.2",
         "network": "mainnet",
         "operationKind": "ORDINAL_BATCH_TRANSFER",
@@ -1185,6 +3392,10 @@
           "height": 900000,
           "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
         },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
         "inputs": [
           {
             "outpoint": {
@@ -1192,11 +3403,14 @@
               "vout": 0
             },
             "valueSats": "50000",
+            "scriptPubKeyHex": "5120f3893c6e54427448da37c6486c37fad14849038282aaf23390ee9e144f335f64",
+            "sequence": 4294967293,
             "inventory": {
               "examined": true,
               "inscriptions": [
                 {
                   "inscriptionId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+                  "offset": "0",
                   "satpoint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:0:0"
                 }
               ]
@@ -1208,6 +3422,8 @@
               "vout": 1
             },
             "valueSats": "60000",
+            "scriptPubKeyHex": "00148d85947dc48654dfe077116c141885d3b7904ce1",
+            "sequence": 4294967293,
             "inventory": {
               "examined": true
             }
@@ -1230,7 +3446,8 @@
             "assetType": "ORDINAL",
             "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
             "fromInput": 0,
-            "toOutput": 0
+            "toOutput": 0,
+            "quantity": "1"
           }
         ],
         "fee": {
@@ -1246,39 +3463,12 @@
           "sighashType": "DEFAULT"
         },
         "findings": [],
-        "digest": "9f1fdf6eacb72561a6e45385bcc5e9fc6522e4b942ea6317cf86e944a603c4e5"
+        "digest": "c5b7b0ea974e4d847919908de62f40434b714840b9fd6806ebde58fdcde62076"
       },
       "signed": {
-        "schema": "ordex.safeops-signed-result/v1",
-        "planDigest": "9f1fdf6eacb72561a6e45385bcc5e9fc6522e4b942ea6317cf86e944a603c4e5",
-        "tx": {
-          "inputs": [
-            {
-              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-              "vout": 0,
-              "valueSats": "50000",
-              "signaturePresent": false,
-              "sighashType": "DEFAULT"
-            },
-            {
-              "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-              "vout": 1,
-              "valueSats": "60000",
-              "signaturePresent": true,
-              "sighashType": "DEFAULT"
-            }
-          ],
-          "outputs": [
-            {
-              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-              "valueSats": "10000"
-            },
-            {
-              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-              "valueSats": "99400"
-            }
-          ]
-        }
+        "schema": "ordex.safeops-signed-result/v2",
+        "planDigest": "c5b7b0ea974e4d847919908de62f40434b714840b9fd6806ebde58fdcde62076",
+        "signedTxHex": "02000000000102aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa0000000000fdffffffbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb0100000000fdffffff021027000000000000225120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa4884010000000000160014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb0002483045022100b7cf95fda0118997ccd108ad2492939ddc8fd66c5f6fdb0d4b2300ac0db35877022040f1a3788470534c60d1beb26a3c5c7b7b7e916018c428789b5995d43e807a07012102084ed3ade9df5c68a68c0b74f0e7ccd16d8a8c4bae4bf5d5b2e1b2a5dd6229f900000000"
       },
       "expected": {
         "ok": false,
@@ -1286,9 +3476,9 @@
       }
     },
     {
-      "name": "a signature outside the signing policy is refused",
+      "name": "a signature made over another transaction is refused",
       "plan": {
-        "schema": "ordex.safeops-plan/v1",
+        "schema": "ordex.safeops-plan/v2",
         "protocolVersion": "1.2",
         "network": "mainnet",
         "operationKind": "ORDINAL_BATCH_TRANSFER",
@@ -1298,6 +3488,10 @@
           "height": 900000,
           "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
         },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
         "inputs": [
           {
             "outpoint": {
@@ -1305,11 +3499,14 @@
               "vout": 0
             },
             "valueSats": "50000",
+            "scriptPubKeyHex": "5120f3893c6e54427448da37c6486c37fad14849038282aaf23390ee9e144f335f64",
+            "sequence": 4294967293,
             "inventory": {
               "examined": true,
               "inscriptions": [
                 {
                   "inscriptionId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+                  "offset": "0",
                   "satpoint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:0:0"
                 }
               ]
@@ -1321,6 +3518,8 @@
               "vout": 1
             },
             "valueSats": "60000",
+            "scriptPubKeyHex": "00148d85947dc48654dfe077116c141885d3b7904ce1",
+            "sequence": 4294967293,
             "inventory": {
               "examined": true
             }
@@ -1343,119 +3542,8 @@
             "assetType": "ORDINAL",
             "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
             "fromInput": 0,
-            "toOutput": 0
-          }
-        ],
-        "fee": {
-          "feeSats": "600",
-          "maxFeeSats": "2000",
-          "feeRateSatsPerVb": "12"
-        },
-        "signing": {
-          "requiredIndexes": [
-            0
-          ],
-          "sighashType": "DEFAULT"
-        },
-        "findings": [],
-        "digest": "80beb3df0798dd4e5387c65d7d5f7bd6175177359452c826bbed4a77c6fc6d61"
-      },
-      "signed": {
-        "schema": "ordex.safeops-signed-result/v1",
-        "planDigest": "80beb3df0798dd4e5387c65d7d5f7bd6175177359452c826bbed4a77c6fc6d61",
-        "tx": {
-          "inputs": [
-            {
-              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-              "vout": 0,
-              "valueSats": "50000",
-              "signaturePresent": true,
-              "sighashType": "DEFAULT"
-            },
-            {
-              "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-              "vout": 1,
-              "valueSats": "60000",
-              "signaturePresent": true,
-              "sighashType": "DEFAULT"
-            }
-          ],
-          "outputs": [
-            {
-              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-              "valueSats": "10000"
-            },
-            {
-              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-              "valueSats": "99400"
-            }
-          ]
-        }
-      },
-      "expected": {
-        "ok": false,
-        "code": "UNEXPECTED_SIGNATURE"
-      }
-    },
-    {
-      "name": "a changed sighash is refused",
-      "plan": {
-        "schema": "ordex.safeops-plan/v1",
-        "protocolVersion": "1.2",
-        "network": "mainnet",
-        "operationKind": "ORDINAL_BATCH_TRANSFER",
-        "createdAtHeight": 900000,
-        "expiryHeight": 900010,
-        "checkpoint": {
-          "height": 900000,
-          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
-        },
-        "inputs": [
-          {
-            "outpoint": {
-              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-              "vout": 0
-            },
-            "valueSats": "50000",
-            "inventory": {
-              "examined": true,
-              "inscriptions": [
-                {
-                  "inscriptionId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
-                  "satpoint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:0:0"
-                }
-              ]
-            }
-          },
-          {
-            "outpoint": {
-              "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-              "vout": 1
-            },
-            "valueSats": "60000",
-            "inventory": {
-              "examined": true
-            }
-          }
-        ],
-        "outputs": [
-          {
-            "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-            "valueSats": "10000",
-            "role": "recipient"
-          },
-          {
-            "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-            "valueSats": "99400",
-            "role": "change"
-          }
-        ],
-        "assetTransitions": [
-          {
-            "assetType": "ORDINAL",
-            "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
-            "fromInput": 0,
-            "toOutput": 0
+            "toOutput": 0,
+            "quantity": "1"
           }
         ],
         "fee": {
@@ -1471,43 +3559,400 @@
           "sighashType": "DEFAULT"
         },
         "findings": [],
-        "digest": "9f1fdf6eacb72561a6e45385bcc5e9fc6522e4b942ea6317cf86e944a603c4e5"
+        "digest": "c5b7b0ea974e4d847919908de62f40434b714840b9fd6806ebde58fdcde62076"
       },
       "signed": {
-        "schema": "ordex.safeops-signed-result/v1",
-        "planDigest": "9f1fdf6eacb72561a6e45385bcc5e9fc6522e4b942ea6317cf86e944a603c4e5",
-        "tx": {
-          "inputs": [
-            {
+        "schema": "ordex.safeops-signed-result/v2",
+        "planDigest": "c5b7b0ea974e4d847919908de62f40434b714840b9fd6806ebde58fdcde62076",
+        "signedTxHex": "02000000000102aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa0000000000fdffffffbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb0100000000fdffffff021027000000000000225120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa4884010000000000160014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb0140111f8b064b6b6119191b1b3c9e01f69390d86907ade3f3e59c2c223f0e6dc9ec92aa271db4b4ed208e934f5938904c2cd10978dd978f408470bb866619827bc702483045022100bb58f3d3192d9a3c471c88ec39599654f194ecf67c4db6e01c1cdd6f7cde0bcc022035f5c27f8447911a0b68cec77f205958e2f743d5c90c65aa822c264bfe08ad54012102084ed3ade9df5c68a68c0b74f0e7ccd16d8a8c4bae4bf5d5b2e1b2a5dd6229f900000000"
+      },
+      "expected": {
+        "ok": false,
+        "code": "SIGNATURE_INVALID"
+      }
+    },
+    {
+      "name": "a changed sighash is refused",
+      "plan": {
+        "schema": "ordex.safeops-plan/v2",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "operationKind": "ORDINAL_BATCH_TRANSFER",
+        "createdAtHeight": 900000,
+        "expiryHeight": 900010,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
+        "inputs": [
+          {
+            "outpoint": {
               "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-              "vout": 0,
-              "valueSats": "50000",
-              "signaturePresent": true,
-              "sighashType": "ALL"
+              "vout": 0
             },
-            {
+            "valueSats": "50000",
+            "scriptPubKeyHex": "5120f3893c6e54427448da37c6486c37fad14849038282aaf23390ee9e144f335f64",
+            "sequence": 4294967293,
+            "inventory": {
+              "examined": true,
+              "inscriptions": [
+                {
+                  "inscriptionId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+                  "offset": "0",
+                  "satpoint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:0:0"
+                }
+              ]
+            }
+          },
+          {
+            "outpoint": {
               "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-              "vout": 1,
-              "valueSats": "60000",
-              "signaturePresent": true,
-              "sighashType": "DEFAULT"
-            }
-          ],
-          "outputs": [
-            {
-              "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-              "valueSats": "10000"
+              "vout": 1
             },
-            {
-              "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-              "valueSats": "99400"
+            "valueSats": "60000",
+            "scriptPubKeyHex": "00148d85947dc48654dfe077116c141885d3b7904ce1",
+            "sequence": 4294967293,
+            "inventory": {
+              "examined": true
             }
-          ]
-        }
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "valueSats": "10000",
+            "role": "recipient"
+          },
+          {
+            "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "valueSats": "99400",
+            "role": "change"
+          }
+        ],
+        "assetTransitions": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+            "fromInput": 0,
+            "toOutput": 0,
+            "quantity": "1"
+          }
+        ],
+        "fee": {
+          "feeSats": "600",
+          "maxFeeSats": "2000",
+          "feeRateSatsPerVb": "12"
+        },
+        "signing": {
+          "requiredIndexes": [
+            0,
+            1
+          ],
+          "sighashType": "DEFAULT"
+        },
+        "findings": [],
+        "digest": "c5b7b0ea974e4d847919908de62f40434b714840b9fd6806ebde58fdcde62076"
+      },
+      "signed": {
+        "schema": "ordex.safeops-signed-result/v2",
+        "planDigest": "c5b7b0ea974e4d847919908de62f40434b714840b9fd6806ebde58fdcde62076",
+        "signedTxHex": "02000000000102aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa0000000000fdffffffbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb0100000000fdffffff021027000000000000225120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa4884010000000000160014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb01417ccab3092815736da44e548a3d0a861f1746ba4057e5da82b0e3fd7281ef3b0a219870b1c40f29a83bd92b680bc353975f7e3db0f85103f148739093627bbfe80102483045022100b7cf95fda0118997ccd108ad2492939ddc8fd66c5f6fdb0d4b2300ac0db35877022040f1a3788470534c60d1beb26a3c5c7b7b7e916018c428789b5995d43e807a07012102084ed3ade9df5c68a68c0b74f0e7ccd16d8a8c4bae4bf5d5b2e1b2a5dd6229f900000000"
       },
       "expected": {
         "ok": false,
         "code": "SIGHASH_CHANGED"
+      }
+    },
+    {
+      "name": "a changed sequence is refused",
+      "plan": {
+        "schema": "ordex.safeops-plan/v2",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "operationKind": "ORDINAL_BATCH_TRANSFER",
+        "createdAtHeight": 900000,
+        "expiryHeight": 900010,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
+        "inputs": [
+          {
+            "outpoint": {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0
+            },
+            "valueSats": "50000",
+            "scriptPubKeyHex": "5120f3893c6e54427448da37c6486c37fad14849038282aaf23390ee9e144f335f64",
+            "sequence": 4294967293,
+            "inventory": {
+              "examined": true,
+              "inscriptions": [
+                {
+                  "inscriptionId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+                  "offset": "0",
+                  "satpoint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:0:0"
+                }
+              ]
+            }
+          },
+          {
+            "outpoint": {
+              "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "vout": 1
+            },
+            "valueSats": "60000",
+            "scriptPubKeyHex": "00148d85947dc48654dfe077116c141885d3b7904ce1",
+            "sequence": 4294967293,
+            "inventory": {
+              "examined": true
+            }
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "valueSats": "10000",
+            "role": "recipient"
+          },
+          {
+            "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "valueSats": "99400",
+            "role": "change"
+          }
+        ],
+        "assetTransitions": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+            "fromInput": 0,
+            "toOutput": 0,
+            "quantity": "1"
+          }
+        ],
+        "fee": {
+          "feeSats": "600",
+          "maxFeeSats": "2000",
+          "feeRateSatsPerVb": "12"
+        },
+        "signing": {
+          "requiredIndexes": [
+            0,
+            1
+          ],
+          "sighashType": "DEFAULT"
+        },
+        "findings": [],
+        "digest": "c5b7b0ea974e4d847919908de62f40434b714840b9fd6806ebde58fdcde62076"
+      },
+      "signed": {
+        "schema": "ordex.safeops-signed-result/v2",
+        "planDigest": "c5b7b0ea974e4d847919908de62f40434b714840b9fd6806ebde58fdcde62076",
+        "signedTxHex": "02000000000102aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa0000000000fdffffffbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb0100000000ffffffff021027000000000000225120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa4884010000000000160014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb0140646120a0904df46e1a72f7a1fc54cdc74cb9420b1780b2e36753a423bc6e1b25a71ceb6d96b5487097a6b1bc23ca82d446cad97afcdbf64929748ac8745eda4f02483045022100b7cf95fda0118997ccd108ad2492939ddc8fd66c5f6fdb0d4b2300ac0db35877022040f1a3788470534c60d1beb26a3c5c7b7b7e916018c428789b5995d43e807a07012102084ed3ade9df5c68a68c0b74f0e7ccd16d8a8c4bae4bf5d5b2e1b2a5dd6229f900000000"
+      },
+      "expected": {
+        "ok": false,
+        "code": "SEQUENCE_CHANGED"
+      }
+    },
+    {
+      "name": "a changed locktime is refused",
+      "plan": {
+        "schema": "ordex.safeops-plan/v2",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "operationKind": "ORDINAL_BATCH_TRANSFER",
+        "createdAtHeight": 900000,
+        "expiryHeight": 900010,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
+        "inputs": [
+          {
+            "outpoint": {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0
+            },
+            "valueSats": "50000",
+            "scriptPubKeyHex": "5120f3893c6e54427448da37c6486c37fad14849038282aaf23390ee9e144f335f64",
+            "sequence": 4294967293,
+            "inventory": {
+              "examined": true,
+              "inscriptions": [
+                {
+                  "inscriptionId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+                  "offset": "0",
+                  "satpoint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:0:0"
+                }
+              ]
+            }
+          },
+          {
+            "outpoint": {
+              "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "vout": 1
+            },
+            "valueSats": "60000",
+            "scriptPubKeyHex": "00148d85947dc48654dfe077116c141885d3b7904ce1",
+            "sequence": 4294967293,
+            "inventory": {
+              "examined": true
+            }
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "valueSats": "10000",
+            "role": "recipient"
+          },
+          {
+            "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "valueSats": "99400",
+            "role": "change"
+          }
+        ],
+        "assetTransitions": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+            "fromInput": 0,
+            "toOutput": 0,
+            "quantity": "1"
+          }
+        ],
+        "fee": {
+          "feeSats": "600",
+          "maxFeeSats": "2000",
+          "feeRateSatsPerVb": "12"
+        },
+        "signing": {
+          "requiredIndexes": [
+            0,
+            1
+          ],
+          "sighashType": "DEFAULT"
+        },
+        "findings": [],
+        "digest": "c5b7b0ea974e4d847919908de62f40434b714840b9fd6806ebde58fdcde62076"
+      },
+      "signed": {
+        "schema": "ordex.safeops-signed-result/v2",
+        "planDigest": "c5b7b0ea974e4d847919908de62f40434b714840b9fd6806ebde58fdcde62076",
+        "signedTxHex": "02000000000102aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa0000000000fdffffffbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb0100000000fdffffff021027000000000000225120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa4884010000000000160014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb0140646120a0904df46e1a72f7a1fc54cdc74cb9420b1780b2e36753a423bc6e1b25a71ceb6d96b5487097a6b1bc23ca82d446cad97afcdbf64929748ac8745eda4f02483045022100b7cf95fda0118997ccd108ad2492939ddc8fd66c5f6fdb0d4b2300ac0db35877022040f1a3788470534c60d1beb26a3c5c7b7b7e916018c428789b5995d43e807a07012102084ed3ade9df5c68a68c0b74f0e7ccd16d8a8c4bae4bf5d5b2e1b2a5dd6229f9a1bb0d00"
+      },
+      "expected": {
+        "ok": false,
+        "code": "TRANSACTION_CHANGED"
+      }
+    },
+    {
+      "name": "signed bytes that do not parse are refused",
+      "plan": {
+        "schema": "ordex.safeops-plan/v2",
+        "protocolVersion": "1.2",
+        "network": "mainnet",
+        "operationKind": "ORDINAL_BATCH_TRANSFER",
+        "createdAtHeight": 900000,
+        "expiryHeight": 900010,
+        "checkpoint": {
+          "height": 900000,
+          "blockHash": "0000000000000000000111111111111111111111111111111111111111111112"
+        },
+        "transaction": {
+          "version": 2,
+          "lockTime": 0
+        },
+        "inputs": [
+          {
+            "outpoint": {
+              "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "vout": 0
+            },
+            "valueSats": "50000",
+            "scriptPubKeyHex": "5120f3893c6e54427448da37c6486c37fad14849038282aaf23390ee9e144f335f64",
+            "sequence": 4294967293,
+            "inventory": {
+              "examined": true,
+              "inscriptions": [
+                {
+                  "inscriptionId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+                  "offset": "0",
+                  "satpoint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:0:0"
+                }
+              ]
+            }
+          },
+          {
+            "outpoint": {
+              "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "vout": 1
+            },
+            "valueSats": "60000",
+            "scriptPubKeyHex": "00148d85947dc48654dfe077116c141885d3b7904ce1",
+            "sequence": 4294967293,
+            "inventory": {
+              "examined": true
+            }
+          }
+        ],
+        "outputs": [
+          {
+            "scriptHex": "5120aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "valueSats": "10000",
+            "role": "recipient"
+          },
+          {
+            "scriptHex": "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "valueSats": "99400",
+            "role": "change"
+          }
+        ],
+        "assetTransitions": [
+          {
+            "assetType": "ORDINAL",
+            "assetId": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeei0",
+            "fromInput": 0,
+            "toOutput": 0,
+            "quantity": "1"
+          }
+        ],
+        "fee": {
+          "feeSats": "600",
+          "maxFeeSats": "2000",
+          "feeRateSatsPerVb": "12"
+        },
+        "signing": {
+          "requiredIndexes": [
+            0,
+            1
+          ],
+          "sighashType": "DEFAULT"
+        },
+        "findings": [],
+        "digest": "c5b7b0ea974e4d847919908de62f40434b714840b9fd6806ebde58fdcde62076"
+      },
+      "signed": {
+        "schema": "ordex.safeops-signed-result/v2",
+        "planDigest": "c5b7b0ea974e4d847919908de62f40434b714840b9fd6806ebde58fdcde62076",
+        "signedTxHex": "0200"
+      },
+      "expected": {
+        "ok": false,
+        "code": "MALFORMED_SIGNED_RESULT"
       }
     }
   ]

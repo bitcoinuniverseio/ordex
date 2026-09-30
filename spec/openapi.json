@@ -893,6 +893,9 @@
           "429": {
             "$ref": "#/components/responses/RateLimited"
           },
+          "503": {
+            "$ref": "#/components/responses/PurchaseUnavailable"
+          },
           "default": {
             "$ref": "#/components/responses/Error"
           }
@@ -941,6 +944,9 @@
           },
           "429": {
             "$ref": "#/components/responses/RateLimited"
+          },
+          "503": {
+            "$ref": "#/components/responses/PurchaseUnavailable"
           },
           "default": {
             "$ref": "#/components/responses/Error"
@@ -1048,6 +1054,16 @@
           "429": {
             "$ref": "#/components/responses/RateLimited"
           },
+          "503": {
+            "description": "Retryable. The envelope carries a stable code from PurchaseUnavailableCode: ORDER_CHECKING while the listing is in its catch-up hold at a new block (spec/lifecycle.md), INPUT_INVENTORY_UNAVAILABLE when a buyer output could not be checked for assets, and the chain and gateway availability codes. Nothing was composed or recorded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchPurchaseUnavailable"
+                }
+              }
+            }
+          },
           "default": {
             "$ref": "#/components/responses/Error"
           }
@@ -1091,6 +1107,9 @@
           },
           "429": {
             "$ref": "#/components/responses/RateLimited"
+          },
+          "503": {
+            "$ref": "#/components/responses/PurchaseUnavailable"
           },
           "default": {
             "$ref": "#/components/responses/Error"
@@ -1284,6 +1303,16 @@
           "default": {
             "$ref": "#/components/responses/Error"
           }
+        },
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfferRevalidateRequest"
+              }
+            }
+          }
         }
       }
     },
@@ -1294,7 +1323,7 @@
         ],
         "operationId": "withdrawOffer",
         "summary": "Remove an offer from discovery, proved by the recovery key",
-        "description": "Discovery, not cancellation: the funded output stays spendable by the acceptance path until it is spent, and by the recovery path after expiry. A BIP 322 signature by the recovery key proves who may stop publishing the offer.",
+        "description": "Discovery, not cancellation: the funded output stays spendable by the acceptance path until it is spent, and by the recovery path after expiry. A BIP-340 signature by the recovery key over the offer withdrawal message proves who may stop publishing the offer.",
         "parameters": [
           {
             "$ref": "#/components/parameters/OfferId"
@@ -1305,7 +1334,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/OwnershipProof"
+                "$ref": "#/components/schemas/OfferWithdrawalProof"
               }
             }
           }
@@ -1343,7 +1372,7 @@
         ],
         "operationId": "planOfferAcceptance",
         "summary": "State the exact acceptance arrangement for one live offer",
-        "description": "Given the seller outpoint, reads every value from the node and the ord index, lays out padding, buyer asset, every preserve in sat order, the seller payment at the seller input index, and change, and refuses when the Feline is elsewhere, the root no longer holds, or expiry has passed.",
+        "description": "Given the seller outpoint, reads every value from the node and the ord index and lays out the seller inputs, the funded output last, the asset outputs that absorb exactly the seller sats (the Feline to the buyer, every other seller asset preserved in sat order), the seller payment, and buyer change. Refuses when the Feline is elsewhere, the root or trait set does not prove it, or expiry has been reached. No buyer input is ever planned.",
         "parameters": [
           {
             "$ref": "#/components/parameters/OfferId"
@@ -1392,7 +1421,7 @@
         ],
         "operationId": "preflightOfferAcceptance",
         "summary": "Verify a built acceptance and ask the node",
-        "description": "Parses the complete acceptance, checks every rule in spec/offers.md including both policy signatures against the committed terms tree, then asks the node whether it would accept the bytes. The answer carries the exact bytes checked.",
+        "description": "Parses the complete acceptance, checks every rule in spec/offers.md including both policy signatures under the exact acceptance leaf and control block and a closing seller signature on every seller input, then asks the node whether it would accept the bytes. The answer carries the exact bytes checked.",
         "parameters": [
           {
             "$ref": "#/components/parameters/OfferId"
@@ -1456,6 +1485,16 @@
           "default": {
             "$ref": "#/components/responses/Error"
           }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SafeOpsPlanRequest"
+              }
+            }
+          }
         }
       }
     },
@@ -1477,6 +1516,9 @@
               }
             },
             "description": "The result."
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           },
           "default": {
             "$ref": "#/components/responses/Error"
@@ -1516,6 +1558,9 @@
             },
             "description": "The result."
           },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "default": {
             "$ref": "#/components/responses/Error"
           }
@@ -1532,7 +1577,17 @@
             },
             "description": "The plan identifier."
           }
-        ]
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShieldRequest"
+              }
+            }
+          }
+        }
       }
     },
     "/api/ordex/safeops/broadcast": {
@@ -1557,6 +1612,16 @@
           "default": {
             "$ref": "#/components/responses/Error"
           }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BroadcastRequest"
+              }
+            }
+          }
         }
       }
     },
@@ -1578,6 +1643,9 @@
               }
             },
             "description": "The result."
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           },
           "default": {
             "$ref": "#/components/responses/Error"
@@ -1620,6 +1688,16 @@
           "default": {
             "$ref": "#/components/responses/Error"
           }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SafeOpsRbfRequest"
+              }
+            }
+          }
         }
       }
     },
@@ -1644,6 +1722,16 @@
           },
           "default": {
             "$ref": "#/components/responses/Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SafeOpsCpfpRequest"
+              }
+            }
           }
         }
       }
@@ -1670,6 +1758,16 @@
           "default": {
             "$ref": "#/components/responses/Error"
           }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SwapIntentPublishRequest"
+              }
+            }
+          }
         }
       },
       "get": {
@@ -1693,7 +1791,27 @@
           "default": {
             "$ref": "#/components/responses/Error"
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/NetworkFilter"
+          },
+          {
+            "$ref": "#/components/parameters/PageCursor"
+          },
+          {
+            "$ref": "#/components/parameters/PageLimit"
+          },
+          {
+            "name": "assetType",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Only intents that give or require this asset type."
+          }
+        ]
       }
     },
     "/api/ordex/swaps/intents/{intentId}": {
@@ -1714,6 +1832,9 @@
               }
             },
             "description": "The result."
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           },
           "default": {
             "$ref": "#/components/responses/Error"
@@ -1753,6 +1874,9 @@
             },
             "description": "The result."
           },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "default": {
             "$ref": "#/components/responses/Error"
           }
@@ -1769,7 +1893,17 @@
             },
             "description": "The intent identifier."
           }
-        ]
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SwapIntentWithdrawRequest"
+              }
+            }
+          }
+        }
       }
     },
     "/api/ordex/swaps/intents/{intentId}/acceptance-plan": {
@@ -1791,6 +1925,9 @@
             },
             "description": "The result."
           },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "default": {
             "$ref": "#/components/responses/Error"
           }
@@ -1807,7 +1944,17 @@
             },
             "description": "The intent identifier."
           }
-        ]
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SwapAcceptancePlanRequest"
+              }
+            }
+          }
+        }
       }
     },
     "/api/ordex/swaps/sessions/{sessionId}": {
@@ -1829,6 +1976,9 @@
             },
             "description": "The result."
           },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "default": {
             "$ref": "#/components/responses/Error"
           }
@@ -1844,6 +1994,9 @@
               "maxLength": 200
             },
             "description": "The session identifier."
+          },
+          {
+            "$ref": "#/components/parameters/SwapCapability"
           }
         ]
       }
@@ -1867,43 +2020,8 @@
             },
             "description": "The result."
           },
-          "default": {
-            "$ref": "#/components/responses/Error"
-          }
-        },
-        "parameters": [
-          {
-            "name": "sessionId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 200
-            },
-            "description": "The session identifier."
-          }
-        ]
-      }
-    },
-    "/api/ordex/swaps/sessions/{sessionId}/preflight": {
-      "post": {
-        "operationId": "preflightSwapSession",
-        "summary": "Run node preflight on the fully signed swap",
-        "description": "Only a transaction carrying every required signature reaches this route. Bitcoin Core testmempoolaccept decides.",
-        "tags": [
-          "swaps"
-        ],
-        "responses": {
-          "201": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/VerificationView"
-                }
-              }
-            },
-            "description": "The result."
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           },
           "default": {
             "$ref": "#/components/responses/Error"
@@ -1920,6 +2038,63 @@
               "maxLength": 200
             },
             "description": "The session identifier."
+          },
+          {
+            "$ref": "#/components/parameters/SwapCapability"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SwapSignatureSubmission"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ordex/swaps/sessions/{sessionId}/preflight": {
+      "post": {
+        "operationId": "preflightSwapSession",
+        "summary": "Run node preflight on the fully signed swap",
+        "description": "Only a transaction carrying every required signature reaches this route. Bitcoin Core testmempoolaccept decides.",
+        "tags": [
+          "swaps"
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SwapPreflightResult"
+                }
+              }
+            },
+            "description": "The result."
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "description": "The session identifier."
+          },
+          {
+            "$ref": "#/components/parameters/SwapCapability"
           }
         ]
       }
@@ -1943,6 +2118,9 @@
             },
             "description": "The result."
           },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "default": {
             "$ref": "#/components/responses/Error"
           }
@@ -1958,6 +2136,9 @@
               "maxLength": 200
             },
             "description": "The session identifier."
+          },
+          {
+            "$ref": "#/components/parameters/SwapCapability"
           }
         ]
       }
@@ -1975,7 +2156,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PrivateSwapEnvelope"
+                  "$ref": "#/components/schemas/PrivateSwapStored"
                 }
               }
             },
@@ -1984,12 +2165,22 @@
           "default": {
             "$ref": "#/components/responses/Error"
           }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrivateSwapStoreRequest"
+              }
+            }
+          }
         }
       },
       "get": {
         "operationId": "listPrivateSwaps",
         "summary": "List the caller stored private swap envelopes",
-        "description": "Returns ciphertext envelopes only. Decryption happens client side with the key from the URL fragment.",
+        "description": "Private swap envelopes are not enumerable: the gateway currently answers 404 PRIVATE_SWAP_LIST_UNAVAILABLE. A 200 would carry this shape. Read one envelope by its id.",
         "tags": [
           "swaps"
         ],
@@ -1998,10 +2189,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/PrivateSwapEnvelope"
-                  }
+                  "$ref": "#/components/schemas/PrivateSwapList"
                 }
               }
             },
@@ -2031,6 +2219,9 @@
               }
             },
             "description": "The result."
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           },
           "default": {
             "$ref": "#/components/responses/Error"
@@ -2076,6 +2267,9 @@
             },
             "description": "The result."
           },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "default": {
             "$ref": "#/components/responses/Error"
           }
@@ -2092,7 +2286,17 @@
             },
             "description": "The private envelope identifier."
           }
-        ]
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrivateSwapDestroyRequest"
+              }
+            }
+          }
+        }
       }
     },
     "/api/ordex/events": {
@@ -2117,7 +2321,63 @@
           "default": {
             "$ref": "#/components/responses/Error"
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/NetworkFilter"
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Only this event type."
+          },
+          {
+            "name": "aggregateType",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Only events of this aggregate type."
+          },
+          {
+            "name": "aggregateId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Only events of this aggregate."
+          },
+          {
+            "name": "protocol",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Only events of this protocol."
+          },
+          {
+            "name": "collectionId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Only events of this collection."
+          },
+          {
+            "$ref": "#/components/parameters/PageLimit"
+          },
+          {
+            "$ref": "#/components/parameters/PageCursor"
+          }
+        ]
       }
     },
     "/api/ordex/events/stream": {
@@ -2142,7 +2402,63 @@
           "default": {
             "$ref": "#/components/responses/Error"
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/NetworkFilter"
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Only this event type."
+          },
+          {
+            "name": "aggregateType",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Only events of this aggregate type."
+          },
+          {
+            "name": "aggregateId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Only events of this aggregate."
+          },
+          {
+            "name": "protocol",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Only events of this protocol."
+          },
+          {
+            "name": "collectionId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Only events of this collection."
+          },
+          {
+            "$ref": "#/components/parameters/PageCursor"
+          },
+          {
+            "$ref": "#/components/parameters/LastEventId"
+          }
+        ]
       }
     },
     "/api/ordex/events/checkpoint": {
@@ -2167,7 +2483,12 @@
           "default": {
             "$ref": "#/components/responses/Error"
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/NetworkFilter"
+          }
+        ]
       }
     },
     "/api/ordex/webhooks/subscriptions": {
@@ -2207,6 +2528,21 @@
           "default": {
             "$ref": "#/components/responses/Error"
           }
+        },
+        "security": [
+          {
+            "developerBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookSubscriptionCreateRequest"
+              }
+            }
+          }
         }
       },
       "get": {
@@ -2221,10 +2557,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/WebhookSubscription"
-                  }
+                  "$ref": "#/components/schemas/WebhookSubscriptionList"
                 }
               }
             },
@@ -2233,7 +2566,12 @@
           "default": {
             "$ref": "#/components/responses/Error"
           }
-        }
+        },
+        "security": [
+          {
+            "developerBearer": []
+          }
+        ]
       }
     },
     "/api/ordex/webhooks/subscriptions/{subscriptionId}": {
@@ -2255,6 +2593,9 @@
             },
             "description": "The result."
           },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "default": {
             "$ref": "#/components/responses/Error"
           }
@@ -2270,6 +2611,11 @@
               "maxLength": 200
             },
             "description": "The subscription identifier."
+          }
+        ],
+        "security": [
+          {
+            "developerBearer": []
           }
         ]
       },
@@ -2291,6 +2637,9 @@
             },
             "description": "The result."
           },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "default": {
             "$ref": "#/components/responses/Error"
           }
@@ -2307,7 +2656,22 @@
             },
             "description": "The subscription identifier."
           }
-        ]
+        ],
+        "security": [
+          {
+            "developerBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookSubscriptionUpdateRequest"
+              }
+            }
+          }
+        }
       },
       "delete": {
         "operationId": "deleteWebhookSubscription",
@@ -2335,43 +2699,8 @@
             },
             "description": "The result."
           },
-          "default": {
-            "$ref": "#/components/responses/Error"
-          }
-        },
-        "parameters": [
-          {
-            "name": "subscriptionId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 200
-            },
-            "description": "The subscription identifier."
-          }
-        ]
-      }
-    },
-    "/api/ordex/webhooks/subscriptions/{subscriptionId}/rotate-secret": {
-      "post": {
-        "operationId": "rotateWebhookSecret",
-        "summary": "Rotate the signing secret",
-        "description": "The old secret keeps verifying during a bounded overlap window so rotation never drops a delivery.",
-        "tags": [
-          "webhooks"
-        ],
-        "responses": {
-          "201": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/WebhookSecretReveal"
-                }
-              }
-            },
-            "description": "The result."
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           },
           "default": {
             "$ref": "#/components/responses/Error"
@@ -2388,6 +2717,57 @@
               "maxLength": 200
             },
             "description": "The subscription identifier."
+          }
+        ],
+        "security": [
+          {
+            "developerBearer": []
+          }
+        ]
+      }
+    },
+    "/api/ordex/webhooks/subscriptions/{subscriptionId}/rotate-secret": {
+      "post": {
+        "operationId": "rotateWebhookSecret",
+        "summary": "Rotate the signing secret",
+        "description": "Returns the next signing secret exactly once. The previous secret keeps verifying during a bounded overlap: each delivery carries one v1 per unexpired secret, so rotation never drops a delivery.",
+        "tags": [
+          "webhooks"
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookSecretReveal"
+                }
+              }
+            },
+            "description": "The result."
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "subscriptionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "description": "The subscription identifier."
+          }
+        ],
+        "security": [
+          {
+            "developerBearer": []
           }
         ]
       }
@@ -2411,6 +2791,9 @@
             },
             "description": "The result."
           },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "default": {
             "$ref": "#/components/responses/Error"
           }
@@ -2427,7 +2810,22 @@
             },
             "description": "The subscription identifier."
           }
-        ]
+        ],
+        "security": [
+          {
+            "developerBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookVerifyRequest"
+              }
+            }
+          }
+        }
       }
     },
     "/api/ordex/webhooks/subscriptions/{subscriptionId}/test": {
@@ -2449,6 +2847,9 @@
             },
             "description": "The result."
           },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "default": {
             "$ref": "#/components/responses/Error"
           }
@@ -2464,6 +2865,11 @@
               "maxLength": 200
             },
             "description": "The subscription identifier."
+          }
+        ],
+        "security": [
+          {
+            "developerBearer": []
           }
         ]
       }
@@ -2490,7 +2896,38 @@
           "default": {
             "$ref": "#/components/responses/Error"
           }
-        }
+        },
+        "security": [
+          {
+            "developerBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "subscriptionId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Only deliveries of this subscription."
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Only deliveries in this state."
+          },
+          {
+            "$ref": "#/components/parameters/PageLimit"
+          },
+          {
+            "$ref": "#/components/parameters/PageCursor"
+          }
+        ]
       }
     },
     "/api/ordex/webhooks/deliveries/{deliveryId}/replay": {
@@ -2512,6 +2949,9 @@
             },
             "description": "The result."
           },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "default": {
             "$ref": "#/components/responses/Error"
           }
@@ -2527,6 +2967,11 @@
               "maxLength": 200
             },
             "description": "The delivery identifier."
+          }
+        ],
+        "security": [
+          {
+            "developerBearer": []
           }
         ]
       }
@@ -2553,6 +2998,16 @@
           "default": {
             "$ref": "#/components/responses/Error"
           }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CollectionManifestDocument"
+              }
+            }
+          }
         }
       },
       "get": {
@@ -2576,7 +3031,42 @@
           "default": {
             "$ref": "#/components/responses/Error"
           }
-        }
+        },
+        "parameters": [
+          {
+            "name": "collectionId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "description": "Only manifests of this collection."
+          },
+          {
+            "$ref": "#/components/parameters/NetworkFilter"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "CREATOR_SIGNED",
+                "SUPERSEDED",
+                "REVOKED"
+              ]
+            },
+            "description": "Only manifests in this status."
+          },
+          {
+            "$ref": "#/components/parameters/PageCursor"
+          },
+          {
+            "$ref": "#/components/parameters/PageLimit"
+          }
+        ]
       }
     },
     "/api/ordex/collections/manifests/{manifestId}": {
@@ -2597,6 +3087,9 @@
               }
             },
             "description": "The result."
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           },
           "default": {
             "$ref": "#/components/responses/Error"
@@ -2635,6 +3128,9 @@
               }
             },
             "description": "The result."
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           },
           "default": {
             "$ref": "#/components/responses/Error"
@@ -2681,8 +3177,7 @@
                 "schema": {
                   "type": "object",
                   "required": [
-                    "manifest",
-                    "revocation"
+                    "manifest"
                   ],
                   "properties": {
                     "manifest": {
@@ -2690,13 +3185,17 @@
                     },
                     "revocation": {
                       "type": "object",
-                      "additionalProperties": true
+                      "additionalProperties": true,
+                      "description": "The signed revocation; REVOKE revisions only."
                     }
                   }
                 }
               }
             },
             "description": "The result."
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           },
           "default": {
             "$ref": "#/components/responses/Error"
@@ -2714,7 +3213,17 @@
             },
             "description": "The manifest the revision applies to."
           }
-        ]
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CollectionRevisionRequest"
+              }
+            }
+          }
+        }
       }
     },
     "/api/ordex/collections/{collectionId}/provenance": {
@@ -2736,6 +3245,9 @@
             },
             "description": "The result."
           },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "default": {
             "$ref": "#/components/responses/Error"
           }
@@ -2751,6 +3263,9 @@
               "maxLength": 200
             },
             "description": "The stable collection identifier."
+          },
+          {
+            "$ref": "#/components/parameters/NetworkFilter"
           }
         ]
       }
@@ -2799,6 +3314,9 @@
             },
             "description": "The result."
           },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "default": {
             "$ref": "#/components/responses/Error"
           }
@@ -2814,6 +3332,9 @@
               "maxLength": 200
             },
             "description": "The numeric Counterparty asset id or its exact long name."
+          },
+          {
+            "$ref": "#/components/parameters/PageCursor"
           }
         ]
       }
@@ -2831,14 +3352,14 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/HeritageAttachmentRecord"
-                  }
+                  "$ref": "#/components/schemas/HeritageAssetUtxoPage"
                 }
               }
             },
             "description": "The result."
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           },
           "default": {
             "$ref": "#/components/responses/Error"
@@ -2855,6 +3376,9 @@
               "maxLength": 200
             },
             "description": "The numeric Counterparty asset id or its exact long name."
+          },
+          {
+            "$ref": "#/components/parameters/PageCursor"
           }
         ]
       }
@@ -2872,15 +3396,14 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "additionalProperties": true
-                  }
+                  "$ref": "#/components/schemas/HeritageAddressAssets"
                 }
               }
             },
             "description": "The result."
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           },
           "default": {
             "$ref": "#/components/responses/Error"
@@ -2923,6 +3446,16 @@
           "default": {
             "$ref": "#/components/responses/Error"
           }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HeritageComposeRequest"
+              }
+            }
+          }
         }
       }
     },
@@ -2947,6 +3480,16 @@
           },
           "default": {
             "$ref": "#/components/responses/Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HeritageDetachRequest"
+              }
+            }
           }
         }
       }
@@ -2973,6 +3516,16 @@
           "default": {
             "$ref": "#/components/responses/Error"
           }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SigningSessionOpenRequest"
+              }
+            }
+          }
         }
       },
       "get": {
@@ -2987,10 +3540,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/SigningSession"
-                  }
+                  "$ref": "#/components/schemas/SigningSessionPage"
                 }
               }
             },
@@ -2999,7 +3549,30 @@
           "default": {
             "$ref": "#/components/responses/Error"
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/NetworkFilter"
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Only sessions in this state."
+          },
+          {
+            "$ref": "#/components/parameters/PageCursor"
+          },
+          {
+            "$ref": "#/components/parameters/PageLimit"
+          },
+          {
+            "$ref": "#/components/parameters/SigningCapability"
+          }
+        ]
       }
     },
     "/api/ordex/signing/sessions/{sessionId}": {
@@ -3021,6 +3594,9 @@
             },
             "description": "The result."
           },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "default": {
             "$ref": "#/components/responses/Error"
           }
@@ -3036,6 +3612,9 @@
               "maxLength": 200
             },
             "description": "The session identifier."
+          },
+          {
+            "$ref": "#/components/parameters/SigningCapability"
           }
         ]
       }
@@ -3059,6 +3638,9 @@
             },
             "description": "The result."
           },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "default": {
             "$ref": "#/components/responses/Error"
           }
@@ -3074,8 +3656,21 @@
               "maxLength": 200
             },
             "description": "The session identifier."
+          },
+          {
+            "$ref": "#/components/parameters/SigningCapability"
           }
-        ]
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SigningSignedResultRequest"
+              }
+            }
+          }
+        }
       }
     },
     "/api/ordex/signing/verify": {
@@ -3099,6 +3694,16 @@
           },
           "default": {
             "$ref": "#/components/responses/Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SigningVerifyRequest"
+              }
+            }
           }
         }
       }
@@ -3138,6 +3743,247 @@
           }
         }
       }
+    },
+    "/api/ordex/heritage/operations/{operationId}/relay": {
+      "post": {
+        "operationId": "relayHeritageOperation",
+        "summary": "Relay the signed transaction of a composed attach or detach",
+        "description": "Checks, in order: the heritage authority is ready; the signed bytes are the stored manifest with every input signed and the asset landing where the manifest says; every input is unspent with the balances it carried when composed; the node decodes the composed message; testmempoolaccept allows it; then sendrawtransaction. The operation becomes RELAYED. An operation no longer COMPOSED answers its stored state and sends nothing, which is why this route answers 200.",
+        "x-ordex-success-status": 200,
+        "tags": [
+          "heritage"
+        ],
+        "parameters": [
+          {
+            "name": "operationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The heritage operation id, hop_<uuid>."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HeritageRelayRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The operation after relay, or its stored state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HeritageOperation"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/ordex/heritage/operations/{operationId}": {
+      "get": {
+        "operationId": "getHeritageOperation",
+        "summary": "One heritage operation and its ledger settlement",
+        "description": "An unknown id answers 404 HERITAGE_OPERATION_NOT_FOUND.",
+        "tags": [
+          "heritage"
+        ],
+        "parameters": [
+          {
+            "name": "operationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The heritage operation id, hop_<uuid>."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The operation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HeritageOperation"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/ordex/heritage/asks": {
+      "post": {
+        "operationId": "draftHeritageAsk",
+        "summary": "Draft an unsigned ask over one carrying UTXO",
+        "tags": [
+          "heritage"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HeritageAskDraftRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The unsigned intent and what to sign.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HeritageIntentDraft"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/ordex/heritage/swaps": {
+      "post": {
+        "operationId": "draftHeritageSwap",
+        "summary": "Draft an unsigned swap over one carrying UTXO",
+        "tags": [
+          "heritage"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HeritageSwapDraftRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The unsigned intent and what to sign.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HeritageIntentDraft"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/ordex/heritage/intents": {
+      "post": {
+        "operationId": "publishHeritageIntent",
+        "summary": "Publish a maker-signed heritage ask or swap",
+        "description": "A PRIVATE intent travels as an encrypted envelope and is accepted through the private acceptance route instead.",
+        "tags": [
+          "heritage"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HeritageIntentPublishRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The published intent.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SwapIntentView"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/ordex/heritage/intents/{intentId}/accept": {
+      "post": {
+        "operationId": "acceptHeritageIntent",
+        "summary": "Accept a published heritage ask or swap",
+        "description": "Proves the gives whole again, builds the plan through the swaps desk and adds the UTXO_MOVE ledger events the settlement must produce. Signing, preflight and broadcast use the swap session routes.",
+        "tags": [
+          "heritage"
+        ],
+        "parameters": [
+          {
+            "name": "intentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The published intent id."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SwapAcceptancePlanRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The acceptance plan with its expected ledger events.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HeritageAcceptanceResult"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -3146,6 +3992,11 @@
         "type": "http",
         "scheme": "basic",
         "description": "Operator credentials configured on the gateway. Public routes never require them."
+      },
+      "developerBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "A developer API key with the webhooks:write scope, sent as Authorization: Bearer <key>. The legacy X-Developer-Key header carries the same key; a request never sends both."
       }
     },
     "parameters": {
@@ -3185,6 +4036,71 @@
           "type": "string",
           "pattern": "^[A-Za-z0-9._:-]{1,128}$"
         }
+      },
+      "PageLimit": {
+        "name": "limit",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 50
+        },
+        "description": "Page size."
+      },
+      "PageCursor": {
+        "name": "cursor",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "maxLength": 256
+        },
+        "description": "The opaque cursor a previous page returned. A malformed cursor is a 400, never a silent first page."
+      },
+      "NetworkFilter": {
+        "name": "network",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "enum": [
+            "mainnet",
+            "testnet",
+            "signet",
+            "regtest"
+          ]
+        },
+        "description": "Only this network."
+      },
+      "SigningCapability": {
+        "name": "x-ordex-signing-capability",
+        "in": "header",
+        "required": false,
+        "schema": {
+          "type": "string"
+        },
+        "description": "A signing session capability returned once when the session was opened: the read capability shows a session, the import capability also submits its signed result. Listing accepts up to 25, comma separated."
+      },
+      "LastEventId": {
+        "name": "last-event-id",
+        "in": "header",
+        "required": false,
+        "schema": {
+          "type": "string"
+        },
+        "description": "Resume after this event id, as an EventSource reconnect sends it."
+      },
+      "SwapCapability": {
+        "name": "x-ordex-swap-capability",
+        "in": "header",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "pattern": "^swc_[A-Za-z0-9_-]{43}$"
+        },
+        "description": "The session capability of a PRIVATE intent, returned once in its acceptance answer. Every route of that session requires it (401 SESSION_CAPABILITY_REQUIRED without it or with another token); sessions of PUBLIC intents ignore it."
       }
     },
     "responses": {
@@ -3209,7 +4125,7 @@
         }
       },
       "NotFound": {
-        "description": "No order with this id.",
+        "description": "Nothing with this id exists.",
         "content": {
           "application/json": {
             "schema": {
@@ -3224,6 +4140,16 @@
           "application/json": {
             "schema": {
               "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "PurchaseUnavailable": {
+        "description": "Retryable. The envelope carries a stable code from PurchaseUnavailableCode: ORDER_CHECKING while the listing is in its catch-up hold at a new block (spec/lifecycle.md), INPUT_INVENTORY_UNAVAILABLE when a buyer output could not be checked for assets, and the chain and gateway availability codes. Nothing was composed or recorded.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/PurchaseUnavailable"
             }
           }
         }
@@ -3675,6 +4601,9 @@
           "updatedAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "verification": {
+            "$ref": "#/components/schemas/VerificationView"
           }
         }
       },
@@ -3909,6 +4838,7 @@
         "type": "object",
         "description": "Everything a buyer needs to decide, and the unsigned half their wallet will be asked to sign. Every amount is atomic sats as a string.",
         "required": [
+          "quoteId",
           "orderId",
           "network",
           "psbt",
@@ -3934,9 +4864,14 @@
           "observedAt",
           "expiresAt",
           "feePolicy",
-          "feeOutputs"
+          "feeOutputs",
+          "assetViews"
         ],
         "properties": {
+          "quoteId": {
+            "type": "string",
+            "description": "The stored reviewed purchase. Preflight needs it; it expires with expiresAt and reserves nothing."
+          },
           "orderId": {
             "type": "string"
           },
@@ -4055,20 +4990,34 @@
               "$ref": "#/components/schemas/FeeOutput"
             },
             "description": "Every fee or royalty output the composed transaction carries. Empty under a zero policy; a zero is stated as an empty list, never omitted."
+          },
+          "assetViews": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AssetView"
+            },
+            "description": "Every protocol view of the inscription this purchase delivers to the buyer; empty when the asset has no inscription views."
           }
         }
       },
       "PreflightRequest": {
         "type": "object",
-        "description": "Either the final transaction hex or the signed PSBT a wallet actually answers with.",
+        "description": "The quoteId of the reviewed quote and either the final transaction hex or the signed PSBT a wallet actually answers with.",
         "properties": {
+          "quoteId": {
+            "type": "string",
+            "description": "The quoteId of the reviewed quote. Every unsigned field of the signed bytes must equal that quote; the first differing field is named."
+          },
           "finalTxHex": {
             "type": "string"
           },
           "signedPsbt": {
             "type": "string"
           }
-        }
+        },
+        "required": [
+          "quoteId"
+        ]
       },
       "PreflightResult": {
         "type": "object",
@@ -4103,6 +5052,17 @@
           "checkedAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "quoteId": {
+            "type": "string",
+            "description": "The reviewed quote the bytes were checked against."
+          },
+          "assetViews": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AssetView"
+            },
+            "description": "Every protocol view of the inscription the checked transaction delivers to the buyer; empty when the asset has no inscription views."
           }
         }
       },
@@ -4688,7 +5648,7 @@
           "protocolVersion": {
             "type": "string",
             "pattern": "^\\d+\\.\\d+(\\.\\d+)?$",
-            "description": "The exact protocol version this gateway implements."
+            "description": "The exact protocol version this gateway implements: this document's info.version. Every version the gateway advertises (this field, version, and its MCP serverInfo version) is this one value."
           },
           "version": {
             "type": "string",
@@ -4826,7 +5786,7 @@
           "collectionRoot": {
             "type": "string",
             "pattern": "^[0-9a-f]{64}$",
-            "description": "Lowercase hex SHA-256 collection Merkle root the scope binds to."
+            "description": "Lowercase hex membership root of the collection (the manifest membershipRoot) the scope binds to."
           },
           "itemInscriptionId": {
             "type": "string",
@@ -4846,12 +5806,12 @@
           "criteriaHash": {
             "type": "string",
             "pattern": "^[0-9a-f]{64}$",
-            "description": "SHA-256 over the exact serialized scope criteria the buyer accepted, so a verifier can recheck scope membership without trusting a description of it."
+            "description": "Commitment to the scope the buyer accepted. ITEM and COLLECTION: SHA-256 over the sorted-key JSON of the stated scope under domain ordex.offer-criteria/v1, recomputed by every verifier. TRAIT: the Merkle root over the members the buyer accepted as carrying the trait, which each acceptance proves its Feline against."
           },
           "buyerReceiveScriptHex": {
             "type": "string",
-            "pattern": "^[0-9a-f]*$",
-            "description": "Lowercase hex script the bought Feline must land in."
+            "pattern": "^(?:[0-9a-f]{2})+$",
+            "description": "Lowercase hex of a spendable script (not OP_RETURN). The bought Feline, buyer change and a recovery all pay it."
           },
           "priceSats": {
             "allOf": [
@@ -4872,13 +5832,13 @@
           "expiryHeight": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 2147483647,
-            "description": "Block height after which acceptance is refused and the recovery path unlocks."
+            "maximum": 499999999,
+            "description": "Block height from which acceptance is refused; a recovery confirms from the next block. Below 500000000, the locktime timestamp threshold, because it is a height-domain CHECKLOCKTIMEVERIFY argument."
           },
           "buyerRecoveryKeyHex": {
             "type": "string",
             "pattern": "^[0-9a-f]{64}$",
-            "description": "Lowercase hex x-only key that can recover the funded output alone after expiry."
+            "description": "Lowercase hex x-only public key, a valid curve point, that can recover the funded output alone after expiry."
           }
         }
       },
@@ -4910,17 +5870,17 @@
           "tapInternalKeyHex": {
             "type": "string",
             "pattern": "^[0-9a-f]{64}$",
-            "description": "Lowercase hex x-only internal key of the funded output."
+            "description": "The x-only internal key of the funded output: always BIP341 unspendable point H (50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0), so no key path exists."
           },
           "acceptanceLeafScriptHex": {
             "type": "string",
             "pattern": "^[0-9a-f]*$",
-            "description": "The acceptance leaf: the terms hash push, both policy keys, CHECKSIG, CHECKSIGADD, and the 2-of-2 equal. The gateway recomputes the tree and the tweak from these leaves, so the funded script must commit to the exact terms."
+            "description": "The acceptance leaf, byte for byte: 20 <offerTermsHash> 75 20 <policyKeyA> ac 20 <policyKeyB> ba 52 87. The gateway rebuilds both leaves, the tree and the tweak from the terms and the two policy keys and refuses a funded script that is not exactly that output."
           },
           "recoveryLeafScriptHex": {
             "type": "string",
             "pattern": "^[0-9a-f]*$",
-            "description": "The recovery leaf: the expiry height, CHECKLOCKTIMEVERIFY, and the buyer recovery key."
+            "description": "The recovery leaf, byte for byte: the minimal push of expiryHeight, b1 75 20 <buyerRecoveryKey> ac."
           }
         }
       },
@@ -5012,6 +5972,10 @@
           },
           "checkpoint": {
             "$ref": "#/components/schemas/ListingReadiness"
+          },
+          "settlementFinal": {
+            "type": "boolean",
+            "description": "Settled offers only: true once the settling transaction is buried deep enough that the gateway treats the settlement as final."
           }
         }
       },
@@ -5052,6 +6016,14 @@
           },
           "funding": {
             "$ref": "#/components/schemas/OfferFunding"
+          },
+          "traitMembers": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string"
+            },
+            "description": "TRAIT offers: the member identities the buyer accepted, whose Merkle root is criteriaHash."
           }
         }
       },
@@ -5074,7 +6046,12 @@
           "sellerPaymentScriptHex": {
             "type": "string",
             "pattern": "^[0-9a-f]*$",
-            "description": "The script the seller payment output must carry, committed by the seller signature."
+            "description": "The script the seller payment output must carry, exactly priceSats. The seller signs every input with SIGHASH_ALL."
+          },
+          "sellerReturnScriptHex": {
+            "type": "string",
+            "pattern": "^(?:[0-9a-f]{2})+$",
+            "description": "Optional: the script the seller receives its own other assets and the sats around the Feline at. Defaults to sellerPaymentScriptHex."
           }
         }
       },
@@ -5092,22 +6069,23 @@
           "estimatedFeeSats",
           "withinMaxNetworkFee",
           "expiresAtHeight",
-          "checkpoint"
+          "checkpoint",
+          "psbt",
+          "acceptance"
         ],
         "properties": {
           "offerId": {
-            "type": "string",
-            "description": "The offer this plan settles."
+            "type": "string"
           },
           "sellerInputIndex": {
             "type": "integer",
             "minimum": 0,
-            "description": "Where the Feline input sits, and with it the seller payment."
+            "description": "The Feline input: always 0."
           },
           "offerInputIndex": {
             "type": "integer",
             "minimum": 0,
-            "description": "Where the funded offer output sits."
+            "description": "The funded offer output: always the last input."
           },
           "sellerPaymentOutputIndex": {
             "type": "integer",
@@ -5119,87 +6097,148 @@
           },
           "inputs": {
             "type": "array",
-            "description": "Every input in transaction order, with the exact values read from the node.",
+            "description": "Every input in transaction order, as the authorities read it. The buyer contributes none.",
             "items": {
               "type": "object",
               "additionalProperties": false,
               "required": [
-                "txid",
-                "vout",
+                "outpoint",
+                "party",
                 "valueSats",
-                "role"
+                "scriptPubKeyHex"
               ],
               "properties": {
-                "txid": {
-                  "type": "string"
+                "outpoint": {
+                  "$ref": "#/components/schemas/Outpoint"
                 },
-                "vout": {
-                  "type": "integer",
-                  "minimum": 0
+                "party": {
+                  "type": "string",
+                  "enum": [
+                    "SELLER",
+                    "OFFER"
+                  ]
                 },
                 "valueSats": {
                   "$ref": "#/components/schemas/AtomicSats"
                 },
-                "role": {
+                "scriptPubKeyHex": {
                   "type": "string",
-                  "enum": [
-                    "PADDING",
-                    "OFFER",
-                    "SELLER_FELINE"
-                  ]
+                  "pattern": "^(?:[0-9a-f]{2})+$"
                 }
               }
             }
           },
           "outputs": {
             "type": "array",
-            "description": "Every output in transaction order: padding merge, buyer asset, seller preserves in sat order, seller payment at the seller input index, buyer change last.",
             "items": {
               "type": "object",
               "additionalProperties": false,
               "required": [
                 "scriptHex",
-                "valueSats",
-                "role"
+                "valueSats"
               ],
               "properties": {
                 "scriptHex": {
-                  "type": "string"
+                  "type": "string",
+                  "pattern": "^(?:[0-9a-f]{2})+$"
                 },
                 "valueSats": {
                   "$ref": "#/components/schemas/AtomicSats"
-                },
-                "role": {
-                  "type": "string",
-                  "enum": [
-                    "PADDING_MERGE",
-                    "BUYER_ASSET",
-                    "SELLER_PRESERVE",
-                    "SELLER_PAYMENT",
-                    "BUYER_CHANGE"
-                  ]
                 }
               }
             }
           },
           "estimatedFeeSats": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/AtomicSats"
-              }
-            ],
-            "description": "The fee the composed arrangement pays at the current rate."
+            "$ref": "#/components/schemas/AtomicSats"
           },
           "withinMaxNetworkFee": {
-            "type": "boolean",
-            "description": "False means the terms refuse acceptance as composed."
+            "type": "boolean"
           },
           "expiresAtHeight": {
-            "type": "integer",
-            "description": "The terms expiry height, restated so a stale plan is visible."
+            "type": "integer"
           },
           "checkpoint": {
-            "$ref": "#/components/schemas/ListingReadiness"
+            "type": "object",
+            "required": [
+              "heightAtomic",
+              "blockHash"
+            ],
+            "properties": {
+              "heightAtomic": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]*)$"
+              },
+              "blockHash": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            }
+          },
+          "psbt": {
+            "type": "string",
+            "description": "The unsigned acceptance, base64."
+          },
+          "acceptance": {
+            "type": "object",
+            "required": [
+              "seller",
+              "feline",
+              "eligibility"
+            ],
+            "description": "The ordex.offer-acceptance/v2 fields the policy signers and preflight read, besides the transaction.",
+            "properties": {
+              "seller": {
+                "type": "object",
+                "required": [
+                  "paymentScriptHex"
+                ],
+                "properties": {
+                  "paymentScriptHex": {
+                    "type": "string",
+                    "pattern": "^(?:[0-9a-f]{2})+$"
+                  },
+                  "returnScriptHex": {
+                    "type": "string",
+                    "pattern": "^(?:[0-9a-f]{2})+$"
+                  }
+                }
+              },
+              "feline": {
+                "type": "object",
+                "required": [
+                  "inscriptionId",
+                  "outpoint"
+                ],
+                "properties": {
+                  "inscriptionId": {
+                    "type": "string"
+                  },
+                  "outpoint": {
+                    "$ref": "#/components/schemas/Outpoint"
+                  }
+                }
+              },
+              "eligibility": {
+                "type": "object",
+                "required": [
+                  "membershipProof"
+                ],
+                "properties": {
+                  "membershipProof": {
+                    "type": "array",
+                    "items": {
+                      "type": "object"
+                    }
+                  },
+                  "traitProof": {
+                    "type": "array",
+                    "items": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       },
@@ -5391,7 +6430,8 @@
                 "priceSats",
                 "assetValueSats",
                 "sellerPaymentScriptHex",
-                "assetOutpoint"
+                "assetOutpoint",
+                "assetViews"
               ],
               "properties": {
                 "orderId": {
@@ -5436,6 +6476,13 @@
                 },
                 "assetOutpoint": {
                   "$ref": "#/components/schemas/Outpoint"
+                },
+                "assetViews": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AssetView"
+                  },
+                  "description": "Every protocol view of the inscription this ask delivers to the buyer; empty when the asset has no inscription views."
                 }
               }
             }
@@ -5559,11 +6606,10 @@
       },
       "BatchPurchaseRefused": {
         "type": "object",
-        "additionalProperties": false,
         "required": [
           "refusals"
         ],
-        "description": "Answered when at least one ask cannot coexist in the batch. There is no partial composition: every refused order is named, and the client falls back to separate purchases.",
+        "description": "Answered when at least one ask cannot coexist in the batch. There is no partial composition: every refused order is named, and the client falls back to separate purchases. It carries the shared error envelope fields too.",
         "properties": {
           "refusals": {
             "type": "array",
@@ -5571,6 +6617,22 @@
             "items": {
               "$ref": "#/components/schemas/BatchRefusal"
             }
+          },
+          "statusCode": {
+            "type": "integer",
+            "const": 409
+          },
+          "error": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
           }
         }
       },
@@ -5583,7 +6645,7 @@
         "properties": {
           "batchId": {
             "type": "string",
-            "description": "The identifier the batch-purchase answer carried."
+            "description": "The identifier the batch-purchase answer carried. The asks are taken from the stored batch."
           },
           "signedPsbt": {
             "type": "string",
@@ -5646,6 +6708,14 @@
                 "allowed": {
                   "type": "boolean"
                 },
+                "rejectCode": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/BatchPreflightPlacementCode"
+                    }
+                  ],
+                  "description": "Present when this ask failed."
+                },
                 "rejectReason": {
                   "type": "string",
                   "description": "Present when this ask failed inside an otherwise parseable batch."
@@ -5668,6 +6738,18 @@
               "null"
             ],
             "description": "The batch id the request named, echoed back."
+          },
+          "rejectCode": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BatchPreflightRejectCode"
+              }
+            ],
+            "description": "Present exactly when allowed is false."
+          },
+          "rejectReason": {
+            "type": "string",
+            "description": "A human explanation of rejectCode; present exactly when allowed is false."
           }
         }
       },
@@ -5726,71 +6808,6 @@
           }
         }
       },
-      "TxDescription": {
-        "type": "object",
-        "description": "A normalized transaction: exact inputs and outputs in order. Parsers convert raw bytes into this shape before verification.",
-        "required": [
-          "inputs",
-          "outputs"
-        ],
-        "properties": {
-          "inputs": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/TxInputDescription"
-            }
-          },
-          "outputs": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/TxOutputDescription"
-            }
-          }
-        }
-      },
-      "TxInputDescription": {
-        "type": "object",
-        "required": [
-          "txid",
-          "vout",
-          "valueSats"
-        ],
-        "properties": {
-          "txid": {
-            "type": "string",
-            "pattern": "^[0-9a-f]{64}$"
-          },
-          "vout": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "valueSats": {
-            "$ref": "#/components/schemas/AtomicSats"
-          },
-          "signaturePresent": {
-            "type": "boolean"
-          },
-          "sighashType": {
-            "type": "string"
-          }
-        }
-      },
-      "TxOutputDescription": {
-        "type": "object",
-        "required": [
-          "scriptHex",
-          "valueSats"
-        ],
-        "properties": {
-          "scriptHex": {
-            "type": "string",
-            "pattern": "^(?:[0-9a-f]{2})+$"
-          },
-          "valueSats": {
-            "$ref": "#/components/schemas/AtomicSats"
-          }
-        }
-      },
       "SafeOpsOperationKind": {
         "type": "string",
         "enum": [
@@ -5807,7 +6824,7 @@
       },
       "SafeOpsInventory": {
         "type": "object",
-        "description": "One exact inventory for one outpoint, resolved from the protocol authorities. Unexamined inputs fail closed.",
+        "description": "One exact inventory for one outpoint, resolved from the protocol authorities at the plan checkpoint. Unexamined inputs fail closed; every sat-bound asset carries its offset inside the input, every rune its exact balance, every Counterparty attachment its exact quantity.",
         "required": [
           "examined"
         ],
@@ -5822,28 +6839,87 @@
             "type": "array",
             "items": {
               "type": "object",
-              "additionalProperties": true
+              "required": [
+                "inscriptionId",
+                "offset"
+              ],
+              "properties": {
+                "inscriptionId": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}i(0|[1-9][0-9]*)$"
+                },
+                "offset": {
+                  "$ref": "#/components/schemas/AtomicSats"
+                },
+                "satpoint": {
+                  "type": "string",
+                  "description": "txid:vout:offset of this input; when present it must agree with the outpoint and offset."
+                }
+              }
             }
           },
           "runeAllocations": {
             "type": "array",
             "items": {
               "type": "object",
-              "additionalProperties": true
+              "required": [
+                "runeId",
+                "amount"
+              ],
+              "properties": {
+                "runeId": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*):(0|[1-9][0-9]*)$"
+                },
+                "amount": {
+                  "$ref": "#/components/schemas/AtomicSats"
+                }
+              }
             }
           },
           "counterpartyAssets": {
             "type": "array",
             "items": {
               "type": "object",
-              "additionalProperties": true
+              "required": [
+                "name",
+                "assetId",
+                "quantitySats"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "assetId": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "quantitySats": {
+                  "$ref": "#/components/schemas/AtomicSats"
+                }
+              }
             }
           },
           "rareSatRanges": {
             "type": "array",
             "items": {
               "type": "object",
-              "additionalProperties": true
+              "required": [
+                "rangeId",
+                "offset",
+                "count"
+              ],
+              "properties": {
+                "rangeId": {
+                  "type": "string"
+                },
+                "offset": {
+                  "$ref": "#/components/schemas/AtomicSats"
+                },
+                "count": {
+                  "$ref": "#/components/schemas/AtomicSats"
+                }
+              }
             }
           },
           "unknownClaims": {
@@ -5859,6 +6935,8 @@
         "required": [
           "outpoint",
           "valueSats",
+          "scriptPubKeyHex",
+          "sequence",
           "inventory"
         ],
         "properties": {
@@ -5867,6 +6945,16 @@
           },
           "valueSats": {
             "$ref": "#/components/schemas/AtomicSats"
+          },
+          "scriptPubKeyHex": {
+            "type": "string",
+            "pattern": "^(?:[0-9a-f]{2})+$",
+            "description": "The script of the output this input spends; signatures are verified against it."
+          },
+          "sequence": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4294967295
           },
           "inventory": {
             "$ref": "#/components/schemas/SafeOpsInventory"
@@ -5893,8 +6981,10 @@
             "enum": [
               "recipient",
               "change",
-              "preserve"
-            ]
+              "preserve",
+              "data"
+            ],
+            "description": "data marks the one zero-value runestone OP_RETURN a rune transfer may carry; every other output meets the Bitcoin Core dust threshold for its script."
           },
           "explanation": {
             "type": "string"
@@ -5903,11 +6993,12 @@
       },
       "SafeOpsAssetTransition": {
         "type": "object",
+        "description": "One derived asset movement. Inscriptions and rare sats name their input; runes are fungible and name only the output and amount.",
         "required": [
           "assetType",
           "assetId",
-          "fromInput",
-          "toOutput"
+          "toOutput",
+          "quantity"
         ],
         "properties": {
           "assetType": {
@@ -5929,6 +7020,9 @@
           "toOutput": {
             "type": "integer",
             "minimum": 0
+          },
+          "quantity": {
+            "$ref": "#/components/schemas/AtomicSats"
           }
         }
       },
@@ -5942,6 +7036,7 @@
           "operationKind",
           "expiryHeight",
           "checkpoint",
+          "transaction",
           "inputs",
           "outputs",
           "assetTransitions",
@@ -5953,7 +7048,7 @@
         "properties": {
           "schema": {
             "type": "string",
-            "const": "ordex.safeops-plan/v1"
+            "const": "ordex.safeops-plan/v2"
           },
           "protocolVersion": {
             "type": "string"
@@ -6007,25 +7102,34 @@
                 "$ref": "#/components/schemas/AtomicSats"
               },
               "feeRateSatsPerVb": {
-                "$ref": "#/components/schemas/AtomicSats"
+                "type": "string",
+                "pattern": "^[0-9]{1,6}(\\.[0-9]{1,4})?$",
+                "description": "The exact fee rate the plan was built at, sats per virtual byte."
               }
             }
           },
           "signing": {
             "type": "object",
             "required": [
-              "requiredIndexes"
+              "requiredIndexes",
+              "sighashType"
             ],
             "properties": {
               "requiredIndexes": {
                 "type": "array",
+                "uniqueItems": true,
                 "items": {
                   "type": "integer",
                   "minimum": 0
-                }
+                },
+                "description": "Every input index, once: the user signs every input."
               },
               "sighashType": {
-                "type": "string"
+                "type": "string",
+                "enum": [
+                  "DEFAULT",
+                  "ALL"
+                ]
               }
             }
           },
@@ -6039,6 +7143,26 @@
           "digest": {
             "type": "string",
             "pattern": "^[0-9a-f]{64}$"
+          },
+          "transaction": {
+            "type": "object",
+            "required": [
+              "version",
+              "lockTime"
+            ],
+            "description": "The transaction version and locktime the plan signs, so the unsigned transaction is fully determined.",
+            "properties": {
+              "version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 4294967295
+              },
+              "lockTime": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 4294967295
+              }
+            }
           }
         }
       },
@@ -6100,25 +7224,69 @@
       "SafeOpsPlanResult": {
         "type": "object",
         "required": [
+          "planId",
+          "state",
           "plan",
-          "verification"
+          "verification",
+          "createdAt",
+          "updatedAt"
         ],
         "properties": {
+          "planId": {
+            "type": "string",
+            "description": "The id every later plan route takes."
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "BUILT",
+              "SIGNED",
+              "BROADCAST",
+              "INVALIDATED"
+            ]
+          },
           "plan": {
             "$ref": "#/components/schemas/SafeOpsPlan"
           },
           "verification": {
             "$ref": "#/components/schemas/VerificationView"
           },
+          "psbt": {
+            "type": "string",
+            "description": "The unsigned PSBT, base64, that reproduces the plan transaction exactly."
+          },
+          "manifest": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ExpectedTransactionManifest"
+              }
+            ],
+            "description": "The expected transaction manifest a cold signer signs against."
+          },
+          "invalidatedReason": {
+            "type": "string",
+            "description": "INVALIDATED plans only."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
           "partition": {
             "type": "object",
-            "description": "When one transaction cannot carry the operation, the deterministic standard partitions.",
+            "required": [
+              "transactions"
+            ],
+            "description": "When one transaction cannot carry the operation: every deterministic partition, the first of which is this answer.",
             "properties": {
               "transactions": {
                 "type": "array",
+                "minItems": 2,
                 "items": {
-                  "type": "object",
-                  "additionalProperties": true
+                  "$ref": "#/components/schemas/SafeOpsPartitionPlan"
                 }
               }
             }
@@ -6172,6 +7340,18 @@
           },
           "cpfpEligible": {
             "type": "boolean"
+          },
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "VALID",
+              "INVALIDATED"
+            ],
+            "description": "INVALIDATED means the plan can no longer be signed; build a new one."
+          },
+          "retryable": {
+            "type": "boolean",
+            "description": "True when every finding is an authority outage: the same shield answers again once the authorities recover."
           }
         }
       },
@@ -6180,19 +7360,21 @@
         "required": [
           "schema",
           "planDigest",
-          "tx"
+          "signedTxHex"
         ],
         "properties": {
           "schema": {
             "type": "string",
-            "const": "ordex.safeops-signed-result/v1"
+            "const": "ordex.safeops-signed-result/v2"
           },
           "planDigest": {
             "type": "string",
             "pattern": "^[0-9a-f]{64}$"
           },
-          "tx": {
-            "$ref": "#/components/schemas/TxDescription"
+          "signedTxHex": {
+            "type": "string",
+            "pattern": "^(?:[0-9a-f]{2})+$",
+            "description": "The complete signed transaction. Signatures are verified from these bytes, never from a flag."
           }
         }
       },
@@ -6209,7 +7391,8 @@
           },
           "artifactDigest": {
             "type": "string",
-            "pattern": "^[0-9a-f]{64}$"
+            "pattern": "^[0-9a-f]{64}$",
+            "description": "The digest of the artifact the transaction settles; for context safeops, the plan digest. A signed transaction that is not that plan is refused."
           },
           "context": {
             "type": "string",
@@ -6314,11 +7497,20 @@
       "SafeOpsRbfResult": {
         "type": "object",
         "required": [
+          "allowed",
           "plan"
         ],
         "properties": {
           "plan": {
-            "$ref": "#/components/schemas/SafeOpsPlan"
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SafeOpsPlan"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Null when the bump is refused; refusalCode then says why."
           },
           "oldFeeSats": {
             "$ref": "#/components/schemas/AtomicSats"
@@ -6340,62 +7532,82 @@
       "SafeOpsCpfpRequest": {
         "type": "object",
         "required": [
-          "parentTxid"
+          "parentTxid",
+          "changeOutpoint",
+          "targetFeeRateSatsPerVb"
+        ],
+        "anyOf": [
+          {
+            "required": [
+              "childReceiveScriptHex"
+            ]
+          },
+          {
+            "required": [
+              "childAddress"
+            ]
+          }
         ],
         "properties": {
           "parentTxid": {
             "type": "string",
             "pattern": "^[0-9a-f]{64}$"
           },
+          "changeOutpoint": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Outpoint"
+              }
+            ],
+            "description": "The output of parentTxid the child spends; it must belong to the wallet and carry no asset."
+          },
           "targetFeeRateSatsPerVb": {
-            "$ref": "#/components/schemas/AtomicSats"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AtomicSats"
+              }
+            ],
+            "description": "The package fee rate to reach, whole sats per virtual byte."
+          },
+          "childReceiveScriptHex": {
+            "type": "string",
+            "pattern": "^(?:[0-9a-f]{2})+$",
+            "description": "The wallet script the child pays its remainder to. Give this or childAddress."
+          },
+          "childAddress": {
+            "type": "string",
+            "description": "The same destination as an address; used only when childReceiveScriptHex is absent."
           }
         }
       },
       "SafeOpsCpfpResult": {
         "type": "object",
         "required": [
+          "allowed",
           "plan"
         ],
         "properties": {
           "plan": {
-            "$ref": "#/components/schemas/SafeOpsPlan"
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SafeOpsPlan"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Null when the bump is refused; refusalCode then says why."
           },
           "packageFeeRateSatsPerVb": {
-            "$ref": "#/components/schemas/AtomicSats"
+            "type": "string",
+            "pattern": "^[0-9]{1,6}(\\.[0-9]{1,4})?$",
+            "description": "The parent and child package fee rate the child reaches, sats per virtual byte."
           },
           "allowed": {
             "type": "boolean"
           },
           "refusalCode": {
             "type": "string"
-          }
-        }
-      },
-      "SwapAsset": {
-        "type": "object",
-        "required": [
-          "assetType"
-        ],
-        "properties": {
-          "assetType": {
-            "type": "string",
-            "enum": [
-              "BTC",
-              "ORDINAL",
-              "RARE_SAT",
-              "RUNE",
-              "COUNTERPARTY"
-            ]
-          },
-          "assetId": {
-            "type": "string"
-          },
-          "inscriptionId": {
-            "type": "string"
-          },
-          "quantitySats": {
-            "$ref": "#/components/schemas/AtomicSats"
           }
         }
       },
@@ -6574,12 +7786,17 @@
       "SwapIntentView": {
         "type": "object",
         "required": [
+          "id",
           "intent",
           "state",
           "checkpoint",
           "actionability"
         ],
         "properties": {
+          "id": {
+            "type": "string",
+            "description": "The listed intent id the intent routes take."
+          },
           "intent": {
             "$ref": "#/components/schemas/SwapIntentDocument"
           },
@@ -6660,24 +7877,61 @@
           },
           "maxTakerFeeSats": {
             "$ref": "#/components/schemas/AtomicSats"
+          },
+          "takerChangeScriptHex": {
+            "type": "string",
+            "pattern": "^(?:[0-9a-f]{2})+$"
+          },
+          "takerIdentityProof": {
+            "type": "object",
+            "required": [
+              "kind",
+              "address",
+              "signature"
+            ],
+            "properties": {
+              "kind": {
+                "const": "bip322"
+              },
+              "address": {
+                "type": "string"
+              },
+              "signature": {
+                "type": "string"
+              }
+            },
+            "description": "Required for a taker-bound intent: the bound address signs ordex:swap-taker:<intent digest>:<sorted taker outpoints> (TAKER_BINDING_MISMATCH)."
+          },
+          "intent": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SwapIntentDocument"
+              }
+            ],
+            "description": "PRIVATE intents only: the decrypted maker-signed intent, whose digest must equal the path intentId (SWAP_INTENT_MALFORMED, SWAP_INTENT_INVALID, MAKER_PROOF_INVALID)."
           }
         }
       },
       "SwapAcceptancePlanDocument": {
         "type": "object",
+        "description": "One transaction settling both sides. Every asset movement is derived from the input inventories by the owning protocol; the maker receives every required asset at its receive script, the taker every given asset at its receive script, and each party fee share follows from its value flow.",
         "required": [
           "schema",
           "intentDigest",
           "network",
+          "checkpoint",
+          "taker",
+          "transaction",
           "tx",
           "assetTransitions",
           "fee",
-          "signing"
+          "signing",
+          "digest"
         ],
         "properties": {
           "schema": {
             "type": "string",
-            "const": "ordex.swap-acceptance-plan/v1"
+            "const": "ordex.swap-acceptance-plan/v2"
           },
           "intentDigest": {
             "type": "string",
@@ -6685,6 +7939,59 @@
           },
           "network": {
             "$ref": "#/components/schemas/Network"
+          },
+          "checkpoint": {
+            "$ref": "#/components/schemas/Checkpoint"
+          },
+          "taker": {
+            "type": "object",
+            "required": [
+              "receiveScriptHex"
+            ],
+            "properties": {
+              "receiveScriptHex": {
+                "type": "string",
+                "pattern": "^(?:[0-9a-f]{2})+$"
+              },
+              "changeScriptHex": {
+                "type": "string",
+                "pattern": "^(?:[0-9a-f]{2})+$"
+              },
+              "identityProof": {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "bip322"
+                  },
+                  "address": {
+                    "type": "string"
+                  },
+                  "signature": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "transaction": {
+            "type": "object",
+            "required": [
+              "version",
+              "lockTime"
+            ],
+            "properties": {
+              "version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 4294967295
+              },
+              "lockTime": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 4294967295
+              }
+            }
           },
           "tx": {
             "type": "object",
@@ -6700,7 +8007,10 @@
                   "required": [
                     "outpoint",
                     "party",
-                    "valueSats"
+                    "valueSats",
+                    "scriptPubKeyHex",
+                    "sequence",
+                    "inventory"
                   ],
                   "properties": {
                     "outpoint": {
@@ -6716,11 +8026,17 @@
                     "valueSats": {
                       "$ref": "#/components/schemas/AtomicSats"
                     },
-                    "assets": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/SwapAsset"
-                      }
+                    "scriptPubKeyHex": {
+                      "type": "string",
+                      "pattern": "^(?:[0-9a-f]{2})+$"
+                    },
+                    "sequence": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 4294967295
+                    },
+                    "inventory": {
+                      "$ref": "#/components/schemas/SafeOpsInventory"
                     }
                   }
                 }
@@ -6731,25 +8047,15 @@
                   "type": "object",
                   "required": [
                     "scriptHex",
-                    "valueSats",
-                    "role"
+                    "valueSats"
                   ],
                   "properties": {
                     "scriptHex": {
-                      "type": "string"
+                      "type": "string",
+                      "pattern": "^(?:[0-9a-f]{2})+$"
                     },
                     "valueSats": {
                       "$ref": "#/components/schemas/AtomicSats"
-                    },
-                    "role": {
-                      "type": "string",
-                      "enum": [
-                        "makerConsideration",
-                        "takerAsset",
-                        "makerChange",
-                        "takerChange",
-                        "preserve"
-                      ]
                     }
                   }
                 }
@@ -6759,8 +8065,7 @@
           "assetTransitions": {
             "type": "array",
             "items": {
-              "type": "object",
-              "additionalProperties": true
+              "$ref": "#/components/schemas/SafeOpsAssetTransition"
             }
           },
           "fee": {
@@ -6793,6 +8098,10 @@
                 "const": "ALL"
               }
             }
+          },
+          "digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
           }
         }
       },
@@ -6824,7 +8133,12 @@
             "type": "boolean"
           },
           "preflight": {
-            "$ref": "#/components/schemas/VerificationView"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/VerificationView"
+              }
+            ],
+            "description": "Served only by a gateway that can state the maximum age of a session preflight; it is absent otherwise (Core states no such age and never serves it). The preflight route answers the full verdict as SwapPreflightResult either way."
           },
           "updatedAt": {
             "type": "string",
@@ -6833,6 +8147,11 @@
           "psbt": {
             "type": "string",
             "description": "The current unsigned or partially signed PSBT, base64."
+          },
+          "sessionCapability": {
+            "type": "string",
+            "pattern": "^swc_[A-Za-z0-9_-]{43}$",
+            "description": "PRIVATE intents only, and only in the acceptance answer: returned exactly once. Only its SHA-256 is stored."
           }
         }
       },
@@ -6889,7 +8208,11 @@
             "type": "string"
           },
           "ciphertext": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Null exactly when destroyed."
           },
           "expiresAt": {
             "type": "string",
@@ -7035,15 +8358,23 @@
       "WebhookSubscription": {
         "type": "object",
         "required": [
-          "subscriptionId",
+          "id",
           "url",
           "eventTypes",
+          "network",
           "status",
-          "createdAt"
+          "secretHint",
+          "createdAt",
+          "updatedAt"
         ],
         "properties": {
-          "subscriptionId": {
-            "type": "string"
+          "id": {
+            "type": "string",
+            "description": "The subscription id."
+          },
+          "accountId": {
+            "type": "string",
+            "description": "The developer scope the subscription belongs to: an opaque id derived from the developer key, never the key."
           },
           "url": {
             "type": "string",
@@ -7056,7 +8387,7 @@
             }
           },
           "network": {
-            "$ref": "#/components/schemas/Network"
+            "$ref": "#/components/schemas/V12Network"
           },
           "status": {
             "type": "string",
@@ -7069,11 +8400,59 @@
           },
           "secretHint": {
             "type": "string",
-            "description": "The last four characters only. The full secret is shown once at creation."
+            "description": "The last four characters only. The full secret is shown once, at creation or rotation; the gateway keeps it only as ciphertext the delivery worker alone can open."
+          },
+          "secretVersion": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "The version of the current signing secret. Rotation increments it."
           },
           "createdAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "verification": {
+            "type": "object",
+            "required": [
+              "state",
+              "expiresAt",
+              "attempts",
+              "lastError"
+            ],
+            "description": "Endpoint challenge progress. The challenge value itself never appears.",
+            "properties": {
+              "state": {
+                "type": "string",
+                "enum": [
+                  "VERIFIED",
+                  "PENDING",
+                  "SENDING",
+                  "SENT",
+                  "FAILED"
+                ]
+              },
+              "expiresAt": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              },
+              "attempts": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "lastError": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
           }
         }
       },
@@ -7098,7 +8477,7 @@
             }
           },
           "network": {
-            "$ref": "#/components/schemas/Network"
+            "$ref": "#/components/schemas/V12Network"
           }
         }
       },
@@ -7132,7 +8511,12 @@
           },
           "secret": {
             "type": "string",
-            "description": "Shown exactly once."
+            "description": "Shown exactly once: whsec_ followed by 32 random bytes in base64url. Store it; the gateway cannot show it again."
+          },
+          "secretVersion": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "The version this secret signs as."
           }
         }
       },
@@ -7665,6 +9049,8 @@
         "required": [
           "asset",
           "supply",
+          "attachedUtxos",
+          "completeness",
           "readiness"
         ],
         "properties": {
@@ -7694,6 +9080,9 @@
           },
           "readiness": {
             "$ref": "#/components/schemas/HeritageReadiness"
+          },
+          "completeness": {
+            "$ref": "#/components/schemas/HeritageRecordCompleteness"
           }
         }
       },
@@ -7701,7 +9090,7 @@
         "type": "object",
         "required": [
           "address",
-          "assetName",
+          "assetId",
           "quantitySats",
           "destination"
         ],
@@ -7709,8 +9098,14 @@
           "address": {
             "type": "string"
           },
+          "assetId": {
+            "type": "string",
+            "pattern": "^(0|[1-9][0-9]*)$",
+            "description": "The numeric Counterparty asset id as a decimal string (the id the ledger derives from the asset name: 1 for XCP, the number itself for an A-numbered asset, the base-26 value for a named asset). It is the asset identity; a name alone never is (ASSET_ID_REQUIRED). The gateway refuses an id whose ledger record carries another id (ASSET_ID_MISMATCH)."
+          },
           "assetName": {
-            "type": "string"
+            "type": "string",
+            "description": "Optional display hint. When given it must name the ledger asset for assetId (ASSET_NAME_MISMATCH)."
           },
           "quantitySats": {
             "type": "string",
@@ -7728,8 +9123,10 @@
       "HeritageComposeResult": {
         "type": "object",
         "required": [
+          "operationId",
           "psbt",
-          "explanation"
+          "explanation",
+          "minerFeeSats"
         ],
         "properties": {
           "psbt": {
@@ -7742,16 +9139,28 @@
             "description": "What moves, what it costs, and what would also travel."
           },
           "xcpGasSats": {
-            "$ref": "#/components/schemas/AtomicSats"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AtomicSats"
+              }
+            ],
+            "description": "The node reported gas; absent when the node reports none."
           },
           "minerFeeSats": {
             "$ref": "#/components/schemas/AtomicSats"
+          },
+          "operationId": {
+            "type": "string",
+            "description": "The heritage operation the relay route takes."
+          },
+          "manifest": {
+            "$ref": "#/components/schemas/ExpectedTransactionManifest"
           }
         }
       },
       "ExpectedTransactionManifest": {
         "type": "object",
-        "description": "What the signer will see, in human readable and machine verifiable form, before any signature is requested.",
+        "description": "What the signer will see, in human readable and machine verifiable form, before any signature is requested. The digest commits to the exact unsigned transaction bytes, every prevout and the protection policy; purpose, explanations, roles and account are display text outside it.",
         "required": [
           "schema",
           "network",
@@ -7764,7 +9173,7 @@
         "properties": {
           "schema": {
             "type": "string",
-            "const": "ordex.expected-transaction-manifest/v1"
+            "const": "ordex.expected-transaction-manifest/v2"
           },
           "network": {
             "$ref": "#/components/schemas/Network"
@@ -7787,6 +9196,8 @@
           "unsignedTx": {
             "type": "object",
             "required": [
+              "version",
+              "lockTime",
               "inputs",
               "outputs"
             ],
@@ -7798,6 +9209,7 @@
                   "required": [
                     "txid",
                     "vout",
+                    "sequence",
                     "valueSats",
                     "scriptPubKeyHex",
                     "controlledByUser",
@@ -7815,16 +9227,53 @@
                       "$ref": "#/components/schemas/AtomicSats"
                     },
                     "scriptPubKeyHex": {
-                      "type": "string"
+                      "type": "string",
+                      "pattern": "^(?:[0-9a-f]{2})+$"
                     },
                     "controlledByUser": {
                       "type": "boolean"
                     },
                     "sighashType": {
-                      "type": "string"
+                      "type": "string",
+                      "enum": [
+                        "DEFAULT",
+                        "ALL",
+                        "NONE",
+                        "SINGLE",
+                        "ALL|ANYONECANPAY",
+                        "NONE|ANYONECANPAY",
+                        "SINGLE|ANYONECANPAY"
+                      ],
+                      "description": "The one sighash the user may sign this input with; required when controlledByUser."
                     },
                     "explanation": {
                       "type": "string"
+                    },
+                    "sequence": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 4294967295
+                    },
+                    "preservedSignature": {
+                      "type": "object",
+                      "required": [
+                        "scriptSigHex",
+                        "witness"
+                      ],
+                      "description": "A foreign input already signed, such as a seller input; the result must carry it unchanged.",
+                      "properties": {
+                        "scriptSigHex": {
+                          "type": "string",
+                          "pattern": "^(?:[0-9a-f]{2})*$"
+                        },
+                        "witness": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "pattern": "^(?:[0-9a-f]{2})*$"
+                          }
+                        }
+                      }
                     }
                   }
                 }
@@ -7856,11 +9305,36 @@
                       "type": "array",
                       "items": {
                         "type": "object",
-                        "additionalProperties": true
+                        "required": [
+                          "assetType",
+                          "assetId",
+                          "quantity"
+                        ],
+                        "properties": {
+                          "assetType": {
+                            "type": "string"
+                          },
+                          "assetId": {
+                            "type": "string"
+                          },
+                          "quantity": {
+                            "$ref": "#/components/schemas/AtomicSats"
+                          }
+                        }
                       }
                     }
                   }
                 }
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 4294967295
+              },
+              "lockTime": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 4294967295
               }
             }
           },
@@ -7904,6 +9378,7 @@
             "enum": [
               "AWAITING_EXPORT",
               "AWAITING_SIGNATURE",
+              "PARTIALLY_SIGNED",
               "SIGNED_VERIFIED",
               "REJECTED",
               "BROADCAST"
@@ -7916,6 +9391,22 @@
           "rejection": {
             "type": "object",
             "additionalProperties": true
+          },
+          "capabilities": {
+            "type": "object",
+            "required": [
+              "read",
+              "import"
+            ],
+            "description": "In the open answer only, exactly once; only their hashes are stored.",
+            "properties": {
+              "read": {
+                "type": "string"
+              },
+              "import": {
+                "type": "string"
+              }
+            }
           }
         }
       },
@@ -7923,26 +9414,53 @@
         "type": "object",
         "required": [
           "schema",
-          "manifestDigest",
-          "tx"
+          "manifestDigest"
         ],
+        "description": "Exactly one of psbt and signedTxHex. Signatures are verified from these bytes.",
         "properties": {
           "schema": {
             "type": "string",
-            "const": "ordex.offline-signing-session/v1"
+            "const": "ordex.offline-signing-session/v2"
           },
           "manifestDigest": {
             "type": "string",
             "pattern": "^[0-9a-f]{64}$"
           },
-          "tx": {
-            "$ref": "#/components/schemas/TxDescription"
+          "psbt": {
+            "type": "string",
+            "description": "A PSBT v0 or v2, base64 or hex, with the user signatures."
           },
-          "carriedAssets": {
+          "signedTxHex": {
+            "type": "string",
+            "pattern": "^(?:[0-9a-f]{2})+$",
+            "description": "A fully signed raw transaction."
+          },
+          "observedAssets": {
             "type": "array",
+            "description": "Protected asset movements derived independently from the signed transaction; required when the manifest expects assets.",
             "items": {
               "type": "object",
-              "additionalProperties": true
+              "required": [
+                "assetType",
+                "assetId",
+                "quantity",
+                "outputIndex"
+              ],
+              "properties": {
+                "assetType": {
+                  "type": "string"
+                },
+                "assetId": {
+                  "type": "string"
+                },
+                "quantity": {
+                  "$ref": "#/components/schemas/AtomicSats"
+                },
+                "outputIndex": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
             }
           },
           "unknownCriticalFields": {
@@ -8201,6 +9719,1022 @@
             "format": "date-time"
           }
         }
+      },
+      "SwapIntentWithdrawRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "makerAddress",
+          "signature"
+        ],
+        "properties": {
+          "makerAddress": {
+            "type": "string",
+            "description": "The maker address the intent names."
+          },
+          "signature": {
+            "type": "string",
+            "description": "BIP-322 signature by that address over the withdrawal challenge of this intent."
+          }
+        }
+      },
+      "PrivateSwapDestroyRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "deleteCapability"
+        ],
+        "properties": {
+          "deleteCapability": {
+            "type": "string",
+            "description": "The delete capability returned once when the envelope was stored."
+          }
+        }
+      },
+      "WebhookVerifyRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "challenge": {
+            "type": "string",
+            "description": "The challenge the endpoint received. Without it the gateway issues a new challenge."
+          }
+        }
+      },
+      "HeritageDetachRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "utxo",
+          "destination"
+        ],
+        "properties": {
+          "utxo": {
+            "type": "string",
+            "description": "The outpoint that carries the attached balance, txid:vout."
+          },
+          "destination": {
+            "type": "string",
+            "description": "The address the detached balance is credited to."
+          },
+          "feeRateSatsPerVb": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AtomicSats"
+              }
+            ],
+            "description": "Fee rate for the composed transaction."
+          }
+        }
+      },
+      "SigningSessionOpenRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "manifest"
+        ],
+        "properties": {
+          "manifest": {
+            "$ref": "#/components/schemas/ExpectedTransactionManifest"
+          }
+        }
+      },
+      "SigningSignedResultRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "signedResult"
+        ],
+        "properties": {
+          "signedResult": {
+            "$ref": "#/components/schemas/SignedResultSubmission"
+          }
+        }
+      },
+      "SigningVerifyRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "manifest",
+          "signed"
+        ],
+        "properties": {
+          "manifest": {
+            "$ref": "#/components/schemas/ExpectedTransactionManifest"
+          },
+          "signed": {
+            "$ref": "#/components/schemas/SignedResultSubmission"
+          }
+        }
+      },
+      "V12Network": {
+        "type": "string",
+        "enum": [
+          "mainnet",
+          "testnet",
+          "signet",
+          "regtest"
+        ],
+        "description": "The networks the v1.2 webhook and signing session routes accept, testnet included. The shared Network schema is unchanged."
+      },
+      "WebhookSubscriptionList": {
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WebhookSubscription"
+            }
+          }
+        },
+        "description": "Every subscription of the authenticated developer key. Not paged."
+      },
+      "SigningSessionSummary": {
+        "type": "object",
+        "required": [
+          "sessionId",
+          "network",
+          "state",
+          "manifestDigest",
+          "createdAt",
+          "updatedAt",
+          "expiresAt"
+        ],
+        "properties": {
+          "sessionId": {
+            "type": "string"
+          },
+          "network": {
+            "$ref": "#/components/schemas/V12Network"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "AWAITING_EXPORT",
+              "AWAITING_SIGNATURE",
+              "PARTIALLY_SIGNED",
+              "SIGNED_VERIFIED",
+              "REJECTED",
+              "BROADCAST"
+            ]
+          },
+          "manifestDigest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "SigningSessionPage": {
+        "type": "object",
+        "required": [
+          "rows",
+          "nextCursor"
+        ],
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SigningSessionSummary"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "description": "Empty when this page is the last one. Pass it as cursor for the next page, which continues from the last row by updatedAt then id, newest first."
+          }
+        },
+        "description": "Summaries of the sessions the presented capabilities unlock; the manifest and signed result are read one session at a time."
+      },
+      "PrivateSwapList": {
+        "type": "object",
+        "required": [
+          "privateSwaps"
+        ],
+        "properties": {
+          "privateSwaps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PrivateSwapEnvelope"
+            }
+          }
+        }
+      },
+      "HeritageExpectedLedgerEvent": {
+        "type": "object",
+        "required": [
+          "event",
+          "source",
+          "destination",
+          "asset",
+          "quantity"
+        ],
+        "properties": {
+          "event": {
+            "type": "string",
+            "enum": [
+              "ATTACH_TO_UTXO",
+              "DETACH_FROM_UTXO",
+              "UTXO_MOVE"
+            ]
+          },
+          "source": {
+            "type": "string",
+            "description": "The source address or txid:vout."
+          },
+          "destination": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "An address or txid:vout; null before relay, when outputIndex names an output of the operation itself."
+          },
+          "outputIndex": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "asset": {
+            "type": "string",
+            "description": "The ledger's own asset name."
+          },
+          "quantity": {
+            "type": "string",
+            "pattern": "^(0|[1-9][0-9]*)$",
+            "description": "Whole atomic units as decimal text."
+          }
+        }
+      },
+      "HeritageOperation": {
+        "type": "object",
+        "required": [
+          "operationId",
+          "kind",
+          "state",
+          "network",
+          "txid",
+          "manifestDigest",
+          "swapSessionId",
+          "expectedLedgerEvents",
+          "settlement",
+          "refusalCode",
+          "createdAt",
+          "updatedAt"
+        ],
+        "description": "A composed heritage operation until the Counterparty ledger proves it: COMPOSED, then RELAYED, then SETTLED or LEDGER_MISMATCH.",
+        "properties": {
+          "operationId": {
+            "type": "string",
+            "description": "hop_<uuid>"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "ATTACH",
+              "DETACH",
+              "SWAP_MOVE"
+            ]
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "COMPOSED",
+              "RELAYED",
+              "SETTLED",
+              "LEDGER_MISMATCH"
+            ]
+          },
+          "network": {
+            "$ref": "#/components/schemas/V12Network"
+          },
+          "txid": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "manifestDigest": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "swapSessionId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "expectedLedgerEvents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HeritageExpectedLedgerEvent"
+            }
+          },
+          "settlement": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "required": [
+              "blockHash",
+              "height",
+              "ledgerHash",
+              "eventId"
+            ],
+            "properties": {
+              "blockHash": {
+                "type": "string"
+              },
+              "height": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "ledgerHash": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "eventId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          },
+          "refusalCode": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "HeritageRelayRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "Exactly one of signedTxHex or a finalized psbt (base64 or hex, at most 1600000 characters); anything else is HERITAGE_RELAY_BODY_INVALID.",
+        "properties": {
+          "signedTxHex": {
+            "type": "string",
+            "pattern": "^(?:[0-9a-f]{2})+$",
+            "maxLength": 1600000
+          },
+          "psbt": {
+            "type": "string",
+            "maxLength": 1600000
+          }
+        },
+        "oneOf": [
+          {
+            "required": [
+              "signedTxHex"
+            ]
+          },
+          {
+            "required": [
+              "psbt"
+            ]
+          }
+        ]
+      },
+      "HeritageAskDraftRequest": {
+        "type": "object",
+        "required": [
+          "utxo",
+          "makerReceiveAddress",
+          "priceSats"
+        ],
+        "properties": {
+          "utxo": {
+            "type": "string",
+            "description": "The carrying outpoint, txid:vout. Every balance on it is given whole."
+          },
+          "makerReceiveAddress": {
+            "type": "string"
+          },
+          "maxMakerFeeSats": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AtomicSats"
+              }
+            ],
+            "description": "Defaults to the carrying output value."
+          },
+          "expiryBlocks": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "visibility": {
+            "type": "string",
+            "enum": [
+              "PUBLIC",
+              "PRIVATE"
+            ]
+          },
+          "takerAddress": {
+            "type": "string",
+            "description": "Binds the intent to one taker."
+          },
+          "priceSats": {
+            "$ref": "#/components/schemas/AtomicSats"
+          }
+        }
+      },
+      "HeritageSwapDraftRequest": {
+        "type": "object",
+        "required": [
+          "utxo",
+          "makerReceiveAddress",
+          "requires"
+        ],
+        "properties": {
+          "utxo": {
+            "type": "string",
+            "description": "The carrying outpoint, txid:vout. Every balance on it is given whole."
+          },
+          "makerReceiveAddress": {
+            "type": "string"
+          },
+          "maxMakerFeeSats": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AtomicSats"
+              }
+            ],
+            "description": "Defaults to the carrying output value."
+          },
+          "expiryBlocks": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "visibility": {
+            "type": "string",
+            "enum": [
+              "PUBLIC",
+              "PRIVATE"
+            ]
+          },
+          "takerAddress": {
+            "type": "string",
+            "description": "Binds the intent to one taker."
+          },
+          "requires": {
+            "type": "array",
+            "minItems": 1,
+            "description": "What the maker wants instead of BTC: ORDINAL, RARE_SAT, RUNE or BTC. COUNTERPARTY answers COUNTERPARTY_BOTH_SIDES.",
+            "items": {
+              "type": "object",
+              "required": [
+                "assetType",
+                "minQuantitySats"
+              ],
+              "properties": {
+                "assetType": {
+                  "type": "string",
+                  "enum": [
+                    "ORDINAL",
+                    "RARE_SAT",
+                    "RUNE",
+                    "BTC"
+                  ]
+                },
+                "assetId": {
+                  "type": "string"
+                },
+                "inscriptionId": {
+                  "type": "string"
+                },
+                "minQuantitySats": {
+                  "$ref": "#/components/schemas/AtomicSats"
+                }
+              }
+            }
+          }
+        }
+      },
+      "HeritageIntentDraft": {
+        "type": "object",
+        "required": [
+          "intent",
+          "digest",
+          "record",
+          "signing"
+        ],
+        "description": "An unsigned ordex.swap-intent/v1 over one carrying UTXO. Nothing is stored; the maker signs digest with BIP-322 and publishes it.",
+        "properties": {
+          "intent": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "The swap intent without makerIdentityProof."
+          },
+          "digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "record": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "The ordex.counterparty-utxo-asset/v1 record of the carrying UTXO."
+          },
+          "signing": {
+            "type": "object",
+            "required": [
+              "message",
+              "kind",
+              "address"
+            ],
+            "properties": {
+              "message": {
+                "type": "string"
+              },
+              "kind": {
+                "const": "bip322"
+              },
+              "address": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "HeritageIntentPublishRequest": {
+        "type": "object",
+        "required": [
+          "intent"
+        ],
+        "properties": {
+          "intent": {
+            "$ref": "#/components/schemas/SwapIntentDocument"
+          }
+        },
+        "description": "A maker-signed intent that gives Counterparty attachments only, each exactly what the ledger holds now (GIVE_QUANTITY_MISMATCH)."
+      },
+      "HeritageAcceptanceResult": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SwapSession"
+          },
+          {
+            "type": "object",
+            "required": [
+              "expectedLedgerEvents"
+            ],
+            "properties": {
+              "expectedLedgerEvents": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/HeritageExpectedLedgerEvent"
+                },
+                "description": "One UTXO_MOVE per moved balance."
+              }
+            }
+          }
+        ]
+      },
+      "OfferRevalidateRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "txid": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "description": "A transaction the caller says spent the funded output, checked against the node."
+          }
+        }
+      },
+      "OfferWithdrawalProof": {
+        "type": "object",
+        "required": [
+          "signature"
+        ],
+        "properties": {
+          "address": {
+            "type": "string",
+            "description": "Informational; the key that must sign is terms.buyerRecoveryKeyHex."
+          },
+          "signature": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{128}$",
+            "description": "A BIP-340 signature by buyerRecoveryKeyHex over the tagged hash (tag ordex/offer-withdrawal) of the message \"Ordex offer withdrawal\\nnetwork: <network>\\noffer: <id>\\nterms: <offerTermsHash>\"."
+          }
+        }
+      },
+      "SwapPreflightResult": {
+        "type": "object",
+        "required": [
+          "sessionId",
+          "state",
+          "allowed",
+          "checkedAt"
+        ],
+        "properties": {
+          "sessionId": {
+            "type": "string"
+          },
+          "state": {
+            "$ref": "#/components/schemas/SwapIntentState"
+          },
+          "allowed": {
+            "type": "boolean"
+          },
+          "txid": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "description": "Allowed settlements only."
+          },
+          "refusalCode": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "checkedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "PrivateSwapStored": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/PrivateSwapEnvelope"
+          },
+          {
+            "type": "object",
+            "required": [
+              "deleteCapability"
+            ],
+            "properties": {
+              "deleteCapability": {
+                "type": "string",
+                "description": "Returned exactly once; only its hash is stored. Destroying the envelope needs it."
+              }
+            }
+          }
+        ]
+      },
+      "HeritageRecordCompleteness": {
+        "type": "object",
+        "required": [
+          "complete",
+          "incomplete",
+          "nextCursor"
+        ],
+        "properties": {
+          "complete": {
+            "type": "boolean"
+          },
+          "incomplete": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "utxo",
+                "reasons"
+              ],
+              "properties": {
+                "utxo": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "reasons": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Pass as cursor for the next page; null on the last page."
+          }
+        }
+      },
+      "HeritageAssetUtxoPage": {
+        "type": "object",
+        "required": [
+          "asset",
+          "attachedUtxos",
+          "completeness",
+          "readiness"
+        ],
+        "properties": {
+          "asset": {
+            "type": "object",
+            "required": [
+              "name",
+              "assetId"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "assetId": {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]*)$"
+              }
+            }
+          },
+          "attachedUtxos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HeritageAttachmentRecord"
+            }
+          },
+          "completeness": {
+            "$ref": "#/components/schemas/HeritageRecordCompleteness"
+          },
+          "readiness": {
+            "$ref": "#/components/schemas/HeritageReadiness"
+          }
+        }
+      },
+      "HeritageAddressAssets": {
+        "type": "object",
+        "required": [
+          "address",
+          "balances",
+          "readiness"
+        ],
+        "properties": {
+          "address": {
+            "type": "string"
+          },
+          "balances": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "name",
+                "assetId",
+                "divisible",
+                "quantitySats",
+                "utxo"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "assetId": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)$"
+                },
+                "divisible": {
+                  "type": "boolean"
+                },
+                "quantitySats": {
+                  "$ref": "#/components/schemas/AtomicSats"
+                },
+                "quantityNormalized": {
+                  "type": "string"
+                },
+                "utxo": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The carrying outpoint txid:vout, or null for the plain address balance."
+                }
+              }
+            }
+          },
+          "readiness": {
+            "$ref": "#/components/schemas/HeritageReadiness"
+          }
+        }
+      },
+      "SafeOpsPartitionPlan": {
+        "type": "object",
+        "required": [
+          "planId",
+          "state",
+          "plan",
+          "verification",
+          "createdAt",
+          "updatedAt"
+        ],
+        "description": "One transaction of a partitioned operation: a SafeOpsPlanResult without its own partition.",
+        "properties": {
+          "planId": {
+            "type": "string",
+            "description": "The id every later plan route takes."
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "BUILT",
+              "SIGNED",
+              "BROADCAST",
+              "INVALIDATED"
+            ]
+          },
+          "plan": {
+            "$ref": "#/components/schemas/SafeOpsPlan"
+          },
+          "verification": {
+            "$ref": "#/components/schemas/VerificationView"
+          },
+          "psbt": {
+            "type": "string",
+            "description": "The unsigned PSBT, base64, that reproduces the plan transaction exactly."
+          },
+          "manifest": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ExpectedTransactionManifest"
+              }
+            ],
+            "description": "The expected transaction manifest a cold signer signs against."
+          },
+          "invalidatedReason": {
+            "type": "string",
+            "description": "INVALIDATED plans only."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "PurchaseUnavailableCode": {
+        "type": "string",
+        "enum": [
+          "ORDER_CHECKING",
+          "ORDER_STALE",
+          "INPUT_INVENTORY_UNAVAILABLE",
+          "CHAIN_UNAVAILABLE",
+          "CHAIN_MOVED",
+          "ORDEX_NOT_CONFIGURED",
+          "ORDEX_DISABLED",
+          "OPERATION_UNRECORDED",
+          "ORDEX_UNAVAILABLE"
+        ],
+        "description": "Why a purchase route answered 503; every one is retryable and nothing was composed or recorded. ORDER_CHECKING: the listing is in its catch-up hold at a new block (spec/lifecycle.md). ORDER_STALE: the listing could not be verified against the chain just now. INPUT_INVENTORY_UNAVAILABLE: Ordex could not check a buyer funding or padding output (or a transaction input) for assets, so it will not spend it; retry, or choose other outputs. CHAIN_UNAVAILABLE: Bitcoin Core or ord could not be read at the checkpoint. CHAIN_MOVED: the chain moved while Ordex was verifying. ORDEX_NOT_CONFIGURED and ORDEX_DISABLED: the operator must act. OPERATION_UNRECORDED: a refusal could not be recorded; retry with the same idempotency-key. ORDEX_UNAVAILABLE: any other temporary failure."
+      },
+      "PurchaseUnavailable": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ErrorResponse"
+          },
+          {
+            "type": "object",
+            "required": [
+              "statusCode",
+              "code",
+              "message"
+            ],
+            "properties": {
+              "statusCode": {
+                "type": "integer",
+                "const": 503
+              },
+              "error": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
+              "requestId": {
+                "type": "string"
+              },
+              "code": {
+                "$ref": "#/components/schemas/PurchaseUnavailableCode"
+              }
+            }
+          }
+        ]
+      },
+      "BatchPurchaseUnavailable": {
+        "type": "object",
+        "required": [
+          "statusCode",
+          "code",
+          "message"
+        ],
+        "description": "A batch purchase that could not be composed right now. With code ORDER_CHECKING, every order of the batch passed the refusal checks and at least one is still being checked at the newest block: refusals names each such order in the same per-order shape as BatchPurchaseRefused. Retry the same batch shortly. An order that cannot be bought at all is refused first, with a 409 BatchPurchaseRefused.",
+        "properties": {
+          "statusCode": {
+            "type": "integer",
+            "const": 503
+          },
+          "error": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "code": {
+            "$ref": "#/components/schemas/PurchaseUnavailableCode"
+          },
+          "refusals": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/BatchRefusal"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "const": "ORDER_CHECKING"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "AssetView": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "protocolId",
+          "assetId",
+          "quantityAtomic",
+          "label"
+        ],
+        "description": "One protocol view of the sold inscription. Several views of one inscription (for example a Bitmap claim that is also an SNS name, or a DMT transfer that is also a TAP transfer of its dmt- ticker) are one asset and all move to the buyer, so every one is disclosed, including a view the seller did not declare.",
+        "properties": {
+          "protocolId": {
+            "type": "string"
+          },
+          "assetId": {
+            "type": "string"
+          },
+          "quantityAtomic": {
+            "$ref": "#/components/schemas/AtomicSats"
+          },
+          "label": {
+            "type": "string",
+            "description": "A plain description to show the buyer."
+          }
+        }
+      },
+      "BatchPreflightRejectCode": {
+        "type": "string",
+        "enum": [
+          "PLACEMENT_REFUSED",
+          "NODE_REJECTED"
+        ],
+        "description": "PLACEMENT_REFUSED: at least one ask could not be proved; see placements. NODE_REJECTED: Bitcoin Core would not accept the transaction; rejectReason carries its reason."
+      },
+      "BatchPreflightPlacementCode": {
+        "type": "string",
+        "enum": [
+          "ORDER_UNVERIFIABLE",
+          "ORDER_NOT_LIVE",
+          "ORDER_STALE",
+          "ORDER_CHANGED",
+          "ASK_NOT_BOUND",
+          "SELLER_INPUT_MOVED",
+          "DELIVERY_UNPROVEN",
+          "RECIPIENT_MISMATCH"
+        ],
+        "description": "ORDER_UNVERIFIABLE: the ask could not be read or verified. ORDER_NOT_LIVE: the listing left LIVE. ORDER_STALE: it could not be verified against the chain just now. ORDER_CHANGED: it changed since the batch was quoted. ASK_NOT_BOUND: the transaction does not carry this ask exactly. SELLER_INPUT_MOVED: its seller input is not at the reviewed position. DELIVERY_UNPROVEN: the asset delivery could not be proved. RECIPIENT_MISMATCH: the asset would not land in the reviewed buyer output."
       }
     }
   }

@@ -2,7 +2,7 @@
   {
     "name": "eventsStream",
     "address": "/events/stream",
-    "description": "Server sent events. The SSE id field carries the event id; sending Last-Event-ID resumes exactly after it. Filters: network, type, aggregateType, aggregateId, protocol, collectionId.",
+    "description": "Server sent events. Each event is sent as `event: ordex-event` with `id: <sequence>:<eventId>`: the envelope sequence and id, so the id both names the event and is its exact resume position without any lookup. Sending that id back as Last-Event-ID (or as the cursor query parameter) resumes exactly after the event. A cursor older than the retained window answers 410 CURSOR_EXPIRED before any event, and the client resyncs instead of skipping events. Sequences are counted per network. On a stream filtered to one network the resume is exact. On a stream with no network filter, a <sequence>:<eventId> position is exact for that event's network, and the other networks restart from their oldest retained event: the consumer receives duplicates, which it drops by event id, and never a gap. A consumer that needs an exact resume across networks opens one stream per network. Filters: network, type, aggregateType, aggregateId, protocol, collectionId.",
     "messages": {
       "ordexEvent": {
         "$ref": "#/components/messages/ordexEvent"
@@ -19,33 +19,28 @@
   {
     "name": "eventsSocket",
     "address": "/events/ws",
-    "description": "WebSocket for high volume consumers. One connection, many subscriptions, cursor resumption, bounded buffers, slow consumer disconnect with a resumable cursor.",
+    "description": "WebSocket for high volume consumers. One connection carries up to 16 subscriptions, each named by a client chosen id. Every server frame is JSON with an op field; events arrive wrapped as {op: event, id, cursor, event} so each subscription resumes from its own cursor. Buffers are bounded; a slow consumer gets a disconnect frame carrying every subscription's cursor, then the socket closes with code 4008.",
     "messages": {
       "subscribe": {
-        "payload": {
-          "type": "object",
-          "required": [
-            "op"
-          ],
-          "properties": {
-            "op": {
-              "type": "string",
-              "const": "subscribe"
-            },
-            "filters": {
-              "type": "object",
-              "additionalProperties": true
-            },
-            "cursor": {
-              "type": "string",
-              "description": "Resume from this event sequence and id."
-            }
-          }
-        },
-        "description": "Multiplex many filters over one connection."
+        "$ref": "#/components/messages/wsSubscribe"
+      },
+      "unsubscribe": {
+        "$ref": "#/components/messages/wsUnsubscribe"
+      },
+      "subscribed": {
+        "$ref": "#/components/messages/wsSubscribed"
+      },
+      "unsubscribed": {
+        "$ref": "#/components/messages/wsUnsubscribed"
       },
       "ordexEvent": {
-        "$ref": "#/components/messages/ordexEvent"
+        "$ref": "#/components/messages/wsEvent"
+      },
+      "error": {
+        "$ref": "#/components/messages/wsError"
+      },
+      "disconnect": {
+        "$ref": "#/components/messages/wsDisconnect"
       }
     }
   },
