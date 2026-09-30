@@ -67,8 +67,8 @@
     "protocolVersion": "1.2",
     "contentType": "specification",
     "title": "The Ordex gateway API - Errors",
-    "content": "Every error answers the shared envelope: `statusCode`, `error`, `message`,\nand, where one applies, a stable `code` and the `requestId`. A route that\nnames one resource by id answers `404` when nothing with that id exists, with\nthe matching `*_NOT_FOUND` code; `400` is only for a request the gateway\ncannot read. A client can therefore tell a stale id from a malformed call\nwithout parsing the message.",
-    "digest": "9181a1194522afb1",
+    "content": "Every error answers the shared envelope: `statusCode`, `error`, `message`,\nand, where one applies, a stable `code` and the `requestId`. A route that\nnames one resource by id answers `404` when nothing with that id exists, with\nthe matching `*_NOT_FOUND` code; `400` is only for a request the gateway\ncannot read. A client can therefore tell a stale id from a malformed call\nwithout parsing the message.\n\nA purchase route (quote, preflight, batch purchase, batch preflight) that\ncannot answer right now responds `503` with one of the codes in\n`PurchaseUnavailableCode`. `ORDER_CHECKING` means the listing itself is in its\ncatch-up hold at a new block; `INPUT_INVENTORY_UNAVAILABLE` means a buyer\noutput could not be checked for assets, so Ordex will not spend it. Every one\nof them is retryable, and nothing was composed or recorded.",
+    "digest": "83cc4c5b03bf0f08",
     "docUrl": "/reference/specifications/#spec-api"
   },
   {
@@ -439,8 +439,8 @@
     "protocolVersion": "1.2",
     "contentType": "specification",
     "title": "Counterparty heritage assets v1 - Attach and detach",
-    "content": "Attachment and detachment are composed for the user, never for the service: the composition returns an unsigned PSBT, the exact XCP gas, the exact miner fee, the resulting outpoint, the consequences, and any unrelated assets that would also move. The user signs with their own wallet. The server never holds XCP, BTC, or the attached asset. Composed transactions pass Bitcoin Core preflight before signature, and the expected Counterparty event is confirmed after confirmation; reorgs reverse the marketplace state through explicit reversed events.",
-    "digest": "aa15b194c2e8494c",
+    "content": "An attach request names the asset by its numeric Counterparty asset id (`assetId`, a decimal string); a name is only an optional display hint that must match the ledger record for that id. Attachment and detachment are composed for the user, never for the service: the composition returns an unsigned PSBT, the exact XCP gas, the exact miner fee, the resulting outpoint, the consequences, and any unrelated assets that would also move. The user signs with their own wallet. The server never holds XCP, BTC, or the attached asset. Composed transactions pass Bitcoin Core preflight before signature, and the expected Counterparty event is confirmed after confirmation; reorgs reverse the marketplace state through explicit reversed events.",
+    "digest": "0b0df7217f972429",
     "docUrl": "/reference/specifications/#spec-counterparty-utxo-asset"
   },
   {

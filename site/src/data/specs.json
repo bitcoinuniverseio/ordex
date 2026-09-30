@@ -65,7 +65,7 @@
         "anchor": "-post-orders-id-preflight-"
       }
     ],
-    "rawLength": 10566
+    "rawLength": 11003
   },
   {
     "file": "batch-purchase.md",
@@ -237,7 +237,7 @@
         "anchor": "readiness-gates"
       }
     ],
-    "rawLength": 7745
+    "rawLength": 7934
   },
   {
     "file": "events.md",

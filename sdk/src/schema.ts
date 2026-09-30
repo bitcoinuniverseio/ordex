@@ -1762,6 +1762,8 @@ export interface components {
             feePolicy: components["schemas"]["FeePolicyReference"];
             /** @description Every fee or royalty output the composed transaction carries. Empty under a zero policy; a zero is stated as an empty list, never omitted. */
             feeOutputs: components["schemas"]["FeeOutput"][];
+            /** @description Every protocol view of the inscription this purchase delivers to the buyer; empty when the asset has no inscription views. */
+            assetViews: components["schemas"]["AssetView"][];
         };
         /** @description The quoteId of the reviewed quote and either the final transaction hex or the signed PSBT a wallet actually answers with. */
         PreflightRequest: {
@@ -1783,6 +1785,8 @@ export interface components {
             checkedAt: string;
             /** @description The reviewed quote the bytes were checked against. */
             quoteId?: string;
+            /** @description Every protocol view of the inscription the checked transaction delivers to the buyer; empty when the asset has no inscription views. */
+            assetViews?: components["schemas"]["AssetView"][];
         };
         BuildAskRequest: {
             protocolId: string;
@@ -2182,6 +2186,8 @@ export interface components {
                 assetValueSats: components["schemas"]["AtomicSats"];
                 sellerPaymentScriptHex: string;
                 assetOutpoint: components["schemas"]["Outpoint"];
+                /** @description Every protocol view of the inscription this ask delivers to the buyer; empty when the asset has no inscription views. */
+                assetViews: components["schemas"]["AssetView"][];
             }[];
             totals: {
                 /** @description Every price, every fee, and every padding sat, stated once. */
@@ -2249,6 +2255,8 @@ export interface components {
             placements: {
                 orderId: string;
                 allowed: boolean;
+                /** @description Present when this ask failed. */
+                rejectCode?: components["schemas"]["BatchPreflightPlacementCode"];
                 /** @description Present when this ask failed inside an otherwise parseable batch. */
                 rejectReason?: string;
             }[];
@@ -2260,6 +2268,10 @@ export interface components {
             checkedAt: string;
             /** @description The batch id the request named, echoed back. */
             batchId?: string | null;
+            /** @description Present exactly when allowed is false. */
+            rejectCode?: components["schemas"]["BatchPreflightRejectCode"];
+            /** @description A human explanation of rejectCode; present exactly when allowed is false. */
+            rejectReason?: string;
         };
         /** @description The error envelope every route answers with. Rate limited requests additionally carry `code: ORDEX_RATE_LIMITED`. */
         ErrorResponse: {
@@ -2902,7 +2914,10 @@ export interface components {
         };
         HeritageComposeRequest: {
             address: string;
-            assetName: string;
+            /** @description The numeric Counterparty asset id as a decimal string (the id the ledger derives from the asset name: 1 for XCP, the number itself for an A-numbered asset, the base-26 value for a named asset). It is the asset identity; a name alone never is (ASSET_ID_REQUIRED). The gateway refuses an id whose ledger record carries another id (ASSET_ID_MISMATCH). */
+            assetId: string;
+            /** @description Optional display hint. When given it must name the ledger asset for assetId (ASSET_NAME_MISMATCH). */
+            assetName?: string;
             quantitySats: string;
             /** @description The target UTXO or output the attachment moves to. */
             destination: string;
@@ -3317,29 +3332,50 @@ export interface components {
             /** Format: date-time */
             updatedAt: string;
         };
-        OrderCheckingError: components["schemas"]["ErrorResponse"] & {
+        /**
+         * @description Why a purchase route answered 503; every one is retryable and nothing was composed or recorded. ORDER_CHECKING: the listing is in its catch-up hold at a new block (spec/lifecycle.md). ORDER_STALE: the listing could not be verified against the chain just now. INPUT_INVENTORY_UNAVAILABLE: Ordex could not check a buyer funding or padding output (or a transaction input) for assets, so it will not spend it; retry, or choose other outputs. CHAIN_UNAVAILABLE: Bitcoin Core or ord could not be read at the checkpoint. CHAIN_MOVED: the chain moved while Ordex was verifying. ORDEX_NOT_CONFIGURED and ORDEX_DISABLED: the operator must act. OPERATION_UNRECORDED: a refusal could not be recorded; retry with the same idempotency-key. ORDEX_UNAVAILABLE: any other temporary failure.
+         * @enum {string}
+         */
+        PurchaseUnavailableCode: "ORDER_CHECKING" | "ORDER_STALE" | "INPUT_INVENTORY_UNAVAILABLE" | "CHAIN_UNAVAILABLE" | "CHAIN_MOVED" | "ORDEX_NOT_CONFIGURED" | "ORDEX_DISABLED" | "OPERATION_UNRECORDED" | "ORDEX_UNAVAILABLE";
+        PurchaseUnavailable: components["schemas"]["ErrorResponse"] & {
             /** @constant */
             statusCode: 503;
             error?: string;
             message: string;
             requestId?: string;
-            /** @constant */
-            code: "ORDER_CHECKING";
+            code: components["schemas"]["PurchaseUnavailableCode"];
         };
-        /** @description A batch whose orders all passed the refusal checks, and at least one of which is still being checked at the newest block. It answers for the whole batch and names every such order in the same per-order shape as BatchPurchaseRefused; retry the same batch shortly. An order that cannot be bought at all is refused first, with a 409 BatchPurchaseRefused. */
-        BatchPurchaseChecking: {
+        /** @description A batch purchase that could not be composed right now. With code ORDER_CHECKING, every order of the batch passed the refusal checks and at least one is still being checked at the newest block: refusals names each such order in the same per-order shape as BatchPurchaseRefused. Retry the same batch shortly. An order that cannot be bought at all is refused first, with a 409 BatchPurchaseRefused. */
+        BatchPurchaseUnavailable: {
             /** @constant */
             statusCode: 503;
             error?: string;
             message: string;
             requestId?: string;
-            /** @constant */
-            code: "ORDER_CHECKING";
-            refusals: (components["schemas"]["BatchRefusal"] & {
+            code: components["schemas"]["PurchaseUnavailableCode"];
+            refusals?: (components["schemas"]["BatchRefusal"] & {
                 /** @constant */
                 code?: "ORDER_CHECKING";
             })[];
         };
+        /** @description One protocol view of the sold inscription. Several views of one inscription (for example a Bitmap claim that is also an SNS name, or a DMT transfer that is also a TAP transfer of its dmt- ticker) are one asset and all move to the buyer, so every one is disclosed, including a view the seller did not declare. */
+        AssetView: {
+            protocolId: string;
+            assetId: string;
+            quantityAtomic: components["schemas"]["AtomicSats"];
+            /** @description A plain description to show the buyer. */
+            label: string;
+        };
+        /**
+         * @description PLACEMENT_REFUSED: at least one ask could not be proved; see placements. NODE_REJECTED: Bitcoin Core would not accept the transaction; rejectReason carries its reason.
+         * @enum {string}
+         */
+        BatchPreflightRejectCode: "PLACEMENT_REFUSED" | "NODE_REJECTED";
+        /**
+         * @description ORDER_UNVERIFIABLE: the ask could not be read or verified. ORDER_NOT_LIVE: the listing left LIVE. ORDER_STALE: it could not be verified against the chain just now. ORDER_CHANGED: it changed since the batch was quoted. ASK_NOT_BOUND: the transaction does not carry this ask exactly. SELLER_INPUT_MOVED: its seller input is not at the reviewed position. DELIVERY_UNPROVEN: the asset delivery could not be proved. RECIPIENT_MISMATCH: the asset would not land in the reviewed buyer output.
+         * @enum {string}
+         */
+        BatchPreflightPlacementCode: "ORDER_UNVERIFIABLE" | "ORDER_NOT_LIVE" | "ORDER_STALE" | "ORDER_CHANGED" | "ASK_NOT_BOUND" | "SELLER_INPUT_MOVED" | "DELIVERY_UNPROVEN" | "RECIPIENT_MISMATCH";
     };
     responses: {
         /** @description The request failed. The envelope states the status, a human readable message, and the request id. */
@@ -3378,13 +3414,13 @@ export interface components {
                 "application/json": components["schemas"]["ErrorResponse"];
             };
         };
-        /** @description Retryable. The order is LIVE on its last complete evidence while the asset inventory catches up to a new block (spec/lifecycle.md, catch-up at a new block), so it cannot be quoted or completed until that check finishes. The envelope carries `code: ORDER_CHECKING`; retry shortly. Nothing was composed or recorded. */
-        OrderChecking: {
+        /** @description Retryable. The envelope carries a stable code from PurchaseUnavailableCode: ORDER_CHECKING while the listing is in its catch-up hold at a new block (spec/lifecycle.md), INPUT_INVENTORY_UNAVAILABLE when a buyer output could not be checked for assets, and the chain and gateway availability codes. Nothing was composed or recorded. */
+        PurchaseUnavailable: {
             headers: {
                 [name: string]: unknown;
             };
             content: {
-                "application/json": components["schemas"]["OrderCheckingError"];
+                "application/json": components["schemas"]["PurchaseUnavailable"];
             };
         };
     };
@@ -3911,7 +3947,7 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             404: components["responses"]["NotFound"];
             429: components["responses"]["RateLimited"];
-            503: components["responses"]["OrderChecking"];
+            503: components["responses"]["PurchaseUnavailable"];
             default: components["responses"]["Error"];
         };
     };
@@ -3943,7 +3979,7 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             404: components["responses"]["NotFound"];
             429: components["responses"]["RateLimited"];
-            503: components["responses"]["OrderChecking"];
+            503: components["responses"]["PurchaseUnavailable"];
             default: components["responses"]["Error"];
         };
     };
@@ -4021,13 +4057,13 @@ export interface operations {
                 };
             };
             429: components["responses"]["RateLimited"];
-            /** @description Retryable. The order is LIVE on its last complete evidence while the asset inventory catches up to a new block (spec/lifecycle.md, catch-up at a new block), so it cannot be quoted or completed until that check finishes. The envelope carries `code: ORDER_CHECKING`; retry shortly. Nothing was composed or recorded. */
+            /** @description Retryable. The envelope carries a stable code from PurchaseUnavailableCode: ORDER_CHECKING while the listing is in its catch-up hold at a new block (spec/lifecycle.md), INPUT_INVENTORY_UNAVAILABLE when a buyer output could not be checked for assets, and the chain and gateway availability codes. Nothing was composed or recorded. */
             503: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BatchPurchaseChecking"];
+                    "application/json": components["schemas"]["BatchPurchaseUnavailable"];
                 };
             };
             default: components["responses"]["Error"];
@@ -4058,7 +4094,7 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             404: components["responses"]["NotFound"];
             429: components["responses"]["RateLimited"];
-            503: components["responses"]["OrderChecking"];
+            503: components["responses"]["PurchaseUnavailable"];
             default: components["responses"]["Error"];
         };
     };

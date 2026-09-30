@@ -2114,6 +2114,14 @@
           "valueSats": "10000",
           "policyVersion": "example"
         }
+      ],
+      "assetViews": [
+        {
+          "protocolId": "example",
+          "assetId": "example",
+          "quantityAtomic": "10000",
+          "label": "example"
+        }
       ]
     },
     "responseExampleIssue": null,
@@ -2138,7 +2146,7 @@
         "$ref": "#/components/responses/RateLimited"
       },
       "503": {
-        "$ref": "#/components/responses/OrderChecking"
+        "$ref": "#/components/responses/PurchaseUnavailable"
       },
       "default": {
         "$ref": "#/components/responses/Error"
@@ -2185,7 +2193,15 @@
       "vsize": 1,
       "feesSats": "10000",
       "checkedAt": "2026-09-29T00:00:00Z",
-      "quoteId": "example"
+      "quoteId": "example",
+      "assetViews": [
+        {
+          "protocolId": "example",
+          "assetId": "example",
+          "quantityAtomic": "10000",
+          "label": "example"
+        }
+      ]
     },
     "responseExampleIssue": null,
     "responses": {
@@ -2209,7 +2225,7 @@
         "$ref": "#/components/responses/RateLimited"
       },
       "503": {
-        "$ref": "#/components/responses/OrderChecking"
+        "$ref": "#/components/responses/PurchaseUnavailable"
       },
       "default": {
         "$ref": "#/components/responses/Error"
@@ -2468,7 +2484,15 @@
           "assetOutpoint": {
             "txid": "a0b1c2d3e4f5061728394a5b6c7d8e9f0123456789abcdef0123456789abcdef",
             "vout": 0
-          }
+          },
+          "assetViews": [
+            {
+              "protocolId": "example",
+              "assetId": "example",
+              "quantityAtomic": "10000",
+              "label": "example"
+            }
+          ]
         }
       ],
       "totals": {
@@ -2542,11 +2566,11 @@
         "$ref": "#/components/responses/RateLimited"
       },
       "503": {
-        "description": "Retryable. The order is LIVE on its last complete evidence while the asset inventory catches up to a new block (spec/lifecycle.md, catch-up at a new block), so it cannot be quoted or completed until that check finishes. The envelope carries `code: ORDER_CHECKING`; retry shortly. Nothing was composed or recorded.",
+        "description": "Retryable. The envelope carries a stable code from PurchaseUnavailableCode: ORDER_CHECKING while the listing is in its catch-up hold at a new block (spec/lifecycle.md), INPUT_INVENTORY_UNAVAILABLE when a buyer output could not be checked for assets, and the chain and gateway availability codes. Nothing was composed or recorded.",
         "content": {
           "application/json": {
             "schema": {
-              "$ref": "#/components/schemas/BatchPurchaseChecking"
+              "$ref": "#/components/schemas/BatchPurchaseUnavailable"
             }
           }
         }
@@ -2590,12 +2614,15 @@
         {
           "orderId": "example",
           "allowed": true,
+          "rejectCode": "ORDER_UNVERIFIABLE",
           "rejectReason": "example"
         }
       ],
       "nodeAcceptance": {},
       "checkedAt": "2026-09-29T00:00:00Z",
-      "batchId": "example"
+      "batchId": "example",
+      "rejectCode": "PLACEMENT_REFUSED",
+      "rejectReason": "example"
     },
     "responseExampleIssue": null,
     "responses": {
@@ -2619,7 +2646,7 @@
         "$ref": "#/components/responses/RateLimited"
       },
       "503": {
-        "$ref": "#/components/responses/OrderChecking"
+        "$ref": "#/components/responses/PurchaseUnavailable"
       },
       "default": {
         "$ref": "#/components/responses/Error"
@@ -8476,6 +8503,7 @@
     },
     "requestExample": {
       "address": "example",
+      "assetId": "10000",
       "assetName": "example",
       "quantitySats": "10000",
       "destination": "example",
