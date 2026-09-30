@@ -30,7 +30,7 @@ const base = vectors.cases.find((c) => c.kind === 'event' && c.expected.ok).even
 const ev = (n) => ({ ...base, id: `${String(n).padStart(8, '0')}-4b5a-4978-8796-a5b4c3d2e1f0`, sequence: 5000 + n });
 // The stream position of one event, as the SSE id and WebSocket cursor carry it.
 const pos = (e) => `${e.sequence}:${e.id}`;
-const after = (cursor) => Number(cursor.split(':')[1].slice(0, 8)) + 1;
+const nextAfter = (cursor) => Number(cursor.split(':')[1].slice(0, 8)) + 1;
 const seen = { sse: [], ws: [] };
 let expireCursor = null;
 
@@ -73,7 +73,7 @@ before(async () => {
       seen.sse.push(last);
       if (expireCursor && last === expireCursor) return res.writeHead(410, { 'content-type': 'application/json' }).end('{"statusCode":410,"error":"Gone","message":"cursor expired","requestId":"r"}');
       res.writeHead(200, { 'content-type': 'text/event-stream', 'cache-control': 'no-store' });
-      const start = last ? after(last) : 1;
+      const start = last ? nextAfter(last) : 1;
       for (let n = start; n < start + 2; n++) res.write(`id: ${pos(ev(n))}\ndata: ${JSON.stringify(ev(n))}\n\n`);
       res.write(`id: ${pos(ev(start))}\ndata: ${JSON.stringify(ev(start))}\n\n`); // duplicate
       const older = { ...ev(start + 2), sequence: 4000 }; // out of order
@@ -92,7 +92,7 @@ before(async () => {
     socket.once('data', (buf) => {
       const sub = JSON.parse(wsRead(buf));
       seen.ws.push(sub);
-      const start = sub.cursor ? after(sub.cursor) : 11;
+      const start = sub.cursor ? nextAfter(sub.cursor) : 11;
       // Every event is wrapped with its subscription id and its own resume cursor.
       const frame = (e) => wsFrame(JSON.stringify({ op: 'event', id: sub.id, cursor: pos(e), event: e }));
       socket.write(wsFrame(JSON.stringify({ op: 'subscribed', id: sub.id })));
