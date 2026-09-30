@@ -7,7 +7,9 @@
 
 import { validateSchema, resolveRef } from './schema.mjs';
 
-export const REQUEST_TIMEOUT_MS = 15000;
+// A purchase quote checks the complete output inventory and takes about 20 s on a real gateway;
+// the page shows Cancel while a request runs.
+export const REQUEST_TIMEOUT_MS = 60000;
 
 const deref = (value, doc) => (value && value.$ref ? resolveRef(value.$ref, doc) : value);
 
