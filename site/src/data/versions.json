@@ -2,7 +2,7 @@
   "currentProtocol": "1.2",
   "currentSdk": "1.0.0",
   "currentGatewayContract": "1.2.1",
-  "currentContractDigest": "2e3545a8a0599371f97af349e56a52e7bf69e7902ffdccaa8f6424744a825821",
+  "currentContractDigest": "a0f4894b21aa9c23247f796f9b07bf0bbf01ab89075689a12ccef98edbc298be",
   "history": [
     {
       "version": "1.0",
@@ -51,7 +51,7 @@
         "Signed webhook endpoint verification, delivery history, and replaying"
       ],
       "sdkCompatibility": "1.0.0",
-      "contractDigest": "2e3545a8a0599371f97af349e56a52e7bf69e7902ffdccaa8f6424744a825821"
+      "contractDigest": "a0f4894b21aa9c23247f796f9b07bf0bbf01ab89075689a12ccef98edbc298be"
     }
   ]
 }

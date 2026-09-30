@@ -65,7 +65,7 @@ After confirmation, and again after any reorg, `verifyCounterpartyLedgerEvents` 
 
 ## Attach and detach
 
-Attachment and detachment are composed for the user, never for the service: the composition returns an unsigned PSBT, the exact XCP gas, the exact miner fee, the resulting outpoint, the consequences, and any unrelated assets that would also move. The user signs with their own wallet. The server never holds XCP, BTC, or the attached asset. Composed transactions pass Bitcoin Core preflight before signature, and the expected Counterparty event is confirmed after confirmation; reorgs reverse the marketplace state through explicit reversed events.
+An attach request names the asset by its numeric Counterparty asset id (`assetId`, a decimal string); a name is only an optional display hint that must match the ledger record for that id. Attachment and detachment are composed for the user, never for the service: the composition returns an unsigned PSBT, the exact XCP gas, the exact miner fee, the resulting outpoint, the consequences, and any unrelated assets that would also move. The user signs with their own wallet. The server never holds XCP, BTC, or the attached asset. Composed transactions pass Bitcoin Core preflight before signature, and the expected Counterparty event is confirmed after confirmation; reorgs reverse the marketplace state through explicit reversed events.
 
 ## Protection everywhere
 

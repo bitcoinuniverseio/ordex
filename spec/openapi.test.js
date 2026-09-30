@@ -97,17 +97,26 @@ test('atomic amounts are strings, never numbers', () => {
   assert.ok(sats.pattern);
 });
 
-test('the purchase routes document the retryable 503 ORDER_CHECKING of the catch-up hold', () => {
+test('every purchase route documents a coded, retryable 503', () => {
   const at = (ref) => ref.slice(2).split('/').reduce((node, key) => node[key], document);
+  const codes = document.components.schemas.PurchaseUnavailableCode.enum;
+  for (const code of ['ORDER_CHECKING', 'INPUT_INVENTORY_UNAVAILABLE']) assert.ok(codes.includes(code), code);
   for (const path of ['/api/ordex/orders/{id}/quote', '/api/ordex/orders/{id}/preflight', '/api/ordex/orders/batch-preflight']) {
     const response = document.paths[path].post.responses['503'];
-    assert.equal(response?.$ref, '#/components/responses/OrderChecking', path);
+    assert.equal(response?.$ref, '#/components/responses/PurchaseUnavailable', path);
   }
-  const checking = at(document.components.responses.OrderChecking.content['application/json'].schema.$ref);
-  assert.equal(checking.allOf[1].properties.code.const, 'ORDER_CHECKING');
-  const batch = document.paths['/api/ordex/orders/batch-purchase'].post.responses['503'].content['application/json'].schema;
-  const body = at(batch.$ref);
-  assert.equal(body.properties.code.const, 'ORDER_CHECKING');
-  assert.deepEqual(body.properties.refusals.items.allOf[0], { $ref: '#/components/schemas/BatchRefusal' });
+  const single = at(document.components.responses.PurchaseUnavailable.content['application/json'].schema.$ref);
+  assert.deepEqual(single.allOf[1].properties.code, { $ref: '#/components/schemas/PurchaseUnavailableCode' });
+  assert.ok(single.allOf[1].required.includes('code'));
+  const batch = at(document.paths['/api/ordex/orders/batch-purchase'].post.responses['503'].content['application/json'].schema.$ref);
+  assert.ok(batch.required.includes('code'));
+  assert.deepEqual(batch.properties.refusals.items.allOf[0], { $ref: '#/components/schemas/BatchRefusal' });
   assert.equal(document.paths['/api/ordex/orders/batch-purchase'].post.responses['409'].content['application/json'].schema.$ref, '#/components/schemas/BatchPurchaseRefused');
+});
+
+test('what the buyer approves discloses every view of the sold inscription', () => {
+  const s = document.components.schemas;
+  assert.ok(s.Quote.required.includes('assetViews'));
+  assert.ok(s.BatchPurchaseResult.properties.placements.items.required.includes('assetViews'));
+  assert.deepEqual(s.PreflightResult.properties.assetViews.items, { $ref: '#/components/schemas/AssetView' });
 });

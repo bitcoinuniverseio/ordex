@@ -99,6 +99,13 @@ the matching `*_NOT_FOUND` code; `400` is only for a request the gateway
 cannot read. A client can therefore tell a stale id from a malformed call
 without parsing the message.
 
+A purchase route (quote, preflight, batch purchase, batch preflight) that
+cannot answer right now responds `503` with one of the codes in
+`PurchaseUnavailableCode`. `ORDER_CHECKING` means the listing itself is in its
+catch-up hold at a new block; `INPUT_INVENTORY_UNAVAILABLE` means a buyer
+output could not be checked for assets, so Ordex will not spend it. Every one
+of them is retryable, and nothing was composed or recorded.
+
 ## Agents
 
 The gateway's MCP endpoint speaks the stateless MCP `2026-07-28` Streamable
