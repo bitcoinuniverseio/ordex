@@ -2401,7 +2401,7 @@ export interface components {
             updatedAt: string;
             /** @description When one transaction cannot carry the operation: every deterministic partition, the first of which is this answer. */
             partition?: {
-                transactions: components["schemas"]["SafeOpsPlanResult"][];
+                transactions: components["schemas"]["SafeOpsPartitionPlan"][];
             };
         };
         /** @description The signed result to reverify immediately before broadcast, with the digest the user agreed to. */
@@ -3296,6 +3296,25 @@ export interface components {
                 utxo: string | null;
             }[];
             readiness: components["schemas"]["HeritageReadiness"];
+        };
+        /** @description One transaction of a partitioned operation: a SafeOpsPlanResult without its own partition. */
+        SafeOpsPartitionPlan: {
+            /** @description The id every later plan route takes. */
+            planId: string;
+            /** @enum {string} */
+            state: "BUILT" | "SIGNED" | "BROADCAST" | "INVALIDATED";
+            plan: components["schemas"]["SafeOpsPlan"];
+            verification: components["schemas"]["VerificationView"];
+            /** @description The unsigned PSBT, base64, that reproduces the plan transaction exactly. */
+            psbt?: string;
+            /** @description The expected transaction manifest a cold signer signs against. */
+            manifest?: components["schemas"]["ExpectedTransactionManifest"];
+            /** @description INVALIDATED plans only. */
+            invalidatedReason?: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
         };
     };
     responses: {

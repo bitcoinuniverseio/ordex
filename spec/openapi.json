@@ -7214,7 +7214,7 @@
                 "type": "array",
                 "minItems": 2,
                 "items": {
-                  "$ref": "#/components/schemas/SafeOpsPlanResult"
+                  "$ref": "#/components/schemas/SafeOpsPartitionPlan"
                 }
               }
             }
@@ -10450,6 +10450,63 @@
           },
           "readiness": {
             "$ref": "#/components/schemas/HeritageReadiness"
+          }
+        }
+      },
+      "SafeOpsPartitionPlan": {
+        "type": "object",
+        "required": [
+          "planId",
+          "state",
+          "plan",
+          "verification",
+          "createdAt",
+          "updatedAt"
+        ],
+        "description": "One transaction of a partitioned operation: a SafeOpsPlanResult without its own partition.",
+        "properties": {
+          "planId": {
+            "type": "string",
+            "description": "The id every later plan route takes."
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "BUILT",
+              "SIGNED",
+              "BROADCAST",
+              "INVALIDATED"
+            ]
+          },
+          "plan": {
+            "$ref": "#/components/schemas/SafeOpsPlan"
+          },
+          "verification": {
+            "$ref": "#/components/schemas/VerificationView"
+          },
+          "psbt": {
+            "type": "string",
+            "description": "The unsigned PSBT, base64, that reproduces the plan transaction exactly."
+          },
+          "manifest": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ExpectedTransactionManifest"
+              }
+            ],
+            "description": "The expected transaction manifest a cold signer signs against."
+          },
+          "invalidatedReason": {
+            "type": "string",
+            "description": "INVALIDATED plans only."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       }
