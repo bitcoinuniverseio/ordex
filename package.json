@@ -25,12 +25,15 @@
     "jszip": "3.10.1",
     "pagefind": "1.5.2",
     "preact": "10.29.8",
-    "sharp": "0.35.4"
+    "sharp": "0.35.5"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",
     "@types/node": "24.10.1",
     "playwright": "1.62.1",
     "typescript": "5.9.3"
+  },
+  "overrides": {
+    "postcss-selector-parser": "7.1.6"
   }
 }
