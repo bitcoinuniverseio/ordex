@@ -19,7 +19,7 @@
     "site:dev": "astro dev"
   },
   "dependencies": {
-    "@astrojs/preact": "6.0.5",
+    "@astrojs/preact": "6.0.6",
     "@astrojs/starlight": "0.42.0",
     "astro": "7.2.10",
     "jszip": "3.10.1",
