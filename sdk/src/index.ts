@@ -183,6 +183,8 @@ export type ListActivityQuery = NonNullable<operations['listActivity']['paramete
 export class OrdexApiError extends Error {
   readonly status: number;
   readonly envelope: ErrorResponse | null;
+  readonly code: string | null;
+  readonly retryable: boolean;
 
   constructor(status: number, envelope: ErrorResponse | null, fallback: string) {
     const message =
@@ -195,6 +197,12 @@ export class OrdexApiError extends Error {
     this.name = 'OrdexApiError';
     this.status = status;
     this.envelope = envelope;
+    const availability = envelope as (ErrorResponse & { code?: unknown; retryable?: unknown }) | null;
+    this.code = typeof availability?.code === 'string' && /^[A-Z][A-Z0-9_]{0,95}$/.test(availability.code)
+      ? availability.code : null;
+    this.retryable = RETRIABLE_STATUS.has(status) && availability?.retryable !== false && ![
+      'FEATURE_DISABLED', 'AUTHORITY_CONFIG_INVALID', 'AUTHORITY_NETWORK_MISMATCH',
+    ].includes(this.code ?? '');
   }
 }
 
@@ -293,7 +301,7 @@ export class OrdexClient {
       } catch (error) {
         lastError = error;
         const retriable =
-          !(error instanceof OrdexApiError) || RETRIABLE_STATUS.has(error.status);
+          !(error instanceof OrdexApiError) || (error.retryable && RETRIABLE_STATUS.has(error.status));
         const aborted = error instanceof Error && error.name === 'AbortError';
         if (!retriable || aborted) throw error;
       }

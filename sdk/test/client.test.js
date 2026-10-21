@@ -56,6 +56,7 @@ test('a failed response becomes an OrdexApiError carrying the envelope', async (
   );
   assert.ok(error instanceof OrdexApiError);
   assert.equal(error.status, 400);
+  assert.equal(error.retryable, false);
   assert.equal(error.message, 'Malformed cursor.');
   assert.deepEqual(error.envelope, envelope);
 });
@@ -73,6 +74,22 @@ test('a read is retried on 503, and answers once the gateway recovers', async ()
   const answer = await client.listActivity();
   assert.deepEqual(answer, page);
   assert.equal(calls.length, 3);
+});
+
+for (const code of ['FEATURE_DISABLED', 'AUTHORITY_CONFIG_INVALID', 'AUTHORITY_NETWORK_MISMATCH']) {
+  test(`a permanent availability refusal ${code} does not trigger read retries`, async () => {
+    const { calls, stub } = recordingFetch([json({ code, message: 'Temporarily unavailable' }, 503)]);
+    const client = new OrdexClient({ baseUrl: 'https://gateway.example', fetch: stub, retries: 3, retryDelayMs: 1 });
+    await assert.rejects(() => client.listOrders(), error => error instanceof OrdexApiError && error.code === code && !error.retryable && error.status === 503);
+    assert.equal(calls.length, 1);
+  });
+}
+
+test('explicit non-retryable availability remains terminal', async () => {
+  const { calls, stub } = recordingFetch([json({ code: 'DEPENDENCY_UNAVAILABLE', retryable: false, message: 'Temporarily unavailable' }, 503)]);
+  const client = new OrdexClient({ baseUrl: 'https://gateway.example', fetch: stub, retries: 2, retryDelayMs: 1 });
+  await assert.rejects(() => client.listActivity(), error => !error.retryable);
+  assert.equal(calls.length, 1);
 });
 
 test('a write is never retried, whatever the retry setting says', async () => {

@@ -1,0 +1,149 @@
+{
+  "schemaVersion": 1,
+  "routes": [
+    {
+      "method": "GET",
+      "publicPath": "/v1/marketplace/protocols/ordex/assets",
+      "controllerFile": "core/backend/src/ordex/ordex-marketplace-v1-authority.controller.ts",
+      "handler": "assets",
+      "serviceFile": "core/backend/src/ordex/ordex-marketplace-v1-authority.service.ts",
+      "registeredModule": "core/backend/src/ordex/ordex.module.ts",
+      "releaseSha": "d5aef00a43dde182b609cfb718af45880646f671",
+      "featureFlag": "ORDEX_MARKETPLACE_V1_AUTHORITY_ENABLED",
+      "requiredQuery": [],
+      "authRequirement": "authority read bearer; disabled/config checks run first",
+      "dependencyIds": [
+        "ordex-order-store",
+        "bitcoin-chain",
+        "ord-position-source"
+      ],
+      "frontendConsumers": [
+        "sdk/src/index.ts (gateway client; distinct /api/ordex family)"
+      ],
+      "safeForProductionReadSmoke": false,
+      "testFixture": "sdk/test/client.test.js",
+      "implementationRepository": "core",
+      "note": "Ordex repo owns SDK and protocol contract; these authority routes are implemented by core, not this repository."
+    },
+    {
+      "method": "GET",
+      "publicPath": "/v1/marketplace/protocols/ordex/listings",
+      "controllerFile": "core/backend/src/ordex/ordex-marketplace-v1-authority.controller.ts",
+      "handler": "listings",
+      "serviceFile": "core/backend/src/ordex/ordex-marketplace-v1-authority.service.ts",
+      "registeredModule": "core/backend/src/ordex/ordex.module.ts",
+      "releaseSha": "d5aef00a43dde182b609cfb718af45880646f671",
+      "featureFlag": "ORDEX_MARKETPLACE_V1_AUTHORITY_ENABLED",
+      "requiredQuery": [],
+      "authRequirement": "authority read bearer; disabled/config checks run first",
+      "dependencyIds": [
+        "ordex-order-store",
+        "bitcoin-chain",
+        "ord-position-source"
+      ],
+      "frontendConsumers": [
+        "sdk/src/index.ts (gateway client; distinct /api/ordex family)"
+      ],
+      "safeForProductionReadSmoke": false,
+      "testFixture": "sdk/test/client.test.js",
+      "implementationRepository": "core",
+      "note": "Ordex repo owns SDK and protocol contract; these authority routes are implemented by core, not this repository."
+    },
+    {
+      "method": "GET",
+      "publicPath": "/v1/marketplace/protocols/ordex/offers",
+      "controllerFile": "core/backend/src/ordex/ordex-marketplace-v1-authority.controller.ts",
+      "handler": "offers",
+      "serviceFile": "core/backend/src/ordex/ordex-marketplace-v1-authority.service.ts",
+      "registeredModule": "core/backend/src/ordex/ordex.module.ts",
+      "releaseSha": "d5aef00a43dde182b609cfb718af45880646f671",
+      "featureFlag": "ORDEX_MARKETPLACE_V1_AUTHORITY_ENABLED",
+      "requiredQuery": [],
+      "authRequirement": "authority read bearer; disabled/config checks run first",
+      "dependencyIds": [
+        "ordex-order-store",
+        "bitcoin-chain",
+        "ord-position-source"
+      ],
+      "frontendConsumers": [
+        "sdk/src/index.ts (gateway client; distinct /api/ordex family)"
+      ],
+      "safeForProductionReadSmoke": false,
+      "testFixture": "sdk/test/client.test.js",
+      "implementationRepository": "core",
+      "note": "Ordex repo owns SDK and protocol contract; these authority routes are implemented by core, not this repository."
+    },
+    {
+      "method": "GET",
+      "publicPath": "/v1/marketplace/protocols/ordex/collections",
+      "controllerFile": "core/backend/src/ordex/ordex-marketplace-v1-authority.controller.ts",
+      "handler": "collections",
+      "serviceFile": "core/backend/src/ordex/ordex-marketplace-v1-authority.service.ts",
+      "registeredModule": "core/backend/src/ordex/ordex.module.ts",
+      "releaseSha": "d5aef00a43dde182b609cfb718af45880646f671",
+      "featureFlag": "ORDEX_MARKETPLACE_V1_AUTHORITY_ENABLED",
+      "requiredQuery": [],
+      "authRequirement": "authority read bearer; disabled/config checks run first",
+      "dependencyIds": [
+        "ordex-order-store",
+        "bitcoin-chain",
+        "ord-position-source"
+      ],
+      "frontendConsumers": [
+        "sdk/src/index.ts (gateway client; distinct /api/ordex family)"
+      ],
+      "safeForProductionReadSmoke": false,
+      "testFixture": "sdk/test/client.test.js",
+      "implementationRepository": "core",
+      "note": "Ordex repo owns SDK and protocol contract; these authority routes are implemented by core, not this repository."
+    },
+    {
+      "method": "GET",
+      "publicPath": "/v1/marketplace/protocols/ordex/activity",
+      "controllerFile": "core/backend/src/ordex/ordex-marketplace-v1-authority.controller.ts",
+      "handler": "activity",
+      "serviceFile": "core/backend/src/ordex/ordex-marketplace-v1-authority.service.ts",
+      "registeredModule": "core/backend/src/ordex/ordex.module.ts",
+      "releaseSha": "d5aef00a43dde182b609cfb718af45880646f671",
+      "featureFlag": "ORDEX_MARKETPLACE_V1_AUTHORITY_ENABLED",
+      "requiredQuery": [],
+      "authRequirement": "authority read bearer; disabled/config checks run first",
+      "dependencyIds": [
+        "ordex-order-store",
+        "bitcoin-chain",
+        "ord-position-source"
+      ],
+      "frontendConsumers": [
+        "sdk/src/index.ts (gateway client; distinct /api/ordex family)"
+      ],
+      "safeForProductionReadSmoke": false,
+      "testFixture": "sdk/test/client.test.js",
+      "implementationRepository": "core",
+      "note": "Ordex repo owns SDK and protocol contract; these authority routes are implemented by core, not this repository."
+    },
+    {
+      "method": "GET",
+      "publicPath": "/v1/marketplace/protocols/ordex/position-source/ready",
+      "controllerFile": "core/backend/src/ordex/ordex-marketplace-v1-authority.controller.ts",
+      "handler": "positionReadiness",
+      "serviceFile": "core/backend/src/ordex/ordex-marketplace-v1-authority.service.ts",
+      "registeredModule": "core/backend/src/ordex/ordex.module.ts",
+      "releaseSha": "d5aef00a43dde182b609cfb718af45880646f671",
+      "featureFlag": "ORDEX_MARKETPLACE_V1_AUTHORITY_ENABLED",
+      "requiredQuery": [],
+      "authRequirement": "authority read bearer; disabled/config checks run first",
+      "dependencyIds": [
+        "ordex-order-store",
+        "bitcoin-chain",
+        "ord-position-source"
+      ],
+      "frontendConsumers": [
+        "sdk/src/index.ts (gateway client; distinct /api/ordex family)"
+      ],
+      "safeForProductionReadSmoke": false,
+      "testFixture": "sdk/test/client.test.js",
+      "implementationRepository": "core",
+      "note": "Ordex repo owns SDK and protocol contract; these authority routes are implemented by core, not this repository."
+    }
+  ]
+}
