@@ -8,7 +8,7 @@
       "handler": "assets",
       "serviceFile": "core/backend/src/ordex/ordex-marketplace-v1-authority.service.ts",
       "registeredModule": "core/backend/src/ordex/ordex.module.ts",
-      "releaseSha": "d5aef00a43dde182b609cfb718af45880646f671",
+      "releaseSha": "fb1bc61a8bdc3c7ec758aa55fab6ff8dfa9b6984",
       "featureFlag": "ORDEX_MARKETPLACE_V1_AUTHORITY_ENABLED",
       "requiredQuery": [],
       "authRequirement": "authority read bearer; disabled/config checks run first",
@@ -32,7 +32,7 @@
       "handler": "listings",
       "serviceFile": "core/backend/src/ordex/ordex-marketplace-v1-authority.service.ts",
       "registeredModule": "core/backend/src/ordex/ordex.module.ts",
-      "releaseSha": "d5aef00a43dde182b609cfb718af45880646f671",
+      "releaseSha": "fb1bc61a8bdc3c7ec758aa55fab6ff8dfa9b6984",
       "featureFlag": "ORDEX_MARKETPLACE_V1_AUTHORITY_ENABLED",
       "requiredQuery": [],
       "authRequirement": "authority read bearer; disabled/config checks run first",
@@ -56,7 +56,7 @@
       "handler": "offers",
       "serviceFile": "core/backend/src/ordex/ordex-marketplace-v1-authority.service.ts",
       "registeredModule": "core/backend/src/ordex/ordex.module.ts",
-      "releaseSha": "d5aef00a43dde182b609cfb718af45880646f671",
+      "releaseSha": "fb1bc61a8bdc3c7ec758aa55fab6ff8dfa9b6984",
       "featureFlag": "ORDEX_MARKETPLACE_V1_AUTHORITY_ENABLED",
       "requiredQuery": [],
       "authRequirement": "authority read bearer; disabled/config checks run first",
@@ -80,7 +80,7 @@
       "handler": "collections",
       "serviceFile": "core/backend/src/ordex/ordex-marketplace-v1-authority.service.ts",
       "registeredModule": "core/backend/src/ordex/ordex.module.ts",
-      "releaseSha": "d5aef00a43dde182b609cfb718af45880646f671",
+      "releaseSha": "fb1bc61a8bdc3c7ec758aa55fab6ff8dfa9b6984",
       "featureFlag": "ORDEX_MARKETPLACE_V1_AUTHORITY_ENABLED",
       "requiredQuery": [],
       "authRequirement": "authority read bearer; disabled/config checks run first",
@@ -104,7 +104,7 @@
       "handler": "activity",
       "serviceFile": "core/backend/src/ordex/ordex-marketplace-v1-authority.service.ts",
       "registeredModule": "core/backend/src/ordex/ordex.module.ts",
-      "releaseSha": "d5aef00a43dde182b609cfb718af45880646f671",
+      "releaseSha": "fb1bc61a8bdc3c7ec758aa55fab6ff8dfa9b6984",
       "featureFlag": "ORDEX_MARKETPLACE_V1_AUTHORITY_ENABLED",
       "requiredQuery": [],
       "authRequirement": "authority read bearer; disabled/config checks run first",
@@ -128,7 +128,7 @@
       "handler": "positionReadiness",
       "serviceFile": "core/backend/src/ordex/ordex-marketplace-v1-authority.service.ts",
       "registeredModule": "core/backend/src/ordex/ordex.module.ts",
-      "releaseSha": "d5aef00a43dde182b609cfb718af45880646f671",
+      "releaseSha": "fb1bc61a8bdc3c7ec758aa55fab6ff8dfa9b6984",
       "featureFlag": "ORDEX_MARKETPLACE_V1_AUTHORITY_ENABLED",
       "requiredQuery": [],
       "authRequirement": "authority read bearer; disabled/config checks run first",
@@ -145,5 +145,6 @@
       "implementationRepository": "core",
       "note": "Ordex repo owns SDK and protocol contract; these authority routes are implemented by core, not this repository."
     }
-  ]
+  ],
+  "releaseShaMeaning": "Captured core production release for external authority routes; SDK revision is tracked by its own Git commit."
 }
