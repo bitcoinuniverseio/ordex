@@ -14,7 +14,8 @@
     "dist"
   ],
   "engines": {
-    "node": ">=20"
+    "node": "24.19.0",
+    "npm": "11.17.0"
   },
   "scripts": {
     "generate": "openapi-typescript ../spec/openapi.json -o src/schema.ts",
@@ -26,5 +27,6 @@
     "@types/node": "^24.10.1",
     "openapi-typescript": "7.10.1",
     "typescript": "5.9.3"
-  }
+  },
+  "packageManager": "npm@11.17.0"
 }
