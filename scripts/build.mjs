@@ -3,6 +3,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execSync } from 'node:child_process';
 import { renderApiReference } from './api-reference.mjs';
+import { generateMetadata, validateArtifact } from '../site/version-build/metadata.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const dist = resolve(root, 'dist');
@@ -18,6 +19,7 @@ await writeFile(resolve(root, 'docs', 'api-reference.html'), renderApiReference(
 console.log('--- Step 2.5: Generate deterministic product tour captures ---');
 execSync('node scripts/capture-walkthroughs.mjs', { cwd: root, stdio: 'inherit' });
 
+const metadata = await generateMetadata();
 console.log('--- Step 3: Compile Astro static application ---');
 execSync('npx astro build', { cwd: siteDir, stdio: 'inherit' });
 
@@ -90,6 +92,8 @@ if (await readFile(resolve(root, 'worker', 'migrations', '0001_initial.sql')).ca
 console.log('--- Step 8: Validate Build Deliverables ---');
 const requiredFiles = [
   'dist/client/index.html',
+  'dist/client/version.json',
+  'docs/version.json',
   'dist/client/api-reference.html',
   'dist/client/sitemap.xml',
   'dist/client/robots.txt',
@@ -114,6 +118,8 @@ for (const file of requiredFiles) {
   const content = await readFile(resolve(root, file)).catch(() => null);
   if (!content) throw new Error(`Missing required build deliverable: ${file}`);
 }
+
+await validateArtifact(root, metadata);
 
 console.log('--- Step 9: Audit and validate all links and routes ---');
 execSync('node scripts/check-links.mjs', { cwd: root, stdio: 'inherit' });
