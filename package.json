@@ -14,7 +14,6 @@
     "test:all": "npm test && npm --prefix sdk test && node scripts/docs/conformance-cli.mjs",
     "conformance": "node scripts/docs/conformance-cli.mjs",
     "vectors": "node scripts/make-vectors.mjs",
-    "coverage:check": "node scripts/docs/coverage-check.mjs",
     "site:build": "astro build",
     "site:dev": "astro dev"
   },

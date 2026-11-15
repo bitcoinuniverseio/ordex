@@ -1,5 +1,4 @@
-# Opened autonomously by KING: this repository declared
-# dependencies but had no update automation, so security patches were manual.
+# Keep dependency and GitHub Actions updates visible for review.
 version: 2
 updates:
   - package-ecosystem: "npm"
