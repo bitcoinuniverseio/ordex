@@ -23,7 +23,7 @@
     "@astrojs/starlight": "0.42.0",
     "astro": "7.4.11",
     "jszip": "3.10.1",
-    "pagefind": "1.5.2",
+    "pagefind": "1.6.0",
     "preact": "10.29.8",
     "sharp": "0.35.5"
   },
